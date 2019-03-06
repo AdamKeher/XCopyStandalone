@@ -15,12 +15,14 @@ Todo:
       - new
       - =[memory report]============
       - total: 64kb
-      - free: 13072 b (1.92%%)
+      -  free: 13072 b (1.92%%)
       - stack: 2560 b (0.31%%)
       -  heap: 37612 b (5.66%%)
       - =[memory report]============      
   General:
-    ☐ Add to github
+    ✔ Add to github @done(19-03-06 12:09)
+    ✔ Add PCB files @done(19-03-06 13:37)
+    ✔ Add github description @done(19-03-06 13:37)
   Low Priority:
     Navigation:
       ☐ Update Navigation to use interrupts so you can cancel disk activies
