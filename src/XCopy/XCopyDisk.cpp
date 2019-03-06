@@ -76,7 +76,6 @@ void XCopyDisk::writeDiskTrack(uint8_t trackNum, uint8_t retryCount)
     int retries = 0;
     int errors = -1;
 
-
     while (errors == -1 && retries < retryCount)
     {
         // write track
@@ -95,7 +94,7 @@ void XCopyDisk::writeDiskTrack(uint8_t trackNum, uint8_t retryCount)
             retries++;
             _audio->playBong(false);
             delay(1000);
-        }        
+        }
     }
 
     if (errors == -1)
@@ -185,7 +184,7 @@ void XCopyDisk::diskToADF(String ADFFileName, bool verify, uint8_t retryCount, A
 
     // YELLOW = Begin, GREEN = Read OK, ORANGE = Read after Retries, RED = Read Error, MAGENTA = Verify Error
     for (int trackNum = 0; trackNum < 160; trackNum++)
-    {        
+    {
         // read track
         readDiskTrack(trackNum, false, retryCount);
 
@@ -241,7 +240,7 @@ void XCopyDisk::diskToADF(String ADFFileName, bool verify, uint8_t retryCount, A
                 _graphics->drawTrack(trackNum / 2, trackNum % 2, true, false, 0, true, ST7735_MAGENTA);
                 _audio->playBong(false);
             }
-            else 
+            else
                 _graphics->drawTrack(trackNum / 2, trackNum % 2, true, false, 0, true, ST7735_GREEN);
         }
     }
@@ -291,7 +290,7 @@ void XCopyDisk::adfToDisk(String ADFFileName, bool verify, uint8_t retryCount, A
 
         ADFFile = SD.open(buffer, FILE_READ);
         if (!ADFFile)
-        {            
+        {
             _graphics->drawText(0, 10, ST7735_WHITE, "SD File Open Failed");
             _audio->playBong(false);
             ADFFile.close();
@@ -380,7 +379,7 @@ void XCopyDisk::adfToDisk(String ADFFileName, bool verify, uint8_t retryCount, A
                     ADFFile.read(buffer, sizeof(buffer));
                 else if (source == _flashMemory)
                     ADFFlashFile.read(buffer, sizeof(buffer));
-                
+
                 struct Sector *aSec = (Sector *)&getTrack()[i].sector[0];
 
                 if (memcmp(aSec->data, buffer, 512))
@@ -413,8 +412,6 @@ void XCopyDisk::diskToDisk(bool verify, uint8_t retryCount)
 
 void XCopyDisk::diskFlux()
 {
-    Serial << "Draw Flux\r\n";
-
     if (!diskChange())
     {
         _graphics->drawText(0, 10, ST7735_WHITE, "No Disk Inserted");
@@ -424,36 +421,39 @@ void XCopyDisk::diskFlux()
 
     for (int trackNum = 0; trackNum < 160; trackNum++)
     {
-        int retries = 0;
-        int errors = -1;
-
         // read track
-        while (errors == -1 && retries < 5)
-        {
-            // read track
-            gotoLogicTrack(trackNum);
-            errors = readTrack(true);
+        gotoLogicTrack(trackNum);
+        int errors = readTrack(true);
 
-            // print result
-            if (errors != -1)
+        if (errors != -1)
+        {
+            analyseHist(true);
+
+            uint8_t yoffset = 0;
+            for (int i = 0; i < 255; i = i + 2)
             {
-                _graphics->drawTrack(trackNum / 2, trackNum % 2, true, false, 0, false, ST7735_GREEN);
-            }
-            else
-            {
-                _graphics->drawTrack(trackNum / 2, trackNum % 2, true, true, retries + 1, false, ST7735_RED);
-                Serial.printf("Read failed! - Try: %d/5\n", retries + 1);
-                retries++;
-                _audio->playBong(false);
-                gotoLogicTrack(0);
-                delay(1000);
+                int hist = getHist()[i] + getHist()[i + 1];
+                if (hist > 0)
+                {
+                    hist = (hist / 64);
+                    hist = hist < 255 ? hist : 255;
+                    float ratio = hist / 255.0f;
+
+                    if (hist < 5)
+                        _graphics->getTFT()->drawPixel(trackNum, yoffset, _graphics->LerpRGB(ST7735_WHITE, ST7735_YELLOW, ratio));
+                    else if (hist < 50)
+                        _graphics->getTFT()->drawPixel(trackNum, yoffset, _graphics->LerpRGB(ST7735_YELLOW, ST7735_ORANGE, ratio));
+                    else
+                        _graphics->getTFT()->drawPixel(trackNum, yoffset, _graphics->LerpRGB(ST7735_ORANGE, ST7735_RED, ratio));
+                }
+                yoffset++;
             }
         }
-
-        if (errors == -1)
-            _graphics->drawTrack(trackNum / 2, trackNum % 2, true, false, 0, false, ST7735_RED);
-        if (errors != -1 && retries > 0)
-            _graphics->drawTrack(trackNum / 2, trackNum % 2, true, false, 0, false, ST7735_YELLOW);
+        else
+        {
+            _audio->playBong(false);
+            _graphics->getTFT()->drawFastVLine(trackNum, 0, _graphics->getTFT()->height(), ST7735_MAGENTA);
+        }
     }
 
     _audio->playBoing(false);

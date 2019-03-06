@@ -23,6 +23,7 @@ Todo:
     ✔ Add to github @done(19-03-06 12:09)
     ✔ Add PCB files @done(19-03-06 13:37)
     ✔ Add github description @done(19-03-06 13:37)
+    ✔ Implement Flux graph @done(19-03-06 22:55)
   Low Priority:
     Navigation:
       ☐ Update Navigation to use interrupts so you can cancel disk activies

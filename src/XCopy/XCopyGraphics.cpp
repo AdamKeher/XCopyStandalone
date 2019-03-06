@@ -80,6 +80,25 @@ void XCopyGraphics::drawText(String text)
     _tft->print(text);
 }
 
+uint16_t XCopyGraphics::LerpRGB(uint16_t a, uint16_t b, float t)
+{
+    uint8_t ar = 0;
+    uint8_t ag = 0;
+    uint8_t ab = 0;
+    uint8_t br = 0;
+    uint8_t bg = 0;
+    uint8_t bb = 0;
+
+    _tft->Color565ToRGB(a, ar, ag, ab);
+    _tft->Color565ToRGB(b, br, bg, bb);
+
+    uint8_t cr = ar + (br - ar) * t;
+    uint8_t cg = ag + (bg - ag) * t;
+    uint8_t cb = ab + (bb - ab) * t;
+
+    return _tft->Color565(cr, cg, cb);
+}
+
 void XCopyGraphics::bmpDraw(const char *filename, uint8_t x, uint16_t y)
 {
     SerialFlashFile flashFile;

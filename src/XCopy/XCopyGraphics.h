@@ -30,6 +30,8 @@ public:
   void setTextScale(uint8_t scale) { _tft->setTextScale(scale); }
   void setTextWrap(bool wrap) { _tft->setTextWrap(wrap); }
   void setCursor(uint16_t x, uint16_t y) { _tft->setCursor(x, y); }
+  uint16_t LerpRGB(uint16_t a, uint16_t b, float t);
+  TFT_ST7735 *getTFT() { return _tft; }
 
   uint16_t read16(SerialFlashFile f);
   uint32_t read32(SerialFlashFile f);
