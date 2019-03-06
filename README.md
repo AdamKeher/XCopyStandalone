@@ -13,6 +13,7 @@ A Arduino / Teensy based version of the Amiga XCopy application for the Teensy 3
   * Single USB power for floppy and Teensy
   * IDC 34 pin standard floppy drive cable interface
 * Software
+  * ADF Support
   * Disk copy
     * Disk to SD Card
     * SD Card to Disk
