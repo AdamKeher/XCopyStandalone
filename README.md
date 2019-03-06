@@ -1,5 +1,5 @@
-# XCopyStandalone
-A Arduino / Teensy based version of the Amiga XCopy application for the Teensy 3.2 using a custom PCB and unmodified IBM PC 3.5" floppy disk drive.
+# XCopy Standalone
+An Arduino / Teensy based version of the Amiga XCopy application for copying floppy disks to and from ADF files. Built for the Teensy 3.2 using a custom PCB and an unmodified PC 3.5" floppy disk drive.
 
 ## Features
 * Software
