@@ -1,0 +1,17 @@
+{
+	"folders": [
+		{
+			"path": "."
+		}
+	],
+	"settings": {
+		"files.associations": {
+			"initializer_list": "cpp",
+			"xstring": "cpp",
+			"xutility": "cpp",
+			"xlocale": "cpp",
+			"xlocnum": "cpp",
+			"xiosbase": "cpp"
+		}
+	}
+}

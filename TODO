@@ -1,0 +1,84 @@
+Todo:
+  Disk Copy:
+    ☐ Copy disk to disk fails when no disk is inserted initialy. Need return code from intial copy to decide if wait for disk or exit.
+    ☐ Copy disk to ADF needs to support creating a dir and auto naming (ADF00001.ADF) find highest and inc 1.
+  Directory:
+    ☐ Seems to crash if you enter a sub dir containing files, go back up, enter empty sub dir, move up and down, go back and crashes
+    ☐ Add long file name support
+      - use text bounds to clip extra long filename before volumename?
+      - Or show long filname across entire line and have bottom row for volume name <- better?
+    ☐ Test with a huge number of files in a directory, it will need to be paged ... eeek
+  Refactor:
+    ☐ Reduce memory footprint
+      ☐ Only create ADFx when needed, move the creation and deletion of them into the commands
+      ☐ Enclose all strings with F() to free memory
+      - new
+      - =[memory report]============
+      - total: 64kb
+      - free: 13072 b (1.92%%)
+      - stack: 2560 b (0.31%%)
+      -  heap: 37612 b (5.66%%)
+      - =[memory report]============      
+  General:
+    ☐ Add to github
+  Low Priority:
+    Navigation:
+      ☐ Update Navigation to use interrupts so you can cancel disk activies
+    Other:
+      ☐ Update time from serial connection when Set Time is called
+      ☐ Refactor code to move graphics calls in to classes and have all items called update
+      ☐ Add serial commands
+    Display:
+      ☐ Test different S7735 libraries to see if faster
+      ☐ Add demo effects of rotating xcopy logo
+    Audio:
+      ☐ Add music player source for about screen
+    Board:
+      ☐ Tests
+        ☐ Make test board for external floppy from PC
+        ☐ Make test adapter board to connect 
+      ☐ Desing
+        ☐ Design board to have teensy directly mounted
+        ☐ Design board to allow selection between PC and Amiga drive
+        ☐ Design board to allow passthrough
+      ☐ Stretch
+        ☐ Write a Teensy FD emulator for the Amiga
+
+Archive:
+  ✔ Add version to command @done(19-03-06 11:56) @project(Todo)
+  ✔ Move XCopyTime into dedicated class @done(19-03-06 11:46) @project(Todo)
+  ✔ Rename ADFx classes to XCopyX @done(19-03-06 11:37) @project(Todo)
+  ✔ Add verify of reads if verify flag set for ADFtoDisk @done(19-03-05 23:12) @project(Todo)
+  ✔ Honor the retryCount setting, is hard set to 5 @done(19-03-05 23:12) @project(Todo)
+  ✔ copy disk to ADF has read write errors with xcopy.adf @done(19-03-04 11:19) @project(Todo)
+  ✔ Why does SerialFlash.begin() fail in ADFToDisk and diskToADF, marked with FIX: and commented out. @done(19-03-04 11:19) @project(Todo)
+  ✔ Switch TFT libraries as SerialFlash and TFT library are conflicting @done(19-03-04 11:20) @project(Todo)
+  ✔ Copy disk to disk needs to use SPIFlash as temp storage location. @started(19-02-24 14:03) @done(19-02-25 22:31) @lasted(1d8h28m57s) @project(Todo)
+  ✔ Check Verify timing, perhaps add a pause to between write and read as it is knocking the heads. @done(19-02-25 13:35) @project(Todo)
+  ✔ Read / Write erros when copying XCOPY.ADF from flash @done(19-02-25 12:44) @project(Todo)
+  ✔ but not from SD. @done(19-02-25 01:45) @project(Todo)
+  ✔ Recopy to flash and check again @done(19-02-25 01:45) @project(Todo)
+  ✔ Verify flash compare to SD after copy to see if same @done(19-02-25 12:44) @project(Todo)
+  - Appears the Ebay flash chips have dead spots. @done(19-02-25 12:44) @project(Todo)
+  ✔ Perhaps slow down flash writes due to quicker read if data is same? @done(19-02-25 12:44) @project(Todo)
+  ✔ double check the code just in case @done(19-02-25 12:44) @project(Todo)
+  ✔ Add SPIFlash support to ADFCopyToDisk @started(19-02-24 11:56) @done(19-02-24 12:26) @lasted(30m55s) @project(Todo)
+  ✔ Display VolumeName & FileName when adfToDisk @done(19-02-23 02:01) @project(Todo)
+  ✔ Graphic corruption with large number of files @done(19-03-05 17:12) @project(Todo)
+  ✔ Fix when you enter empty directories and press up and down before back it crashes @done(19-03-05 17:01) @project(Todo)
+  ✔ Needs to function when there is no SDCard present @started(19-02-24 12:37) @done(19-02-24 13:05) @lasted(28m5s) @project(Todo)
+  ✔ Add SPIFlash items ADFCopyToDisk support, current just prints a message. @done(19-02-24 12:27) @project(Todo)
+  ✔ Read volume name from flash files @started(19-02-24 11:35) @done(19-02-24 11:53) @lasted(18m7s) @project(Todo)
+  ✔ Add default SPIFlash files to top of list @started(19-02-23 12:36) @done(19-02-24 02:38) @lasted(14h2m16s) @project(Todo)
+  ✔ Fix back from flash directory @done(19-02-24 02:38) @project(Todo)
+  ✔ Sort directory entries. Need to do children as well @started(19-02-22 22:24) @done(19-02-23 16:30) @lasted(18h6m51s) @project(Todo)
+  ✔ Directories scroll uneeded after child <- root with full screen of items (may not matter how many items) _index problem? @done(19-02-23 16:30) @project(Todo)
+  ✔ Fix nested directories more than 1 level deep @done(19-02-23 16:31) @project(Todo)
+  ✔ Place directories at top @done(19-02-23 23:53) @lasted(26s) @project(Todo)
+  ✔ Read one directory at a time as it is too memory intesive @started(19-02-23 13:34) @done(19-02-23 16:31) @lasted(2h57m11s) @project(Todo)
+  ✔ Don't delete the config file and recreate, just write over to preserve flash mem. @done(19-03-05 13:57) @project(Todo)
+  ✔ Move Debug into dedicated class with associated variables @done(19-03-05 13:36) @project(Todo)
+  ✔ Don't store the config string in RAM, it's a waste @done(19-03-05 17:17) @project(Todo)
+  ✘ Move Navigation into dedicated class @cancelled(19-03-05 17:19) @project(Todo)
+  ✘ Preallocate more space / larger config file @cancelled(19-03-06 11:58) @project(Todo)
+  ✘ Move RAM Monitor into it's own library @cancelled(19-03-06 11:58) @project(Todo)

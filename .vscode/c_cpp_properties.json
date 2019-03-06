@@ -1,0 +1,36 @@
+{
+    "configurations": [
+        {
+            "name": "Win32",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "C:/Program Files (x86)/Arduino/hardware/teensy/avr/cores/teensy3",
+                "C:/Program Files (x86)/Arduino/hardware/teensy/avr/libraries/Adafruit_GFX",
+                "C:/Program Files (x86)/Arduino/hardware/teensy/avr/libraries/Adafruit_ST7735",
+                "C:/Program Files (x86)/Arduino/hardware/teensy/avr/libraries/SD",
+                "C:/Program Files (x86)/Arduino/hardware/teensy/avr/libraries/SPI",
+                "C:/Program Files (x86)/Arduino/hardware/teensy/avr/libraries/Audio",
+                "C:/Program Files (x86)/Arduino/hardware/teensy/avr/libraries/Wire",
+                "C:/Program Files (x86)/Arduino/hardware/teensy/avr/libraries/Time",
+                "../../../libraries/TFT_ST7735",
+                "../../../libraries/SerialFlash",
+                "../../../libraries/ArduinoJson",
+                "../../../libraries/Bounce2/src",
+                "../../../libraries/Streaming/src",
+                "src/FivePosNavigation",
+                "src/XCopy"
+            ],
+            "defines": [
+                "_DEBUG",
+                "UNICODE",
+                "_UNICODE"
+            ],
+            "windowsSdkVersion": "10.0.17134.0",
+            "compilerPath": "C:/Program Files (x86)/Microsoft Visual Studio/2017/Community/VC/Tools/MSVC/14.14.26428/bin/Hostx64/x64/cl.exe",
+            "cStandard": "c11",
+            "cppStandard": "c++17",
+            "intelliSenseMode": "msvc-x64"
+        }
+    ],
+    "version": 4
+}
