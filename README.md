@@ -24,7 +24,8 @@ A Arduino / Teensy based version of the Amiga XCopy application for the Teensy 3
   * 1.8" ST7735R 128x160, 18bit color LCD
   * Single USB power for floppy and Teensy
   * IDC 34 pin standard floppy drive cable interface
-  * Gerbers, schematic and pcb layout files available ![XCopy Board Image](https://github.com/AdamKeher/XCopyStandalone/blob/master/brd/ADF%20Copy%20v0.5.png)
+  * Gerbers, schematic and pcb layout files available 
 
+![XCopy Board Image](https://github.com/AdamKeher/XCopyStandalone/blob/master/brd/ADF%20Copy%20v0.5.png)
 ![XCopy Board Image](https://github.com/AdamKeher/XCopyStandalone/blob/master/files/Graphics/XCopy%20Board.png)
 
