@@ -61,8 +61,9 @@ void XCopy::begin(int sdCSPin, int flashCSPin, int cardDetectPin)
     XCopyMenuItem *debugParentItem;
 
     parentItem = _menu.addItem("Disk Copy", undefined);
-    _menu.addChild("Copy Disk  to ADF", copyDiskToADF, parentItem);
     _menu.addChild("Copy ADF   to Disk", copyADFToDisk, parentItem);
+    _menu.addChild("Copy Disk  to ADF", copyDiskToADF, parentItem);
+    _menu.addChild("", undefined, parentItem);
     _menu.addChild("Copy Disk  to Disk", copyDiskToDisk, parentItem);
     _menu.addChild("Copy Disk  to Flash", copyDiskToFlash, parentItem);
     _menu.addChild("Copy Flash to Disk", copyFlashToDisk, parentItem);
