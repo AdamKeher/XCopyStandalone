@@ -2,6 +2,7 @@ Todo:
   Disk Copy:
     ☐ Copy disk to disk fails when no disk is inserted initialy. Need return code from intial copy to decide if wait for disk or exit.
     ☐ Copy disk to ADF needs to support creating a dir and auto naming (ADF00001.ADF) find highest and inc 1.
+    ☐ Copy disk to ADF needs to set correct creation date on file
   Directory:
     ☐ Seems to crash if you enter a sub dir containing files, go back up, enter empty sub dir, move up and down, go back and crashes
     ☐ Add long file name support
@@ -20,13 +21,12 @@ Todo:
       -  heap: 37612 b (5.66%%)
       - =[memory report]============      
   General:
-    ✔ Add to github @done(19-03-06 12:09)
-    ✔ Add PCB files @done(19-03-06 13:37)
-    ✔ Add github description @done(19-03-06 13:37)
-    ✔ Implement Flux graph @done(19-03-06 22:55)
+    ☐ Report weak tracks in diskcopy, test and flux
+    ✔ Add format disk @started(19-03-07 13:52) @done(19-03-07 14:04) @lasted(12m55s)
+      ✔ Write to disk @done(19-03-07 14:07)
+      ✔ Read to ADF @done(19-03-07 14:07)
+      ✔ Test in UAE @done(19-03-07 14:10)
   Low Priority:
-    Navigation:
-      ✔ Update Navigation to use interrupts so you can cancel disk activies @done(19-03-07 12:53)
     Other:
       ☐ Update time from serial connection when Set Time is called
       ☐ Refactor code to move graphics calls in to classes and have all items called update
@@ -48,6 +48,11 @@ Todo:
         ☐ Write a Teensy FD emulator for the Amiga
 
 Archive:
+  ✔ Add to github @done(19-03-06 12:09) @project(Todo.General)
+  ✔ Add PCB files @done(19-03-06 13:37) @project(Todo.General)
+  ✔ Add github description @done(19-03-06 13:37) @project(Todo.General)
+  ✔ Implement Flux graph @done(19-03-06 22:55) @project(Todo.General)
+  ✔ Update Navigation to use interrupts so you can cancel disk activies @done(19-03-07 12:53) @project(Todo.Low Priority.Navigation)
   ✔ Add version to command @done(19-03-06 11:56) @project(Todo)
   ✔ Move XCopyTime into dedicated class @done(19-03-06 11:46) @project(Todo)
   ✔ Rename ADFx classes to XCopyX @done(19-03-06 11:37) @project(Todo)
@@ -62,7 +67,7 @@ Archive:
   ✔ but not from SD. @done(19-02-25 01:45) @project(Todo)
   ✔ Recopy to flash and check again @done(19-02-25 01:45) @project(Todo)
   ✔ Verify flash compare to SD after copy to see if same @done(19-02-25 12:44) @project(Todo)
-  - Appears the Ebay flash chips have dead spots. @done(19-02-25 12:44) @project(Todo)
+  ✔ Appears the Ebay flash chips have dead spots. @done(19-02-25 12:44) @project(Todo)
   ✔ Perhaps slow down flash writes due to quicker read if data is same? @done(19-02-25 12:44) @project(Todo)
   ✔ double check the code just in case @done(19-02-25 12:44) @project(Todo)
   ✔ Add SPIFlash support to ADFCopyToDisk @started(19-02-24 11:56) @done(19-02-24 12:26) @lasted(30m55s) @project(Todo)

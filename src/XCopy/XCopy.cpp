@@ -70,7 +70,7 @@ void XCopy::begin(int sdCSPin, int flashCSPin, int cardDetectPin)
 
     parentItem = _menu.addItem("Utils", undefined);
     _menu.addChild("Test Disk", testDisk, parentItem);
-    _menu.addChild("Format Disk", undefined, parentItem);
+    _menu.addChild("Format Disk", formatDisk, parentItem);
     _menu.addChild("Disk Flux", fluxDisk, parentItem);
     _menu.addChild("Compare Disk to ADF", undefined, parentItem);
 
@@ -283,6 +283,19 @@ void XCopy::update()
         }
     }
 
+    if (_xcopyState == formatDisk)
+    {
+        if (_drawnOnce == false)
+        {
+            _graphics.bmpDraw("XCOPY.BMP", 0, 87);
+            _config = new XCopyConfig();
+            _disk.adfToDisk("BLANK.TMP", _config->getVerify(), _config->getRetryCount(), _flashMemory);
+            delete _config;
+            _drawnOnce = true;
+
+        }
+    }
+
     if (_xcopyState == directorySelection)
     {
         if (_drawnOnce == false)
@@ -336,6 +349,9 @@ void XCopy::cancelOperation()
             _disk.cancelOperation();
             break;
         case fluxDisk:
+            _disk.cancelOperation();
+            break;
+        case formatDisk:
             _disk.cancelOperation();
             break;
         default:

@@ -48,7 +48,8 @@ enum XCopyState
   copyDiskToFlash = 18,
   copyFlashToDisk = 19,
   debuggingFlashDetails = 23,
-  fluxDisk = 24
+  fluxDisk = 24,
+  formatDisk = 25
 };
 
 class XCopy

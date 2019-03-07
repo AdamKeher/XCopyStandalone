@@ -260,6 +260,14 @@ void XCopy::navigateSelect()
             _graphics.clearScreen();
         }
 
+        if (item->command == formatDisk)
+        {
+            _xcopyState = formatDisk;
+            _drawnOnce = false;
+            _audio.playSelect(false);
+            _graphics.clearScreen();
+        }
+
         if (item->command == copyADFToDisk)
         {
             _xcopyState = directorySelection;
