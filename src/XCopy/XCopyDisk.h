@@ -35,12 +35,15 @@ class XCopyDisk
 
     bool cardDetect() { return digitalRead(_cardDetectPin) == 0 ? true : false; };
 
+    void cancelOperation();
+
   private:
     XCopyAudio *_audio;
     XCopyGraphics *_graphics;
     uint8_t _sdCSPin;
     uint8_t _flashCSPin;
     uint8_t _cardDetectPin;
+    volatile bool _cancelOperation = false;
 };
 
 #endif // XCOPYDISK_H

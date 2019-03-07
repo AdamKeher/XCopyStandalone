@@ -105,6 +105,8 @@ void XCopyDisk::writeDiskTrack(uint8_t trackNum, uint8_t retryCount)
 
 void XCopyDisk::diskToADF(String ADFFileName, bool verify, uint8_t retryCount, ADFFileSource destination)
 {
+    _cancelOperation = false;
+
     _graphics->drawDiskName("");
     _graphics->drawDisk();
 
@@ -185,6 +187,14 @@ void XCopyDisk::diskToADF(String ADFFileName, bool verify, uint8_t retryCount, A
     // YELLOW = Begin, GREEN = Read OK, ORANGE = Read after Retries, RED = Read Error, MAGENTA = Verify Error
     for (int trackNum = 0; trackNum < 160; trackNum++)
     {
+        if (_cancelOperation)
+        {
+            _graphics->drawText(0, 10, ST7735_RED, "Operation Cancelled", true);
+            _graphics->drawDisk(trackNum, ST7735_RED);
+            _audio->playBong(false);
+            return;
+        }
+
         // read track
         readDiskTrack(trackNum, false, retryCount);
 
@@ -252,6 +262,8 @@ void XCopyDisk::diskToADF(String ADFFileName, bool verify, uint8_t retryCount, A
 
 void XCopyDisk::adfToDisk(String ADFFileName, bool verify, uint8_t retryCount, ADFFileSource source)
 {
+    _cancelOperation = false;
+
     if (ADFFileName == "")
         return;
 
@@ -336,6 +348,14 @@ void XCopyDisk::adfToDisk(String ADFFileName, bool verify, uint8_t retryCount, A
     // write track
     for (int trackNum = 0; trackNum < 160; trackNum++)
     {
+        if (_cancelOperation)
+        {
+            _graphics->drawText(0, 10, ST7735_RED, "Operation Cancelled", true);
+            _graphics->drawDisk(trackNum, ST7735_RED);
+            _audio->playBong(false);
+            return;
+        }
+
         // read track from ADF file into track buffer
         for (int i = 0; i < 11; i++)
         {
@@ -412,15 +432,24 @@ void XCopyDisk::diskToDisk(bool verify, uint8_t retryCount)
 
 void XCopyDisk::diskFlux()
 {
+    _cancelOperation = false;
+
     if (!diskChange())
     {
-        _graphics->drawText(0, 10, ST7735_WHITE, "No Disk Inserted");
+        _graphics->drawText(0, 0, ST7735_WHITE, "No Disk Inserted");
         _audio->playBong(false);
         return;
     }
 
     for (int trackNum = 0; trackNum < 160; trackNum++)
     {
+        if (_cancelOperation)
+        {
+            _graphics->drawText(0, 0, ST7735_RED, "Operation Cancelled", true);
+            _audio->playBong(false);
+            return;
+        }
+
         // read track
         gotoLogicTrack(trackNum);
         int errors = readTrack(true);
@@ -461,6 +490,8 @@ void XCopyDisk::diskFlux()
 
 void XCopyDisk::testDisk(uint8_t retryCount)
 {
+    _cancelOperation = false;
+
     _graphics->drawDiskName("");
     _graphics->drawDisk();
 
@@ -476,6 +507,14 @@ void XCopyDisk::testDisk(uint8_t retryCount)
 
     for (int trackNum = 0; trackNum < 160; trackNum++)
     {
+        if (_cancelOperation)
+        {
+            _graphics->drawText(0, 10, ST7735_RED, "Operation Cancelled", true);
+            _graphics->drawDisk(trackNum, ST7735_RED);
+            _audio->playBong(false);
+            return;
+        }
+
         // read track
         readDiskTrack(trackNum, false, retryCount);
     }
@@ -690,4 +729,9 @@ void XCopyDisk::flashDetails()
     Serial << "Memory Size: " << chipsize << " bytes\r\n";
     Serial << "Block Size: " << blocksize << " bytes";
     Serial << "\r\n";
+}
+
+void XCopyDisk::cancelOperation()
+{
+    _cancelOperation = true;
 }

@@ -1,4 +1,5 @@
 #include "src/XCopy/XCopy.h"
+#include "src/FivePosNavigation/FivePosNavigation.h"
 
 #ifndef __MK20DX256__
 #error Not Teensy 3.2 MCU, make sure you get a version 3.2, because the 3.1 ist not 5V tolerant
@@ -55,13 +56,26 @@ void navigationCallBack(uint8_t change_mask, FivePosNavigationState state, uint3
     xcopy.navigateRight();
   }
 }
+
+unsigned long lastCancel = 0;
+unsigned long current = 0;
+void ISR_CANCEL()
+{  
+  // NOTE: Dubious software debounce
+  current = millis();
+  if (current - lastCancel > 150)
+  {
+    lastCancel = current;  
+    xcopy.cancelOperation();
+  }
+}
    
 void setup() {
   Serial.begin(115200);
-  // while (!Serial) ; 
 
   navigation.begin(10, INPUT_PULLUP, navigationCallBack);
   xcopy.begin(SDCS, FLASHCS, CARDDETECT);
+  attachInterrupt(NAVIGATION_LEFT_PIN, ISR_CANCEL, FALLING);
 }
 
 void loop() {

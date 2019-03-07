@@ -50,12 +50,14 @@ void XCopyGraphics::drawDiskName(String name)
     drawText(ST7735_YELLOW, name);
 }
 
-void XCopyGraphics::drawDisk()
+void XCopyGraphics::drawDisk(uint8_t start, uint16_t color)
 {
-    for (int x = 0; x < 80; x++)
+    for (int x = start; x < 160; x++)
     {
-        drawTrack(x, 0, false, false, 0, false, ST7735_WHITE);
-        drawTrack(x, 1, false, false, 0, false, ST7735_WHITE);
+        if (x % 2 == 0)
+            drawTrack(x/2, 0, false, false, 0, false, color);
+        else
+            drawTrack(x/2, 1, false, false, 0, false, color);
     }
 }
 

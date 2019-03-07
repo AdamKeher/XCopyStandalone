@@ -23,32 +23,31 @@ typedef void (*ChangeCallbackFunction)(uint8_t change_mask, FivePosNavigationSta
 
 class FivePosNavigation
 {
+  public:
+    FivePosNavigation(int upPin, int downPin, int leftPin, int rightPin, int pushPin);
 
-public:
-  FivePosNavigation(int upPin, int downPin, int leftPin, int rightPin, int pushPin);
+    void begin(int interval, int pinMode, ChangeCallbackFunction function);
+    void setCallBack(ChangeCallbackFunction function);
+    void setInterval(int interval);
+    void update();
 
-  void begin(int interval, int pinMode, ChangeCallbackFunction function);
-  void setCallBack(ChangeCallbackFunction function);
-  void setInterval(int interval);
-  void update();
+    FivePosNavigationState state;
 
-  FivePosNavigationState state;
+  private:
+    Bounce upButton = Bounce();
+    Bounce downButton = Bounce();
+    Bounce leftButton = Bounce();
+    Bounce rightButton = Bounce();
+    Bounce pushButton = Bounce();
 
-private:
-  Bounce upButton = Bounce();
-  Bounce downButton = Bounce();
-  Bounce leftButton = Bounce();
-  Bounce rightButton = Bounce();
-  Bounce pushButton = Bounce();
+    FivePosNavigationState prev_state;
+    ChangeCallbackFunction changeCallBack;
 
-  FivePosNavigationState prev_state;
-  ChangeCallbackFunction changeCallBack;
-
-  int _upPin;
-  int _downPin;
-  int _leftPin;
-  int _rightPin;
-  int _pushPin;
+    int _upPin;
+    int _downPin;
+    int _leftPin;
+    int _rightPin;
+    int _pushPin;
 };
 
 #endif // FIVEPOSNAVIGATION_H

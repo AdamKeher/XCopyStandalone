@@ -26,7 +26,7 @@ Todo:
     ✔ Implement Flux graph @done(19-03-06 22:55)
   Low Priority:
     Navigation:
-      ☐ Update Navigation to use interrupts so you can cancel disk activies
+      ✔ Update Navigation to use interrupts so you can cancel disk activies @done(19-03-07 12:53)
     Other:
       ☐ Update time from serial connection when Set Time is called
       ☐ Refactor code to move graphics calls in to classes and have all items called update

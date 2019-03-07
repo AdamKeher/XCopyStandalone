@@ -22,7 +22,7 @@ public:
   void clearScreen() { _tft->fillScreen(ST7735_BLACK); }
   void drawTrack(uint8_t track, uint8_t side, bool drawText, bool retry, int retryCount, bool verify, uint16_t color);
   void drawDiskName(String name);
-  void drawDisk();
+  void drawDisk(uint8_t start = 0, uint16_t color = ST7735_WHITE);
   void drawText(uint8_t x, uint8_t y, uint16_t color, String text, bool clearLine = false);
   void drawText(uint16_t color, String text);
   void drawText(String text);

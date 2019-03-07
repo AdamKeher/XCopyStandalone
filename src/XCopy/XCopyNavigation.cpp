@@ -2,7 +2,7 @@
 
 void XCopy::navigateDown()
 {
-    if (_XCopyState == menus || _XCopyState == idle)
+    if (_xcopyState == menus || _xcopyState == idle)
     {
         if (_menu.down())
         {
@@ -11,7 +11,7 @@ void XCopy::navigateDown()
         }
     }
 
-    if (_XCopyState == directorySelection)
+    if (_xcopyState == directorySelection)
     {
         if (_directory.down())
         {
@@ -23,7 +23,7 @@ void XCopy::navigateDown()
 
 void XCopy::navigateUp()
 {
-    if (_XCopyState == menus || _XCopyState == idle)
+    if (_xcopyState == menus || _xcopyState == idle)
     {
         if (_menu.up())
         {
@@ -32,7 +32,7 @@ void XCopy::navigateUp()
         }
     }
 
-    if (_XCopyState == directorySelection)
+    if (_xcopyState == directorySelection)
     {
         if (_directory.up())
         {
@@ -44,20 +44,20 @@ void XCopy::navigateUp()
 
 void XCopy::navigateLeft()
 {
-    if (_XCopyState == menus || _XCopyState == idle)
+    if (_xcopyState == menus || _xcopyState == idle)
     {
         if (_menu.back())
         {
             _audio.playBack(false);
-            _XCopyState = menus;
+            _xcopyState = menus;
         }
 
         return;
     }
 
-    if (_XCopyState == copyADFToDisk)
+    if (_xcopyState == copyADFToDisk)
     {
-        _XCopyState = directorySelection;
+        _xcopyState = directorySelection;
         // _drawnOnce = false;
         _audio.playBack(false);
         _directory.drawDirectory(true);
@@ -65,7 +65,7 @@ void XCopy::navigateLeft()
         return;
     }
 
-    if (_XCopyState == directorySelection)
+    if (_xcopyState == directorySelection)
     {
         String path = _directory.getCurrentPath();
 
@@ -98,16 +98,16 @@ void XCopy::navigateLeft()
         {
             _directory.clear();
             _audio.playBack(false);
-            _XCopyState = menus;
+            _xcopyState = menus;
 
             return;
         }
     }
 
-    if (_XCopyState != menus && _XCopyState != idle)
+    if (_xcopyState != menus && _xcopyState != idle)
     {
         _audio.playBack(false);
-        _XCopyState = menus;
+        _xcopyState = menus;
     }
 }
 
@@ -118,7 +118,7 @@ void XCopy::navigateRight()
 
 void XCopy::navigateSelect()
 {
-    if (_XCopyState == directorySelection)
+    if (_xcopyState == directorySelection)
     {
         XCopyDirectoryEntry *item = _directory.getCurrentItem();
 
@@ -142,7 +142,7 @@ void XCopy::navigateSelect()
         }
         else if (itemName.toLowerCase().endsWith(".adf") && item->source == sdCard)
         {
-            _XCopyState = copyADFToDisk;
+            _xcopyState = copyADFToDisk;
             _audio.playSelect(false);
             _graphics.clearScreen();
             _config = new XCopyConfig();
@@ -151,7 +151,7 @@ void XCopy::navigateSelect()
         }
         else if (itemName.toLowerCase().endsWith(".adf") && item->source == flashMemory)
         {
-            _XCopyState = copyADFToDisk;
+            _xcopyState = copyADFToDisk;
             _audio.playBack(false);
             _graphics.clearScreen();
             _config = new XCopyConfig();
@@ -162,7 +162,7 @@ void XCopy::navigateSelect()
         return;
     }
 
-    if (_XCopyState == menus || _XCopyState == idle)
+    if (_xcopyState == menus || _xcopyState == idle)
     {
         XCopyMenuItem *item = _menu.getCurrentItem();
 
@@ -171,50 +171,50 @@ void XCopy::navigateSelect()
             _menu.setRoot(item->firstChild);
             _menu.setCurrentItem(item->firstChild);
             _audio.playBack(false);
-            _XCopyState = menus;
+            _xcopyState = menus;
             return;
         }
 
         if (item->command == debuggingTempFile)
         {
-            _XCopyState = debuggingTempFile;
+            _xcopyState = debuggingTempFile;
             _audio.playSelect(false);
         }
 
         if (item->command == debuggingSDFLash)
         {
-            _XCopyState = debuggingSDFLash;
+            _xcopyState = debuggingSDFLash;
             _audio.playSelect(false);
         }
 
         if (item->command == debuggingEraseCopy)
         {
-            _XCopyState = debuggingEraseCopy;
+            _xcopyState = debuggingEraseCopy;
             _audio.playSelect(false);
         }
 
         if (item->command == debuggingCompareFlashToSDCard)
         {
-            _XCopyState = debuggingCompareFlashToSDCard;
+            _xcopyState = debuggingCompareFlashToSDCard;
             _audio.playSelect(false);
         }
 
         if (item->command == debuggingFlashDetails)
         {
-            _XCopyState = debuggingFlashDetails;
+            _xcopyState = debuggingFlashDetails;
             _audio.playSelect(false);
         }
 
         if (item->command == showTime)
         {
-            _XCopyState = showTime;
+            _xcopyState = showTime;
             _audio.playSelect(false); // filenames are always uppercase 8.3 format
             _graphics.clearScreen();
         }
 
         if (item->command == about)
         {
-            _XCopyState = about;
+            _xcopyState = about;
             _drawnOnce = false;
             _audio.playSelect(false); // filenames are always uppercase 8.3 format
             _graphics.clearScreen();
@@ -222,7 +222,7 @@ void XCopy::navigateSelect()
 
         if (item->command == copyDiskToADF)
         {
-            _XCopyState = copyDiskToADF;
+            _xcopyState = copyDiskToADF;
             _drawnOnce = false;
             _audio.playSelect(false);
             _graphics.clearScreen();
@@ -230,7 +230,7 @@ void XCopy::navigateSelect()
 
         if (item->command == copyDiskToFlash)
         {
-            _XCopyState = copyDiskToFlash;
+            _xcopyState = copyDiskToFlash;
             _drawnOnce = false;
             _audio.playSelect(false);
             _graphics.clearScreen();
@@ -238,7 +238,7 @@ void XCopy::navigateSelect()
 
         if (item->command == copyFlashToDisk)
         {
-            _XCopyState = copyFlashToDisk;
+            _xcopyState = copyFlashToDisk;
             _drawnOnce = false;
             _audio.playSelect(false);
             _graphics.clearScreen();
@@ -246,7 +246,7 @@ void XCopy::navigateSelect()
 
         if (item->command == testDisk)
         {
-            _XCopyState = testDisk;
+            _xcopyState = testDisk;
             _drawnOnce = false;
             _audio.playSelect(false);
             _graphics.clearScreen();
@@ -254,7 +254,7 @@ void XCopy::navigateSelect()
 
         if (item->command == fluxDisk)
         {
-            _XCopyState = fluxDisk;
+            _xcopyState = fluxDisk;
             _drawnOnce = false;
             _audio.playSelect(false);
             _graphics.clearScreen();
@@ -262,7 +262,7 @@ void XCopy::navigateSelect()
 
         if (item->command == copyADFToDisk)
         {
-            _XCopyState = directorySelection;
+            _xcopyState = directorySelection;
             _drawnOnce = false;
             _audio.playSelect(false);
             _directory.getDirectory("/", &_disk, ".adf");
@@ -270,7 +270,7 @@ void XCopy::navigateSelect()
 
         if (item->command == copyDiskToDisk)
         {
-            _XCopyState = copyDiskToDisk;
+            _xcopyState = copyDiskToDisk;
             _drawnOnce = false;
             _audio.playSelect(false);
         }
@@ -284,7 +284,7 @@ void XCopy::navigateSelect()
             _config->writeConfig();
             delete _config;
             // redraw menu
-            _XCopyState = menus;
+            _xcopyState = menus;
         }
 
         if (item->command == setRetry)
@@ -302,7 +302,7 @@ void XCopy::navigateSelect()
             delete _config;
 
             // redraw menu
-            _XCopyState = menus;
+            _xcopyState = menus;
         }
     }
 }

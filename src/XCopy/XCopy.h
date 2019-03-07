@@ -13,7 +13,6 @@
 #include <Wire.h>
 #include <Streaming.h>
 
-#include "../FivePosNavigation/FivePosNavigation.h"
 #include "XCopyMenu.h"
 #include "XCopyCommand.h"
 #include "XCopyDisk.h"
@@ -70,6 +69,7 @@ public:
   void navigateRight();
   void intro();
   bool cardDetect();
+  void cancelOperation();
   // void testdrawtext(String text, uint16_t color, int x, int y);
 
   void printDirectory(File dir, int numTabs);
@@ -78,7 +78,7 @@ public:
 
   void ramReport();
 
-  XCopyState _XCopyState = menus;
+  XCopyState _xcopyState = menus;
 
 private:
   TFT_ST7735 *_tft;

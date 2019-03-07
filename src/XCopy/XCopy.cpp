@@ -150,58 +150,58 @@ void XCopy::update()
     }
 #endif
 
-    if (_XCopyState == debuggingTempFile)
+    if (_xcopyState == debuggingTempFile)
     {
         _debug = new XCopyDebug(&_graphics, &_audio, _sdCSPin, _flashCSPin, _cardDetectPin);
         _debug->debugCompareTempFile();
         delete _debug;
 
-        _XCopyState = menus;
+        _xcopyState = menus;
     }
 
-    if (_XCopyState == debuggingSDFLash)
+    if (_xcopyState == debuggingSDFLash)
     {
         _debug = new XCopyDebug(&_graphics, &_audio, _sdCSPin, _flashCSPin, _cardDetectPin);
         _debug->debug();
         delete _debug;
 
-        _XCopyState = menus;
+        _xcopyState = menus;
     }
 
-    if (_XCopyState == debuggingEraseCopy)
+    if (_xcopyState == debuggingEraseCopy)
     {
         _debug = new XCopyDebug(&_graphics, &_audio, _sdCSPin, _flashCSPin, _cardDetectPin);
         _debug->debugEraseCopyCompare(true);
         delete _debug;
 
-        _XCopyState = menus;
+        _xcopyState = menus;
     }
 
-    if (_XCopyState == debuggingCompareFlashToSDCard)
+    if (_xcopyState == debuggingCompareFlashToSDCard)
     {
         _graphics.clearScreen();
         _debug = new XCopyDebug(&_graphics, &_audio, _sdCSPin, _flashCSPin, _cardDetectPin);
         _debug->debugEraseCopyCompare(false);
         delete _debug;
 
-        _XCopyState = menus;
+        _xcopyState = menus;
     }
 
-    if (_XCopyState == debuggingFlashDetails)
+    if (_xcopyState == debuggingFlashDetails)
     {
         _disk.flashDetails();
-        _XCopyState = menus;
+        _xcopyState = menus;
     }
 
-    if (_XCopyState == menus)
+    if (_xcopyState == menus)
     {
         _graphics.clearScreen();
         _graphics.drawHeader();
         _menu.drawMenu(_menu.getRoot());
-        _XCopyState = idle;
+        _xcopyState = idle;
     }
 
-    if (_XCopyState == showTime)
+    if (_xcopyState == showTime)
     {
         if (_prevSeconds != second())
         {
@@ -213,7 +213,7 @@ void XCopy::update()
         }
     }
 
-    if (_XCopyState == copyDiskToADF)
+    if (_xcopyState == copyDiskToADF)
     {
         if (_drawnOnce == false)
         {
@@ -225,7 +225,7 @@ void XCopy::update()
         }
     }
 
-    if (_XCopyState == copyDiskToFlash)
+    if (_xcopyState == copyDiskToFlash)
     {
         if (_drawnOnce == false)
         {
@@ -237,7 +237,7 @@ void XCopy::update()
         }
     }
 
-    if (_XCopyState == copyDiskToDisk)
+    if (_xcopyState == copyDiskToDisk)
     {
         if (_drawnOnce == false)
         {
@@ -249,7 +249,7 @@ void XCopy::update()
         }
     }
 
-    if (_XCopyState == copyFlashToDisk)
+    if (_xcopyState == copyFlashToDisk)
     {
         if (_drawnOnce == false)
         {
@@ -261,7 +261,7 @@ void XCopy::update()
         }
     }
 
-    if (_XCopyState == testDisk)
+    if (_xcopyState == testDisk)
     {
         if (_drawnOnce == false)
         {
@@ -273,7 +273,7 @@ void XCopy::update()
         }
     }
 
-    if (_XCopyState == fluxDisk)
+    if (_xcopyState == fluxDisk)
     {
         if (_drawnOnce == false)
         {
@@ -282,7 +282,7 @@ void XCopy::update()
         }
     }
 
-    if (_XCopyState == directorySelection)
+    if (_xcopyState == directorySelection)
     {
         if (_drawnOnce == false)
         {
@@ -292,7 +292,7 @@ void XCopy::update()
         }
     }
 
-    if (_XCopyState == about)
+    if (_xcopyState == about)
     {
         if (_drawnOnce == false)
         {
@@ -305,9 +305,39 @@ void XCopy::update()
         }
     }
 
-    if (_XCopyState == idle)
+    if (_xcopyState == idle)
     {
     }
 
     _command->Update();
+}
+
+void XCopy::cancelOperation()
+{
+    switch(_xcopyState)
+    {
+        case testDisk:
+            _disk.cancelOperation();
+            break;
+        case copyDiskToADF:
+            _disk.cancelOperation();
+            break;
+        case copyADFToDisk:
+            _disk.cancelOperation();
+            break;
+        case copyDiskToDisk:
+            _disk.cancelOperation();
+            break;
+        case copyDiskToFlash:
+            _disk.cancelOperation();
+            break;
+        case copyFlashToDisk:
+            _disk.cancelOperation();
+            break;
+        case fluxDisk:
+            _disk.cancelOperation();
+            break;
+        default:
+            break;
+    }   
 }
