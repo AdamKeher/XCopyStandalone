@@ -12,6 +12,7 @@ Todo:
     ☐ Seems to crash if you enter a sub dir containing files, go back up, enter empty sub dir, move up and down, go back and crashes
     ☐ Test with a huge number of files in a directory, it will need to be paged ... eeek
     ✔ Add thumbnails to flash directory entries @done(19-03-08 22:18)
+      ✔ Check for file on sd instead of serialflash @done(19-03-09 01:02)
   Refactor:
     ☐ Move the modified SDFat library into local library
       ✔ Altered iostream.h to fix "'ostream& endl(ostream&)' redeclared as different kind of symbol" @done(19-03-08 22:22)

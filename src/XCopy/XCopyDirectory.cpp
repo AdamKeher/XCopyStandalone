@@ -421,7 +421,7 @@ void XCopyDirectory::drawDirectory(bool clearScreen)
         if (item->source == flashMemory && isCurrentItem(item))
         {
             String imageName = item->name.substring(0, item->name.lastIndexOf(".")) + ".TMB";
-            if (SD.exists(imageName.c_str()))
+            if (SerialFlash.exists(imageName.c_str()))
             {
                 _graphics->bmpDraw(imageName.c_str(), 0, 0);
                 break;
