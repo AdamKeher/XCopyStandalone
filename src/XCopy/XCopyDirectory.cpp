@@ -117,13 +117,13 @@ void XCopyDirectory::getDirectory(String path, XCopyDisk *disk, String filter, b
             char buffer[path.length()];
             memset(buffer, 0, sizeof(buffer));
             path.toCharArray(buffer, sizeof(buffer) + 1);
-            
+
             SdFile root;
             root.open(buffer);
 
             while (true)
             {
-                SdFile entry;                
+                SdFile entry;
                 if (!entry.openNext(&root, O_RDONLY))
                     break;
 
@@ -401,7 +401,7 @@ void XCopyDirectory::drawDirectory(bool clearScreen)
 
     uint16_t count = 0;
 
-    _graphics->getTFT()->fillRect(0, 119, _graphics->getTFT()->width(), 10, ST7735_BLUE);
+    _graphics->clearScreen();
 
     while (item != NULL && count < ITEMSPERSCREEN)
     {
@@ -414,21 +414,24 @@ void XCopyDirectory::drawDirectory(bool clearScreen)
                 _graphics->drawText(ST7735_YELLOW, ">> ");
         }
 
-        uint16_t color = (isCurrentItem(item) ? ST7735_GREEN : ST7735_WHITE);
+        uint16_t color = isCurrentItem(item) ? ST7735_GREEN : ST7735_WHITE;
         _graphics->setTextWrap(false);
         _graphics->drawText(color, item->longName);
 
-        if (!item->isDirectory() && isCurrentItem(item))
+        if (item->source == flashMemory && isCurrentItem(item))
         {
-            _graphics->drawText(5, 120, ST7735_YELLOW, "Vol: " + item->volumeName);
+            String imageName = item->name.substring(0, item->name.lastIndexOf(".")) + ".TMB";
+            if (SD.exists(imageName.c_str()))
+            {
+                _graphics->bmpDraw(imageName.c_str(), 0, 0);
+                break;
+            }
+        } 
+        else if (item->source == sdCard && isCurrentItem(item))
+        {
+            _graphics->getTFT()->fillRect(0, 119, _graphics->getTFT()->width(), 10, ST7735_BLUE);
+            _graphics->drawText(5, 120, ST7735_YELLOW, item->isDirectory() ? "Directory" : "Vol: " + item->volumeName);
         }
-
-        // if (isCurrentItem(item))
-        // {
-        //     if (!item->isDirectory())
-        //         _graphics->drawText(5, 120, ST7735_YELLOW, "Vol: " + item->volumeName);
-        //     _graphics->drawText(100, 120, ST7735_ORANGE, item->date);
-        // }
 
         item = item->next;
         count++;
