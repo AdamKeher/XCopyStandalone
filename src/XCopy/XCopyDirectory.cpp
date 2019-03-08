@@ -141,8 +141,6 @@ void XCopyDirectory::getDirectory(String path, XCopyDisk *disk, String filter, b
                     XCopyDirectoryEntry *item = new XCopyDirectoryEntry();
                     item->name = sfnBuffer;
                     item->longName = lfnBuffer;
-                    item->size = entry.fileSize(); // FIX: Remove size for dir
-                    item->date = String(FAT_YEAR(d.creationDate)) + "/" + String(FAT_MONTH(d.creationDate)) + '/' + String(FAT_DAY(d.creationDate));
                     item->setIsDirectory(true);
                     item->path = path + sfnBuffer + '/';
                     item->source = sdCard;
