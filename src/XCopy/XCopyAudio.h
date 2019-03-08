@@ -3,7 +3,9 @@
 
 #include <Arduino.h>
 #include <SerialFlash.h>
-#include <Audio.h>
+#include "../Audio/play_serialflash_raw.h"
+#include "../Audio/mixer.h"
+#include "../Audio/output_dac.h"
 #include <Wire.h>
 
 class XCopyAudio

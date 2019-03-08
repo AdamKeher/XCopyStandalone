@@ -6,12 +6,11 @@
 
 #include <Arduino.h>
 #include "TFT_ST7735.h"
-#include <SD.h>
 #include <SPI.h>
 #include <SerialFlash.h>
-#include <Audio.h>
 #include <Wire.h>
 #include <Streaming.h>
+#include <SdFat.h>
 
 #include "XCopyMenu.h"
 #include "XCopyCommand.h"
@@ -90,8 +89,7 @@ private:
   XCopyDirectory _directory;
   XCopyGraphics _graphics;
   XCopyConfig *_config;
-  XCopyDebug *_debug;
-
+  
 #ifdef XCOPY_DEBUG
   RamMonitor _ram;
   uint32_t _lastRam = 0;

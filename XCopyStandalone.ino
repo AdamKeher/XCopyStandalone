@@ -61,7 +61,7 @@ unsigned long lastCancel = 0;
 unsigned long current = 0;
 void ISR_CANCEL()
 {  
-  // NOTE: Dubious software debounce
+  // shitty debounce
   current = millis();
   if (current - lastCancel > 150)
   {

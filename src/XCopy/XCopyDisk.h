@@ -3,8 +3,8 @@
 
 #include <Arduino.h>
 #include <Streaming.h>
-#include <SD.h>
 #include <SerialFlash.h>
+#include <SdFat.h>
 #include "XCopyAudio.h"
 #include "XCopyGraphics.h"
 #include "FloppyDrive.h"
@@ -31,7 +31,6 @@ class XCopyDisk
     void changeDisk();
     void testDisk(uint8_t retryCount);
     String getADFVolumeName(String ADFFileName, ADFFileSource = _sdCard);
-    void flashDetails();
 
     bool cardDetect() { return digitalRead(_cardDetectPin) == 0 ? true : false; };
 
@@ -44,6 +43,7 @@ class XCopyDisk
     uint8_t _flashCSPin;
     uint8_t _cardDetectPin;
     volatile bool _cancelOperation = false;
+    SdFat SD;
 };
 
 #endif // XCOPYDISK_H

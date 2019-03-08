@@ -3,12 +3,12 @@
 
 #include <Arduino.h>
 #include <SerialFlash.h>
-#include <SD.h>
+#include <SdFat.h>
 #include <Streaming.h>
 #include "XCopyDisk.h"
 #include "XCopyGraphics.h"
 
-#define ITEMSPERSCREEN 13
+#define ITEMSPERSCREEN 12
 
 enum XCopyDirectoryEntrySource
 {
@@ -24,6 +24,8 @@ public:
   bool isDirectory() { return _isDirectory; }
   void setIsDirectory(bool value) { _isDirectory = value; }
   String name;
+  String longName;
+  String date;
   unsigned long size;
   String path;
   String volumeName;
@@ -88,6 +90,8 @@ private:
 
   XCopyGraphics *_graphics;
   XCopyDisk *_disk;
+
+  SdFat SD;
 };
 
 #endif // XCOPYDIRECTORY_H

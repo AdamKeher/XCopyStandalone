@@ -153,7 +153,7 @@ void XCopy::update()
 
     if (_xcopyState == debuggingTempFile)
     {
-        _debug = new XCopyDebug(&_graphics, &_audio, _sdCSPin, _flashCSPin, _cardDetectPin);
+        XCopyDebug *_debug = new XCopyDebug(&_graphics, &_audio, _sdCSPin, _flashCSPin, _cardDetectPin);
         _debug->debugCompareTempFile();
         delete _debug;
 
@@ -162,7 +162,7 @@ void XCopy::update()
 
     if (_xcopyState == debuggingSDFLash)
     {
-        _debug = new XCopyDebug(&_graphics, &_audio, _sdCSPin, _flashCSPin, _cardDetectPin);
+        XCopyDebug *_debug = new XCopyDebug(&_graphics, &_audio, _sdCSPin, _flashCSPin, _cardDetectPin);
         _debug->debug();
         delete _debug;
 
@@ -171,7 +171,7 @@ void XCopy::update()
 
     if (_xcopyState == debuggingEraseCopy)
     {
-        _debug = new XCopyDebug(&_graphics, &_audio, _sdCSPin, _flashCSPin, _cardDetectPin);
+        XCopyDebug *_debug = new XCopyDebug(&_graphics, &_audio, _sdCSPin, _flashCSPin, _cardDetectPin);
         _debug->debugEraseCopyCompare(true);
         delete _debug;
 
@@ -181,7 +181,7 @@ void XCopy::update()
     if (_xcopyState == debuggingCompareFlashToSDCard)
     {
         _graphics.clearScreen();
-        _debug = new XCopyDebug(&_graphics, &_audio, _sdCSPin, _flashCSPin, _cardDetectPin);
+        XCopyDebug *_debug = new XCopyDebug(&_graphics, &_audio, _sdCSPin, _flashCSPin, _cardDetectPin);
         _debug->debugEraseCopyCompare(false);
         delete _debug;
 
@@ -190,7 +190,9 @@ void XCopy::update()
 
     if (_xcopyState == debuggingFlashDetails)
     {
-        _disk.flashDetails();
+        XCopyDebug *_debug = new XCopyDebug(&_graphics, &_audio, _sdCSPin, _flashCSPin, _cardDetectPin);
+        _debug->flashDetails();
+        delete _debug;
         _xcopyState = menus;
     }
 

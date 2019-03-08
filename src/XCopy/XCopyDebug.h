@@ -3,7 +3,8 @@
 
 #include <Arduino.h>
 #include <Streaming.h>
-#include <SD.h>
+#include <SdFat.h>
+#include <sdios.h>
 #include <SerialFlash.h>
 #include "XCopyAudio.h"
 #include "XCopyGraphics.h"
@@ -21,7 +22,7 @@ class XCopyDebug
   public:
     XCopyDebug(XCopyGraphics *graphics, XCopyAudio *audio, uint8_t sdCSPin, uint8_t flashCSPin, uint8_t cardDetectPin);
 
-    void debugCompareFile(File sdFile, SerialFlashFile flashFile);
+    void debugCompareFile(FatFile sdFile, SerialFlashFile flashFile);
     void debugCompareTempFile();
     void debugEraseCopyCompare(bool erase);
     void debug();
@@ -29,6 +30,7 @@ class XCopyDebug
     void printDirectory(File dir, uint8_t numTabs);
     void printDir();
     void flashTest();
+    void flashDetails();
 
   private:
     XCopyAudio *_audio;
@@ -48,6 +50,7 @@ class XCopyDebug
     bool _cardInit = false;
     
     state _mode = both;
+    SdFat SD;
 };
 
 #endif // XCOPYDEBUG_H

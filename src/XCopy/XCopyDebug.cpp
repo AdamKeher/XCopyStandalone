@@ -9,14 +9,20 @@ XCopyDebug::XCopyDebug(XCopyGraphics *graphics, XCopyAudio *audio, uint8_t sdCSP
     _cardDetectPin = cardDetectPin;
 }
 
-void XCopyDebug::debugCompareFile(File sdFile, SerialFlashFile flashFile)
+void XCopyDebug::debugCompareFile(FatFile sdFile, SerialFlashFile flashFile)
 {
-    unsigned long n = sdFile.size();
+    unsigned long n = sdFile.fileSize();
     char sBuffer[256];
     char fBuffer[256];
     uint16_t errorCount = 0;
 
-    Serial << sdFile.name() << "\t\tSD: " << sdFile.size() << "\t\tFlash: " << flashFile.size() << "\t\t";
+    char lfnBuffer[256];
+    char sfnBuffer[20];
+    sdFile.getName(lfnBuffer, 256);
+    sdFile.getSFN(sfnBuffer);
+    strupr(sfnBuffer);
+    Serial << lfnBuffer << " (" << sfnBuffer << ") "
+           << "\t\tSD: " << sdFile.fileSize() << "\t\tFlash: " << flashFile.size() << "\t\t";
 
     // FIX: Compensate for boundary error for erasable files
     // if (sdFile.size() != flashFile.size())
@@ -70,6 +76,7 @@ void XCopyDebug::debugCompareTempFile()
     debugCompareFile(sdFile, flashFile);
 }
 
+// FIX: SdFat seems to have broken SerialFile create
 void XCopyDebug::debugEraseCopyCompare(bool erase)
 {
     Serial << "\033[2J\033[H\033[95m\033[106m";
@@ -78,32 +85,27 @@ void XCopyDebug::debugEraseCopyCompare(bool erase)
     Serial << "                                                                          \033[0m\r\n";
     Serial << "[start]===================================================================\r\n";
 
-    if (!SD.begin(_sdCSPin))
-    {
-        Serial << "SD Card initialization failed.\r\n";
-        return;
-    }
-
     if (!SerialFlash.begin(_flashCSPin))
     {
         Serial << "Serial Flash initialization failed.\r\n";
         return;
     }
 
-    File rootdir;
-
     if (erase)
     {
         Serial << "\r\nErase Flash\r\n";
         Serial << "==========================================================================\r\n";
 
-        unsigned char id[5];
-        SerialFlash.readID(id);
-        unsigned long size = SerialFlash.capacity(id);
+        flashDetails();
 
-        if (size > 0)
+        unsigned char buffer[256];
+        unsigned long chipsize;
+
+        SerialFlash.readID(buffer);
+        chipsize = SerialFlash.capacity(buffer);
+        if (chipsize > 0)
         {
-            Serial << "Flash Memory has " << size << " bytes.\r\n";
+            Serial << "\r\nErasing ...";
             SerialFlash.eraseAll();
 
             unsigned long dotMillis = millis();
@@ -134,39 +136,51 @@ void XCopyDebug::debugEraseCopyCompare(bool erase)
         Serial << "\r\nCopy SD Root Files to Flash\r\n";
         Serial << "==========================================================================\r\n";
 
-        rootdir = SD.open("/");
+        if (!SD.begin(_sdCSPin))
+        {
+            Serial << "SD Card initialization failed.\r\n";
+            return;
+        }
+
+        SdFile root;
+        root.open("/");
 
         while (1)
         {
             // open a file from the SD card
-            File f = rootdir.openNextFile();
-            if (!f)
+            SdFile f;
+            
+            if (!f.openNext(&root, O_RDONLY))
                 break;
 
-            if (f.isDirectory())
+            if (f.isDir())
                 continue;
 
-            const char *filename = f.name();
-            unsigned long length = f.size();
+            char sfnBuffer[20];
+            char lfnBuffer[255];
+            f.getSFN(sfnBuffer);
+            f.getName(lfnBuffer, 255);
+            strupr(sfnBuffer);
+            unsigned long length = f.fileSize();
 
-            Serial << filename << "\t\t" << length << "\t\tcopying ";
+            Serial << lfnBuffer << " (" << sfnBuffer << ")\t\t" << length << "\t\tcopying ";
 
             bool result;
-            if (String(filename) == "DISKCOPY.TMP")
+            if (String(sfnBuffer) == "DISKCOPY.TMP")
             {
-                Serial << " (createErasable) ";
-                result = SerialFlash.createErasable(filename, length);
+                Serial << "(createErasable) ";
+                result = SerialFlash.createErasable(sfnBuffer, length);
             }
             else
             {
-                Serial << " (notErasable) ";
-                result = SerialFlash.create(filename, length);
+                Serial << "(notErasable) ";
+                result = SerialFlash.create(sfnBuffer, length);
             }
 
             // create the file on the Flash chip and copy data
             if (result)
             {
-                SerialFlashFile ff = SerialFlash.open(filename);
+                SerialFlashFile ff = SerialFlash.open(sfnBuffer);
                 if (ff)
                 {
                     // copy data loop
@@ -178,6 +192,7 @@ void XCopyDebug::debugEraseCopyCompare(bool erase)
                         uint16_t n;
                         n = f.read(buf, 256);
                         ff.write(buf, n);
+
                         count = count + n;
                         if (++dotcount > 400)
                         {
@@ -186,25 +201,28 @@ void XCopyDebug::debugEraseCopyCompare(bool erase)
                             dotcount = 0;
                         }
                     }
-                    ff.close();
                 }
                 else
                 {
                     Serial << ("  Error opening freshly created file!");
                 }
+                ff.close();
             }
             else
             {
-                Serial.println("  unable to create file");
+                Serial << "  unable to create file";
             }
 
-            Serial << "\r\n";
             f.close();
+
+            Serial << "\r\n";
         }
 
-        rootdir.close();
+        root.close();
         Serial << "Finished All Files\r\n";
     }
+
+
 
     Serial << "\r\nList All Flash Files\r\n";
     Serial << "==========================================================================\r\n";
@@ -212,7 +230,7 @@ void XCopyDebug::debugEraseCopyCompare(bool erase)
     SerialFlash.opendir();
     while (1)
     {
-        char filename[64];
+        char filename[20];
         uint32_t filesize;
 
         if (SerialFlash.readdir(filename, sizeof(filename), filesize))
@@ -220,6 +238,8 @@ void XCopyDebug::debugEraseCopyCompare(bool erase)
         else
             break; // no more files
     }
+
+    return;
 
     Serial << "\r\nCompare SPI and Flash Files\r\n";
     Serial << "==========================================================================\r\n";
@@ -238,34 +258,39 @@ void XCopyDebug::debugEraseCopyCompare(bool erase)
         return;
     }
 
-    rootdir = SD.open("/");
+    SdFile root; 
+    root.open("/");
 
     while (true)
     {
-        File entry = rootdir.openNextFile();
+        SdFile entry;
 
-        if (!entry)
+        if (!entry.openNext(&root, O_RDONLY))
         {
             // no more files
             break;
         }
         else
         {
-            if (entry.isDirectory())
+            if (entry.isDir())
             {
                 entry.close();
                 continue;
             }
 
-            SerialFlashFile flashFile = SerialFlash.open(entry.name());
-            debugCompareFile(entry, flashFile);
-            flashFile.close();
+            char sfnBuffer[20];
+            entry.getSFN(sfnBuffer);
+            strupr(sfnBuffer);
+            SerialFlashFile flashFile = SerialFlash.open(sfnBuffer);
 
+            debugCompareFile(entry, flashFile);
+
+            flashFile.close();
             entry.close();
         }
     }
 
-    rootdir.close();
+    root.close();
 
     Serial << "\r\nErase and Copy Complete\r\n";
 }
@@ -339,6 +364,7 @@ bool XCopyDebug::cardDetect()
     return digitalRead(_cardDetectPin) == 0 ? true : false;
 }
 
+// TODO: convert to SdFile
 void XCopyDebug::printDirectory(File dir, uint8_t numTabs)
 {
     String text;
@@ -356,7 +382,9 @@ void XCopyDebug::printDirectory(File dir, uint8_t numTabs)
         {
             Serial << "\t";
         }
-        Serial << entry.name();
+        char nBuffer[256];
+        entry.getName(nBuffer, 256);
+        Serial << nBuffer;
         if (entry.isDirectory())
         {
             Serial << "/\r\n";
@@ -391,7 +419,7 @@ void XCopyDebug::printDirectory(File dir, uint8_t numTabs)
                 Serial << (float)entry.size() * 1000.0 / (float)(usend - usbegin);
                 Serial << " kbytes/sec";
 
-                text = entry.name();
+                text = buffer;
                 text = text + ", " + String((float)entry.size() * 1000.0 / (float)(usend - usbegin)) + " kbytes/sec";
                 _graphics->drawText(0, 90, ST7735_RED, "SD Card:", true);
                 _graphics->drawText(0, 100, ST7735_GREEN, text, true);
@@ -492,4 +520,121 @@ void XCopyDebug::flashTest()
         }
         Serial << "\r\n";
     }
+}
+
+void XCopyDebug::flashDetails()
+{
+    unsigned char buffer[256];
+    unsigned long chipsize, blocksize;
+
+    Serial << "\r\n";
+
+    if (!SerialFlash.begin(_flashCSPin))
+        Serial << "Flash Initialization Failed\r\n";
+    else
+        Serial << "Flash Initialized\r\n";
+
+    SerialFlash.readID(buffer);
+    chipsize = SerialFlash.capacity(buffer);
+    blocksize = SerialFlash.blockSize();
+
+    Serial << "JEDEC ID: ";
+    Serial.print(buffer[0], HEX);
+    Serial << " ";
+    Serial.print(buffer[1], HEX);
+    Serial << " ";
+    Serial.println(buffer[2], HEX);
+    Serial << "Part Number: ";
+
+    if (buffer[0] == 0xEF)
+    {
+        // Winbond
+        if (buffer[1] == 0x40)
+        {
+            if (buffer[2] == 0x14)
+                Serial << "W25Q80BV";
+            if (buffer[2] == 0x15)
+                Serial << "W25Q16DV";
+            if (buffer[2] == 0x17)
+                Serial << "W25Q64FV";
+            if (buffer[2] == 0x18)
+                Serial << "W25Q128FV";
+            if (buffer[2] == 0x19)
+                Serial << "W25Q256FV";
+        }
+    }
+    if (buffer[0] == 0x01)
+    {
+        // Spansion
+        if (buffer[1] == 0x02)
+        {
+            if (buffer[2] == 0x16)
+                Serial << "S25FL064A";
+            if (buffer[2] == 0x19)
+                Serial << "S25FL256S";
+            if (buffer[2] == 0x20)
+                Serial << "S25FL512S";
+        }
+        if (buffer[1] == 0x20)
+        {
+            if (buffer[2] == 0x18)
+                Serial << "S25FL127S";
+        }
+    }
+    if (buffer[0] == 0xC2)
+    {
+        // Macronix
+        if (buffer[1] == 0x20)
+        {
+            if (buffer[2] == 0x18)
+                Serial << "MX25L12805D";
+        }
+    }
+    if (buffer[0] == 0x20)
+    {
+        // Micron
+        if (buffer[1] == 0xBA)
+        {
+            if (buffer[2] == 0x20)
+                Serial << "N25Q512A";
+            if (buffer[2] == 0x21)
+                Serial << "N25Q00AA";
+        }
+        if (buffer[1] == 0xBB)
+        {
+            if (buffer[2] == 0x22)
+                Serial << "MT25QL02GC";
+        }
+    }
+    if (buffer[0] == 0xBF)
+    {
+        // SST
+        if (buffer[1] == 0x25)
+        {
+            if (buffer[2] == 0x02)
+                Serial << "SST25WF010";
+            if (buffer[2] == 0x03)
+                Serial << "SST25WF020";
+            if (buffer[2] == 0x04)
+                Serial << "SST25WF040";
+            if (buffer[2] == 0x41)
+                Serial << "SST25VF016B";
+            if (buffer[2] == 0x4A)
+                Serial << "SST25VF032";
+        }
+        if (buffer[1] == 0x25)
+        {
+            if (buffer[2] == 0x01)
+                Serial << "SST26VF016";
+            if (buffer[2] == 0x02)
+                Serial << "SST26VF032";
+            if (buffer[2] == 0x43)
+                Serial << "SST26VF064";
+        }
+    }
+
+    Serial << "\r\n";
+    Serial << "Memory Size: " << chipsize << " bytes\r\n";
+    Serial << "Block Size: " << blocksize << " bytes";
+    Serial << "\r\n";
 }
