@@ -1,7 +1,7 @@
 #ifndef XCOPY_H
 #define XCOPY_H
 
-#define XCOPYVERSION "v 0.5.2019"
+#define XCOPYVERSION "v 0.6.2019"
 // #define XCOPY_DEBUG = 1
 
 #include <Arduino.h>
