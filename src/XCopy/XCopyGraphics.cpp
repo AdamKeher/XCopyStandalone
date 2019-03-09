@@ -7,7 +7,7 @@ void XCopyGraphics::begin(TFT_ST7735 *tft)
 
 void XCopyGraphics::drawHeader()
 {
-    bmpDraw("XCOPY.BMP", 0, 0);
+    bmpDraw("XCPYLOGO.BMP", 0, 0);
 }
 
 void XCopyGraphics::drawTrack(uint8_t track, uint8_t side, bool drawText, bool retry, int retryCount, bool verify, uint16_t color)

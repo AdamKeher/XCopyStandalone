@@ -18,8 +18,10 @@ Todo:
   Graphics:
     ✔ Convert BMP's to RAW 565 and draw directly using push commands for faster fullscreen updates @done(19-03-09 14:29)
     ✔ Change SerialFlash thumb nails to use this (180+ms down to 70ms) @done(19-03-09 14:29)
-    ☐ Fix lost sound after rawDraw, intialise audio before play?
-      ☐ Convert rest of app over to rawDraw once fixed
+    ☐ Fix lost sound after rawDraw
+      ✔ Temp fix tostop rawDraw / colorPush while audio playing. @done(19-03-09 22:41)
+      ✔ Convert rest of app over to rawDraw once fixed @done(19-03-09 22:41)
+      ☐ Investigate actual root cause
   Refactor:
     ☐ Move the modified SDFat library into local library
       ✔ Altered iostream.h to fix "'ostream& endl(ostream&)' redeclared as different kind of symbol" @done(19-03-08 22:22)

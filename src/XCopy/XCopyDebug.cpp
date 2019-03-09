@@ -312,7 +312,7 @@ void XCopyDebug::debug()
     Serial << "\033[0m==========================================================================\r\n";
 
     _graphics->clearScreen();
-    _graphics->bmpDraw("XCOPY.BMP", 0, 0);
+    _graphics->bmpDraw("XCPYLOGO.BMP", 0, 0);
     String text = "Test Cycle: " + String(_cycles) + "\nFlash Errors: " + String(_flashErrorCount) + "/" + String(_flashReadCount) + "\nSD Card Errors: " + String(_sdcardErrorCount) + "/" + String(_sdcardReadCount) + "\nCard Detect: " + String(_cardState);
 
     _graphics->drawText(0, 45, ST7735_WHITE, text);
