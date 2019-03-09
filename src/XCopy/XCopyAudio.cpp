@@ -14,6 +14,8 @@ void XCopyAudio::playFile(const char *filename, bool wait)
 {
     _playWav.play(filename);
 
+    // FIX: hacked to always pause while playing audio to stop conflict with rawDraw / SerialFlash pushcolor
+    wait = true;
     if (wait)
     {
         while (_playWav.isPlaying())
