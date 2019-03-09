@@ -2,7 +2,7 @@ Todo:
   Disk Copy:
     ☐ Copy disk to disk fails when no disk is inserted initialy. Need return code from intial copy to decide if wait for disk or exit.
     ☐ Copy disk to ADF needs to support creating a dir and auto naming (ADF00001.ADF) find highest and inc 1.
-    ☐ Allow interrupt exit during track retries
+    ✔ Allow interrupt exit during track retries @done(19-03-09 12:41)
   SDCard:
     ☐ ADF needs correct creation date on file
     ✔ Move to SDFat library @done(19-03-08 14:22)
@@ -10,12 +10,16 @@ Todo:
       - use text bounds to clip extra long filename before volumename?
       - Or show long filname across entire line and have bottom row for volume name <- better?
   Directory:
+    ☐ Audio fires more than once when scrolled past MAXSCREENITEMS
     ☐ Seems to crash if you enter a sub dir containing files, go back up, enter empty sub dir, move up and down, go back and crashes
     ☐ Test with a huge number of files in a directory, it will need to be paged ... eeek
     ✔ Add thumbnails to flash directory entries @done(19-03-08 22:18)
       ✔ Check for file on sd instead of serialflash @done(19-03-09 01:02)
   Graphics:
-    ☐ Convert BMP to RAW and draw directly using push commands for faster fullscreen updates
+    ✔ Convert BMP's to RAW 565 and draw directly using push commands for faster fullscreen updates @done(19-03-09 14:29)
+    ✔ Change SerialFlash thumb nails to use this (180+ms down to 70ms) @done(19-03-09 14:29)
+    ☐ Fix lost sound after rawDraw, intialise audio before play?
+      ☐ Convert rest of app over to rawDraw once fixed
   Refactor:
     ☐ Move the modified SDFat library into local library
       ✔ Altered iostream.h to fix "'ostream& endl(ostream&)' redeclared as different kind of symbol" @done(19-03-08 22:22)

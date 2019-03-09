@@ -55,9 +55,9 @@ void XCopyGraphics::drawDisk(uint8_t start, uint16_t color)
     for (int x = start; x < 160; x++)
     {
         if (x % 2 == 0)
-            drawTrack(x/2, 0, false, false, 0, false, color);
+            drawTrack(x / 2, 0, false, false, 0, false, color);
         else
-            drawTrack(x/2, 1, false, false, 0, false, color);
+            drawTrack(x / 2, 1, false, false, 0, false, color);
     }
 }
 
@@ -101,7 +101,7 @@ uint16_t XCopyGraphics::LerpRGB(uint16_t a, uint16_t b, float t)
     return _tft->Color565(cr, cg, cb);
 }
 
-void XCopyGraphics::bmpDraw(const char *filename, uint8_t x, uint16_t y)
+void XCopyGraphics::bmpDraw(const char *filename, uint16_t x, uint16_t y)
 {
     SerialFlashFile flashFile;
     int bmpWidth, bmpHeight;            // W+H in pixels
@@ -253,159 +253,120 @@ void XCopyGraphics::bmpDraw(const char *filename, uint8_t x, uint16_t y)
         Serial.println(F("BMP format not recognized."));
 }
 
-void XCopyGraphics::bmpToRaw(const char *filename, const char *outfilename)
+void XCopyGraphics::rawDraw(const char *filename, uint16_t x, uint16_t y)
 {
-    SerialFlashFile flashFile;
-    File sdFile;
-    int bmpWidth, bmpHeight;            // W+H in pixels
-    uint8_t bmpDepth;                   // Bit depth (currently must be 24)
-    uint32_t bmpImageoffset;            // Start of image data in file
-    uint32_t rowSize;                   // Not always = bmpWidth; may have padding
-    uint8_t sdbuffer[3 * BUFFPIXEL];    // pixel buffer (R+G+B per pixel)
-    uint8_t buffidx = sizeof(sdbuffer); // Current position in sdbuffer
-    boolean goodBmp = false;            // Set to true on valid header parse
-    boolean flip = true;                // BMP is stored bottom-to-top
-    int row, col;
+    SerialFlashFile bmpFile;
+    int bmpWidth, bmpHeight; // W+H in pixels
+    uint8_t bmpDepth;        // Bit depth (currently must be 24)
+    uint8_t headerSize;
+    uint32_t bmpImageoffset; // Start of image data in file
+    uint32_t rowSize;        // Not always = bmpWidth; may have padding
+    uint32_t fileSize;
+    boolean goodBmp = false; // Set to true on valid header parse
+    boolean flip = true;     // BMP is stored bottom-to-top
+    uint16_t w, h, row, col;
     uint8_t r, g, b;
-    uint32_t pos = 0;
+    uint32_t pos = 0, startTime;
 
-    if ((flashFile = SerialFlash.open(filename)) == NULL)
-    {
-        Serial.print(F("File not found"));
+    if ((x >= _tft->width()) || (y >= _tft->height()))
         return;
-    }
 
-    if (!SD.begin(22))
+    // startTime = millis();
+
+    // if (!bmpFile.open(filename, O_READ))
+    // Open requested file on SD card
+    if ((bmpFile = SerialFlash.open(filename)) == NULL)
     {
-        Serial.print(F("SD Failed to open"));
-        return;
-    }
-
-    if (SD.exists(outfilename))
-        SD.remove(outfilename);
-
-    if ((sdFile = SD.open(outfilename, FILE_WRITE)) == NULL)
-    {
-        Serial.print(F("Output file failed to open"));
+        Serial.print(F("File not found\r\n"));
         return;
     }
 
     // Parse BMP header
-    // Serial.println("POS: " + String(flashFile.position()));
-    if (read16(flashFile) == 0x4D42)
+    if (read16(bmpFile) == 0x4D42)
     { // BMP signature
-
-        (void)read32(flashFile); // read & ignore filesize
-        (void)read32(flashFile); // Read & ignore creator bytes
-
-        bmpImageoffset = read32(flashFile); // Start of image data
-        (void)read32(flashFile);            // read & ignore headerSize
-        bmpWidth = read32(flashFile);
-        bmpHeight = read32(flashFile);
-        if (read16(flashFile) == 1)
-        {                                 // # planes -- must be '1'
-            bmpDepth = read16(flashFile); // bits per pixel
-            if ((bmpDepth == 24) && (read32(flashFile) == 0))
-            {                   // 0 = uncompressed
-                goodBmp = true; // Supported BMP format -- proceed!
-                rowSize = (bmpWidth * 3 + 3) & ~3;
+        fileSize = read32(bmpFile);
+        (void)read32(bmpFile);            // Read & ignore creator bytes
+        bmpImageoffset = read32(bmpFile); // Start of image data
+        headerSize = read32(bmpFile);
+        bmpWidth = read32(bmpFile);
+        bmpHeight = read32(bmpFile);
+        if (read16(bmpFile) == 1)
+        {                               // # planes -- must be '1'
+            bmpDepth = read16(bmpFile); // bits per pixel
+            if (read32(bmpFile) == 0) // 0 = uncompressed
+            {
                 if (bmpHeight < 0)
                 {
                     bmpHeight = -bmpHeight;
                     flip = false;
                 }
 
-                Serial << "\r\nDeclare Buff\r\n";
-                uint16_t buffer[bmpWidth * bmpHeight];
-                uint32_t bufferIndex = 0;
+                // Crop area to be loaded
+                w = bmpWidth;
+                h = bmpHeight;
+                if ((x + w - 1) >= _tft->width())
+                    w = _tft->width() - x;
+                if ((y + h - 1) >= _tft->height())
+                    h = _tft->height() - y;
 
-                for (row = 0; row < bmpHeight; row++)
-                { // For each scanline...
-                    Serial << "ROW #" << row << ": ";
+                // Set TFT address window to clipped image bounds
+                _tft->startPushData(x, y, x + w - 1, y + h - 1);
 
-                    if (flip) // Bitmap is stored bottom-to-top order (normal BMP)
-                        pos = bmpImageoffset + (bmpHeight - 1 - row) * rowSize;
-                    else // Bitmap is stored top-to-bottom
-                        pos = bmpImageoffset + row * rowSize;
-                    if (flashFile.position() != pos)
-                    { // Need seek?
-                        flashFile.seek(pos);
-                        buffidx = sizeof(sdbuffer); // Force buffer reload
+                if (bmpDepth == 16) //565 format
+                {
+                    goodBmp = true; // Supported BMP format -- proceed!
+
+                    uint16_t buffer[BUFFPIXELCOUNT]; // pixel buffer
+
+                    bmpFile.seek(54); //skip header
+                    uint32_t totalPixels = (uint32_t)bmpWidth * (uint32_t)bmpHeight;
+                    uint16_t numFullBufferRuns = totalPixels / BUFFPIXELCOUNT;
+
+                    for (uint32_t p = 0; p < numFullBufferRuns; p++)
+                    {                        
+                        // read pixels into the buffer
+                        bmpFile.read(buffer, 2 * BUFFPIXELCOUNT);
+                        // push them to the diplay
+                        for (int i = 0; i < BUFFPIXELCOUNT; i++)
+                        {
+                            _tft->pushColor(buffer[i]);
+                        }
                     }
 
-                    for (col = 0; col < bmpWidth; col++)
-                    { // For each pixel...
-                        // Time to read more pixel data?
-                        if (buffidx >= sizeof(sdbuffer))
-                        { // Indeed
-                            flashFile.read(sdbuffer, sizeof(sdbuffer));
-                            buffidx = 0; // Set index to beginning
+                    // render any remaining pixels that did not fully fit the buffer
+                    uint32_t remainingPixels = totalPixels % BUFFPIXELCOUNT;
+                    if (remainingPixels > 0)
+                    {
+                        bmpFile.read(buffer, 2 * remainingPixels);
+                        for (int i = 0; i < BUFFPIXELCOUNT; i++)
+                        {                            
+                            _tft->pushColor(buffer[i]);
                         }
+                    }
+                }
+                else
+                {
+                    Serial << "Unsupported Bit Depth.\r\n";
+                }
 
-                        // Convert pixel from BMP to TFT format, push to display
-                        b = sdbuffer[buffidx++];
-                        g = sdbuffer[buffidx++];
-                        r = sdbuffer[buffidx++];
+                _tft->endPushData();
 
-                        // sdFile.write(_tft->Color565(r, g, b));
-                        buffer[bufferIndex++] = _tft->Color565(r, g, b);
-                        _tft->drawPixel(col, row, _tft->Color565(r, g, b));
-                        Serial.printf("%05d ", _tft->Color565(r, g, b));
-                    } // end pixel
-
-                    Serial << "\r\n";
-                } // end scanline
-
-                sdFile.write((byte *)&buffer, 160 * 40 * 2);
-            } // end goodBmp
+                // if (goodBmp)
+                // {
+                //     Serial.print("Loaded in ");
+                //     Serial.print(millis() - startTime);
+                //     Serial.println(" ms");
+                // }
+            }
         }
     }
-
-    sdFile.close();
-    flashFile.close();
 
     offset = 0;
 
+    bmpFile.close();
+    
     if (!goodBmp)
-        Serial.println(F("BMP format not recognized."));
-    else
-        Serial << "bmp2Raw Output: " << outfilename << "(" << bmpWidth << "x" << bmpHeight << ")"
-               << "\r\n";
-}
-
-void XCopyGraphics::rawDraw(const char *filename, uint8_t x, uint16_t y, uint16_t width, uint16_t height)
-{
-    SerialFlashFile flashFile;
-    File sdFile;
-
-    if ((flashFile = SerialFlash.open(filename)) == NULL)
-    {
-        Serial.print(F("File not found"));
-        return;
-    }
-
-    uint16_t buffer[(width * 2) * (height * 2)];
-    flashFile.read(buffer, (width * 2) * (height * 2));
-
-    int index = 0;
-    for (int row = 0; row < height; row++)
-    {
-        Serial << "ROW #" << row << ": ";
-        for (int col = 0; col < width; col++)
-        {
-            index++;
-            _tft->drawPixel(x + col, y + row, buffer[index++]);
-            Serial.printf("%05d ", buffer[index++]);
-            // _tft->drawPixel(x + col, y + row, buffer[col]);
-            // _tft->drawPixel(x + col, y + row, read16(flashFile));
-            // Serial.print(read16(flashFile), HEX);
-            // Serial << " ";
-            // _tft->drawPixel(y + row, x + col, _tft->Color565(255,0,0));
-        }
-        Serial << "\r\n";
-    }
-
-    flashFile.close();
+        Serial.print("565 format not recognized.\r\n");
 }
 
 // These read 16- and 32-bit types from the SD card file.

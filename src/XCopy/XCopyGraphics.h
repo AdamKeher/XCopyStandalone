@@ -5,9 +5,9 @@
 #include <Streaming.h>
 #include <SerialFlash.h>
 #include <TFT_ST7735.h>
-#include <SdFat.h>
 
 #define BUFFPIXEL 20
+#define BUFFPIXELCOUNT 1024	// size of the buffer in pixels
 
 class XCopyGraphics
 {
@@ -15,9 +15,8 @@ class XCopyGraphics
     // XCopyGraphics();
     void begin(TFT_ST7735 *tft);
 
-    void bmpDraw(const char *filename, uint8_t x, uint16_t y);
-    void bmpToRaw(const char *filename, const char *outfilename);
-    void rawDraw(const char *filename, uint8_t x, uint16_t y, uint16_t width, uint16_t height);
+    void bmpDraw(const char *filename, uint16_t x, uint16_t y);
+    void rawDraw(const char *filename, uint16_t x, uint16_t y);
     void drawHeader();
     void clearScreen() { _tft->fillScreen(ST7735_BLACK); }
     void drawTrack(uint8_t track, uint8_t side, bool drawText, bool retry, int retryCount, bool verify, uint16_t color);
@@ -36,10 +35,10 @@ class XCopyGraphics
     uint16_t read16(SerialFlashFile f);
     uint32_t read32(SerialFlashFile f);
 
+
   private:
     TFT_ST7735 *_tft;
     int offset;
-    SdFat SD;
 };
 
 #endif // XCOPYGRAPHICS_H
