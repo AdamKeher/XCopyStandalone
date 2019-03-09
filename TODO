@@ -2,6 +2,7 @@ Todo:
   Disk Copy:
     ☐ Copy disk to disk fails when no disk is inserted initialy. Need return code from intial copy to decide if wait for disk or exit.
     ☐ Copy disk to ADF needs to support creating a dir and auto naming (ADF00001.ADF) find highest and inc 1.
+    ☐ Allow interrupt exit during track retries
   SDCard:
     ☐ ADF needs correct creation date on file
     ✔ Move to SDFat library @done(19-03-08 14:22)
@@ -13,6 +14,8 @@ Todo:
     ☐ Test with a huge number of files in a directory, it will need to be paged ... eeek
     ✔ Add thumbnails to flash directory entries @done(19-03-08 22:18)
       ✔ Check for file on sd instead of serialflash @done(19-03-09 01:02)
+  Graphics:
+    ☐ Convert BMP to RAW and draw directly using push commands for faster fullscreen updates
   Refactor:
     ☐ Move the modified SDFat library into local library
       ✔ Altered iostream.h to fix "'ostream& endl(ostream&)' redeclared as different kind of symbol" @done(19-03-08 22:22)

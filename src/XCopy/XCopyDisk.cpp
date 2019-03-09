@@ -63,6 +63,11 @@ void XCopyDisk::readDiskTrack(uint8_t trackNum, bool verify, uint8_t retryCount)
             _audio->playBong(false);
             delay(1000);
         }
+
+        if (_cancelOperation)
+        {
+            return;
+        }
     }
 
     if (errors == -1)
@@ -95,6 +100,11 @@ void XCopyDisk::writeDiskTrack(uint8_t trackNum, uint8_t retryCount)
             _audio->playBong(false);
             delay(1000);
         }
+
+        if (_cancelOperation)
+        {
+            return;
+        }        
     }
 
     if (errors == -1)
@@ -189,9 +199,7 @@ void XCopyDisk::diskToADF(String ADFFileName, bool verify, uint8_t retryCount, A
     {
         if (_cancelOperation)
         {
-            _graphics->drawText(0, 10, ST7735_RED, "Operation Cancelled", true);
-            _graphics->drawDisk(trackNum, ST7735_RED);
-            _audio->playBong(false);
+            OperationCancelled(trackNum);
             return;
         }
 
@@ -335,24 +343,16 @@ void XCopyDisk::adfToDisk(String ADFFileName, bool verify, uint8_t retryCount, A
     delay(5);
     setCurrentTrack(-1);
 
-    if (diskChange() == 1)
-    {
-        motorOn();
-        seek0();
-    }
-    else
-    { /* wait for disk insertion */
-    }
+    motorOn();
+    seek0();
     delay(100);
 
-    // write track
+    // write ADF file
     for (int trackNum = 0; trackNum < 160; trackNum++)
     {
         if (_cancelOperation)
         {
-            _graphics->drawText(0, 10, ST7735_RED, "Operation Cancelled", true);
-            _graphics->drawDisk(trackNum, ST7735_RED);
-            _audio->playBong(false);
+            OperationCancelled(trackNum);
             return;
         }
 
@@ -445,8 +445,7 @@ void XCopyDisk::diskFlux()
     {
         if (_cancelOperation)
         {
-            _graphics->drawText(0, 0, ST7735_RED, "Operation Cancelled", true);
-            _audio->playBong(false);
+            OperationCancelled();
             return;
         }
 
@@ -509,9 +508,7 @@ void XCopyDisk::testDisk(uint8_t retryCount)
     {
         if (_cancelOperation)
         {
-            _graphics->drawText(0, 10, ST7735_RED, "Operation Cancelled", true);
-            _graphics->drawDisk(trackNum, ST7735_RED);
-            _audio->playBong(false);
+            OperationCancelled(trackNum);
             return;
         }
 
@@ -617,4 +614,12 @@ String XCopyDisk::getADFVolumeName(String ADFFileName, ADFFileSource source)
 void XCopyDisk::cancelOperation()
 {
     _cancelOperation = true;
+}
+
+void XCopyDisk::OperationCancelled(uint8_t trackNum)
+{
+    _graphics->drawText(0, 10, ST7735_RED, "Operation Cancelled", true);
+    if (trackNum >= 0)
+        _graphics->drawDisk(trackNum, ST7735_RED);
+    _audio->playBong(false);
 }

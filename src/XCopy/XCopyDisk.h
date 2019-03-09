@@ -35,6 +35,7 @@ class XCopyDisk
     bool cardDetect() { return digitalRead(_cardDetectPin) == 0 ? true : false; };
 
     void cancelOperation();
+    void OperationCancelled(uint8_t trackNum = -1);
 
   private:
     XCopyAudio *_audio;
