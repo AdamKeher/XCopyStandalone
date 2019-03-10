@@ -141,10 +141,6 @@ bool XCopyDisk::diskToADF(String ADFFileName, bool verify, uint8_t retryCount, A
     String diskName = getName();
     _graphics->drawDiskName(diskName);
 
-    char buffer[ADFFileName.length() + 1];
-    memset(buffer, 0, sizeof(buffer));
-    ADFFileName.toCharArray(buffer, sizeof(buffer));
-
     File ADFFile;
     SerialFlashFile ADFFlashFile;
 
@@ -158,10 +154,11 @@ bool XCopyDisk::diskToADF(String ADFFileName, bool verify, uint8_t retryCount, A
             return false;
         }
 
-        if (SD.exists(buffer))
-            SD.remove(buffer);
+        if (SD.exists(ADFFileName.c_str()))
+            SD.remove(ADFFileName.c_str());
 
-        ADFFile = SD.open(buffer, FILE_WRITE);
+        ADFFile = SD.open(ADFFileName.c_str(), FILE_WRITE);
+
 
         if (!ADFFile)
         {
@@ -181,7 +178,7 @@ bool XCopyDisk::diskToADF(String ADFFileName, bool verify, uint8_t retryCount, A
             return false;
         }
 
-        ADFFlashFile = SerialFlash.open(buffer);
+        ADFFlashFile = SerialFlash.open(ADFFileName.c_str());
 
         _graphics->drawText(0, 10, ST7735_ORANGE, "Erasing Flash...", true);
 
@@ -193,7 +190,7 @@ bool XCopyDisk::diskToADF(String ADFFileName, bool verify, uint8_t retryCount, A
 
         _graphics->drawText("Done");
 
-        ADFFlashFile = SerialFlash.open(buffer);
+        ADFFlashFile = SerialFlash.open(ADFFileName.c_str());
         if (!ADFFlashFile)
         {
             ADFFlashFile.close();
@@ -306,10 +303,6 @@ void XCopyDisk::adfToDisk(String ADFFileName, bool verify, uint8_t retryCount, A
         return;
     }
 
-    char buffer[ADFFileName.length() + 1];
-    memset(buffer, 0, sizeof(buffer));
-    ADFFileName.toCharArray(buffer, sizeof(buffer));
-
     File ADFFile;
     SerialFlashFile ADFFlashFile;
 
@@ -322,7 +315,7 @@ void XCopyDisk::adfToDisk(String ADFFileName, bool verify, uint8_t retryCount, A
             return;
         }
 
-        ADFFile = SD.open(buffer, FILE_READ);
+        ADFFile = SD.open(ADFFileName.c_str(), FILE_READ);
         if (!ADFFile)
         {
             _graphics->drawText(0, 10, ST7735_RED, "SD File Open Failed");
@@ -340,7 +333,7 @@ void XCopyDisk::adfToDisk(String ADFFileName, bool verify, uint8_t retryCount, A
             return;
         }
 
-        ADFFlashFile = SerialFlash.open(buffer);
+        ADFFlashFile = SerialFlash.open(ADFFileName.c_str());
         if (!ADFFlashFile)
         {
             _graphics->drawText(0, 10, ST7735_RED, "Serial Flash File Open Failed");
@@ -563,10 +556,6 @@ String XCopyDisk::getADFVolumeName(String ADFFileName, ADFFileSource source)
     if (ADFFileName == "")
         return ">> File Error";
 
-    char buffer[ADFFileName.length() + 1];
-    memset(buffer, 0, sizeof(buffer));
-    ADFFileName.toCharArray(buffer, sizeof(buffer));
-
     byte trackBuffer[512];
 
     if (source == _sdCard)
@@ -576,7 +565,7 @@ String XCopyDisk::getADFVolumeName(String ADFFileName, ADFFileSource source)
             return ">> SD Error";
         }
 
-        File ADFFile = SD.open(buffer, FILE_READ);
+        File ADFFile = SD.open(ADFFileName.c_str(), FILE_READ);
 
         if (!ADFFile)
             return ">> File Error";
@@ -592,7 +581,7 @@ String XCopyDisk::getADFVolumeName(String ADFFileName, ADFFileSource source)
             return ">> Flash Error";
         }
 
-        SerialFlashFile ADFFile = SerialFlash.open(buffer);
+        SerialFlashFile ADFFile = SerialFlash.open(ADFFileName.c_str());
 
         if (!ADFFile)
             return ">> File Error";
