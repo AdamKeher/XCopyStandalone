@@ -60,6 +60,11 @@ void XCopyDisk::dateTime(uint16_t *date, uint16_t *time)
 
 void XCopyDisk::readDiskTrack(uint8_t trackNum, bool verify, uint8_t retryCount)
 {
+    // green = OK - no retries
+    // yellow = ~OK - quick retry required
+    // orange = ~OK - retry required
+    // red = ERROR - track did not read correctly
+
     int retries = 0;
     int errors = -1;
 
@@ -72,12 +77,14 @@ void XCopyDisk::readDiskTrack(uint8_t trackNum, bool verify, uint8_t retryCount)
 
         if (errors != -1)
         {
-            _graphics->drawTrack(trackNum / 2, trackNum % 2, true, false, 0, verify, ST7735_GREEN);
+            if (getWeakTrack() > 0)
+                _graphics->drawTrack(trackNum / 2, trackNum % 2, true, false, 0, verify, ST7735_YELLOW);
+            else
+                _graphics->drawTrack(trackNum / 2, trackNum % 2, true, false, 0, verify, ST7735_GREEN);
         }
         else
         {
             _graphics->drawTrack(trackNum / 2, trackNum % 2, true, true, retries + 1, verify, ST7735_RED);
-            Serial << "Read failed! - Try: << " << retries + 1 << "\r\n";
             retries++;
             _audio->playBong(false);
             delay(1000);
@@ -478,6 +485,31 @@ void XCopyDisk::diskToDisk(bool verify, uint8_t retryCount)
     adfToDisk("DISKCOPY.TMP", verify, retryCount, _flashMemory);
 }
 
+void XCopyDisk::drawFlux(uint8_t trackNum, uint8_t scale, uint8_t yoffset)
+{
+    for (int i = 0; i < 255; i = i + scale)
+    {
+        int hist = 0;
+        for (int s = 0; s < scale; s++ )
+            hist += getHist()[i + s];
+
+        if (hist > 0)
+        {
+            hist = (hist / (32 * scale));
+            hist = hist < 255 ? hist : 255;
+            float ratio = hist / 255.0f;
+
+            if (hist < 5)
+                _graphics->getTFT()->drawPixel(trackNum, yoffset, _graphics->LerpRGB(ST7735_WHITE, ST7735_YELLOW, ratio));
+            else if (hist < 50)
+                _graphics->getTFT()->drawPixel(trackNum, yoffset, _graphics->LerpRGB(ST7735_YELLOW, ST7735_ORANGE, ratio));
+            else
+                _graphics->getTFT()->drawPixel(trackNum, yoffset, _graphics->LerpRGB(ST7735_ORANGE, ST7735_RED, ratio));
+        }
+        yoffset++;
+    }
+}
+
 void XCopyDisk::diskFlux()
 {
     _cancelOperation = false;
@@ -504,26 +536,7 @@ void XCopyDisk::diskFlux()
         if (errors != -1)
         {
             analyseHist(true);
-
-            uint8_t yoffset = 0;
-            for (int i = 0; i < 255; i = i + 2)
-            {
-                int hist = getHist()[i] + getHist()[i + 1];
-                if (hist > 0)
-                {
-                    hist = (hist / 64);
-                    hist = hist < 255 ? hist : 255;
-                    float ratio = hist / 255.0f;
-
-                    if (hist < 5)
-                        _graphics->getTFT()->drawPixel(trackNum, yoffset, _graphics->LerpRGB(ST7735_WHITE, ST7735_YELLOW, ratio));
-                    else if (hist < 50)
-                        _graphics->getTFT()->drawPixel(trackNum, yoffset, _graphics->LerpRGB(ST7735_YELLOW, ST7735_ORANGE, ratio));
-                    else
-                        _graphics->getTFT()->drawPixel(trackNum, yoffset, _graphics->LerpRGB(ST7735_ORANGE, ST7735_RED, ratio));
-                }
-                yoffset++;
-            }
+            drawFlux(trackNum);
         }
         else
         {
@@ -539,7 +552,6 @@ void XCopyDisk::testDisk(uint8_t retryCount)
 {
     _cancelOperation = false;
 
-    _graphics->bmpDraw("XCPYLOGO.BMP", 0, 87);
     _graphics->drawDiskName("");
     _graphics->drawDisk();
 
@@ -552,6 +564,7 @@ void XCopyDisk::testDisk(uint8_t retryCount)
 
     String diskName = getName();
     _graphics->drawDiskName(diskName);
+    _graphics->getTFT()->drawFastHLine(0, 85, _graphics->getTFT()->width(), ST7735_GREEN);
 
     for (int trackNum = 0; trackNum < 160; trackNum++)
     {
@@ -563,6 +576,9 @@ void XCopyDisk::testDisk(uint8_t retryCount)
 
         // read track
         readDiskTrack(trackNum, false, retryCount);
+
+        analyseHist(true);
+        drawFlux(trackNum, 6, 85);
     }
 
     _audio->playBoing(false);

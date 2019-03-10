@@ -71,6 +71,7 @@ void setSectorCnt(byte count);
 void printBootSector();
 int *getHist();
 byte getWeakTrack();
+byte getRetries();
 // ADDED FUNCTIONS
 
 void pinModeFast(uint8_t pin, uint8_t mode);

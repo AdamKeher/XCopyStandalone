@@ -294,6 +294,11 @@ byte getWeakTrack()
     return weakTracks[logTrack];
 }
 
+byte getRetries()
+{
+    return retries;
+}
+
 // ADDED FUNCTIONS
 
 void driveSelect()
@@ -1638,7 +1643,8 @@ void setMode(int density)
         filterSetting = filterSettingHD;
         writeSize = writeSizeHD;
         transitionTime = transTimeHD;
-        retries = 15;
+        // retries = 15;
+        retries = maxRetries;
         mode = HD;
     }
     else
@@ -1653,7 +1659,8 @@ void setMode(int density)
         filterSetting = filterSettingDD;
         writeSize = writeSizeDD;
         transitionTime = transTimeDD;
-        retries = 6;
+        // retries = 6;
+        retries = maxRetries;
         mode = DD;
     }
 }

@@ -30,6 +30,7 @@ class XCopyDisk
     void adfToDisk(String ADFFileName, bool verify, uint8_t retryCount, ADFFileSource source = _sdCard);
     void diskToDisk(bool verify, uint8_t retryCount);
     void diskFlux();
+    void drawFlux(uint8_t trackNum, uint8_t scale = 2, uint8_t yoffset = 0);
     static void dateTime(uint16_t *date, uint16_t *time);
     void changeDisk();
     void testDisk(uint8_t retryCount);
