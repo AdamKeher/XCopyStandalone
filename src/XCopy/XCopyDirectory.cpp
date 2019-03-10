@@ -415,9 +415,15 @@ void XCopyDirectory::drawDirectory(bool clearScreen)
         }
 
         uint16_t color = isCurrentItem(item) ? ST7735_GREEN : ST7735_WHITE;
+
+        // color red if ADF file size is unexpected
+        if (!item->isDirectory() && item->size != 901120)
+            color = ST7735_RED;
+        
         _graphics->setTextWrap(false);
         _graphics->drawText(color, item->longName);
 
+        // draw fullscreen thumbnail or information footer
         if (item->source == flashMemory && isCurrentItem(item))
         {
             String imageName = item->name.substring(0, item->name.lastIndexOf(".")) + ".565";
@@ -430,7 +436,10 @@ void XCopyDirectory::drawDirectory(bool clearScreen)
         else if (item->source == sdCard && isCurrentItem(item))
         {
             _graphics->getTFT()->fillRect(0, 119, _graphics->getTFT()->width(), 10, ST7735_BLUE);
-            _graphics->drawText(5, 120, ST7735_YELLOW, item->isDirectory() ? "Directory" : "Vol: " + item->volumeName);
+            String text = item->isDirectory() ? "Directory" : "Vol: " + item->volumeName;
+            if (item->size != 901120)
+                text = "invalid ADF Size: " + String(item->size) + " bytes";
+            _graphics->drawText(5, 120, ST7735_YELLOW, text);
         }
 
         item = item->next;

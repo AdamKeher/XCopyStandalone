@@ -1,6 +1,6 @@
 Todo:
   Disk Copy:
-    ☐ Check ADF file size before using
+    ✔ Check ADF file size before using - shows filenames in red if unexpected filesize @done(19-03-10 14:27)
     ✔ Copy disk to ADF needs to support creating a dir and auto naming @done(19-03-10 13:28)
     ✔ Fix disk copy functions so they correctly display the xcopy logo @done(19-03-10 12:14)
     ✔ Display error messages in red text @done(19-03-10 12:14)
@@ -10,8 +10,8 @@ Todo:
     ✔ ADF needs correct creation date on file @done(19-03-10 13:28)
     ✔ Move to SDFat library @done(19-03-08 14:22)
     ✔ Add long file name support @done(19-03-08 14:22)
-      - use text bounds to clip extra long filename before volumename?
-      - Or show long filname across entire line and have bottom row for volume name <- better?
+      ✘ use text bounds to clip extra long filename before volumename? @cancelled(19-03-10 13:32)
+      ✔ Or show long filname across entire line and have bottom row for volume name <- better? @done(19-03-10 13:33)
   Directory:
     ☐ Audio fires more than once when scrolled past MAXSCREENITEMS
     ☐ Seems to crash if you enter a sub dir containing files, go back up, enter empty sub dir, move up and down, go back and crashes
