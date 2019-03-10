@@ -1,6 +1,8 @@
 #ifndef XCOPYDISK_H
 #define XCOPYDISK_H
 
+#define SD_ADF_PATH "XCopy ADF Files"
+
 #include <Arduino.h>
 #include <Streaming.h>
 #include <SerialFlash.h>
@@ -28,6 +30,7 @@ class XCopyDisk
     void adfToDisk(String ADFFileName, bool verify, uint8_t retryCount, ADFFileSource source = _sdCard);
     void diskToDisk(bool verify, uint8_t retryCount);
     void diskFlux();
+    static void dateTime(uint16_t *date, uint16_t *time);
     void changeDisk();
     void testDisk(uint8_t retryCount);
     String getADFVolumeName(String ADFFileName, ADFFileSource = _sdCard);

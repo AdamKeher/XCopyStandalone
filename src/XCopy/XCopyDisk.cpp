@@ -31,7 +31,7 @@ void XCopyDisk::changeDisk()
             return;
         }
         diskInserted = diskChange();
-        delay(500);        
+        delay(500);
     }
 
     _graphics->drawText(0, 60, ST7735_GREEN, "    Disk Ejected. Waiting", true);
@@ -47,6 +47,15 @@ void XCopyDisk::changeDisk()
         diskInserted = diskChange();
         delay(3000);
     }
+}
+
+void XCopyDisk::dateTime(uint16_t *date, uint16_t *time)
+{
+    // return date using FAT_DATE macro to format fields
+    *date = FAT_DATE(year(), month(), day());
+
+    // return time using FAT_TIME macro to format fields
+    *time = FAT_TIME(hour(), minute(), second());
 }
 
 void XCopyDisk::readDiskTrack(uint8_t trackNum, bool verify, uint8_t retryCount)
@@ -114,7 +123,7 @@ void XCopyDisk::writeDiskTrack(uint8_t trackNum, uint8_t retryCount)
         if (_cancelOperation)
         {
             return;
-        }        
+        }
     }
 
     if (errors == -1)
@@ -154,11 +163,23 @@ bool XCopyDisk::diskToADF(String ADFFileName, bool verify, uint8_t retryCount, A
             return false;
         }
 
-        if (SD.exists(ADFFileName.c_str()))
-            SD.remove(ADFFileName.c_str());
+        if (!SD.exists(SD_ADF_PATH))
+        {
+            SD.mkdir(SD_ADF_PATH);
+        }
 
-        ADFFile = SD.open(ADFFileName.c_str(), FILE_WRITE);
+        char buffer[32];
+        sprintf(buffer, "%04d%02d%02d %02d%02d", year(), month(), day(), hour(), minute());
 
+        String fileName = String(buffer) + " " + diskName + ".adf";
+        String fullPath = "/" + String(SD_ADF_PATH) + "/" + fileName;
+
+        if (SD.exists(fullPath.c_str()))
+            SD.remove(fullPath.c_str());
+
+        SdFile::dateTimeCallback(dateTime);
+        ADFFile = SD.open(fullPath.c_str(), FILE_WRITE);
+        SdFile::dateTimeCallbackCancel();
 
         if (!ADFFile)
         {
@@ -444,7 +465,7 @@ void XCopyDisk::diskToDisk(bool verify, uint8_t retryCount)
     }
 
     bool completed = diskToADF("DISKCOPY.TMP", verify, retryCount, _flashMemory);
-    
+
     if (_cancelOperation || !completed)
         return;
 

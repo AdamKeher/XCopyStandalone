@@ -1,12 +1,13 @@
 Todo:
   Disk Copy:
-    ☐ Copy disk to ADF needs to support creating a dir and auto naming (ADF00001.ADF) find highest and inc 1.
+    ☐ Check ADF file size before using
+    ✔ Copy disk to ADF needs to support creating a dir and auto naming @done(19-03-10 13:28)
     ✔ Fix disk copy functions so they correctly display the xcopy logo @done(19-03-10 12:14)
     ✔ Display error messages in red text @done(19-03-10 12:14)
     ✔ Copy disk to disk fails when no disk is inserted initialy. Need return code from intial copy to decide if wait for disk or exit. @done(19-03-10 12:13)
     ✔ Allow interrupt exit during track retries @done(19-03-09 12:41)
   SDCard:
-    ☐ ADF needs correct creation date on file
+    ✔ ADF needs correct creation date on file @done(19-03-10 13:28)
     ✔ Move to SDFat library @done(19-03-08 14:22)
     ✔ Add long file name support @done(19-03-08 14:22)
       - use text bounds to clip extra long filename before volumename?

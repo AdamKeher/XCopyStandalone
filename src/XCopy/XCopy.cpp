@@ -221,7 +221,7 @@ void XCopy::update()
         if (_drawnOnce == false)
         {
             _config = new XCopyConfig();
-            _disk.diskToADF("DISK0001.ADF", _config->getVerify(), _config->getRetryCount(), _sdCard);
+            _disk.diskToADF("Auto Named.ADF", _config->getVerify(), _config->getRetryCount(), _sdCard);
             delete _config;
             _drawnOnce = true;
         }
