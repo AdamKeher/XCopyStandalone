@@ -20,20 +20,30 @@ void XCopyDisk::begin(XCopyGraphics *graphics, XCopyAudio *audio, uint8_t sdCSPi
 void XCopyDisk::changeDisk()
 {
     _graphics->clearScreen();
-    _graphics->drawText(0, 60, ST7735_YELLOW, "         Change Disk");
+    _graphics->drawText(0, 60, ST7735_YELLOW, "           Change Disk");
 
     bool diskInserted = diskChange();
     while (diskInserted)
     {
+        if (_cancelOperation)
+        {
+            _graphics->drawText(0, 70, ST7735_RED, "            Cancelled");
+            return;
+        }
         diskInserted = diskChange();
-        delay(500);
+        delay(500);        
     }
 
-    _graphics->drawText(0, 60, ST7735_GREEN, "  Disk Ejected. Waiting.", true);
+    _graphics->drawText(0, 60, ST7735_GREEN, "    Disk Ejected. Waiting", true);
 
     diskInserted = diskChange();
     while (!diskInserted)
     {
+        if (_cancelOperation)
+        {
+            _graphics->drawText(0, 70, ST7735_RED, "            Cancelled");
+            return;
+        }
         diskInserted = diskChange();
         delay(3000);
     }
@@ -113,18 +123,19 @@ void XCopyDisk::writeDiskTrack(uint8_t trackNum, uint8_t retryCount)
         _graphics->drawTrack(trackNum / 2, trackNum % 2, true, false, 0, false, ST7735_ORANGE);
 }
 
-void XCopyDisk::diskToADF(String ADFFileName, bool verify, uint8_t retryCount, ADFFileSource destination)
+bool XCopyDisk::diskToADF(String ADFFileName, bool verify, uint8_t retryCount, ADFFileSource destination)
 {
     _cancelOperation = false;
 
+    _graphics->bmpDraw("XCPYLOGO.BMP", 0, 87);
     _graphics->drawDiskName("");
     _graphics->drawDisk();
 
     if (!diskChange())
     {
-        _graphics->drawText(0, 10, ST7735_WHITE, "No Disk Inserted");
+        _graphics->drawText(0, 10, ST7735_RED, "No Disk Inserted");
         _audio->playBong(false);
-        return;
+        return false;
     }
 
     String diskName = getName();
@@ -142,9 +153,9 @@ void XCopyDisk::diskToADF(String ADFFileName, bool verify, uint8_t retryCount, A
     {
         if (!SD.begin(_sdCSPin))
         {
-            _graphics->drawText(0, 10, ST7735_WHITE, "SD Init Failed");
+            _graphics->drawText(0, 10, ST7735_RED, "SD Init Failed");
             _audio->playBong(false);
-            return;
+            return false;
         }
 
         if (SD.exists(buffer))
@@ -155,19 +166,19 @@ void XCopyDisk::diskToADF(String ADFFileName, bool verify, uint8_t retryCount, A
         if (!ADFFile)
         {
             ADFFile.close();
-            _graphics->drawText(0, 10, ST7735_WHITE, "SD File Open Failed");
+            _graphics->drawText(0, 10, ST7735_RED, "SD File Open Failed");
             _audio->playBong(false);
 
-            return;
+            return false;
         }
     }
     else if (destination == _flashMemory)
     {
         if (!SerialFlash.begin(_flashCSPin))
         {
-            _graphics->drawText(0, 10, ST7735_WHITE, "Serial Flash Init Failed");
+            _graphics->drawText(0, 10, ST7735_RED, "Serial Flash Init Failed");
             _audio->playBong(false);
-            return;
+            return false;
         }
 
         ADFFlashFile = SerialFlash.open(buffer);
@@ -186,9 +197,9 @@ void XCopyDisk::diskToADF(String ADFFileName, bool verify, uint8_t retryCount, A
         if (!ADFFlashFile)
         {
             ADFFlashFile.close();
-            _graphics->drawText(0, 10, ST7735_WHITE, "Serial Flash File Open Failed");
+            _graphics->drawText(0, 10, ST7735_RED, "Serial Flash File Open Failed", true);
             _audio->playBong(false);
-            return;
+            return false;
         }
 
         ADFFlashFile.seek(0);
@@ -200,7 +211,7 @@ void XCopyDisk::diskToADF(String ADFFileName, bool verify, uint8_t retryCount, A
         if (_cancelOperation)
         {
             OperationCancelled(trackNum);
-            return;
+            return false;
         }
 
         // read track
@@ -266,6 +277,8 @@ void XCopyDisk::diskToADF(String ADFFileName, bool verify, uint8_t retryCount, A
     ADFFile.close();
     ADFFlashFile.close();
     _audio->playBoing(false);
+
+    return true;
 }
 
 void XCopyDisk::adfToDisk(String ADFFileName, bool verify, uint8_t retryCount, ADFFileSource source)
@@ -275,19 +288,20 @@ void XCopyDisk::adfToDisk(String ADFFileName, bool verify, uint8_t retryCount, A
     if (ADFFileName == "")
         return;
 
+    _graphics->bmpDraw("XCPYLOGO.BMP", 0, 87);
     _graphics->drawDiskName(ADFFileName.substring(ADFFileName.lastIndexOf("/") + 1));
     _graphics->drawDisk();
 
     if (!diskChange())
     {
-        _graphics->drawText(0, 10, ST7735_WHITE, "No Disk Inserted");
+        _graphics->drawText(0, 10, ST7735_RED, "No Disk Inserted");
         _audio->playBong(false);
         return;
     }
 
     if (getWriteProtect())
     {
-        _graphics->drawText(0, 10, ST7735_WHITE, "Disk Write Protected");
+        _graphics->drawText(0, 10, ST7735_RED, "Disk Write Protected");
         _audio->playBong(false);
         return;
     }
@@ -303,7 +317,7 @@ void XCopyDisk::adfToDisk(String ADFFileName, bool verify, uint8_t retryCount, A
     {
         if (!SD.begin(_sdCSPin))
         {
-            _graphics->drawText(0, 10, ST7735_WHITE, "SD Init Failed");
+            _graphics->drawText(0, 10, ST7735_RED, "SD Init Failed");
             _audio->playBong(false);
             return;
         }
@@ -311,7 +325,7 @@ void XCopyDisk::adfToDisk(String ADFFileName, bool verify, uint8_t retryCount, A
         ADFFile = SD.open(buffer, FILE_READ);
         if (!ADFFile)
         {
-            _graphics->drawText(0, 10, ST7735_WHITE, "SD File Open Failed");
+            _graphics->drawText(0, 10, ST7735_RED, "SD File Open Failed");
             _audio->playBong(false);
             ADFFile.close();
             return;
@@ -321,7 +335,7 @@ void XCopyDisk::adfToDisk(String ADFFileName, bool verify, uint8_t retryCount, A
     {
         if (!SerialFlash.begin(_flashCSPin))
         {
-            _graphics->drawText(0, 10, ST7735_WHITE, "Serial Flash Init Failed");
+            _graphics->drawText(0, 10, ST7735_RED, "Serial Flash Init Failed");
             _audio->playBong(false);
             return;
         }
@@ -329,7 +343,7 @@ void XCopyDisk::adfToDisk(String ADFFileName, bool verify, uint8_t retryCount, A
         ADFFlashFile = SerialFlash.open(buffer);
         if (!ADFFlashFile)
         {
-            _graphics->drawText(0, 10, ST7735_WHITE, "Serial Flash File Open Failed");
+            _graphics->drawText(0, 10, ST7735_RED, "Serial Flash File Open Failed");
             _audio->playBong(false);
             ADFFlashFile.close();
             return;
@@ -423,9 +437,29 @@ void XCopyDisk::adfToDisk(String ADFFileName, bool verify, uint8_t retryCount, A
 
 void XCopyDisk::diskToDisk(bool verify, uint8_t retryCount)
 {
+    _cancelOperation = false;
     _graphics->clearScreen();
-    diskToADF("DISKCOPY.TMP", verify, retryCount, _flashMemory);
+
+    if (!diskChange())
+    {
+        _graphics->bmpDraw("XCPYLOGO.BMP", 0, 87);
+        _graphics->drawDiskName("");
+        _graphics->drawDisk();
+        _graphics->drawText(0, 10, ST7735_RED, "No Disk Inserted");
+        _audio->playBong(false);
+        return;
+    }
+
+    bool completed = diskToADF("DISKCOPY.TMP", verify, retryCount, _flashMemory);
+    
+    if (_cancelOperation || !completed)
+        return;
+
     changeDisk();
+
+    if (_cancelOperation)
+        return;
+
     _graphics->clearScreen();
     adfToDisk("DISKCOPY.TMP", verify, retryCount, _flashMemory);
 }
@@ -436,7 +470,7 @@ void XCopyDisk::diskFlux()
 
     if (!diskChange())
     {
-        _graphics->drawText(0, 0, ST7735_WHITE, "No Disk Inserted");
+        _graphics->drawText(0, 0, ST7735_RED, "No Disk Inserted");
         _audio->playBong(false);
         return;
     }
@@ -491,12 +525,13 @@ void XCopyDisk::testDisk(uint8_t retryCount)
 {
     _cancelOperation = false;
 
+    _graphics->bmpDraw("XCPYLOGO.BMP", 0, 87);
     _graphics->drawDiskName("");
     _graphics->drawDisk();
 
     if (!diskChange())
     {
-        _graphics->drawText(0, 10, ST7735_WHITE, "No Disk Inserted");
+        _graphics->drawText(0, 10, ST7735_RED, "No Disk Inserted");
         _audio->playBong(false);
         return;
     }

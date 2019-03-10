@@ -24,7 +24,7 @@ class XCopyDisk
     void readDiskTrack(uint8_t trackNum, bool verify, uint8_t retryCount);
     void writeDiskTrack(uint8_t trackNum, uint8_t retryCount);
 
-    void diskToADF(String ADFFileName, bool verify, uint8_t retryCount, ADFFileSource destination = _sdCard);
+    bool diskToADF(String ADFFileName, bool verify, uint8_t retryCount, ADFFileSource destination = _sdCard);
     void adfToDisk(String ADFFileName, bool verify, uint8_t retryCount, ADFFileSource source = _sdCard);
     void diskToDisk(bool verify, uint8_t retryCount);
     void diskFlux();

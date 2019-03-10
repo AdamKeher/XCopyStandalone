@@ -220,7 +220,6 @@ void XCopy::update()
     {
         if (_drawnOnce == false)
         {
-            _graphics.bmpDraw("XCPYLOGO.BMP", 0, 87);
             _config = new XCopyConfig();
             _disk.diskToADF("DISK0001.ADF", _config->getVerify(), _config->getRetryCount(), _sdCard);
             delete _config;
@@ -232,7 +231,6 @@ void XCopy::update()
     {
         if (_drawnOnce == false)
         {
-            _graphics.bmpDraw("XCPYLOGO.BMP", 0, 87);
             _config = new XCopyConfig();
             _disk.diskToADF("DISKCOPY.TMP", _config->getVerify(), _config->getRetryCount(), _flashMemory);
             delete _config;
@@ -244,7 +242,6 @@ void XCopy::update()
     {
         if (_drawnOnce == false)
         {
-            _graphics.bmpDraw("XCPYLOGO.BMP", 0, 87);
             _config = new XCopyConfig();
             _disk.diskToDisk(_config->getVerify(), _config->getRetryCount());
             delete _config;
@@ -256,7 +253,6 @@ void XCopy::update()
     {
         if (_drawnOnce == false)
         {
-            _graphics.bmpDraw("XCPYLOGO.BMP", 0, 87);
             _config = new XCopyConfig();
             _disk.adfToDisk("DISKCOPY.TMP", _config->getVerify(), _config->getRetryCount(), _flashMemory);
             delete _config;
@@ -268,7 +264,6 @@ void XCopy::update()
     {
         if (_drawnOnce == false)
         {
-            _graphics.bmpDraw("XCPYLOGO.BMP", 0, 87);
             _config = new XCopyConfig();
             _disk.testDisk(_config->getRetryCount());
             delete _config;
@@ -289,7 +284,6 @@ void XCopy::update()
     {
         if (_drawnOnce == false)
         {
-            _graphics.bmpDraw("XCPYLOGO.BMP", 0, 87);
             _config = new XCopyConfig();
             _disk.adfToDisk("BLANK.TMP", _config->getVerify(), _config->getRetryCount(), _flashMemory);
             delete _config;
