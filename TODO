@@ -4,9 +4,19 @@ Todo:
     ☐ Audio fires more than once when scrolled past MAXSCREENITEMS
     ☐ Seems to crash if you enter a sub dir containing files, go back up, enter empty sub dir, move up and down, go back and crashes
   Disk:
+    ☐ Write a log or bmp to record read history with ADF files
+      ☐ Draw the log on screen while browsing ADF files
     ✔ Added flux graph to disk check @done(19-03-11 10:50)
     ✔ Added weak tracks to track reading @done(19-03-11 10:50)
     ✔ Increased the number of retries in FloppyDrive / MAXRETRIES @done(19-03-11 10:50)
+  HTTP:
+    ☐ Add ESP8266 for HTTP webserver
+      ✔ Order ESP8266 for development @done(19-03-11 11:49)
+      ☐ Rename ADF files while copying
+      ☐ Control XCopy via web interface
+      ☐ Copy files to XCopy Flash and SD Card from PC
+      ☐ Use a pin to reflect busy to ESP8266 and communicate over existing serial port to send commands
+      ☐ Respin board
   Graphics:
     ☐ Fix lost sound after rawDraw
       ☐ Investigate actual root cause
