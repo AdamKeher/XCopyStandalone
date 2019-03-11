@@ -12,7 +12,7 @@
 #define filterSettingHD 0 // 4+4×val clock cycles, 48MHz = 4+4*2 = 32 clock cycles = 0.25us
 
 #define motorMaxTick 5   // Idle Seconds before Motor off
-#define maxRetries 25    // maximum retries to read a track
+#define maxRetries 6     // maximum retries to read a track
 #define transTimeDD 1.96 // timing for write transitions
 #define transTimeHD 0.98 // timing for write transitions
 
