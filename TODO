@@ -1,9 +1,11 @@
 Todo:
   Directory:
-    ☐ Test with a huge number of files in a directory, it will need to be paged ... eeek
+    ☐ Add paging of large directories > MAXSCREENITEMS
     ☐ Audio fires more than once when scrolled past MAXSCREENITEMS
     ☐ Seems to crash if you enter a sub dir containing files, go back up, enter empty sub dir, move up and down, go back and crashes
   Disk:
+    ☐ Add ADFlib for volume validation
+      ☐ Implement myFunctions in adf_nativ.cpp
     ✔ Write a log or bmp to record read history with ADF files @done(19-03-12 13:21)
       ✔ Add CRC32 hash of disk and CRC16 hash of tracks to log file @done(19-03-12 13:21)
       ☐ Draw the log on screen while browsing ADF files

@@ -11,7 +11,8 @@
 #include <Wire.h>
 #include <Streaming.h>
 #include <SdFat.h>
-
+#include "../adflib/adflib.h"
+#include "../adflib/adf_nativ.h"
 #include "XCopyMenu.h"
 #include "XCopyCommand.h"
 #include "XCopyDisk.h"

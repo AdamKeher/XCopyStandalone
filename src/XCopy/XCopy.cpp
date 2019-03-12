@@ -30,6 +30,8 @@ void XCopy::begin(int sdCSPin, int flashCSPin, int cardDetectPin)
     Serial << "                                                                          \033[0m\r\n";
     Serial << "\033[12h\r\n"; // terminal echo
 
+    adfEnvInitDefault();
+
     if (!SerialFlash.begin(_flashCSPin))
         Serial << "\033[31mSPI Flash Chip initialization failed.\033[0m\r\n";
     else
