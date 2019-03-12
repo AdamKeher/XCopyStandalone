@@ -43,12 +43,26 @@ void XCopyConfig::setVerify(bool value)
     _verify = value;
 }
 
+void XCopyConfig::setVolume(float value)
+{
+    StaticJsonBuffer<512> jsonBuffer;
+    JsonObject &root = jsonBuffer.parseObject(_config);
+    root["volume"] = value;
+
+    _config = "";
+    root.printTo(_config);
+
+    _volume = value;
+}
+
+
 void XCopyConfig::parseConfig()
 {
     StaticJsonBuffer<512> jsonBuffer;
     JsonObject &root = jsonBuffer.parseObject(_config);
     _verify = root["verify"] == "TRUE" ? true : false;
     _retryCount = root["retryCount"];
+    _volume = root["volume"];
 }
 
 bool XCopyConfig::readConfig()

@@ -13,7 +13,7 @@ class XCopyAudio
 public:
   XCopyAudio();
 
-  void begin();
+  void begin(float gain);
 
   void playFile(const char *filename, bool wait);
   void setGain(uint8_t channel, float level);

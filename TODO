@@ -37,7 +37,7 @@ Todo:
       =[memory report]============      
     ✔ Move the modified FastCRC library into local library @done(19-03-12 11:54)
   General:
-    ☐ Add volume to settings
+    ✔ Add volume to settings @done(19-03-12 15:18)
     ☐ Report weak tracks in diskcopy, test and flux
     ☐ Implement and test manual set time and get time from PC
   Bugs:

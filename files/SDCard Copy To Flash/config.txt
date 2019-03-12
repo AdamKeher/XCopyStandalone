@@ -1,4 +1,5 @@
 {
     "verify": "TRUE",
     "retryCount": 5
+    "volume": 0.8
 }

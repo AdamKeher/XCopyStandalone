@@ -4,10 +4,10 @@ XCopyAudio::XCopyAudio()
 {
 }
 
-void XCopyAudio::begin()
+void XCopyAudio::begin(float gain)
 {
     AudioMemory(8);
-    setGain(0, 0.8);
+    setGain(0, gain);
 }
 
 void XCopyAudio::playFile(const char *filename, bool wait)

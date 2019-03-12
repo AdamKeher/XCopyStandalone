@@ -30,16 +30,23 @@ void XCopy::begin(int sdCSPin, int flashCSPin, int cardDetectPin)
     Serial << "                                                                          \033[0m\r\n";
     Serial << "\033[12h\r\n"; // terminal echo
 
-    _audio.begin();
-    Serial << "\033[32mAudio initialized.\033[0m\r\n";
-
-    XCopyTime::setTime();
-    Serial << "\033[32mTime Set.\033[0m\r\n";
-
     if (!SerialFlash.begin(_flashCSPin))
         Serial << "\033[31mSPI Flash Chip initialization failed.\033[0m\r\n";
     else
         Serial << "\033[32mSPI Flash Chip initialized.\033[0m\r\n";
+
+    _config = new XCopyConfig(false);
+
+    if (_config->readConfig())
+        Serial << "\033[32mConfig Loaded.\033[0m\r\n";
+    else
+        Serial << "\033[31mConfig Failed to Load.\033[0m\r\n";
+
+    _audio.begin(_config->getVolume());
+    Serial << "\033[32mAudio initialized.\033[0m\r\n";
+
+    XCopyTime::setTime();
+    Serial << "\033[32mTime Set.\033[0m\r\n";
 
     _tft->begin();
     _tft->setRotation(3);
@@ -49,13 +56,6 @@ void XCopy::begin(int sdCSPin, int flashCSPin, int cardDetectPin)
 
     _disk.begin(&_graphics, &_audio, _sdCSPin, _flashCSPin, _cardDetectPin);
     _menu.begin(&_graphics);
-
-    _config = new XCopyConfig(false);
-
-    if (_config->readConfig())
-        Serial << "\033[32mConfig Loaded.\033[0m\r\n";
-    else
-        Serial << "\033[31mConfig Failed to Load.\033[0m\r\n";
 
     XCopyMenuItem *parentItem;
     XCopyMenuItem *debugParentItem;
@@ -90,7 +90,7 @@ void XCopy::begin(int sdCSPin, int flashCSPin, int cardDetectPin)
     _menu.addChild("Set Time", showTime, parentItem);
     retryCountMenuItem = _menu.addChild("Set Retry Count: " + String(_config->getRetryCount()), setRetry, parentItem);
     verifyMenuItem = _menu.addChild("Set Verify: " + (_config->getVerify() ? String("True") : String("False")), setVerify, parentItem);
-    _menu.addChild("", undefined, parentItem);
+    volumeMenuItem = _menu.addChild("Set Volume: " + String(_config->getVolume()), setVolume, parentItem);
     _menu.addChild("", undefined, parentItem);
     _menu.addChild("", undefined, parentItem);
     _menu.addChild("", undefined, parentItem);

@@ -312,5 +312,25 @@ void XCopy::navigateSelect()
             // redraw menu
             _xcopyState = menus;
         }
+
+        if (item->command == setVolume)
+        {
+            _config = new XCopyConfig();
+            float volume = _config->getVolume();
+            volume += 0.2f;
+            if (volume > 1.2f)
+                volume = 0.0f;
+            _config->setVolume(volume);
+
+            volumeMenuItem->text = "Set Volume: " + String(_config->getVolume());
+            _config->writeConfig();
+            delete _config;
+
+            _audio.setGain(0, volume);
+            _audio.playSelect(false);
+
+            // redraw menu
+            _xcopyState = menus;
+        }
     }
 }

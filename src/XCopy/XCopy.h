@@ -44,6 +44,7 @@ enum XCopyState
   directorySelection = 14,
   setVerify = 15,
   setRetry = 16,
+  setVolume = 17,
   copyDiskToFlash = 18,
   copyFlashToDisk = 19,
   debuggingFlashDetails = 23,
@@ -100,6 +101,7 @@ private:
 
   XCopyMenuItem *verifyMenuItem;
   XCopyMenuItem *retryCountMenuItem;
+  XCopyMenuItem *volumeMenuItem;
 
   bool _drawnOnce;
   int _prevSeconds = -1;
