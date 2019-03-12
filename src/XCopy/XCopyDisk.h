@@ -7,6 +7,11 @@
 #include <Streaming.h>
 #include <SerialFlash.h>
 #include <SdFat.h>
+/* 
+  FastCRC quick hacked to force SW CRC as HW CRC used static variables
+  and can't do concurrent 16/32 bit CRC's, defined & REV16 & REV32 altered
+*/
+#include "../FastCRC/FastCRC.h"
 #include "XCopyAudio.h"
 #include "XCopyGraphics.h"
 #include "FloppyDrive.h"
@@ -23,7 +28,7 @@ class XCopyDisk
     XCopyDisk();
     void begin(XCopyGraphics *graphics, XCopyAudio *audio, uint8_t sdCSPin, uint8_t flashCSPin, uint8_t cardDetectPin);
 
-    void readDiskTrack(uint8_t trackNum, bool verify, uint8_t retryCount);
+    int readDiskTrack(uint8_t trackNum, bool verify, uint8_t retryCount);
     void writeDiskTrack(uint8_t trackNum, uint8_t retryCount);
 
     bool diskToADF(String ADFFileName, bool verify, uint8_t retryCount, ADFFileSource destination = _sdCard);

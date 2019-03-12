@@ -4,8 +4,10 @@ Todo:
     ☐ Audio fires more than once when scrolled past MAXSCREENITEMS
     ☐ Seems to crash if you enter a sub dir containing files, go back up, enter empty sub dir, move up and down, go back and crashes
   Disk:
-    ☐ Write a log or bmp to record read history with ADF files
+    ✔ Write a log or bmp to record read history with ADF files @done(19-03-12 13:21)
+      ✔ Add CRC32 hash of disk and CRC16 hash of tracks to log file @done(19-03-12 13:21)
       ☐ Draw the log on screen while browsing ADF files
+    ☐ Have a look at configfile write and createerasable      
     ✔ Added flux graph to disk check @done(19-03-11 10:50)
     ✔ Added weak tracks to track reading @done(19-03-11 10:50)
     ✔ Increased the number of retries in FloppyDrive / MAXRETRIES @done(19-03-11 10:50)
@@ -22,20 +24,25 @@ Todo:
       ☐ Investigate actual root cause
   Refactor:
     ☐ Move the modified SDFat library into local library
+    ☐ Change references from side to head and use cylinder when not reffering to logical track
     ☐ Reduce memory footprint
-      ☐ Only create ADFx when needed, move the creation and deletion of them into the commands
-      ☐ Enclose all strings with F() to free memory
+    ☐ Only create ADFx when needed, move the creation and deletion of them into the commands
+    ☐ Enclose all strings with F() to free memory
       new
       =[memory report]============
       total: 64kb
-       free: 13072 b (1.92%%)
+      free: 13072 b (1.92%%)
       stack: 2560 b (0.31%%)
-       heap: 37612 b (5.66%%)
+      heap: 37612 b (5.66%%)
       =[memory report]============      
+    ✔ Move the modified FastCRC library into local library @done(19-03-12 11:54)
   General:
+    ☐ Add volume to settings
     ☐ Report weak tracks in diskcopy, test and flux
+    ☐ Implement and test manual set time and get time from PC
   Bugs:
     ☐ SdFat seems to have broken SerialFlash create / createErasable
+    ☐ Sometimes system gets into state where diskname returns NDOS for DOS disks, why? Drive reset / setup required?
   Low Priority:
     Other:
       ☐ Update time from serial connection when Set Time is called

@@ -16,7 +16,8 @@
                 "../../../libraries/Streaming/src",
                 "src/FivePosNavigation",
                 "src/XCopy",
-                "src/Audio"
+                "src/Audio",
+                "src/FastCRC"
             ],
             "defines": [
                 "_DEBUG",

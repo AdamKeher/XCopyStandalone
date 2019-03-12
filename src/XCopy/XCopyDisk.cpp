@@ -58,12 +58,13 @@ void XCopyDisk::dateTime(uint16_t *date, uint16_t *time)
     *time = FAT_TIME(hour(), minute(), second());
 }
 
-void XCopyDisk::readDiskTrack(uint8_t trackNum, bool verify, uint8_t retryCount)
+int XCopyDisk::readDiskTrack(uint8_t trackNum, bool verify, uint8_t retryCount)
 {
     // green = OK - no retries
     // yellow = ~OK - quick retry required
     // orange = ~OK - retry required
     // red = ERROR - track did not read correctly
+    // return 0 = OK, -1 = ERROR, >0 = OK w/ RETRY Count
 
     int retries = 0;
     int errors = -1;
@@ -92,7 +93,7 @@ void XCopyDisk::readDiskTrack(uint8_t trackNum, bool verify, uint8_t retryCount)
 
         if (_cancelOperation)
         {
-            return;
+            return -1;
         }
     }
 
@@ -100,6 +101,8 @@ void XCopyDisk::readDiskTrack(uint8_t trackNum, bool verify, uint8_t retryCount)
         _graphics->drawTrack(trackNum / 2, trackNum % 2, true, false, 0, verify, ST7735_RED);
     else if (errors == 0 && retries > 0)
         _graphics->drawTrack(trackNum / 2, trackNum % 2, true, false, 0, verify, ST7735_ORANGE);
+    
+    return errors == -1 ? errors : retries;
 }
 
 void XCopyDisk::writeDiskTrack(uint8_t trackNum, uint8_t retryCount)
@@ -141,6 +144,11 @@ void XCopyDisk::writeDiskTrack(uint8_t trackNum, uint8_t retryCount)
 
 bool XCopyDisk::diskToADF(String ADFFileName, bool verify, uint8_t retryCount, ADFFileSource destination)
 {
+    FastCRC32 CRC32;
+    FastCRC16 CRC16;
+    uint32_t disk_crc32 = 0;
+    uint16_t track_crc16 = 0;
+
     _cancelOperation = false;
 
     _graphics->bmpDraw("XCPYLOGO.BMP", 0, 87);
@@ -158,7 +166,13 @@ bool XCopyDisk::diskToADF(String ADFFileName, bool verify, uint8_t retryCount, A
     _graphics->drawDiskName(diskName);
 
     File ADFFile;
+    File ADFLogFile;
     SerialFlashFile ADFFlashFile;
+
+    int readErrors = 0;
+    int weakTracks = 0;
+    int totalReadErrors = 0;
+    int totalWeakTracks = 0;
 
     // Open SD File or SerialFile
     if (destination == _sdCard)
@@ -184,18 +198,44 @@ bool XCopyDisk::diskToADF(String ADFFileName, bool verify, uint8_t retryCount, A
         if (SD.exists(fullPath.c_str()))
             SD.remove(fullPath.c_str());
 
+        String logfileName = String(buffer) + " " + diskName + ".log";
+        logfileName = "/" + String(SD_ADF_PATH) + "/" + logfileName;
+
+        if (SD.exists(logfileName.c_str()))
+            SD.remove(logfileName.c_str());
+
         SdFile::dateTimeCallback(dateTime);
         ADFFile = SD.open(fullPath.c_str(), FILE_WRITE);
+        ADFLogFile = SD.open(logfileName.c_str(), FILE_WRITE);
         SdFile::dateTimeCallbackCancel();
 
         if (!ADFFile)
         {
             ADFFile.close();
-            _graphics->drawText(0, 10, ST7735_RED, "SD File Open Failed");
+            ADFLogFile.close();
+            _graphics->drawText(0, 10, ST7735_RED, "SD ADF File Open Failed");
             _audio->playBong(false);
 
             return false;
         }
+
+        if (!ADFLogFile)
+        {
+            ADFFile.close();
+            ADFLogFile.close();
+            _graphics->drawText(0, 10, ST7735_RED, "SD Log File Open Failed");
+            _audio->playBong(false);
+
+            return false;
+        }
+
+        ADFLogFile.println("{");
+        ADFLogFile.println("\t\"volume\": \"" + diskName + "\",");
+        sprintf(buffer, "%04d-%02d-%02d %02d:%02d:%02d", year(), month(), day(), hour(), minute(), second());
+        ADFLogFile.println("\t\"date\": \"" + String(buffer) + "\",");
+        ADFLogFile.println("\t\"origin\": \"XCopy Standalone\",");
+        ADFLogFile.println("\t\"timestamp\": " + String(now()) + ",");
+        ADFLogFile.println("\t\"tracks\": [");
     }
     else if (destination == _flashMemory)
     {
@@ -236,11 +276,71 @@ bool XCopyDisk::diskToADF(String ADFFileName, bool verify, uint8_t retryCount, A
         if (_cancelOperation)
         {
             OperationCancelled(trackNum);
+            ADFLogFile.println("\r\nCancelled.");
+            ADFLogFile.close();
+            ADFFile.close();
             return false;
         }
 
         // read track
-        readDiskTrack(trackNum, false, retryCount);
+        int readResult = readDiskTrack(trackNum, false, retryCount);
+
+        if (getWeakTrack())
+        {
+            weakTracks += getWeakTrack();
+            totalWeakTracks++;
+        }
+        
+        if (readResult != 0)
+        {
+            // if there has been error on either side, set error for whole cylinder else increment retry count
+            if (readErrors == -1 || readResult == -1)
+                readErrors = -1;
+            else
+                readErrors += readResult;
+            totalReadErrors++;
+        }
+
+        // calculate CRC
+        if (destination == _sdCard)
+        {
+            uint8_t side = trackNum % 2;
+
+            for (int sec = 0; sec < 11; sec++)
+            {
+                struct Sector *aSec = (Sector *)&getTrack()[sec].sector;
+
+                // total disk CRC
+                if (sec == 0 && trackNum == 0)
+                    disk_crc32 = CRC32.crc32(aSec->data, sizeof(aSec->data));
+                else
+                    disk_crc32 = CRC32.crc32_upd(aSec->data, sizeof(aSec->data));
+
+                // cyl CRC16
+                if (sec == 0 && side == 0)
+                {
+                    // Serial << "trackNum: " << trackNum << " Side: " << side << " Sec: " << sec << " CCITT\r\n";
+                    track_crc16 = CRC16.ccitt(aSec->data, sizeof(aSec->data));
+                }
+                else
+                {
+                    // Serial << "trackNum: " << trackNum << " Side: " << side << " Sec: " << sec << " CCITT_UPD\r\n";
+                    track_crc16 = CRC16.ccitt_upd(aSec->data, sizeof(aSec->data));
+                }
+            }
+
+            if (side == 1)
+            {
+                uint8_t cylinder = (trackNum - 1) / 2;
+                ADFLogFile.print("\t\t{ \"track\": " + String(cylinder) + ", \"crc16\": \"0x");
+                ADFLogFile.print(track_crc16, HEX);
+                ADFLogFile.print("\", \"retries\": " + String(readErrors) + ", \"weak\": " + String(weakTracks) + " }");
+                ADFLogFile.println(cylinder != 79 ? "," : "");
+
+                weakTracks = 0;
+                readErrors = 0;
+            }
+        }
 
         // write track (11 sectors per track)
         for (int i = 0; i < 11; i++)
@@ -299,7 +399,19 @@ bool XCopyDisk::diskToADF(String ADFFileName, bool verify, uint8_t retryCount, A
         }
     }
 
+    if (destination == _sdCard)
+    {
+        ADFLogFile.println("\t],");
+        ADFLogFile.println("\t\"readErrors\": " + String(totalReadErrors) + ",");
+        ADFLogFile.println("\t\"weakTracks\": " + String(totalWeakTracks) + ",");
+        ADFLogFile.print("\t\"crc32\": \"0x");
+        ADFLogFile.print(disk_crc32, HEX);
+        ADFLogFile.println("\"");
+        ADFLogFile.println("}");
+    }
+
     ADFFile.close();
+    ADFLogFile.close();
     ADFFlashFile.close();
     _audio->playBoing(false);
 
@@ -490,7 +602,7 @@ void XCopyDisk::drawFlux(uint8_t trackNum, uint8_t scale, uint8_t yoffset)
     for (int i = 0; i < 255; i = i + scale)
     {
         int hist = 0;
-        for (int s = 0; s < scale; s++ )
+        for (int s = 0; s < scale; s++)
             hist += getHist()[i + s];
 
         if (hist > 0)
