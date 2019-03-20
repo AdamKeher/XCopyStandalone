@@ -177,36 +177,51 @@ void XCopy::navigateSelect()
 
         if (item->command == debuggingTempFile)
         {
+            setBusy(true);
             _xcopyState = debuggingTempFile;
             _audio.playSelect(false);
         }
 
         if (item->command == debuggingSDFLash)
         {
+            setBusy(true);
             _xcopyState = debuggingSDFLash;
             _audio.playSelect(false);
         }
 
         if (item->command == debuggingEraseCopy)
         {
+            setBusy(true);
             _xcopyState = debuggingEraseCopy;
             _audio.playSelect(false);
         }
 
         if (item->command == debuggingCompareFlashToSDCard)
         {
+            setBusy(true);
             _xcopyState = debuggingCompareFlashToSDCard;
             _audio.playSelect(false);
         }
 
         if (item->command == debuggingFlashDetails)
         {
+            setBusy(true);
             _xcopyState = debuggingFlashDetails;
             _audio.playSelect(false);
         }
 
+        if (item->command == debuggingSerialPassThrough)
+        {
+            setBusy(true);
+            _xcopyState = debuggingSerialPassThrough;
+            _audio.playSelect(false); // filenames are always uppercase 8.3 format
+            _graphics.clearScreen();
+            _graphics.drawText(0, 0, ST7735_GREEN, "Serial Passtrhough Mode", true);
+        }        
+
         if (item->command == showTime)
         {
+            setBusy(true);
             _xcopyState = showTime;
             _audio.playSelect(false); // filenames are always uppercase 8.3 format
             _graphics.clearScreen();
@@ -214,6 +229,7 @@ void XCopy::navigateSelect()
 
         if (item->command == about)
         {
+            setBusy(true);
             _xcopyState = about;
             _drawnOnce = false;
             _audio.playSelect(false); // filenames are always uppercase 8.3 format
@@ -222,6 +238,7 @@ void XCopy::navigateSelect()
 
         if (item->command == copyDiskToADF)
         {
+            setBusy(true);
             _xcopyState = copyDiskToADF;
             _drawnOnce = false;
             _audio.playSelect(false);
@@ -230,6 +247,7 @@ void XCopy::navigateSelect()
 
         if (item->command == copyDiskToFlash)
         {
+            setBusy(true);
             _xcopyState = copyDiskToFlash;
             _drawnOnce = false;
             _audio.playSelect(false);
@@ -238,6 +256,7 @@ void XCopy::navigateSelect()
 
         if (item->command == copyFlashToDisk)
         {
+            setBusy(true);
             _xcopyState = copyFlashToDisk;
             _drawnOnce = false;
             _audio.playSelect(false);
@@ -246,6 +265,7 @@ void XCopy::navigateSelect()
 
         if (item->command == testDisk)
         {
+            setBusy(true);
             _xcopyState = testDisk;
             _drawnOnce = false;
             _audio.playSelect(false);
@@ -254,6 +274,7 @@ void XCopy::navigateSelect()
 
         if (item->command == fluxDisk)
         {
+            setBusy(true);
             _xcopyState = fluxDisk;
             _drawnOnce = false;
             _audio.playSelect(false);
@@ -262,6 +283,7 @@ void XCopy::navigateSelect()
 
         if (item->command == formatDisk)
         {
+            setBusy(true);
             _xcopyState = formatDisk;
             _drawnOnce = false;
             _audio.playSelect(false);
@@ -270,6 +292,7 @@ void XCopy::navigateSelect()
 
         if (item->command == copyADFToDisk)
         {
+            setBusy(true);
             _xcopyState = directorySelection;
             _drawnOnce = false;
             _audio.playSelect(false);
@@ -278,6 +301,7 @@ void XCopy::navigateSelect()
 
         if (item->command == copyDiskToDisk)
         {
+            setBusy(true);
             _xcopyState = copyDiskToDisk;
             _drawnOnce = false;
             _audio.playSelect(false);
@@ -285,18 +309,22 @@ void XCopy::navigateSelect()
 
         if (item->command == setVerify)
         {
+            setBusy(true);
             _audio.playSelect(false);
             _config = new XCopyConfig();
             _config->setVerify(!_config->getVerify());
             verifyMenuItem->text = "Set Verify: " + (_config->getVerify() ? String("True") : String("False"));
             _config->writeConfig();
             delete _config;
+
+            setBusy(false);
             // redraw menu
             _xcopyState = menus;
         }
 
         if (item->command == setRetry)
         {
+            setBusy(true);
             _audio.playSelect(false);
             _config = new XCopyConfig();
             uint8_t count = _config->getRetryCount();
@@ -309,12 +337,15 @@ void XCopy::navigateSelect()
             _config->writeConfig();
             delete _config;
 
+            setBusy(false);
             // redraw menu
             _xcopyState = menus;
         }
 
         if (item->command == setVolume)
         {
+            setBusy(true);
+
             _config = new XCopyConfig();
             float volume = _config->getVolume();
             volume += 0.2f;
@@ -329,6 +360,31 @@ void XCopy::navigateSelect()
             _audio.setGain(0, volume);
             _audio.playSelect(false);
 
+            setBusy(false);
+            // redraw menu
+            _xcopyState = menus;
+        }
+
+        if (item->command == setSSID)
+        {
+            setBusy(true);
+            _audio.playSelect(false);
+
+            ssidMenuItem->text = "SSID: " + _config->getSSID();
+
+            setBusy(false);
+            // redraw menu
+            _xcopyState = menus;
+        }
+
+        if (item->command == setPassword)
+        {
+            setBusy(true);
+            _audio.playSelect(false);
+
+            passwordMenuItem->text = "Password: " + _config->getPassword();
+
+            setBusy(false);
             // redraw menu
             _xcopyState = menus;
         }

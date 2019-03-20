@@ -168,9 +168,10 @@ struct Volume* adfMount( struct Device *dev, int nPart, BOOL readOnly )
 */
     if (adfReadBootBlock(vol, &boot)!=RC_OK) {
         (*adfEnv.wFct)("adfMount : BootBlock invalid");
+        // Serial.println("adfMount::2");
         return NULL;
     }       
-    
+
 	vol->dosType = boot.dosType[3];
 	if (isFFS(vol->dosType))
 		vol->datablockSize=512;
@@ -358,6 +359,8 @@ Serial.printf("%3d %x, ",i,vol->bitmapTable[0]->map[i]);
 RETCODE
 adfReadBlock(struct Volume* vol, int32_t nSect, uint8_t* buf)
 {
+    // Serial.println("adfReadBlock::0");
+
   /*    char strBuf[80];*/
     int32_t pSect;
     struct nativeFunctions *nFct;
@@ -368,11 +371,15 @@ adfReadBlock(struct Volume* vol, int32_t nSect, uint8_t* buf)
         return RC_ERROR;
     }
 
+    // Serial.println("adfReadBlock::1");
+
     /* translate logical sect to physical sect */
     pSect = nSect+vol->firstBlock;
 
     if (adfEnv.useRWAccess)
         (*adfEnv.rwhAccess)(pSect,nSect,FALSE);
+
+    // Serial.println("adfReadBlock::2");
 
 /*Serial.printf("psect=%ld nsect=%ld\n",pSect,nSect);*/
 /*    sprintf(strBuf,"ReadBlock : accessing logical block #%ld", nSect);	
@@ -382,12 +389,25 @@ adfReadBlock(struct Volume* vol, int32_t nSect, uint8_t* buf)
         (*adfEnv.wFct)("adfReadBlock : nSect out of range");
         
     }
+
+    // Serial.println("adfReadBlock::3");
+
 /*Serial.printf("pSect R =%ld\n",pSect);*/
     nFct = (nativeFunctions*)adfEnv.nativeFct;
+    // Serial.println("adfReadBlock::3.1");
     if (vol->dev->isNativeDev)
+    {
+        // Serial.println("adfReadBlock::3.1.1");
         rc = (*nFct->adfNativeReadSector)(vol->dev, pSect, 512, buf);
+    }
     else
+    {
+        // Serial.println("adfReadBlock::3.1.2");
         rc = adfReadDumpSector(vol->dev, pSect, 512, buf);
+    }
+
+    // Serial.println("adfReadBlock::4");
+
 /*Serial.printf("rc=%ld\n",rc);*/
     if (rc!=RC_OK)
         return RC_ERROR;

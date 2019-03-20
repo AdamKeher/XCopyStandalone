@@ -11,7 +11,8 @@
 			"xutility": "cpp",
 			"xlocale": "cpp",
 			"xlocnum": "cpp",
-			"xiosbase": "cpp"
+			"xiosbase": "cpp",
+			"type_traits": "cpp"
 		}
 	}
 }

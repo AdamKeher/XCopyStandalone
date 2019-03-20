@@ -5,21 +5,22 @@ XCopy::XCopy(TFT_ST7735 *tft)
     _tft = tft;
 }
 
-void XCopy::begin(int sdCSPin, int flashCSPin, int cardDetectPin)
+void XCopy::begin(int sdCSPin, int flashCSPin, int cardDetectPin, int busyPin)
 {
 #ifdef XCOPY_DEBUG
     _ram.initialize();
 #endif
+    Serial.begin(115200);
 
     _sdCSPin = sdCSPin;
     _flashCSPin = flashCSPin;
     _cardDetectPin = cardDetectPin;
+    _busyPin = busyPin;
 
     pinMode(_sdCSPin, INPUT_PULLUP);
     pinMode(_flashCSPin, INPUT_PULLUP);
     pinMode(_cardDetectPin, INPUT_PULLUP);
-
-    _command = new XCopyCommandLine(XCOPYVERSION);
+    pinMode(_busyPin, OUTPUT);
 
     Serial << "\033[2J\033[H\033[95m\033[106m";
     Serial << "                                                                          \r\n";
@@ -30,35 +31,73 @@ void XCopy::begin(int sdCSPin, int flashCSPin, int cardDetectPin)
     Serial << "                                                                          \033[0m\r\n";
     Serial << "\033[12h\r\n"; // terminal echo
 
-    adfEnvInitDefault();
+    // Init ADF LIB
+    // -------------------------------------------------------------------------------------------
+    _adfLib = new XCopyADFLib();
+    _adfLib->begin(_sdCSPin);
 
+    // Init Serial Flash
+    // -------------------------------------------------------------------------------------------
     if (!SerialFlash.begin(_flashCSPin))
         Serial << "\033[31mSPI Flash Chip initialization failed.\033[0m\r\n";
     else
         Serial << "\033[32mSPI Flash Chip initialized.\033[0m\r\n";
 
+    // Init Config
+    // -------------------------------------------------------------------------------------------
     _config = new XCopyConfig(false);
-
     if (_config->readConfig())
         Serial << "\033[32mConfig Loaded.\033[0m\r\n";
     else
         Serial << "\033[31mConfig Failed to Load.\033[0m\r\n";
-
+    
+    // Init Audio
+    // -------------------------------------------------------------------------------------------
     _audio.begin(_config->getVolume());
     Serial << "\033[32mAudio initialized.\033[0m\r\n";
 
+    // Init Time
+    // -------------------------------------------------------------------------------------------
     XCopyTime::setTime();
     Serial << "\033[32mTime Set.\033[0m\r\n";
 
+    // Init TFT
+    // -------------------------------------------------------------------------------------------
     _tft->begin();
     _tft->setRotation(3);
     _tft->setCharSpacing(2);
     _graphics.begin(_tft);
     Serial << "\033[32mTFT initialized.\033[0m\r\n";
 
-    _disk.begin(&_graphics, &_audio, _sdCSPin, _flashCSPin, _cardDetectPin);
-    _menu.begin(&_graphics);
+    // Intro
+    // -------------------------------------------------------------------------------------------
+    intro();
 
+    // Init ESP
+    // -------------------------------------------------------------------------------------------
+    _graphics.drawText(0, 115, ST7735_WHITE, "               Init WiFi", true);
+    _esp = new XCopyESP8266(ESPSerial, ESPBaudRate);
+    if (!_esp->begin())
+        Serial << "\033[31mESP8266 WIFI Chip initialization failed. (Serial" << ESPSerial << " @ " << ESPBaudRate << ")\033[0m\r\n";
+    else
+    {
+        _graphics.drawText(0, 115, ST7735_WHITE, "       Connecting to WiFi", true);
+        Serial << "\033[32mESP8266 WIFI Chip initialized. (Serial" << ESPSerial << " @ " << ESPBaudRate << ")\033[0m\r\n";
+        Serial << "\033[32mESP8266 Attempting to connect to WIFI. (SSID:" << _config->getSSID() << ")\033[0m\r\n";
+        _esp->connect(_config->getSSID(), _config->getPassword(), 0);
+    }
+
+    // Init Command Line
+    // -------------------------------------------------------------------------------------------
+    _command = new XCopyCommandLine(XCOPYVERSION, _adfLib, _esp, _config);
+
+    // Init Disk Routines
+    // -------------------------------------------------------------------------------------------
+    _disk.begin(&_graphics, &_audio, _sdCSPin, _flashCSPin, _cardDetectPin);
+
+    // Init Menu
+    // -------------------------------------------------------------------------------------------
+    _menu.begin(&_graphics);
     XCopyMenuItem *parentItem;
     XCopyMenuItem *debugParentItem;
 
@@ -82,6 +121,7 @@ void XCopy::begin(int sdCSPin, int flashCSPin, int cardDetectPin)
     _menu.addChild("Compare Flash to SD Card", debuggingCompareFlashToSDCard, debugParentItem);
     _menu.addChild("Test Flash & SD Card", debuggingSDFLash, debugParentItem);
     _menu.addChild("Erase Flash and Copy SD", debuggingEraseCopy, debugParentItem);
+    _menu.addChild("Serial Passthrough", debuggingSerialPassThrough, debugParentItem);
 
     _menu.addItem("", undefined);
     _menu.addItem("", undefined);
@@ -93,21 +133,28 @@ void XCopy::begin(int sdCSPin, int flashCSPin, int cardDetectPin)
     retryCountMenuItem = _menu.addChild("Set Retry Count: " + String(_config->getRetryCount()), setRetry, parentItem);
     verifyMenuItem = _menu.addChild("Set Verify: " + (_config->getVerify() ? String("True") : String("False")), setVerify, parentItem);
     volumeMenuItem = _menu.addChild("Set Volume: " + String(_config->getVolume()), setVolume, parentItem);
-    _menu.addChild("", undefined, parentItem);
-    _menu.addChild("", undefined, parentItem);
+    ssidMenuItem = _menu.addChild("SSID: " + _config->getSSID(), setSSID, parentItem);
+    passwordMenuItem = _menu.addChild("Password: " + _config->getPassword(), setPassword, parentItem);
     _menu.addChild("", undefined, parentItem);
     _menu.addChild("About XCopy", about, parentItem);
 
-    delete _config;
+    // delete _config;
 
+    // Init Directory
+    // -------------------------------------------------------------------------------------------
     _directory.begin(&_graphics, &_disk, _sdCSPin, _flashCSPin);
 
-
+    // Init Message
+    // -------------------------------------------------------------------------------------------
     Serial << "\r\nType 'help' for a list of commands.\r\n";
     _command->printPrompt();
 
-    intro();
     _menu.drawMenu(_menu.getRoot());
+}
+
+void XCopy::setBusy(bool busy)
+{
+    digitalWrite(_busyPin, busy);
 }
 
 void XCopy::intro()
@@ -118,9 +165,6 @@ void XCopy::intro()
     _graphics.drawText(50, 95, ST7735_WHITE, XCOPYVERSION);
 
     _audio.playChime(true);
-    delay(500);
-
-    _graphics.clearScreen();
 }
 
 #ifdef XCOPY_DEBUG
@@ -146,7 +190,7 @@ void XCopy::ramReport()
 void XCopy::update()
 {
 #ifdef XCOPY_DEBUG
-    if (millis() - _lastRam > 2000)
+    if (millis() - _lastRam > 5000)
     {
         ramReport();
         _lastRam = millis();
@@ -159,6 +203,7 @@ void XCopy::update()
         _debug->debugCompareTempFile();
         delete _debug;
 
+        setBusy(false);
         _xcopyState = menus;
     }
 
@@ -168,6 +213,7 @@ void XCopy::update()
         _debug->debug();
         delete _debug;
 
+        setBusy(false);
         _xcopyState = menus;
     }
 
@@ -177,6 +223,7 @@ void XCopy::update()
         _debug->debugEraseCopyCompare(true);
         delete _debug;
 
+        setBusy(false);
         _xcopyState = menus;
     }
 
@@ -187,6 +234,7 @@ void XCopy::update()
         _debug->debugEraseCopyCompare(false);
         delete _debug;
 
+        setBusy(false);
         _xcopyState = menus;
     }
 
@@ -195,6 +243,31 @@ void XCopy::update()
         XCopyDebug *_debug = new XCopyDebug(&_graphics, &_audio, _sdCSPin, _flashCSPin, _cardDetectPin);
         _debug->flashDetails();
         delete _debug;
+
+        setBusy(false);
+        _xcopyState = menus;
+    }
+
+    if (_xcopyState == debuggingSerialPassThrough)
+    {
+        Serial.begin(115200);
+        ESPSerial.begin(ESPBaudRate);
+        ESPSerial.print("ATE1\r\n");
+
+        while (1)
+        {
+            if (Serial.available())
+            {
+                ESPSerial.write(Serial.read());
+            }
+
+            if (ESPSerial.available())
+            {
+                Serial.write(ESPSerial.read());
+            }
+        }
+
+        setBusy(false);
         _xcopyState = menus;
     }
 
@@ -225,6 +298,8 @@ void XCopy::update()
             _config = new XCopyConfig();
             _disk.diskToADF("Auto Named.ADF", _config->getVerify(), _config->getRetryCount(), _sdCard);
             delete _config;
+
+            setBusy(false);
             _drawnOnce = true;
         }
     }
@@ -236,6 +311,8 @@ void XCopy::update()
             _config = new XCopyConfig();
             _disk.diskToADF("DISKCOPY.TMP", _config->getVerify(), _config->getRetryCount(), _flashMemory);
             delete _config;
+    
+            setBusy(false);
             _drawnOnce = true;
         }
     }
@@ -247,6 +324,8 @@ void XCopy::update()
             _config = new XCopyConfig();
             _disk.diskToDisk(_config->getVerify(), _config->getRetryCount());
             delete _config;
+    
+            setBusy(false);
             _drawnOnce = true;
         }
     }
@@ -258,6 +337,8 @@ void XCopy::update()
             _config = new XCopyConfig();
             _disk.adfToDisk("DISKCOPY.TMP", _config->getVerify(), _config->getRetryCount(), _flashMemory);
             delete _config;
+
+            setBusy(false);
             _drawnOnce = true;
         }
     }
@@ -269,6 +350,8 @@ void XCopy::update()
             _config = new XCopyConfig();
             _disk.testDisk(_config->getRetryCount());
             delete _config;
+
+            setBusy(false);
             _drawnOnce = true;
         }
     }
@@ -278,6 +361,8 @@ void XCopy::update()
         if (_drawnOnce == false)
         {
             _disk.diskFlux();
+
+            setBusy(false);
             _drawnOnce = true;
         }
     }
@@ -289,8 +374,9 @@ void XCopy::update()
             _config = new XCopyConfig();
             _disk.adfToDisk("BLANK.TMP", _config->getVerify(), _config->getRetryCount(), _flashMemory);
             delete _config;
-            _drawnOnce = true;
 
+            setBusy(false);
+            _drawnOnce = true;
         }
     }
 
@@ -319,6 +405,7 @@ void XCopy::update()
 
     if (_xcopyState == idle)
     {
+        setBusy(false);
     }
 
     _command->Update();
@@ -326,33 +413,33 @@ void XCopy::update()
 
 void XCopy::cancelOperation()
 {
-    switch(_xcopyState)
+    switch (_xcopyState)
     {
-        case testDisk:
-            _disk.cancelOperation();
-            break;
-        case copyDiskToADF:
-            _disk.cancelOperation();
-            break;
-        case copyADFToDisk:
-            _disk.cancelOperation();
-            break;
-        case copyDiskToDisk:
-            _disk.cancelOperation();
-            break;
-        case copyDiskToFlash:
-            _disk.cancelOperation();
-            break;
-        case copyFlashToDisk:
-            _disk.cancelOperation();
-            break;
-        case fluxDisk:
-            _disk.cancelOperation();
-            break;
-        case formatDisk:
-            _disk.cancelOperation();
-            break;
-        default:
-            break;
-    }   
+    case testDisk:
+        _disk.cancelOperation();
+        break;
+    case copyDiskToADF:
+        _disk.cancelOperation();
+        break;
+    case copyADFToDisk:
+        _disk.cancelOperation();
+        break;
+    case copyDiskToDisk:
+        _disk.cancelOperation();
+        break;
+    case copyDiskToFlash:
+        _disk.cancelOperation();
+        break;
+    case copyFlashToDisk:
+        _disk.cancelOperation();
+        break;
+    case fluxDisk:
+        _disk.cancelOperation();
+        break;
+    case formatDisk:
+        _disk.cancelOperation();
+        break;
+    default:
+        break;
+    }
 }

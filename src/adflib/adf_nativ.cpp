@@ -29,17 +29,24 @@
 #include"adf_err.h"
 #include <Arduino.h>
 
+#include <SdFat.h>
+
 extern struct Env adfEnv;
 
+char *adfFileName;
+// SdFat SD;
+// FatFile adfFile;
 
 /*
  * myInitDevice
  *
  * must fill 'dev->size'
  */
-RETCODE myInitDevice(struct Device* dev, char* name,BOOL ro)
+RETCODE myInitDevice(struct Device* dev, char* name, BOOL ro)
 {
-    struct nativeDevice* nDev;
+    // Serial.printf( "myInitDevice\r\n" );
+
+    struct nativeDevice *nDev;
 
     nDev = (struct nativeDevice*)dev->nativeDev;
 
@@ -58,9 +65,30 @@ RETCODE myInitDevice(struct Device* dev, char* name,BOOL ro)
 
     dev->size = 0;
 
-    return RC_OK;
-}
+    SdFat SD;
+    SD.begin(22);
+    if (SD.exists(name))
+    {
+        adfFileName = name;
 
+        dev->cylinders = 80;
+        dev->heads = 2;
+        dev->sectors = 11;
+        dev->devType = DEVTYPE_FLOPDD;
+        dev->isNativeDev = myIsDevNative(name);
+        dev->readOnly = ro;
+        dev->size = dev->cylinders * dev->heads * dev->sectors * 512;
+        
+        // adfFile = SD.open(adfFileName);
+        
+        return RC_OK;
+    }
+    else
+    {
+        free(nDev);
+        return RC_ERROR;
+    }
+}
 
 /*
  * myReadSector
@@ -68,7 +96,37 @@ RETCODE myInitDevice(struct Device* dev, char* name,BOOL ro)
  */
 RETCODE myReadSector(struct Device *dev, int32_t n, int size, uint8_t* buf)
 {
-     return RC_OK;   
+    Serial.printf( "myReadSector\r\n" );
+    int track = n / dev->sectors;
+    int sector = n % dev->sectors;
+	// Serial.printf("Read Track: file: %s %d Sector: %d n: %d size: %d seek: %d\r\n", adfFileName, track, sector, n, size, n * size);
+
+    // FIX: why is the file closed?
+    // adfFile.close();
+    Serial.print( "myReadSector::1::'");
+    Serial.print(adfFileName);
+    Serial.println("'");
+    // Serial.print("Open: ");
+    // Serial.println(adfFile.isOpen());
+    SdFat SD;
+    SD.begin(22);
+    File adfFile3 = SD.open(adfFileName);
+    adfFile3.seek(n * size);
+    adfFile3.close();
+    Serial.printf("myReadSector::2\r\n");
+    File adfFile2 = SD.open(adfFileName);
+    Serial.printf( "myReadSector::2.5\r\n" );
+    // FatFile adfFile = SD.open(adfFileName);
+    Serial.printf( "myReadSector::3\r\n" );
+
+    byte buffer[size];
+    adfFile2.seek(n * size);
+    adfFile2.read(buffer, size);
+    memcpy(buf, buffer, size);
+
+    adfFile2.close();
+
+    return RC_OK;
 }
 
 
@@ -78,6 +136,7 @@ RETCODE myReadSector(struct Device *dev, int32_t n, int size, uint8_t* buf)
  */
 RETCODE myWriteSector(struct Device *dev, int32_t n, int size, uint8_t* buf)
 {
+    Serial.printf( "myWriteSector\r\n" );
     return RC_OK;
 }
 
@@ -89,11 +148,18 @@ RETCODE myWriteSector(struct Device *dev, int32_t n, int size, uint8_t* buf)
  */
 RETCODE myReleaseDevice(struct Device *dev)
 {
+    // Serial.printf( "myReleaseDevice\r\n" );
+
     struct nativeDevice* nDev;
 
     nDev = (struct nativeDevice*)dev->nativeDev;
 
-	free(nDev);
+    free(nDev);
+
+    // if (adfFile.isOpen())
+    //     adfFile.close();
+    // if (adfFile)
+    //     adfFile.close();
 
     return RC_OK;
 }
@@ -106,6 +172,8 @@ RETCODE myReleaseDevice(struct Device *dev)
  */
 void adfInitNativeFct()
 {
+    // Serial.printf( "adfInitNativeFct\r\n" );
+
     struct nativeFunctions *nFct;
 
     nFct = (struct nativeFunctions*)adfEnv.nativeFct;
@@ -124,7 +192,8 @@ void adfInitNativeFct()
  */
 BOOL myIsDevNative(char *devName)
 {
-  //  return (strncmp(devName,"/dev/",5)==0);
+  // Serial.printf( "myIsDevNative\r\n" );
+  // return (strncmp(devName,"/dev/",5)==0);
   return true;
 }
 /*##########################################################################*/

@@ -4,41 +4,59 @@ Todo:
     ☐ Audio fires more than once when scrolled past MAXSCREENITEMS
     ☐ Seems to crash if you enter a sub dir containing files, go back up, enter empty sub dir, move up and down, go back and crashes
   Disk:
-    ☐ Add ADFlib for volume validation
-      ☐ Implement myFunctions in adf_nativ.cpp
+    ☐ Fails if retry count is 0
+    ☐ Have a look at configfile write and createerasable. Why does it currently work?
+    ✔ Add ADFlib for volume validation @done(19-03-12 23:54)
     ✔ Write a log or bmp to record read history with ADF files @done(19-03-12 13:21)
       ✔ Add CRC32 hash of disk and CRC16 hash of tracks to log file @done(19-03-12 13:21)
-      ☐ Draw the log on screen while browsing ADF files
-    ☐ Have a look at configfile write and createerasable      
+      ✘ Draw the log on screen while browsing ADF files @cancelled(19-03-15 22:14)
     ✔ Added flux graph to disk check @done(19-03-11 10:50)
     ✔ Added weak tracks to track reading @done(19-03-11 10:50)
     ✔ Increased the number of retries in FloppyDrive / MAXRETRIES @done(19-03-11 10:50)
+  ADFLib:
+    ☐ Implement myFunctions
+    ☐ Add support for mount, dir, cd
+    ☐ Add support for floppy drive in myinit, myread etc
+    ☐ Sometimes crashes with NDOS disks. Try workbnch then mutation
+    ✔ track down memory leak when file open fails @done(19-03-16 10:59)
+      ✔ mem leak when adf file doesn't contain a volume / NDOS  disk (72bytes) @done(19-03-16 10:59)
+      ✔ mem leak when file is missing (~16bytes) - ADFlib didn't free volume when mounting disk failed @done(19-03-16 09:42)
+    ✔ track down memory leak, malloc fails after 3rd try @done(19-03-15 22:13)
+    ✔ remove hardcoding of workbnch.adf and pass in param @done(19-03-15 22:13)
   HTTP:
-    ☐ Add ESP8266 for HTTP webserver
-      ✔ Order ESP8266 for development @done(19-03-11 11:49)
-      ☐ Rename ADF files while copying
-      ☐ Control XCopy via web interface
-      ☐ Copy files to XCopy Flash and SD Card from PC
-      ☐ Use a pin to reflect busy to ESP8266 and communicate over existing serial port to send commands
-      ☐ Respin board
+    ✔ Order ESP8266 for development @done(19-03-11 11:49)
+    ✔ Add ESP8266 to prototype @done(19-03-20 16:33)
+    ✔ Add control pin for busy signal teensy -> esp8266 to flag when device is occupied @done(19-03-20 16:33)
+    ✔ Display test webpage with buys signal @done(19-03-20 16:33)
+    ✔ Implement command infrastructure @done(19-03-20 16:33)
+    ☐ Update webserver to use SPIFFS to store files
+    ☐ Add reset (rst low / pin 25) and program (gpio0 low / pin 26)
+    ☐ Add seperate debugging menu item for Serial Passthrough Mode and ESP8266 Programming Mode
+    ☐ Truncated response received from ESP866 commands
+    ☐ Fix settings menu SSID and Password menu items to udpate when 'connect <ssid> <password>' command issued
+    ☐ Add timeout function and instant exit on completion for esp8266 functions
+    ☐ Delete _config removed from xcopy.begin() while testing due to passing through to xcopycommand. delete it at startup and recreate in connect command
+    ☐ Implement websockets for two way updates      
+    ☐ Rename ADF files while copying
+    ☐ Control XCopy via web interface
+    ☐ Copy files to XCopy Flash and SD Card from PC
+    ☐ Use a pin to reflect busy to ESP8266 and communicate over existing serial port to send commands
+    ☐ Respin board
   Graphics:
     ☐ Fix lost sound after rawDraw
       ☐ Investigate actual root cause
   Refactor:
+    ☐ Reduce memory footprint
+      ☐ Get rid of .begin and migrate code to constructors and change local variables to pointers
+      ☐ Delete _disk when not being used to free up memory
+      ☐ Only create ADFx when needed, move the creation and deletion of them into the commands
+      ☐ Enclose all strings with F() to free memory
+    ☐ Make commandline parent class with virual doCommand method and call from both ESP and Teensy
     ☐ Move the modified SDFat library into local library
     ☐ Change references from side to head and use cylinder when not reffering to logical track
-    ☐ Reduce memory footprint
-    ☐ Only create ADFx when needed, move the creation and deletion of them into the commands
-    ☐ Enclose all strings with F() to free memory
-      new
-      =[memory report]============
-      total: 64kb
-      free: 13072 b (1.92%%)
-      stack: 2560 b (0.31%%)
-      heap: 37612 b (5.66%%)
-      =[memory report]============      
+    ☐ Refactor code to move graphics calls in to classes and have all items called update
     ✔ Move the modified FastCRC library into local library @done(19-03-12 11:54)
-  General:
+    General:
     ✔ Add volume to settings @done(19-03-12 15:18)
     ☐ Report weak tracks in diskcopy, test and flux
     ☐ Implement and test manual set time and get time from PC
@@ -47,9 +65,7 @@ Todo:
     ☐ Sometimes system gets into state where diskname returns NDOS for DOS disks, why? Drive reset / setup required?
   Low Priority:
     Other:
-      ☐ Update time from serial connection when Set Time is called
-      ☐ Refactor code to move graphics calls in to classes and have all items called update
-      ☐ Add serial commands
+      ☐ Add remaining serial commands
     Display:
       ☐ Test different S7735 libraries to see if faster
       ☐ Add demo effects of rotating xcopy logo
@@ -57,15 +73,16 @@ Todo:
       ☐ Add music player source for about screen
     Board:
       ☐ Tests
+        ☐ Make test cable for Amiga drive as source
         ☐ Make test board for external floppy from PC
         ☐ Make test adapter board to connect 
       ☐ Desing
-        ☐ Design board to have teensy directly mounted
-        ☐ Design board to allow selection between PC and Amiga drive
-        ☐ Design board to allow passthrough
+        ☐ Design board to have teensy and ESP8266 directly mounted
+        ☐ Design board to allow selection between PC and Amiga drive as source
+        ☐ Design board to allow use as external drive
       ☐ Stretch
         ☐ Write a Teensy FD emulator for the Amiga
-
+        
 Archive:
   ✔ Check ADF file size before using - shows filenames in red if unexpected filesize @done(19-03-10 14:27) @project(Todo.Disk Copy)
   ✔ Copy disk to ADF needs to support creating a dir and auto naming @done(19-03-10 13:28) @project(Todo.Disk Copy)

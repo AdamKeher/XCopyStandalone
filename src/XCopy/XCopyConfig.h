@@ -21,16 +21,22 @@ public:
   bool getVerify() { return _verify; }
   uint8_t getRetryCount() { return _retryCount; }
   float getVolume() { return _volume; }
+  String getSSID() { return _ssid; }
+  String getPassword() { return _password; }
 
   void setVerify(bool value);
   void setRetryCount(int value);
   void setVolume(float value);
+  void setSSID(String value);
+  void setPassword(String value);
 
 private:
   String _config;
   bool _verify = false;
   uint8_t _retryCount = 0;
   float _volume = 0.8;
+  String _ssid;
+  String _password;
 };
 
 #endif // XCOPYCONFIG_H

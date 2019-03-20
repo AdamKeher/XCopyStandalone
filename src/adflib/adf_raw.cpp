@@ -36,6 +36,7 @@
 #include "adf_util.h"
 #include "adf_err.h"
 #include "defendian.h"
+#include "Arduino.h"
 
 extern struct Env adfEnv;
 
@@ -103,9 +104,6 @@ swapEndian( uint8_t *buf, int type )
 }
 
 
-
-
-
 /*
  * adfReadRootBlock
  *
@@ -114,15 +112,26 @@ swapEndian( uint8_t *buf, int type )
 RETCODE
 adfReadRootBlock(struct Volume* vol, int32_t nSect, struct bRootBlock* root)
 {
-	uint8_t buf[LOGICAL_BLOCK_SIZE];
+    // Serial.println("adfReadRootBlock::0");
+
+ 	uint8_t buf[LOGICAL_BLOCK_SIZE];
+
+    // Serial.println("adfReadRootBlock::0.1");
 
 	if (adfReadBlock(vol, nSect, buf)!=RC_OK)
+    {
+        // Serial.println("adfReadRootBlock::0.2");
 		return RC_ERROR;
+    }
+
+    // Serial.println("adfReadRootBlock::1");
 
 	memcpy(root, buf, LOGICAL_BLOCK_SIZE);
 #ifdef LITT_ENDIAN
     swapEndian((uint8_t*)root, SWBL_ROOT);    
 #endif
+
+    // Serial.println("adfReadRootBlock::2");
 
 	if (root->type!=T_HEADER || root->secType!=ST_ROOT) {
 		(*adfEnv.wFct)("adfReadRootBlock : id not found");

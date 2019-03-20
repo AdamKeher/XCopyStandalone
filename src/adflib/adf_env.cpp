@@ -36,6 +36,8 @@
 #include"defendian.h"
 #include <Arduino.h>
 
+#define debugadf
+
 union u{
     int32_t l;
     char c[4];
@@ -51,28 +53,27 @@ void rwHeadAccess(SECTNUM physical, SECTNUM logical, BOOL write)
     /* display the physical sector, the logical block, and if the access is read or write */
 
 #ifdef debugadf
-    Serial.printf("phy %d / log %d : %c\n", physical, logical, write ? 'W' : 'R');
+    Serial.printf("phy %d / log %d : %c\r\n", physical, logical, write ? 'W' : 'R');
 #endif
 }
 
 void progressBar(int perCentDone)
 {
 #ifdef debugadf
-    Serial.printf("%d %% done\n",perCentDone);
+    Serial.printf("%d %% done\r\n",perCentDone);
 #endif
 }
 
 void Warning(const char* msg) {
 #ifdef debugadf
-    Serial.printf("Warning <%s>\n",msg);
+    Serial.printf("Warning <%s>\r\n",msg);
 #endif
 	envWarning = true;
 }
 
 void Error(const char* msg) {
 #ifdef debugadf
-    Serial.printf("Error <%s>\n",msg);
-
+    Serial.printf("Error <%s>\r\n",msg);
 #endif
 	envError = true;
 }
@@ -92,7 +93,7 @@ void adfClearError()
 
 void Verbose(const char* msg) {
 #ifdef debugadf
-    Serial.printf("Verbose <%s>\n",msg);
+    Serial.printf("Verbose <%s>\r\n",msg);
 #endif
 }
 
@@ -100,16 +101,16 @@ void Changed(SECTNUM nSect, int changedType)
 {
 /*    switch(changedType) {
     case ST_FILE:
-        Serial.printf("Notification : sector %ld (FILE)\n",nSect);
+        Serial.printf("Notification : sector %ld (FILE)\r\n",nSect);
         break;
     case ST_DIR:
-        Serial.printf("Notification : sector %ld (DIR)\n",nSect);
+        Serial.printf("Notification : sector %ld (DIR)\r\n",nSect);
         break;
     case ST_ROOT:
-        Serial.printf("Notification : sector %ld (ROOT)\n",nSect);
+        Serial.printf("Notification : sector %ld (ROOT)\r\n",nSect);
         break;
     default:
-        Serial.printf("Notification : sector %ld (???)\n",nSect);
+        Serial.printf("Notification : sector %ld (???)\r\n",nSect);
     }
 */}
 
@@ -125,38 +126,38 @@ void adfEnvInitDefault()
     /* internal checking */
 
     if (sizeof(short)!=2) 
-        { Serial.printf("Compilation error : sizeof(short)!=2\n"); exit(1); }
+        { Serial.printf("Compilation error : sizeof(short)!=2\r\n"); exit(1); }
     if (sizeof(int32_t)!=4) 
-        { Serial.printf("Compilation error : sizeof(short)!=2\n"); exit(1); }
+        { Serial.printf("Compilation error : sizeof(short)!=2\r\n"); exit(1); }
     if (sizeof(struct bEntryBlock)!=512)
-        { Serial.printf("Internal error : sizeof(struct bEntryBlock)!=512\n"); exit(1); }
+        { Serial.printf("Internal error : sizeof(struct bEntryBlock)!=512\r\n"); exit(1); }
     if (sizeof(struct bRootBlock)!=512)
-        { Serial.printf("Internal error : sizeof(struct bRootBlock)!=512\n"); exit(1); }
+        { Serial.printf("Internal error : sizeof(struct bRootBlock)!=512\r\n"); exit(1); }
     if (sizeof(struct bDirBlock)!=512)
-        { Serial.printf("Internal error : sizeof(struct bDirBlock)!=512\n"); exit(1); }
+        { Serial.printf("Internal error : sizeof(struct bDirBlock)!=512\r\n"); exit(1); }
     if (sizeof(struct bBootBlock)!=1024)
-        { Serial.printf("Internal error : sizeof(struct bBootBlock)!=1024\n"); exit(1); }
+        { Serial.printf("Internal error : sizeof(struct bBootBlock)!=1024\r\n"); exit(1); }
     if (sizeof(struct bFileHeaderBlock)!=512)
-        { Serial.printf("Internal error : sizeof(struct bFileHeaderBlock)!=512\n"); exit(1); }
+        { Serial.printf("Internal error : sizeof(struct bFileHeaderBlock)!=512\r\n"); exit(1); }
     if (sizeof(struct bFileExtBlock)!=512)
-        { Serial.printf("Internal error : sizeof(struct bFileExtBlock)!=512\n"); exit(1); }
+        { Serial.printf("Internal error : sizeof(struct bFileExtBlock)!=512\r\n"); exit(1); }
     if (sizeof(struct bOFSDataBlock)!=512)
-        { Serial.printf("Internal error : sizeof(struct bOFSDataBlock)!=512\n"); exit(1); }
+        { Serial.printf("Internal error : sizeof(struct bOFSDataBlock)!=512\r\n"); exit(1); }
     if (sizeof(struct bBitmapBlock)!=512)
-        { Serial.printf("Internal error : sizeof(struct bBitmapBlock)!=512\n"); exit(1); }
+        { Serial.printf("Internal error : sizeof(struct bBitmapBlock)!=512\r\n"); exit(1); }
     if (sizeof(struct bBitmapExtBlock)!=512)
-        { Serial.printf("Internal error : sizeof(struct bBitmapExtBlock)!=512\n"); exit(1); }
+        { Serial.printf("Internal error : sizeof(struct bBitmapExtBlock)!=512\r\n"); exit(1); }
     if (sizeof(struct bLinkBlock)!=512)
-        { Serial.printf("Internal error : sizeof(struct bLinkBlock)!=512\n"); exit(1); }
+        { Serial.printf("Internal error : sizeof(struct bLinkBlock)!=512\r\n"); exit(1); }
 
     val.l=1L;
 /* if LITT_ENDIAN not defined : must be BIG endian */
 #ifndef LITT_ENDIAN
     if (val.c[3]!=1) /* little endian : LITT_ENDIAN must be defined ! */
-        { Serial.printf("Compilation error : #define LITT_ENDIAN must exist\n"); exit(1); }
+        { Serial.printf("Compilation error : #define LITT_ENDIAN must exist\r\n"); exit(1); }
 #else
     if (val.c[3]==1) /* big endian : LITT_ENDIAN must not be defined ! */
-        { Serial.printf("Compilation error : #define LITT_ENDIAN must not exist\n"); exit(1); }
+        { Serial.printf("Compilation error : #define LITT_ENDIAN must not exist\r\n"); exit(1); }
 #endif
 
     adfEnv.wFct = Warning;
@@ -171,7 +172,7 @@ void adfEnvInitDefault()
     adfEnv.useNotify = FALSE;
     adfEnv.useProgressBar = FALSE;
 
-    Serial.printf ("ADFlib %s (%s)\r\n",adfGetVersionNumber(),adfGetVersionDate());
+    Serial.printf ("ADFlib %s (%s)\r\r\n",adfGetVersionNumber(),adfGetVersionDate());
     // (*adfEnv.vFct)(str);
 
     adfEnv.nativeFct=(struct nativeFunctions*)malloc(sizeof(struct nativeFunctions));

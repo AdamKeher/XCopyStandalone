@@ -325,10 +325,12 @@ RETCODE adfMountHd(struct Device *dev)
  */
 RETCODE adfMountFlop(struct Device* dev)
 {
-	struct Volume *vol;
+    struct Volume *vol;
 	struct bRootBlock root;
 	char diskName[35];
 	
+    // Serial.println("adfMountFlop::1");
+
     dev->cylinders = 80;
     dev->heads = 2;
     if (dev->devType==DEVTYPE_FLOPDD)
@@ -336,11 +338,16 @@ RETCODE adfMountFlop(struct Device* dev)
     else 
         dev->sectors = 22;
 
+    // Serial.println("adfMountFlop::2");
+
     vol=(struct Volume*)malloc(sizeof(struct Volume));
     if (!vol) { 
 		(*adfEnv.eFct)("adfMount : malloc");
         return RC_ERROR;
     }
+
+    // Serial.println("adfMountFlop::3");
+
 
     vol->mounted = TRUE;
     vol->firstBlock = 0;
@@ -348,14 +355,28 @@ RETCODE adfMountFlop(struct Device* dev)
     vol->rootBlock = (vol->lastBlock+1 - vol->firstBlock)/2;
     vol->blockSize = 512;
     vol->dev = dev;
+
+    // Serial.println("adfMountFlop::4");
  
 	if (adfReadRootBlock(vol, vol->rootBlock, &root)!=RC_OK)
-		return RC_ERROR;
+    {
+        // Serial.println("adfMountFlop::4.1");
+        free(vol);
+        return RC_ERROR;
+    }
+ 
+//    Serial.println("adfMountFlop::4.2");
+ 
 	memset(diskName, 0, 35);
 	memcpy(diskName, root.diskName, root.nameLen);
 
+    // Serial.println("adfMountFlop::5");
+
     vol->volName = strdup(diskName);
 	
+
+    // Serial.println("adfMountFlop::6");
+    
     dev->volList =(struct Volume**) malloc(sizeof(struct Volume*));
     if (!dev->volList) {
         free(vol);
@@ -379,43 +400,74 @@ RETCODE adfMountFlop(struct Device* dev)
  */
 struct Device* adfMountDev( char* filename, BOOL ro)
 {
-    struct Device* dev;
+    // Serial.println("adfMountDev::0");
+
+    struct Device *dev;
     struct nativeFunctions *nFct;
     RETCODE rc;
     uint8_t buf[512];
 
+    // Serial.println("adfMountDev::1");
+
     dev = (struct Device*)malloc(sizeof(struct Device));
     if (!dev) {
 		(*adfEnv.eFct)("adfMountDev : malloc error");
+        // Serial.println("adfMountDev::2");
         return NULL;
     }
 
+    // Serial.println("adfMountDev::3");
+
     dev->readOnly = ro;
+
+    // Serial.println("adfMountDev::3.1");
 
     /* switch between dump files and real devices */
     nFct = (nativeFunctions*)adfEnv.nativeFct;
+
+    // Serial.println("adfMountDev::3.2");
+
+    // FIX: this will need to be fixed to support floppy and ADF
     dev->isNativeDev = true; //(*nFct->adfIsDevNative)(filename);
     if (dev->isNativeDev)
+    {
+        // Serial.println("adfMountDev::3.3");
         rc = (*nFct->adfInitDevice)(dev, filename,ro);
-    else
-        rc = adfInitDumpDevice(dev,filename,ro);
+    }
+    else 
+    {
+        // Serial.println("adfMountDev::3.4");
+        rc = adfInitDumpDevice(dev, filename, ro);
+    }
+    // Serial.println("adfMountDev::3.5");
+
     if (rc!=RC_OK) {
-        free(dev); return(NULL);
+        // Serial.println("adfMountDev::4");
+        free(dev);
+        return (NULL);
     }
 
+    // Serial.println("adfMountDev::5");
+
     dev->devType = adfDevType(dev);
+
+    // Serial.println("adfMountDev::6");
 
     switch( dev->devType ) {
 
     case DEVTYPE_FLOPDD:
     case DEVTYPE_FLOPHD:
+        // Serial.println("adfMountDev::7.1");
         if (adfMountFlop(dev)!=RC_OK) {
+            // Serial.println("adfMountDev::7.1.5");
 	         if (dev->isNativeDev)					/* BV */
 		         (*nFct->adfReleaseDevice)(dev);	/* BV */
 	         else									/* BV */
-		         adfReleaseDumpDevice(dev);     	/* BV */       
+		         adfReleaseDumpDevice(dev);     	/* BV */
+            // Serial.println("adfMountDev::7.2");
             free(dev); return NULL;
         }
+        // Serial.println("adfMountDev::7.2.5");
         break;
 
     case DEVTYPE_HARDDISK:
@@ -454,6 +506,7 @@ struct Device* adfMountDev( char* filename, BOOL ro)
 	    break;
 
     default:
+        // Serial.println("adfMountDev::7.3");
         (*adfEnv.eFct)("adfMountDev : unknown device type");
 	      if (dev->isNativeDev)									/* BV */
 		      (*nFct->adfReleaseDevice)(dev);					/* BV */
@@ -461,6 +514,8 @@ struct Device* adfMountDev( char* filename, BOOL ro)
 		      adfReleaseDumpDevice(dev);						/* BV */
          free(dev); return NULL;								/* BV */
     }
+
+    // Serial.println("adfMountDev::8");
 
 	return dev;
 }

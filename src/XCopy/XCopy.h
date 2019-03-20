@@ -1,8 +1,11 @@
 #ifndef XCOPY_H
 #define XCOPY_H
 
-#define XCOPYVERSION "v 0.6.2019"
+#define XCOPYVERSION "v 703.2019"
 // #define XCOPY_DEBUG = 1
+
+#define ESPSerial Serial1
+#define ESPBaudRate 115200
 
 #include <Arduino.h>
 #include "TFT_ST7735.h"
@@ -11,8 +14,6 @@
 #include <Wire.h>
 #include <Streaming.h>
 #include <SdFat.h>
-#include "../adflib/adflib.h"
-#include "../adflib/adf_nativ.h"
 #include "XCopyMenu.h"
 #include "XCopyCommand.h"
 #include "XCopyDisk.h"
@@ -22,6 +23,8 @@
 #include "XCopyGraphics.h"
 #include "XCopyDebug.h"
 #include "XCopyTime.h"
+#include "XCopyADFLib.h"
+#include "XCopyESP8266.h"
 
 #ifdef XCOPY_DEBUG
 #include "RamMonitor.h"
@@ -50,7 +53,10 @@ enum XCopyState
   copyFlashToDisk = 19,
   debuggingFlashDetails = 23,
   fluxDisk = 24,
-  formatDisk = 25
+  formatDisk = 25,
+  debuggingSerialPassThrough = 26,
+  setSSID = 27,
+  setPassword = 28
 };
 
 class XCopy
@@ -58,7 +64,7 @@ class XCopy
 public:
   XCopy(TFT_ST7735 *tft);
 
-  void begin(int sdCSPin, int flashCSPin, int cardDetectPin);
+  void begin(int sdCSPin, int flashCSPin, int cardDetectPin, int busyPin);
   void update();
   void debug();
   void debugCompareFile(File sdFile, SerialFlashFile flashFile);
@@ -72,6 +78,8 @@ public:
   void intro();
   bool cardDetect();
   void cancelOperation();
+  void setBusy(bool busy);
+  bool getBusy() { return digitalRead(_busyPin); }
   // void testdrawtext(String text, uint16_t color, int x, int y);
 
   void printDirectory(File dir, int numTabs);
@@ -91,7 +99,9 @@ private:
   XCopyDirectory _directory;
   XCopyGraphics _graphics;
   XCopyConfig *_config;
-  
+  XCopyADFLib *_adfLib;
+  XCopyESP8266 *_esp;
+
 #ifdef XCOPY_DEBUG
   RamMonitor _ram;
   uint32_t _lastRam = 0;
@@ -99,10 +109,13 @@ private:
   uint8_t _cardDetectPin;
   uint8_t _sdCSPin;
   uint8_t _flashCSPin;
+  uint8_t _busyPin;
 
   XCopyMenuItem *verifyMenuItem;
   XCopyMenuItem *retryCountMenuItem;
   XCopyMenuItem *volumeMenuItem;
+  XCopyMenuItem *ssidMenuItem;
+  XCopyMenuItem *passwordMenuItem;
 
   bool _drawnOnce;
   int _prevSeconds = -1;

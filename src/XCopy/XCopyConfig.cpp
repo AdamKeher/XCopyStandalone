@@ -12,6 +12,8 @@ void XCopyConfig::createConfig()
     JsonObject &root = jsonBuffer.createObject();
     root["verify"] = "TRUE";
     root["retryCount"] = 5;
+    root["ssid"] = "";
+    root["password"] = "";
 
     _config = "";
     root.printTo(_config);
@@ -55,6 +57,29 @@ void XCopyConfig::setVolume(float value)
     _volume = value;
 }
 
+void XCopyConfig::setSSID(String value)
+{
+    StaticJsonBuffer<512> jsonBuffer;
+    JsonObject &root = jsonBuffer.parseObject(_config);
+    root["ssid"] = value;
+
+    _config = "";
+    root.printTo(_config);
+
+    _ssid = value;
+}
+
+void XCopyConfig::setPassword(String value)
+{
+    StaticJsonBuffer<512> jsonBuffer;
+    JsonObject &root = jsonBuffer.parseObject(_config);
+    root["password"] = value;
+
+    _config = "";
+    root.printTo(_config);
+
+    _password = value;
+}
 
 void XCopyConfig::parseConfig()
 {
@@ -63,6 +88,8 @@ void XCopyConfig::parseConfig()
     _verify = root["verify"] == "TRUE" ? true : false;
     _retryCount = root["retryCount"];
     _volume = root["volume"];
+    _ssid = root["ssid"].asString();
+    _password = root["password"].asString();
 }
 
 bool XCopyConfig::readConfig()

@@ -1,0 +1,8 @@
+{
+    "port": "COM4",
+    "board": "esp8266:esp8266:generic",
+    "configuration": "xtal=80,vt=flash,exception=disabled,ResetMethod=ck,CrystalFreq=26,FlashFreq=40,FlashMode=dout,eesz=512K,led=2,ip=lm2f,dbg=Disabled,lvl=None____,wipe=none,baud=115200",
+    "programmer": "Arduino Gemma",
+    "sketch": "esp8266.ino",
+    "output": "../../ArduinoOutput"
+}

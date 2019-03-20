@@ -21,6 +21,7 @@
 #define FLASHCS     23
 #define CARDDETECT  2
 #define SDCS        22
+#define BUSYPIN     24
 
 #define NAVIGATION_UP_PIN    29
 #define NAVIGATION_DOWN_PIN  30
@@ -74,7 +75,7 @@ void setup() {
   Serial.begin(115200);
 
   navigation.begin(10, INPUT_PULLUP, navigationCallBack);
-  xcopy.begin(SDCS, FLASHCS, CARDDETECT);
+  xcopy.begin(SDCS, FLASHCS, CARDDETECT, BUSYPIN);
   attachInterrupt(NAVIGATION_LEFT_PIN, ISR_CANCEL, FALLING);
 }
 
