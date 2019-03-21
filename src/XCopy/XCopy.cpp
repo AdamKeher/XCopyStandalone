@@ -77,14 +77,13 @@ void XCopy::begin(int sdCSPin, int flashCSPin, int cardDetectPin, int busyPin)
     // -------------------------------------------------------------------------------------------
     _graphics.drawText(0, 115, ST7735_WHITE, "               Init WiFi", true);
     _esp = new XCopyESP8266(ESPSerial, ESPBaudRate);
+    _esp->setEcho(false);
     if (!_esp->begin())
         Serial << "\033[31mESP8266 WIFI Chip initialization failed. (Serial" << ESPSerial << " @ " << ESPBaudRate << ")\033[0m\r\n";
     else
     {
         _graphics.drawText(0, 115, ST7735_WHITE, "       Connecting to WiFi", true);
         Serial << "\033[32mESP8266 WIFI Chip initialized. (Serial" << ESPSerial << " @ " << ESPBaudRate << ")\033[0m\r\n";
-        Serial << "\033[32mESP8266 Attempting to connect to WIFI. (SSID:" << _config->getSSID() << ")\033[0m\r\n";
-        _esp->connect(_config->getSSID(), _config->getPassword(), 0);
     }
 
     // Init Command Line

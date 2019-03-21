@@ -50,7 +50,11 @@ void XCopyCommandLine::doCommand(String command)
         Serial << "| readf <n>            | read logical track #n from flash                     |\r\n";
         Serial << "| dump <filename>      | dump ADF file system information                     |\r\n";
         Serial << "| weak                 | returns retry number for last read in binary format  |\r\n";
+        Serial << "|--------------------- +------------------------------------------------------|\r\n";
         Serial << "| connect <ssid> <pwd> | connect to wifi network                              |\r\n";
+        Serial << "| status               | show wifi status                                     |\r\n";
+        Serial << "| ip                   | show wifi ip address                                 |\r\n";
+        Serial << "| ssid                 | show wifi ssid                                       |\r\n";
         Serial << "`----------------------'------------------------------------------------------'\r\n";
         /*
         Serial << "| write <n>       | write logical track #n                                    |\r\n";
@@ -66,6 +70,7 @@ void XCopyCommandLine::doCommand(String command)
         Serial << "| enc             | encodes data track into mfm                               |\r\n";
         Serial << "| dec             | decodes raw mfm into data track                           |\r\n";
         Serial << "| log             | prints logical track / tracknumber extracted from sectors |\r\n";
+        Serial << "| dskcng          | returns disk change signal in binary                      |\r\n";
         Serial << "`-----------------'-----------------------------------------------------------'\r\n";
         */
     }
@@ -75,11 +80,28 @@ void XCopyCommandLine::doCommand(String command)
         Serial << "\033[2J\033[H";
     }
 
+    if (cmd == "status")
+    {
+        String status = _esp->sendCommand("status\r", true);
+        Serial << status << "\r\n";
+    }
+
+    if (cmd == "ssid")
+    {
+        String ssid = _esp->sendCommand("ssid\r", true);
+        Serial << ssid << "\r\n";
+    }
+
+    if (cmd == "ip")
+    {
+        String ipaddress = _esp->sendCommand("ip\r", true);
+        Serial << ipaddress << "\r\n";
+    }
+
     if (cmd == "connect")
     {
         String ssid = param.substring(0, param.indexOf(" "));
         String password = param.substring(param.indexOf(" ") + 1);
-
         if (ssid == "" || password == "" || param.indexOf(" ") == -1)
         {
             Serial << "Error: must supply ssid and password.\r\n";
@@ -89,12 +111,11 @@ void XCopyCommandLine::doCommand(String command)
         _config->setSSID(ssid);
         _config->setPassword(password);
         _config->writeConfig();
+
         if (_esp->connect(ssid, password, 20000))
             Serial << "Connected to '" << ssid << "'\r\n";
         else
             Serial << "Error: Connection to '" << ssid << "' failed\r\n";
-
-        // TODO: save to config
     }
 
     if (cmd == "hist")

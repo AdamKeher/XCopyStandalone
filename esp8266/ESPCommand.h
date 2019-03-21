@@ -18,6 +18,9 @@ public:
 
 private:
   String _command;
+  bool _localecho = true;
+  char OK_EOC[5] = "OK\r\n";
+  char ER_EOC[5] = "ER\r\n";
 };
 
-#endif // ESPCOMMAND
+#endif // ESPCOMMAND_H

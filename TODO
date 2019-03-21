@@ -6,6 +6,7 @@ Todo:
   Disk:
     ☐ Fails if retry count is 0
     ☐ Have a look at configfile write and createerasable. Why does it currently work?
+    ☐ Report weak tracks in diskcopy, test and flux
     ✔ Add ADFlib for volume validation @done(19-03-12 23:54)
     ✔ Write a log or bmp to record read history with ADF files @done(19-03-12 13:21)
       ✔ Add CRC32 hash of disk and CRC16 hash of tracks to log file @done(19-03-12 13:21)
@@ -29,10 +30,10 @@ Todo:
     ✔ Add control pin for busy signal teensy -> esp8266 to flag when device is occupied @done(19-03-20 16:33)
     ✔ Display test webpage with buys signal @done(19-03-20 16:33)
     ✔ Implement command infrastructure @done(19-03-20 16:33)
+    ✔ Truncated response received from ESP866 commands @done(19-03-21 11:25)
     ☐ Update webserver to use SPIFFS to store files
     ☐ Add reset (rst low / pin 25) and program (gpio0 low / pin 26)
     ☐ Add seperate debugging menu item for Serial Passthrough Mode and ESP8266 Programming Mode
-    ☐ Truncated response received from ESP866 commands
     ☐ Fix settings menu SSID and Password menu items to udpate when 'connect <ssid> <password>' command issued
     ☐ Add timeout function and instant exit on completion for esp8266 functions
     ☐ Delete _config removed from xcopy.begin() while testing due to passing through to xcopycommand. delete it at startup and recreate in connect command
@@ -57,9 +58,9 @@ Todo:
     ☐ Refactor code to move graphics calls in to classes and have all items called update
     ✔ Move the modified FastCRC library into local library @done(19-03-12 11:54)
     General:
-    ✔ Add volume to settings @done(19-03-12 15:18)
-    ☐ Report weak tracks in diskcopy, test and flux
-    ☐ Implement and test manual set time and get time from PC
+      ☐ Fix command line so it doesn't repeat a command for CR+LF
+      ☐ Implement and test manual set time and get time from PC
+      ✔ Add volume to settings @done(19-03-12 15:18)
   Bugs:
     ☐ SdFat seems to have broken SerialFlash create / createErasable
     ☐ Sometimes system gets into state where diskname returns NDOS for DOS disks, why? Drive reset / setup required?

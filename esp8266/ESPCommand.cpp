@@ -14,9 +14,29 @@ void ESPCommandLine::doCommand(String command)
         param = command.substring(command.indexOf(" ") + 1);
     }
 
+    if (cmd == "echo")
+    {
+        if (param == "off")
+            _localecho = false;
+        else if (param == "on")
+            _localecho = true;
+
+        Serial << "Local Echo: " << (_localecho ? "ON" : "OFF") << "\r\n" << OK_EOC;
+    }
+
+    if (cmd == "ip")
+    {
+        Serial << WiFi.localIP() <<"\r\n" << OK_EOC;
+    }
+
+    if (cmd == "ssid")
+    {
+        Serial << WiFi.SSID() << "\r\n" << OK_EOC;
+    }
+
     if (cmd == "version" || cmd == "ver")
     {
-        Serial << "Version: " << ESPVersion << "\r\n";
+        Serial << ESPVersion << "\r\n" << OK_EOC;
     }
 
     if (cmd == "help" || cmd == "?")
@@ -32,6 +52,9 @@ void ESPCommandLine::doCommand(String command)
         Serial << "|----------------------+------------------------------------------------------|\r\n";
         Serial << "| connect <ssid> <pwd> | connect to wireless network                          |\r\n";
         Serial << "| status               | show status                                          |\r\n";
+        Serial << "| ip                   | show ip address                                      |\r\n";
+        Serial << "| ssid                 | show ssid                                            |\r\n";
+        Serial << "| echo <on|off>        | show ssid                                            |\r\n";
         Serial << "`----------------------'------------------------------------------------------'\r\n";
     }
 
@@ -42,7 +65,7 @@ void ESPCommandLine::doCommand(String command)
 
     if (cmd == "ping")
     {
-        Serial << "pong\r\n";
+        Serial << "pong\r\n" << OK_EOC ;
     }
 
     if (cmd == "status")
@@ -80,6 +103,7 @@ void ESPCommandLine::doCommand(String command)
 
         Serial << "-----\r\n";
         WiFi.printDiag(Serial);
+        Serial << OK_EOC;
     }
 
     if (cmd == "connect")
@@ -89,7 +113,7 @@ void ESPCommandLine::doCommand(String command)
 
         if (ssid == "" || password == "" || param.indexOf(" ") == -1)
         {
-            Serial << "Error: must supply ssid and password.\r\n";
+            Serial << "Error: must supply ssid and password.\r\n" << ER_EOC;
             return;
         }
 
@@ -112,12 +136,9 @@ void ESPCommandLine::doCommand(String command)
         }
 
         if (WiFi.status() == WL_CONNECTED)
-        {
-            Serial << "Connected to: " << ssid << "\r\n";
-            Serial << "IP address: " << WiFi.localIP() << "\r\n";
-        }
+            Serial << "Connected to: " << ssid << "\r\nIP address: " << WiFi.localIP() << "\r\n" << OK_EOC;
         else
-            Serial << "Error connecting to: " << ssid << "\r\n";
+            Serial << "Error connecting to: " << ssid << "\r\n" << ER_EOC;
     }
 }
 
@@ -138,13 +159,17 @@ void ESPCommandLine::Update()
                 return;
 
             _command = _command.substring(0, _command.length() - 1);
-            Serial << "\033[1D \033[1D";
+
+            if (_localecho)
+                Serial << "\033[1D \033[1D";
+
             return;
         }
 
-        if (inChar == 0x0d || inChar == 0x0a)
+        if (inChar == 0x0d || inChar == 0x0a) // CR or LF
         {
-            Serial << "\r\n";
+            if (_localecho)
+                Serial << "\r\n";
             if (_command != String(0x0d))
             {
                 doCommand(_command);
@@ -155,7 +180,8 @@ void ESPCommandLine::Update()
         else
         {
             _command += inChar;
-            Serial << inChar;
+            if (_localecho)
+                Serial << inChar;
         }
     }
 }

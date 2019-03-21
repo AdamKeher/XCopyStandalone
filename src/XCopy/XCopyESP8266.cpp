@@ -6,16 +6,42 @@ XCopyESP8266::XCopyESP8266(HardwareSerial serial, uint32_t baudrate)
     _serial.begin(baudrate);
 }
 
-String XCopyESP8266::sendCommand(String command, uint32_t delayms)
+String XCopyESP8266::sendCommand(String command, bool strip, uint32_t timeout)
 {
-    // TODO: add timeout and instant exit after serial received
+    _serial.flush();
+    _serial.clear();
     _serial.print(command);
-    String response = "";
-    // uint32_t start = millis();
-    delay(delayms);
-    while (_serial.available())
+
+    char OK_EOC[5] = "OK\r\n";
+    char ER_EOC[5] = "ER\r\n";
+    char buffer[512];
+    int i = 0;
+    int len = strlen(OK_EOC);
+    bool found = false;
+    uint32_t start = millis();
+
+    while (millis() < start + timeout)
     {
-        response.append((char)_serial.read());
+        if (_serial.available())
+        {
+            buffer[i++] = _serial.read();
+            if (i >= len)
+            {
+                if (strncmp(buffer + i - len, OK_EOC, len) == 0 || strncmp(buffer + i - len, ER_EOC, len) == 0)
+                {
+                    found = true;
+                    break;
+                }
+            }
+        }
+    }
+    buffer[i] = 0;
+    String response = buffer;
+
+    if (strip)
+    {
+        response.replace("\r\nOK\r\n", "");
+        response.replace("\r\nER\r\n", "");
     }
 
     return response;
@@ -23,9 +49,8 @@ String XCopyESP8266::sendCommand(String command, uint32_t delayms)
 
 bool XCopyESP8266::connect(String ssid, String password, uint32_t timeout)
 {
-    String response = sendCommand("connect " + ssid + " " + password + "\r\n", timeout);
-    // Serial << "DEBUG::CONNECT::(" << ssid << "," << password << "::" << response << ")\r\n";
-    if (response.toLowerCase().indexOf("connected") != -1)
+    String response = sendCommand("connect " + ssid + " " + password + "\r", false, timeout);
+    if (response.endsWith(OK_EOC))
         return true;
     else
         return false;
@@ -40,11 +65,12 @@ bool XCopyESP8266::begin()
         return false;
 }
 
+void XCopyESP8266::setEcho(bool status)
+{
+    sendCommand("echo " + String(status ? "on" : "off") + "\r\n");
+}
+
 String XCopyESP8266::Version()
 {
-    String response = sendCommand("version\r\n");
-    if (response != "")
-        return response;
-    else
-        return "Unknown";
+    return sendCommand("version\r\n");
 }
