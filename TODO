@@ -31,7 +31,7 @@ Todo:
     ✔ Display test webpage with buys signal @done(19-03-20 16:33)
     ✔ Implement command infrastructure @done(19-03-20 16:33)
     ✔ Truncated response received from ESP866 commands @done(19-03-21 11:25)
-    ☐ Update webserver to use SPIFFS to store files
+    ✔ Update webserver to use SPIFFS to store files @done(19-03-22 17:03)
     ☐ Add reset (rst low / pin 25) and program (gpio0 low / pin 26)
     ☐ Add seperate debugging menu item for Serial Passthrough Mode and ESP8266 Programming Mode
     ☐ Fix settings menu SSID and Password menu items to udpate when 'connect <ssid> <password>' command issued

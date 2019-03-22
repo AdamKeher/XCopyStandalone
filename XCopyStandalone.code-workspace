@@ -12,7 +12,8 @@
 			"xlocale": "cpp",
 			"xlocnum": "cpp",
 			"xiosbase": "cpp",
-			"type_traits": "cpp"
+			"type_traits": "cpp",
+			"system_error": "cpp"
 		}
 	}
 }
