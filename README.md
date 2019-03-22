@@ -2,6 +2,9 @@
 An Arduino / Teensy based version of the Amiga XCopy application for copying floppy disks to and from ADF files. Built for the Teensy 3.2 using a custom PCB and an unmodified PC 3.5" floppy disk drive.
 ## Status
 This project is under heavy development and is in a state of flux with new hardware and software being actively worked on.
+Major changes in progress:
+* PCB update to include native ESP8266EX
+* PCB update to include native Teensy 3.2 circuitry
 ## Features
 * Software
   * ADF Support
