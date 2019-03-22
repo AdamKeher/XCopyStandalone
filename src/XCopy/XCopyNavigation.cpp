@@ -446,9 +446,7 @@ void XCopy::processState()
 
     if (_xcopyState == debuggingSerialPassThrough)
     {
-        Serial.begin(115200);
-        ESPSerial.begin(ESPBaudRate);
-        ESPSerial.print("ATE1\r\n");
+        _esp->setEcho(true);
 
         while (!_cancelOperation)
         {
@@ -463,6 +461,7 @@ void XCopy::processState()
             }
         }
 
+        _esp->setEcho(false);
         _cancelOperation = false;
         setBusy(false);
         _xcopyState = menus;
