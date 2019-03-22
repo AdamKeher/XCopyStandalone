@@ -75,6 +75,7 @@ public:
   void navigateSelect();
   void navigateLeft();
   void navigateRight();
+  void processState();
   void intro();
   bool cardDetect();
   void cancelOperation();
@@ -118,6 +119,7 @@ private:
   XCopyMenuItem *passwordMenuItem;
 
   bool _drawnOnce;
+  bool _cancelOperation;
   int _prevSeconds = -1;
 };
 

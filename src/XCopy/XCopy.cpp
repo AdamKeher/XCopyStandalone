@@ -22,6 +22,8 @@ void XCopy::begin(int sdCSPin, int flashCSPin, int cardDetectPin, int busyPin)
     pinMode(_cardDetectPin, INPUT_PULLUP);
     pinMode(_busyPin, OUTPUT);
 
+    // ToDo: Reset ESP8266
+
     Serial << "\033[2J\033[H\033[95m\033[106m";
     Serial << "                                                                          \r\n";
 
@@ -196,217 +198,7 @@ void XCopy::update()
     }
 #endif
 
-    if (_xcopyState == debuggingTempFile)
-    {
-        XCopyDebug *_debug = new XCopyDebug(&_graphics, &_audio, _sdCSPin, _flashCSPin, _cardDetectPin);
-        _debug->debugCompareTempFile();
-        delete _debug;
-
-        setBusy(false);
-        _xcopyState = menus;
-    }
-
-    if (_xcopyState == debuggingSDFLash)
-    {
-        XCopyDebug *_debug = new XCopyDebug(&_graphics, &_audio, _sdCSPin, _flashCSPin, _cardDetectPin);
-        _debug->debug();
-        delete _debug;
-
-        setBusy(false);
-        _xcopyState = menus;
-    }
-
-    if (_xcopyState == debuggingEraseCopy)
-    {
-        XCopyDebug *_debug = new XCopyDebug(&_graphics, &_audio, _sdCSPin, _flashCSPin, _cardDetectPin);
-        _debug->debugEraseCopyCompare(true);
-        delete _debug;
-
-        setBusy(false);
-        _xcopyState = menus;
-    }
-
-    if (_xcopyState == debuggingCompareFlashToSDCard)
-    {
-        _graphics.clearScreen();
-        XCopyDebug *_debug = new XCopyDebug(&_graphics, &_audio, _sdCSPin, _flashCSPin, _cardDetectPin);
-        _debug->debugEraseCopyCompare(false);
-        delete _debug;
-
-        setBusy(false);
-        _xcopyState = menus;
-    }
-
-    if (_xcopyState == debuggingFlashDetails)
-    {
-        XCopyDebug *_debug = new XCopyDebug(&_graphics, &_audio, _sdCSPin, _flashCSPin, _cardDetectPin);
-        _debug->flashDetails();
-        delete _debug;
-
-        setBusy(false);
-        _xcopyState = menus;
-    }
-
-    if (_xcopyState == debuggingSerialPassThrough)
-    {
-        Serial.begin(115200);
-        ESPSerial.begin(ESPBaudRate);
-        ESPSerial.print("ATE1\r\n");
-
-        while (1)
-        {
-            if (Serial.available())
-            {
-                ESPSerial.write(Serial.read());
-            }
-
-            if (ESPSerial.available())
-            {
-                Serial.write(ESPSerial.read());
-            }
-        }
-
-        setBusy(false);
-        _xcopyState = menus;
-    }
-
-    if (_xcopyState == menus)
-    {
-        _graphics.clearScreen();
-        _graphics.drawHeader();
-        _menu.drawMenu(_menu.getRoot());
-        _xcopyState = idle;
-    }
-
-    if (_xcopyState == showTime)
-    {
-        if (_prevSeconds != second())
-        {
-            char buffer[32];
-            sprintf(buffer, "    %02d:%02d:%02d %02d/%02d/%04d", hour(), minute(), second(), day(), month(), year());
-            _graphics.drawText(0, 55, ST7735_YELLOW, buffer, true);
-
-            _prevSeconds = second();
-        }
-    }
-
-    if (_xcopyState == copyDiskToADF)
-    {
-        if (_drawnOnce == false)
-        {
-            _config = new XCopyConfig();
-            _disk.diskToADF("Auto Named.ADF", _config->getVerify(), _config->getRetryCount(), _sdCard);
-            delete _config;
-
-            setBusy(false);
-            _drawnOnce = true;
-        }
-    }
-
-    if (_xcopyState == copyDiskToFlash)
-    {
-        if (_drawnOnce == false)
-        {
-            _config = new XCopyConfig();
-            _disk.diskToADF("DISKCOPY.TMP", _config->getVerify(), _config->getRetryCount(), _flashMemory);
-            delete _config;
-    
-            setBusy(false);
-            _drawnOnce = true;
-        }
-    }
-
-    if (_xcopyState == copyDiskToDisk)
-    {
-        if (_drawnOnce == false)
-        {
-            _config = new XCopyConfig();
-            _disk.diskToDisk(_config->getVerify(), _config->getRetryCount());
-            delete _config;
-    
-            setBusy(false);
-            _drawnOnce = true;
-        }
-    }
-
-    if (_xcopyState == copyFlashToDisk)
-    {
-        if (_drawnOnce == false)
-        {
-            _config = new XCopyConfig();
-            _disk.adfToDisk("DISKCOPY.TMP", _config->getVerify(), _config->getRetryCount(), _flashMemory);
-            delete _config;
-
-            setBusy(false);
-            _drawnOnce = true;
-        }
-    }
-
-    if (_xcopyState == testDisk)
-    {
-        if (_drawnOnce == false)
-        {
-            _config = new XCopyConfig();
-            _disk.testDisk(_config->getRetryCount());
-            delete _config;
-
-            setBusy(false);
-            _drawnOnce = true;
-        }
-    }
-
-    if (_xcopyState == fluxDisk)
-    {
-        if (_drawnOnce == false)
-        {
-            _disk.diskFlux();
-
-            setBusy(false);
-            _drawnOnce = true;
-        }
-    }
-
-    if (_xcopyState == formatDisk)
-    {
-        if (_drawnOnce == false)
-        {
-            _config = new XCopyConfig();
-            _disk.adfToDisk("BLANK.TMP", _config->getVerify(), _config->getRetryCount(), _flashMemory);
-            delete _config;
-
-            setBusy(false);
-            _drawnOnce = true;
-        }
-    }
-
-    if (_xcopyState == directorySelection)
-    {
-        if (_drawnOnce == false)
-        {
-            _graphics.clearScreen();
-            _directory.drawDirectory();
-            _drawnOnce = true;
-        }
-    }
-
-    if (_xcopyState == about)
-    {
-        if (_drawnOnce == false)
-        {
-            _graphics.clearScreen();
-            _graphics.drawText(0, 55, ST7735_WHITE, "     (c)2019 iTeC/crAss");
-            _graphics.drawText(0, 65, ST7735_GREEN, "         " + String(XCOPYVERSION));
-            _graphics.drawText(0, 75, ST7735_YELLOW, "  Insert Demo Effect Here");
-
-            _drawnOnce = true;
-        }
-    }
-
-    if (_xcopyState == idle)
-    {
-        setBusy(false);
-    }
-
+    processState();
     _command->Update();
 }
 
@@ -414,6 +206,9 @@ void XCopy::cancelOperation()
 {
     switch (_xcopyState)
     {
+    case debuggingSerialPassThrough:
+        _cancelOperation = true;
+        break;
     case testDisk:
         _disk.cancelOperation();
         break;
