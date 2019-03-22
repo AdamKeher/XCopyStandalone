@@ -27,6 +27,7 @@ void XCopyCommandLine::doCommand(String command)
     if (cmd == "version" || cmd == "ver")
     {
         Serial << "Version: " << _version << "\r\n";
+        return;
     }
 
     if (cmd == "help" || cmd == "?")
@@ -73,29 +74,34 @@ void XCopyCommandLine::doCommand(String command)
         Serial << "| dskcng          | returns disk change signal in binary                      |\r\n";
         Serial << "`-----------------'-----------------------------------------------------------'\r\n";
         */
+        return;
     }
 
     if (cmd == "clear" || cmd == "cls")
     {
         Serial << "\033[2J\033[H";
+        return;
     }
 
     if (cmd == "status")
     {
         String status = _esp->sendCommand("status\r", true);
         Serial << status << "\r\n";
+        return;
     }
 
     if (cmd == "ssid")
     {
         String ssid = _esp->sendCommand("ssid\r", true);
         Serial << ssid << "\r\n";
+        return;
     }
 
     if (cmd == "ip")
     {
         String ipaddress = _esp->sendCommand("ip\r", true);
         Serial << ipaddress << "\r\n";
+        return;
     }
 
     if (cmd == "connect")
@@ -116,28 +122,33 @@ void XCopyCommandLine::doCommand(String command)
             Serial << "Connected to '" << ssid << "'\r\n";
         else
             Serial << "Error: Connection to '" << ssid << "' failed\r\n";
+        return;
     }
 
     if (cmd == "hist")
     {
         analyseHist(false);
         printHist();
+        return;
     }
 
     if (cmd == "flux")
     {
         analyseHist(true);
         printFlux();
+        return;
     }
 
     if (cmd == "weak")
     {
         Serial << getWeakTrack() << "\r\n";
+        return;
     }
 
     if (cmd == "name")
     {
         Serial << "Diskname: " << getName() << "\r\n";
+        return;
     }
 
     if (cmd == "readf")
@@ -160,6 +171,7 @@ void XCopyCommandLine::doCommand(String command)
             }
         }
         setSectorCnt(11);
+        return;
     }
 
     if (cmd == "read")
@@ -177,6 +189,7 @@ void XCopyCommandLine::doCommand(String command)
         {
             Serial << "bitCount: " << getBitCount() << " (Read failed!)\r\n";
         }
+        return;
     }
 
     if (cmd == "dump")
@@ -211,12 +224,14 @@ void XCopyCommandLine::doCommand(String command)
             Serial << "Error: Failed to open device '" << name << "'\r\n";
 
         _adfLib->unmount();
+        return;
     }
 
     if (cmd == "bootf")
     {
         cmd = "boot";
         param = "f";
+        return;
     }
 
     if (cmd == "boot")
@@ -259,13 +274,18 @@ void XCopyCommandLine::doCommand(String command)
         }
 
         printBootSector();
+        return;
     }
 
     if (cmd == "print")
     {
         printTrack();
         Serial << "OK\r\n";
+        return;
     }
+
+    if (cmd != "")
+        Serial << "Unknown command: '" << cmd << "'\r\n";
 }
 
 void XCopyCommandLine::printPrompt()
