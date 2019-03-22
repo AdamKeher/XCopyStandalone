@@ -1,0 +1,36 @@
+thead
+{
+    background-color:blue;
+    color: #fff;
+}
+td
+{
+    height:40px;
+    width:40px;
+    text-align: center;
+}
+td:nth-child(1)
+{
+    background-color: lightblue;
+    color: black;
+}
+tbody
+{
+    background-color:green;
+    color:white;
+}
+.trackRed
+{
+    background-color: red;
+    color: white;
+}
+.trackOrange
+{
+    background-color: orange;
+    color: black;
+}
+.trackYellow
+{
+    background-color: yellow;
+    color: black;
+}

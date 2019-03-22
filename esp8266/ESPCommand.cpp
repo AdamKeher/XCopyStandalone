@@ -21,22 +21,40 @@ void ESPCommandLine::doCommand(String command)
         else if (param == "on")
             _localecho = true;
 
-        Serial << "Local Echo: " << (_localecho ? "ON" : "OFF") << "\r\n" << OK_EOC;
+        Serial << "Local Echo: " << (_localecho ? "ON" : "OFF") << "\r\n"
+               << OK_EOC;
+    }
+
+    if (cmd == "dir" || cmd == "ls")
+    {
+        String filename = "";
+        Dir dir = SPIFFS.openDir("/");
+        while (dir.next())
+        {
+            filename += dir.fileName();
+            filename += " / ";
+            filename += dir.fileSize();
+            filename += "\r\n";
+        }
+        Serial.print(filename);
     }
 
     if (cmd == "ip")
     {
-        Serial << WiFi.localIP() <<"\r\n" << OK_EOC;
+        Serial << WiFi.localIP() << "\r\n"
+               << OK_EOC;
     }
 
     if (cmd == "ssid")
     {
-        Serial << WiFi.SSID() << "\r\n" << OK_EOC;
+        Serial << WiFi.SSID() << "\r\n"
+               << OK_EOC;
     }
 
     if (cmd == "version" || cmd == "ver")
     {
-        Serial << ESPVersion << "\r\n" << OK_EOC;
+        Serial << ESPVersion << "\r\n"
+               << OK_EOC;
     }
 
     if (cmd == "help" || cmd == "?")
@@ -49,6 +67,8 @@ void ESPCommandLine::doCommand(String command)
         Serial << "| help | ?             | this help                                            |\r\n";
         Serial << "| version | ver        | XCopy ESP8266 version number                         |\r\n";
         Serial << "| clear | cls          | clear screen                                         |\r\n";
+        Serial << "|----------------------+------------------------------------------------------|\r\n";
+        Serial << "| dir | ls             | list all SPIFFS files                                |\r\n";
         Serial << "|----------------------+------------------------------------------------------|\r\n";
         Serial << "| connect <ssid> <pwd> | connect to wireless network                          |\r\n";
         Serial << "| status               | show status                                          |\r\n";
@@ -65,7 +85,8 @@ void ESPCommandLine::doCommand(String command)
 
     if (cmd == "ping")
     {
-        Serial << "pong\r\n" << OK_EOC ;
+        Serial << "pong\r\n"
+               << OK_EOC;
     }
 
     if (cmd == "status")
@@ -113,7 +134,8 @@ void ESPCommandLine::doCommand(String command)
 
         if (ssid == "" || password == "" || param.indexOf(" ") == -1)
         {
-            Serial << "Error: must supply ssid and password.\r\n" << ER_EOC;
+            Serial << "Error: must supply ssid and password.\r\n"
+                   << ER_EOC;
             return;
         }
 
@@ -136,9 +158,11 @@ void ESPCommandLine::doCommand(String command)
         }
 
         if (WiFi.status() == WL_CONNECTED)
-            Serial << "Connected to: " << ssid << "\r\nIP address: " << WiFi.localIP() << "\r\n" << OK_EOC;
+            Serial << "Connected to: " << ssid << "\r\nIP address: " << WiFi.localIP() << "\r\n"
+                   << OK_EOC;
         else
-            Serial << "Error connecting to: " << ssid << "\r\n" << ER_EOC;
+            Serial << "Error connecting to: " << ssid << "\r\n"
+                   << ER_EOC;
     }
 }
 

@@ -1,21 +1,238 @@
+<!DOCTYPE html>
 <html>
 
 <head>
-    <meta http-equiv='refresh' content='1' />
-    <title>XCopy Standalone</title>
-    <style>
-        body {
-            background-color: #cccccc;
-            font-family: Arial, Helvetica, Sans-Serif;
-            Color: #000088;
-        }
-    </style>
+    <title>XCopy Standalone WebSocket Test</title>
+    <link href='https://fonts.googleapis.com/css?family=Roboto:300' rel='stylesheet' type='text/css'>
+    <meta name="theme-color" content="#00878f">
+    <meta content='width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0' name='viewport'>
+    <script src="websocket.js" type="text/javascript"></script>
+    <link rel="stylesheet" type="text/css" href="default.css">
 </head>
 
 <body>
-    <h1>XCopy Standalone</h1>
-    <p>Uptime: ?</p>
-    <p>Busy: ?</p>
+    <center>
+        <header>
+            <h1>XCopy Control</h1>
+        </header>
+        <div>
+            <h2>Pin Status:</h2>
+            <p>
+                <span id="pinStatus">?</span>
+            </p>
+        </div>
+        <div>
+            <h2>Disk Test:</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <td>Track</td>
+                        <td colspan=10>Side 1</td>
+                        <td rowspan="9">&nbsp;&nbsp;</td>
+                        <td colspan=10>Side 2</td>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>0</td>
+                        <td id="track0">00</td>
+                        <td id="track1">01</td>
+                        <td id="track2">02</td>
+                        <td id="track3">03</td>
+                        <td class="trackRed" id="track4">04</td>
+                        <td id="track5">05</td>
+                        <td id="track6">06</td>
+                        <td id="track7">07</td>
+                        <td id="track8">08</td>
+                        <td id="track9">09</td>
+                        <td></td>
+                        <td id="track10">00</td>
+                        <td id="track11">01</td>
+                        <td id="track12">02</td>
+                        <td id="track13">03</td>
+                        <td id="track14">04</td>
+                        <td id="track15">05</td>
+                        <td class="trackYellow" id="track16">06</td>
+                        <td id="track17">07</td>
+                        <td id="track18">08</td>
+                        <td id="track19">09</td>
+                    </tr>
+                    <tr>
+                        <td>1</td>
+                        <td id="track20">10</td>
+                        <td id="track21">11</td>
+                        <td id="track22">12</td>
+                        <td id="track23">13</td>
+                        <td id="track24">14</td>
+                        <td class="trackOrange" id="track25">15</td>
+                        <td id="track26">16</td>
+                        <td id="track27">17</td>
+                        <td id="track28">18</td>
+                        <td id="track29">19</td>
+                        <td></td>
+                        <td id="track30">10</td>
+                        <td id="track31">11</td>
+                        <td id="track32">12</td>
+                        <td id="track33">13</td>
+                        <td id="track34">14</td>
+                        <td id="track35">15</td>
+                        <td id="track36">16</td>
+                        <td id="track37">17</td>
+                        <td id="track38">18</td>
+                        <td id="track39">19</td>
+                    </tr>
+                    <tr>
+                        <td>2</td>
+                        <td id="track40">20</td>
+                        <td id="track41">21</td>
+                        <td id="track42">22</td>
+                        <td id="track43">23</td>
+                        <td id="track44">24</td>
+                        <td id="track45">25</td>
+                        <td id="track46">26</td>
+                        <td id="track47">27</td>
+                        <td id="track48">28</td>
+                        <td id="track49">29</td>
+                        <td></td>
+                        <td id="track50">20</td>
+                        <td id="track51">21</td>
+                        <td id="track52">22</td>
+                        <td id="track53">23</td>
+                        <td id="track54">24</td>
+                        <td id="track55">25</td>
+                        <td id="track56">26</td>
+                        <td id="track57">27</td>
+                        <td id="track58">28</td>
+                        <td id="track59">29</td>
+                    </tr>
+                    <tr>
+                        <td>3</td>
+                        <td id="track60">30</td>
+                        <td id="track61">31</td>
+                        <td id="track62">32</td>
+                        <td id="track63">33</td>
+                        <td id="track64">34</td>
+                        <td id="track65">35</td>
+                        <td id="track66">36</td>
+                        <td id="track67">37</td>
+                        <td id="track68">38</td>
+                        <td id="track69">39</td>
+                        <td></td>
+                        <td id="track70">30</td>
+                        <td id="track71">31</td>
+                        <td id="track72">32</td>
+                        <td id="track73">33</td>
+                        <td id="track74">34</td>
+                        <td id="track75">35</td>
+                        <td id="track76">36</td>
+                        <td id="track77">37</td>
+                        <td id="track78">38</td>
+                        <td id="track79">39</td>
+                    </tr>
+                    <tr>
+                        <td>4</td>
+                        <td id="track80">40</td>
+                        <td id="track81">41</td>
+                        <td id="track82">42</td>
+                        <td id="track83">43</td>
+                        <td id="track84">44</td>
+                        <td id="track85">45</td>
+                        <td id="track86">46</td>
+                        <td id="track87">47</td>
+                        <td id="track88">48</td>
+                        <td id="track89">49</td>
+                        <td></td>
+                        <td id="track90">40</td>
+                        <td id="track91">41</td>
+                        <td id="track92">42</td>
+                        <td id="track93">43</td>
+                        <td id="track94">44</td>
+                        <td id="track95">45</td>
+                        <td id="track96">46</td>
+                        <td id="track97">47</td>
+                        <td id="track98">48</td>
+                        <td id="track99">49</td>
+                    </tr>
+                    <tr>
+                        <td>5</td>
+                        <td id="track100">50</td>
+                        <td id="track101">51</td>
+                        <td id="track102">52</td>
+                        <td id="track103">53</td>
+                        <td id="track104">54</td>
+                        <td id="track105">55</td>
+                        <td id="track106">56</td>
+                        <td id="track107">57</td>
+                        <td id="track108">58</td>
+                        <td id="track109">59</td>
+                        <td></td>
+                        <td id="track110">50</td>
+                        <td id="track111">51</td>
+                        <td id="track112">52</td>
+                        <td id="track113">53</td>
+                        <td id="track114">54</td>
+                        <td id="track115">55</td>
+                        <td id="track116">56</td>
+                        <td id="track117">57</td>
+                        <td id="track118">58</td>
+                        <td id="track119">59</td>
+                    </tr>
+                    <tr>
+                        <td>6</td>
+                        <td id="track120">60</td>
+                        <td id="track121">61</td>
+                        <td id="track122">62</td>
+                        <td id="track123">63</td>
+                        <td id="track124">64</td>
+                        <td id="track125">65</td>
+                        <td id="track126">66</td>
+                        <td id="track127">67</td>
+                        <td id="track128">68</td>
+                        <td id="track129">69</td>
+                        <td></td>
+                        <td id="track130">60</td>
+                        <td id="track131">61</td>
+                        <td id="track132">62</td>
+                        <td id="track133">63</td>
+                        <td id="track134">64</td>
+                        <td id="track135">65</td>
+                        <td id="track136">66</td>
+                        <td id="track137">67</td>
+                        <td id="track138">68</td>
+                        <td id="track139">69</td>
+                    </tr>
+                    <tr>
+                        <td>7</td>
+                        <td id="track140">70</td>
+                        <td id="track141">71</td>
+                        <td id="track142">72</td>
+                        <td id="track143">73</td>
+                        <td id="track144">74</td>
+                        <td id="track145">75</td>
+                        <td id="track146">76</td>
+                        <td id="track147">77</td>
+                        <td id="track148">78</td>
+                        <td id="track149">79</td>
+                        <td></td>
+                        <td id="track150">70</td>
+                        <td id="track151">71</td>
+                        <td id="track152">72</td>
+                        <td id="track153">73</td>
+                        <td id="track154">74</td>
+                        <td id="track155">75</td>
+                        <td id="track156">76</td>
+                        <td id="track157">77</td>
+                        <td id="track158">78</td>
+                        <td id="track159">79</td>
+                    </tr>
+                </tbody>
+            </table>
+            <p style="margin:8px 0px">
+                <button id="sendChime" class="button" style="background-color:#FFAAAA"
+                    onclick="sendChime();">Chime</button>
+            </p>
+        </div>
+    </center>
 </body>
 
 </html>
