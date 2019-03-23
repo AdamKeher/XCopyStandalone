@@ -14,7 +14,7 @@ connection.onmessage = function (e) {
   var res = e.data.split(",", 5);
 
   if (res[0] == "pinStatus") {
-    document.getElementById('pinStatus').innerHTML = res[1];
+    setHardwareStatus(res[1])
   }
 
   if (res[0] == "setTrack") {
@@ -38,9 +38,22 @@ connection.onclose = function () {
   console.log('WebSocket connection closed');
 };
 
-function setTrack(trackNum, classname, text = "")
-{
-  element = document.getElementById('track'+trackNum);
+function setHardwareStatus(status) {
+  element = document.getElementById('hardwareStatus');
+  if (status == 0)
+  {
+    element.className = "idle";
+    element.innerHTML = "Idle";
+  }
+  else if (status == 1)
+  {
+    element.className = "busy";
+    element.innerHTML = "Busy";
+  }
+}
+
+function setTrack(trackNum, classname, text = "") {
+  element = document.getElementById('track' + trackNum);
   element.className = classname;
   if (text != "")
     element.innerHTML = text;
@@ -57,8 +70,7 @@ function setStatus(status) {
 }
 
 function resetTracks(classname = "trackDefault", start = 0) {
-  for (i = start; i < 160; i++)
-  {
+  for (i = start; i < 160; i++) {
     setTrack(i, classname)
   }
 }

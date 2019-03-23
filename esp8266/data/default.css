@@ -14,10 +14,9 @@ td
     width:40px;
     text-align: center;
 }
-td:nth-child(1)
+.right
 {
-    background-color: lightblue;
-    color: black;
+    text-align: right;
 }
 tbody
 {
@@ -48,4 +47,14 @@ tbody
 {
     background-color: green;
     color: black;
+}
+.busy
+{
+    background-color: red;
+    color: white;
+}
+.idle
+{
+    background-color: green;
+    color: white;
 }
