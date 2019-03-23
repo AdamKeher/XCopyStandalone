@@ -817,6 +817,9 @@ void XCopyDisk::OperationCancelled(uint8_t trackNum)
 {
     _graphics->drawText(0, 10, ST7735_RED, "Operation Cancelled", true);
     if (trackNum >= 0)
+    {
         _graphics->drawDisk(trackNum, ST7735_RED);
+        _esp->sendWebSocket("resetTracks,trackRed," + String(trackNum));
+    }
     _audio->playBong(false);
 }
