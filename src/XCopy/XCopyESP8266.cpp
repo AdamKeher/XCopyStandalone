@@ -6,11 +6,14 @@ XCopyESP8266::XCopyESP8266(HardwareSerial serial, uint32_t baudrate)
     _serial.begin(baudrate);
 }
 
-String XCopyESP8266::sendCommand(String command, bool strip, uint32_t timeout)
+String XCopyESP8266::sendCommand(String command, bool strip, int timeout)
 {
     _serial.flush();
     _serial.clear();
     _serial.print(command);
+
+    if (timeout == -1)
+        return "";
 
     char OK_EOC[5] = "OK\r\n";
     char ER_EOC[5] = "ER\r\n";
@@ -49,7 +52,7 @@ String XCopyESP8266::sendCommand(String command, bool strip, uint32_t timeout)
 
 void XCopyESP8266::sendWebSocket(String command)
 {
-    sendCommand("broadcast " + command + "\r\n", 0);
+    sendCommand("broadcast " + command + "\r\n", false, -1);
 }
 
 bool XCopyESP8266::connect(String ssid, String password, uint32_t timeout)
