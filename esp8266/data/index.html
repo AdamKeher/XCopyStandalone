@@ -16,6 +16,26 @@
             <img src="xcopy.png">
         </header>
         <div>
+            <p style="margin:8px 0px">
+                <button id="copyADFtoDisk" onclick="copyADFtoDisk();">Copy ADF to
+                    Disk</button>
+                <button id="copyDisktoADF" onclick="copyDisktoADF();">Copy Disk to
+                    ADF</button>
+                <button id="copyDisktoDisk" onclick="copyDisktoDisk();">Copy Disk to
+                    Disk</button>
+                <button id="copyDisktoFlash" onclick="copyDisktoFlash();">Copy Disk to
+                    Flash</button>
+                <button id="copyFlashtoDisk" onclick="copyFlashtoDisk();">Copy Flash
+                    to Disk</button>
+                <button id="testDisk" onclick="testDisk();">Test
+                    Disk</button>
+                <button id="formatDisk" onclick="formatDisk();">Format
+                    Disk</button>
+                <button id="diskFlux" onclick="diskFlux();">Disk
+                    Flux</button>
+            </p>
+        </div>
+        <div>
             <table>
                 <thead>
                     <tr>
@@ -216,7 +236,7 @@
                         <td class="trackDefault" id="track155">77</td>
                         <td class="trackDefault" id="track157">78</td>
                         <td class="trackDefault" id="track159">79</td>
-                    </tr>                    
+                    </tr>
                 </tbody>
                 <tfoot>
                     <tr>
@@ -226,10 +246,6 @@
                     </tr>
                 </tfoot>
             </table>
-            <p style="margin:8px 0px">
-                <button id="sendChime" class="button" style="background-color:#FFAAAA"
-                    onclick="sendChime();">Chime</button>
-            </p>
         </div>
     </center>
 </body>

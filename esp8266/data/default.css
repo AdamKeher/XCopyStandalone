@@ -63,3 +63,10 @@ tbody
     background-color: green;
     color: white;
 }
+.disable
+{
+  background-color: red;
+  color: darkred;
+  pointer-events: none;
+  cursor: not-allowed;
+}

@@ -14,7 +14,11 @@ connection.onmessage = function (e) {
   var res = e.data.split(",", 5);
 
   if (res[0] == "pinStatus") {
-    setHardwareStatus(res[1])
+    setHardwareStatus(res[1]);
+    if (res[1] == 0)
+      setButtons(true);
+    else
+      setButtons(false);
   }
 
   if (res[0] == "setTrack") {
@@ -40,13 +44,11 @@ connection.onclose = function () {
 
 function setHardwareStatus(status) {
   element = document.getElementById('hardwareStatus');
-  if (status == 0)
-  {
+  if (status == 0) {
     element.className = "idle";
     element.innerHTML = "Idle";
   }
-  else if (status == 1)
-  {
+  else if (status == 1) {
     element.className = "busy";
     element.innerHTML = "Busy";
   }
@@ -75,6 +77,51 @@ function resetTracks(classname = "trackDefault", start = 0) {
   }
 }
 
-function sendChime() {
-  connection.send("chime");
+function setButtons(value) {
+  if (value) {
+    document.getElementById('copyADFtoDisk').classList.remove("disable");
+    document.getElementById('copyDisktoADF').classList.remove("disable");
+    document.getElementById('copyDisktoDisk').classList.remove("disable");
+    document.getElementById('copyDisktoFlash').classList.remove("disable");
+    document.getElementById('copyFlashtoDisk').classList.remove("disable");
+    document.getElementById('testDisk').classList.remove("disable");
+    document.getElementById('formatDisk').classList.remove("disable");
+    document.getElementById('diskFlux').classList.remove("disable");
+  }
+  else {
+    document.getElementById('copyADFtoDisk').classList.add("disable");
+    document.getElementById('copyDisktoADF').classList.add("disable");
+    document.getElementById('copyDisktoDisk').classList.add("disable");
+    document.getElementById('copyDisktoFlash').classList.add("disable");
+    document.getElementById('copyFlashtoDisk').classList.add("disable");
+    document.getElementById('testDisk').classList.add("disable");
+    document.getElementById('formatDisk').classList.add("disable");
+    document.getElementById('diskFlux').classList.add("disable");
+  }
 }
+
+function copyADFtoDisk() {
+  connection.send("copyADFtoDisk");
+}
+function copyDisktoADF() {
+  connection.send("copyDisktoADF");
+}
+function copyDisktoDisk() {
+  connection.send("copyDisktoDisk");
+}
+function copyDisktoFlash() {
+  connection.send("copyDisktoFlash");
+}
+function copyFlashtoDisk() {
+  connection.send("copyFlashtoDisk");
+}
+function testDisk() {
+  connection.send("testDisk");
+}
+function formatDisk() {
+  connection.send("formatDisk");
+}
+function diskFlux() {
+  connection.send("diskFlux");
+}
+
