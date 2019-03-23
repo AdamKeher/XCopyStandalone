@@ -6,10 +6,11 @@ XCopyDisk::XCopyDisk()
 {
 }
 
-void XCopyDisk::begin(XCopyGraphics *graphics, XCopyAudio *audio, uint8_t sdCSPin, uint8_t flashCSPin, uint8_t cardDetectPin)
+void XCopyDisk::begin(XCopyGraphics *graphics, XCopyAudio *audio, XCopyESP8266 *esp, uint8_t sdCSPin, uint8_t flashCSPin, uint8_t cardDetectPin)
 {
     _graphics = graphics;
     _audio = audio;
+    _esp = esp;
     _sdCSPin = sdCSPin;
     _flashCSPin = flashCSPin;
     _cardDetectPin = cardDetectPin;
@@ -73,19 +74,27 @@ int XCopyDisk::readDiskTrack(uint8_t trackNum, bool verify, uint8_t retryCount)
     {
         // read track
         _graphics->drawTrack(trackNum / 2, trackNum % 2, true, false, 0, verify, ST7735_YELLOW);
+        _esp->sendWebSocket("setTrack," + String(trackNum) + ",trackYellow,");
         gotoLogicTrack(trackNum);
         errors = readTrack(true);
 
         if (errors != -1)
         {
             if (getWeakTrack() > 0)
+            {
                 _graphics->drawTrack(trackNum / 2, trackNum % 2, true, false, 0, verify, ST7735_YELLOW);
+                _esp->sendWebSocket("setTrack," + String(trackNum) + ",trackYellow,");
+            }
             else
+            {
                 _graphics->drawTrack(trackNum / 2, trackNum % 2, true, false, 0, verify, ST7735_GREEN);
+                _esp->sendWebSocket("setTrack," + String(trackNum) + ",trackGreen,");
+            }
         }
         else
         {
             _graphics->drawTrack(trackNum / 2, trackNum % 2, true, true, retries + 1, verify, ST7735_RED);
+            _esp->sendWebSocket("setTrack," + String(trackNum) + ",trackRed,");
             retries++;
             _audio->playBong(false);
             delay(1000);
@@ -98,10 +107,16 @@ int XCopyDisk::readDiskTrack(uint8_t trackNum, bool verify, uint8_t retryCount)
     }
 
     if (errors == -1)
+    {
         _graphics->drawTrack(trackNum / 2, trackNum % 2, true, false, 0, verify, ST7735_RED);
+        _esp->sendWebSocket("setTrack," + String(trackNum) + ",trackRed,");
+    }
     else if (errors == 0 && retries > 0)
+    {
         _graphics->drawTrack(trackNum / 2, trackNum % 2, true, false, 0, verify, ST7735_ORANGE);
-    
+        _esp->sendWebSocket("setTrack," + String(trackNum) + ",trackOrange,");
+    }
+
     return errors == -1 ? errors : retries;
 }
 
@@ -290,7 +305,7 @@ bool XCopyDisk::diskToADF(String ADFFileName, bool verify, uint8_t retryCount, A
             weakTracks += getWeakTrack();
             totalWeakTracks++;
         }
-        
+
         if (readResult != 0)
         {
             // if there has been error on either side, set error for whole cylinder else increment retry count
@@ -667,9 +682,14 @@ void XCopyDisk::testDisk(uint8_t retryCount)
     _graphics->drawDiskName("");
     _graphics->drawDisk();
 
+    _esp->sendWebSocket("setDiskname,");
+    _esp->sendWebSocket("resetTracks,trackDefault,0");
+
     if (!diskChange())
     {
         _graphics->drawText(0, 10, ST7735_RED, "No Disk Inserted");
+        _esp->sendWebSocket("setStatus,No Disk Inserted");
+
         _audio->playBong(false);
         return;
     }
@@ -677,6 +697,8 @@ void XCopyDisk::testDisk(uint8_t retryCount)
     String diskName = getName();
     _graphics->drawDiskName(diskName);
     _graphics->getTFT()->drawFastHLine(0, 85, _graphics->getTFT()->width(), ST7735_GREEN);
+    _esp->sendWebSocket("setDiskname," + diskName);
+    _esp->sendWebSocket("setStatus,Testing Disk");
 
     for (int trackNum = 0; trackNum < 160; trackNum++)
     {
@@ -692,6 +714,8 @@ void XCopyDisk::testDisk(uint8_t retryCount)
         analyseHist(true);
         drawFlux(trackNum, 6, 85);
     }
+
+    _esp->sendWebSocket("setStatus,Test Complete");
 
     _audio->playBoing(false);
 }

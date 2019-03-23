@@ -56,6 +56,7 @@ void XCopyCommandLine::doCommand(String command)
         Serial << "| status               | show wifi status                                     |\r\n";
         Serial << "| ip                   | show wifi ip address                                 |\r\n";
         Serial << "| ssid                 | show wifi ssid                                       |\r\n";
+        Serial << "| websocket <msg>      | broadcast message to webclients                      |\r\n";
         Serial << "`----------------------'------------------------------------------------------'\r\n";
         /*
         Serial << "| write <n>       | write logical track #n                                    |\r\n";
@@ -281,6 +282,13 @@ void XCopyCommandLine::doCommand(String command)
     {
         printTrack();
         Serial << "OK\r\n";
+        return;
+    }
+
+    if (cmd == "websocket")
+    {
+        _esp->sendWebSocket(param);
+        Serial << "broadcast: '" << param << "'\r\n";
         return;
     }
 

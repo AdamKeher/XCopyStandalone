@@ -15,6 +15,7 @@
 #include "XCopyAudio.h"
 #include "XCopyGraphics.h"
 #include "FloppyDrive.h"
+#include "XCopyESP8266.h"
 
 enum ADFFileSource
 {
@@ -26,7 +27,7 @@ class XCopyDisk
 {
   public:
     XCopyDisk();
-    void begin(XCopyGraphics *graphics, XCopyAudio *audio, uint8_t sdCSPin, uint8_t flashCSPin, uint8_t cardDetectPin);
+    void begin(XCopyGraphics *graphics, XCopyAudio *audio, XCopyESP8266 *esp, uint8_t sdCSPin, uint8_t flashCSPin, uint8_t cardDetectPin);
 
     int readDiskTrack(uint8_t trackNum, bool verify, uint8_t retryCount);
     void writeDiskTrack(uint8_t trackNum, uint8_t retryCount);
@@ -49,6 +50,7 @@ class XCopyDisk
   private:
     XCopyAudio *_audio;
     XCopyGraphics *_graphics;
+    XCopyESP8266 *_esp;
     uint8_t _sdCSPin;
     uint8_t _flashCSPin;
     uint8_t _cardDetectPin;

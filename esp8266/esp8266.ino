@@ -21,7 +21,7 @@ void busyISR()
   Serial.print(digitalRead(pinStatus));
   Serial.println();
 
-  webSocket.broadcastTXT("busyPin: " + String(pinStatus));
+  webSocket.broadcastTXT("pinStatus," + String(pinStatus));
 }
 
 String getContentType(String filename)
@@ -120,15 +120,16 @@ void setup(void)
   Serial.begin(115200);
 
   if (MDNS.begin("esp8266"))
-  {
     Serial.println("MDNS responder started");
-  }
+  else
+    Serial.println("MDNS responder failed to start");
 
   SPIFFS.begin();
+  Serial.println("SPIFFS started");
 
   webSocket.begin();
+  Serial.println("WebSockets server started");
   webSocket.onEvent(webSocketEvent);
-  Serial.println("WebSocket server started.");
 
   server.onNotFound([]() {
     digitalWrite(led, 1);
@@ -136,9 +137,10 @@ void setup(void)
       handleNotFound();
     digitalWrite(led, 0);
   });
-
   server.begin();
   Serial.println("HTTP server started");
+
+  command.begin(&webSocket);
 }
 
 void loop(void)

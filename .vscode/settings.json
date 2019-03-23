@@ -3,5 +3,10 @@
     "esp8266fs.preferencesPath": "C:/Users/adam/AppData/Local/Arduino15",
     "esp8266fs.arduinoUserPath": "D:/Electronics/Arduino",
     "esp8266fs.spiffsImage": "../../ArduinoOutput/spiffs.bin",
-    "esp8266fs.logLevel": "normal"
+    "esp8266fs.logLevel": "normal",
+    "files.associations": {
+        "initializer_list": "cpp",
+        "xstring": "cpp",
+        "xutility": "cpp"
+    }
 }

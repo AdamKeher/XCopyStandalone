@@ -94,7 +94,7 @@ void XCopy::begin(int sdCSPin, int flashCSPin, int cardDetectPin, int busyPin)
 
     // Init Disk Routines
     // -------------------------------------------------------------------------------------------
-    _disk.begin(&_graphics, &_audio, _sdCSPin, _flashCSPin, _cardDetectPin);
+    _disk.begin(&_graphics, &_audio, _esp, _sdCSPin, _flashCSPin, _cardDetectPin);
 
     // Init Menu
     // -------------------------------------------------------------------------------------------

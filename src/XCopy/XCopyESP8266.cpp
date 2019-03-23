@@ -47,6 +47,11 @@ String XCopyESP8266::sendCommand(String command, bool strip, uint32_t timeout)
     return response;
 }
 
+void XCopyESP8266::sendWebSocket(String command)
+{
+    sendCommand("broadcast " + command + "\r\n", 0);
+}
+
 bool XCopyESP8266::connect(String ssid, String password, uint32_t timeout)
 {
     String response = sendCommand("connect " + ssid + " " + password + "\r", false, timeout);

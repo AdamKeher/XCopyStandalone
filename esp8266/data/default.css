@@ -1,3 +1,8 @@
+body
+{
+    background: black;
+    color: white;
+}
 thead
 {
     background-color:blue;
@@ -16,8 +21,13 @@ td:nth-child(1)
 }
 tbody
 {
-    background-color:green;
-    color:white;
+    background-color:white;
+    color:black;
+}
+.trackDefault
+{
+    background-color: white;
+    color: black;
 }
 .trackRed
 {
@@ -32,5 +42,10 @@ tbody
 .trackYellow
 {
     background-color: yellow;
+    color: black;
+}
+.trackGreen
+{
+    background-color: green;
     color: black;
 }

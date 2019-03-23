@@ -33,6 +33,7 @@ public:
   bool begin();
   bool connect(String ssid, String password, uint32_t timeout);
   String sendCommand(String command, bool strip = false, uint32_t timeout = 250);
+  void sendWebSocket(String command);
   String Version();
   void setEcho(bool status);
 
