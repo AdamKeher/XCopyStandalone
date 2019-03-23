@@ -20,12 +20,12 @@ td
 }
 tbody
 {
-    background-color:white;
-    color:black;
+    background-color:blue;
+    color:white;
 }
 .trackDefault
 {
-    background-color: white;
+    background-color: whitesmoke;
     color: black;
 }
 .trackRed
@@ -47,6 +47,11 @@ tbody
 {
     background-color: green;
     color: black;
+}
+.trackMagenta
+{
+    background-color: magenta;
+    color: white;
 }
 .busy
 {
