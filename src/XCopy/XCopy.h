@@ -81,7 +81,8 @@ public:
   void cancelOperation();
   void setBusy(bool busy);
   bool getBusy() { return digitalRead(_busyPin); }
-  // void testdrawtext(String text, uint16_t color, int x, int y);
+
+  static void theCallbackFunction(const String command);
 
   void printDirectory(File dir, int numTabs);
   void printDir();

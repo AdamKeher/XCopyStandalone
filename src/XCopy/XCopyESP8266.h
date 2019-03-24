@@ -4,6 +4,8 @@
 #include <Arduino.h>
 #include <Streaming.h>
 
+typedef void (*espCallbackFunction)(const String command);
+
 class XCopyESP8266
 {
 public:
@@ -14,11 +16,17 @@ public:
   void sendWebSocket(String command);
   String Version();
   void setEcho(bool status);
+  void Update();
+
+  void setCallBack(espCallbackFunction function);
 
 private:
   char OK_EOC[5] = "OK\r\n";
   char ER_EOC[5] = "ER\r\n";
   HardwareSerial _serial;
+  String _command;
+  const String _marker = "xcopyCommand,";
+  espCallbackFunction _espCallBack;
 };
 
 #endif // XCOPYESP8266_H

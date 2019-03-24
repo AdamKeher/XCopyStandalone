@@ -1,11 +1,30 @@
 var connection = new WebSocket('ws://' + location.hostname + ':81/', ['arduino']);
 
 connection.onopen = function () {
-  connection.send('Connect ' + new Date());
+  element = document.getElementById('webSocketStatus');
+  element.classList.add("socketOpen");
+  element.classList.remove("socketClosed");
+  element.classList.remove("socketError");
+  element.innerHTML = "Open";
+
+  connection.send('espCommand,busyPin');
 };
+
+connection.onclose = function () {
+  element = document.getElementById('webSocketStatus');
+  element.classList.add("socketClosed");
+  element.classList.remove("socketOpen");
+  element.classList.remove("socketError");
+  element.innerHTML = "Closed";
+}
 
 connection.onerror = function (error) {
   console.log('WebSocket Error ', error);
+  element = document.getElementById('webSocketStatus');
+  element.classList.add("socketError");
+  element.classList.remove("socketOpen");
+  element.classList.remove("socketClosed");
+  element.innerHTML = "Error";  
 };
 
 connection.onmessage = function (e) {

@@ -40,19 +40,19 @@
                 <thead>
                     <tr>
                         <td class="right" colspan=2>Status</td>
-                        <td colspan=19><span id="status">?</span></td>
+                        <td colspan=19><span id="status"></span></td>
                     </tr>
                     <tr>
                         <td class="right" colspan=2>DiskName</td>
-                        <td colspan=19><span id="diskname">?</span></td>
+                        <td colspan=19><span id="diskname"></span></td>
                     </tr>
+                </thead>
+                <tbody>
                     <tr>
                         <td colspan=10>Side 1</td>
                         <td>&nbsp;&nbsp;</td>
                         <td colspan=10>Side 2</td>
                     </tr>
-                </thead>
-                <tbody>
                     <tr>
                         <td class="trackDefault" id="track0">00</td>
                         <td class="trackDefault" id="track2">01</td>
@@ -240,9 +240,11 @@
                 </tbody>
                 <tfoot>
                     <tr>
-                        <td colspan="17"></td>
+                        <td class="socketClosed" id="webSocketStatus">Closed</td>
+                        <td colspan="3">WebSocket Status</td>
+                        <td colspan="13"></td>
                         <td colspan="3">Hardware Status</td>
-                        <td class="idle" id="hardwareStatus">Idle</td>
+                        <td class="busy" id="hardwareStatus">Busy</td>
                     </tr>
                 </tfoot>
             </table>

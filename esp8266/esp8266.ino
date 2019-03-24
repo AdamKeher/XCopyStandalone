@@ -10,17 +10,13 @@ ESP8266WebServer server(80);
 WebSocketsServer webSocket(81);
 const int led = 13;
 const int busyPin = 2;
+const String _marker = "espCommand";
 
 ESPCommandLine command;
 
 void busyISR()
 {
   int pinStatus = digitalRead(busyPin);
-
-  Serial.print("Busy Interrupt: ");
-  Serial.print(digitalRead(pinStatus));
-  Serial.println();
-
   webSocket.broadcastTXT("pinStatus," + String(pinStatus));
 }
 
@@ -78,7 +74,7 @@ bool handleFileRead(String path)
     path += "index.html";
   String contentType = getContentType(path);
 
-  Serial.println("handleFileRead: " + path);
+  // Serial.println("handleFileRead: " + path);
 
   if (SPIFFS.exists(path))
   {
@@ -96,17 +92,29 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t lenght)
   switch (type)
   {
   case WStype_DISCONNECTED: // if the websocket is disconnected
-    Serial.printf("[%u] Disconnected!\r\n", num);
+    Serial.printf("xcopyCommand,disconnect,%u\r\n", num);
     break;
   case WStype_CONNECTED:
   { // if a new websocket connection is established
     IPAddress ip = webSocket.remoteIP(num);
-    Serial.printf("[%u] Connected from %d.%d.%d.%d url: %s\r\n", num, ip[0], ip[1], ip[2], ip[3], payload);
+    Serial.printf("xcopyCommand,connected,%u,%d.%d.%d.%d,%s\r\n", num, ip[0], ip[1], ip[2], ip[3], payload);
   }
   break;
   case WStype_TEXT: // if new text data is received
-    Serial.printf("[%u] get Text: %s\r\n", num, payload);
+  {
+    String cmd = (char *)payload;
+    if (cmd.startsWith(_marker))
+    {
+      cmd = cmd.substring(_marker.length()+1);
+      if (cmd == "busyPin")
+        busyISR();
+    }
+    else
+    {
+      Serial.printf("xcopyCommand,%s\r\n", cmd.c_str());
+    }
     break;
+  }
   }
 }
 

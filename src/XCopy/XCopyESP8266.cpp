@@ -82,3 +82,31 @@ String XCopyESP8266::Version()
 {
     return sendCommand("version\r\n");
 }
+
+void XCopyESP8266::Update()
+{
+    while (_serial.available())
+    {
+        char inChar = (char)_serial.read();
+
+        if (inChar == 0x0a)
+        {
+            if (_command.startsWith(_marker))
+            {
+                _command = _command.substring(_marker.length());
+                _command.replace("\r", "");
+                this->_espCallBack(_command);
+            }
+            _command = "";
+        }
+        else
+        {
+            _command += inChar;
+        }
+    }
+}
+
+void XCopyESP8266::setCallBack(espCallbackFunction function)
+{
+    _espCallBack = function;
+}

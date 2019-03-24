@@ -87,6 +87,7 @@ void XCopy::begin(int sdCSPin, int flashCSPin, int cardDetectPin, int busyPin)
         _graphics.drawText(0, 115, ST7735_WHITE, "       Connecting to WiFi", true);
         Serial << "\033[32mESP8266 WIFI Chip initialized. (Serial" << ESPSerial << " @ " << ESPBaudRate << ")\033[0m\r\n";
     }
+    _esp->setCallBack(theCallbackFunction);
 
     // Init Command Line
     // -------------------------------------------------------------------------------------------
@@ -200,6 +201,7 @@ void XCopy::update()
 
     processState();
     _command->Update();
+    _esp->Update();
 }
 
 void XCopy::cancelOperation()
@@ -236,4 +238,9 @@ void XCopy::cancelOperation()
     default:
         break;
     }
+}
+
+void XCopy::theCallbackFunction(const String command)
+{    
+    Serial << "DEBUG::ESPCALLBACK::(" << command << ")\r\n";
 }
