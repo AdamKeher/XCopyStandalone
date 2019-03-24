@@ -118,7 +118,7 @@ void ESPCommandLine::doCommand(String command)
             Serial << "Error: you must supply broadcast message";
             return;
         }
-
+        
         _webSocket->broadcastTXT(param);
 
         return;

@@ -189,8 +189,7 @@ bool XCopyDisk::diskToADF(String ADFFileName, bool verify, uint8_t retryCount, A
     _graphics->bmpDraw("XCPYLOGO.BMP", 0, 87);
     _graphics->drawDiskName("");
     _graphics->drawDisk();
-    _esp->sendWebSocket("setDiskname,");
-    _esp->sendWebSocket("resetTracks,trackDefault,0");
+    _esp->sendWebSocket("resetDisk");
 
     if (!diskChange())
     {
@@ -485,8 +484,7 @@ void XCopyDisk::adfToDisk(String ADFFileName, bool verify, uint8_t retryCount, A
     _graphics->drawDiskName(ADFFileName.substring(ADFFileName.lastIndexOf("/") + 1));
     _graphics->drawDisk();
 
-    _esp->sendWebSocket("setDiskname," + ADFFileName.substring(ADFFileName.lastIndexOf("/") + 1));
-    _esp->sendWebSocket("resetTracks,trackDefault,0");
+    _esp->sendWebSocket("resetDisk");
 
     if (!diskChange())
     {
@@ -673,11 +671,18 @@ void XCopyDisk::diskToDisk(bool verify, uint8_t retryCount)
 
 void XCopyDisk::drawFlux(uint8_t trackNum, uint8_t scale, uint8_t yoffset)
 {
+    String histData;
+
     for (int i = 0; i < 255; i = i + scale)
     {
         int hist = 0;
         for (int s = 0; s < scale; s++)
+        {
             hist += getHist()[i + s];
+
+            histData.append(getHist()[i + s]);
+            histData.append("|");
+        }
 
         if (hist > 0)
         {
@@ -694,6 +699,8 @@ void XCopyDisk::drawFlux(uint8_t trackNum, uint8_t scale, uint8_t yoffset)
         }
         yoffset++;
     }
+
+    _esp->sendWebSocket("flux," + String(trackNum) + "," + histData);
 }
 
 void XCopyDisk::diskFlux()
@@ -749,8 +756,7 @@ void XCopyDisk::testDisk(uint8_t retryCount)
     _graphics->drawDiskName("");
     _graphics->drawDisk();
 
-    _esp->sendWebSocket("setDiskname,");
-    _esp->sendWebSocket("resetTracks,trackDefault,0");
+    _esp->sendWebSocket("resetDisk");
 
     if (!diskChange())
     {

@@ -24,7 +24,7 @@ connection.onerror = function (error) {
   element.classList.add("socketError");
   element.classList.remove("socketOpen");
   element.classList.remove("socketClosed");
-  element.innerHTML = "Error";  
+  element.innerHTML = "Error";
 };
 
 connection.onmessage = function (e) {
@@ -48,6 +48,12 @@ connection.onmessage = function (e) {
     resetTracks(res[1], res[2]);
   }
 
+  if (res[0] == "resetDisk") {
+    setDiskname("");
+    resetTracks("trackDefault", 0);
+    clearFlux();
+  }
+
   if (res[0] == "setDiskname") {
     setDiskname(res[1]);
   }
@@ -55,11 +61,64 @@ connection.onmessage = function (e) {
   if (res[0] == "setStatus") {
     setStatus(res[1]);
   }
+
+  if (res[0] == "flux") {
+    drawFlux(res[1], res[2]);
+  }
 };
 
 connection.onclose = function () {
   console.log('WebSocket connection closed');
 };
+
+function componentToHex(c) {
+  var hex = c.toString(16);
+  return hex.length == 1 ? "0" + hex : hex;
+}
+
+function LerpRGB(a, b, t) {
+  t = 1.0;
+
+  ar = (a & 0xff0000) >> 16;
+  ag = (a & 0x00ff00) >> 8;
+  ab = (a & 0x0000ff);
+
+  br = (b & 0xff0000) >> 16;
+  bg = (b & 0x00ff00) >> 8;
+  bb = (b & 0x0000ff);
+
+  cr = ar + (br - ar) * t;
+  cg = ag + (bg - ag) * t;
+  cb = ab + (bb - ab) * t;
+
+  result = "#" + componentToHex(cr) + componentToHex(cg) + componentToHex(cb)
+  return result;
+}
+
+function clearFlux() {
+  canvas = document.getElementById('fluxCanvas');
+  ctx = canvas.getContext("2d");
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+}
+
+function drawFlux(trackNum, fluxString) {
+  fluxData = fluxString.split("|", 255);
+  element = document.getElementById('fluxCanvas');
+  ctx = element.getContext("2d");
+
+  for (i = 1; i < fluxData.length; i++) {
+    if (fluxData[i] > 0) {
+      if (fluxData[i] < 5)
+        ctx.fillStyle = LerpRGB(0x000000, 0xffff00, fluxData[i]);
+      else if (fluxData[i] < 50)
+        ctx.fillStyle = LerpRGB(0xffff00, 0xffa500, fluxData[i]);
+      else
+        ctx.fillStyle = LerpRGB(0xffa500, 0xff0000, fluxData[i]);
+
+      ctx.fillRect(trackNum * 2, i, 2, 1);
+    }
+  }
+}
 
 function setHardwareStatus(status) {
   element = document.getElementById('hardwareStatus');
@@ -122,24 +181,31 @@ function setButtons(value) {
 function copyADFtoDisk() {
   connection.send("copyADFtoDisk");
 }
+
 function copyDisktoADF() {
   connection.send("copyDisktoADF");
 }
+
 function copyDisktoDisk() {
   connection.send("copyDisktoDisk");
 }
+
 function copyDisktoFlash() {
   connection.send("copyDisktoFlash");
 }
+
 function copyFlashtoDisk() {
   connection.send("copyFlashtoDisk");
 }
+
 function testDisk() {
   connection.send("testDisk");
 }
+
 function formatDisk() {
   connection.send("formatDisk");
 }
+
 function diskFlux() {
   connection.send("diskFlux");
 }
