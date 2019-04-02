@@ -15,9 +15,9 @@ Todo:
     ✔ Added weak tracks to track reading @done(19-03-11 10:50)
     ✔ Increased the number of retries in FloppyDrive / MAXRETRIES @done(19-03-11 10:50)
   ADFLib:
+    ☐ Add support for floppy drive in myinit, myread etc
     ☐ Implement myFunctions
     ☐ Add support for mount, dir, cd
-    ☐ Add support for floppy drive in myinit, myread etc
     ☐ Sometimes crashes with NDOS disks. Try workbnch then mutation
     ✔ track down memory leak when file open fails @done(19-03-16 10:59)
       ✔ mem leak when adf file doesn't contain a volume / NDOS  disk (72bytes) @done(19-03-16 10:59)
@@ -25,18 +25,24 @@ Todo:
     ✔ track down memory leak, malloc fails after 3rd try @done(19-03-15 22:13)
     ✔ remove hardcoding of workbnch.adf and pass in param @done(19-03-15 22:13)
   HTTP:
-    ☐ Add getPinStatus and update interface when webpage initially loads.
-    ☐ Add Menu system
-    ☐ Control XCopy via web interface
-    ☐ Copy files to XCopy Flash and SD Card from PC
-    ☐ Use bootstrap or angular for HTML
-    ☐ Add reset (rst low / pin 25) and program (gpio0 low / pin 26)
-    ☐ Add seperate debugging menu item for Serial Passthrough Mode and ESP8266 Programming Mode
-    ☐ Fix settings menu SSID and Password menu items to udpate when 'connect <ssid> <password>' command issued
-    ☐ Delete _config removed from xcopy.begin() while testing due to passing through to xcopycommand. delete it at startup and recreate in connect command
-    ☐ Rename ADF files while copying
-    ☐ Speed up diskflux notification as it adds ~10sec to disk test. Send binary data. Attempt to increase serial baud rate
-    ☐ Fix flux lerp function
+    Interface
+      ☐ bind callbacks to class method
+      ☐ Copy files to XCopy Flash and SD Card from PC
+      ☐ Rename ADF files while copying
+      ☐ Speed up diskflux notification as it adds ~10sec to disk test
+        ☐ Send binary data. Attempt
+        ☐ Increase serial baud rate
+      ☐ Fix flux lerp function
+      ☐ Use bootstrap or angular for HTML
+    ESP8266EX
+      ☐ Add reset (rst low / pin 25) and program (gpio0 low / pin 26)
+      ☐ Add seperate debugging menu item for Serial Passthrough Mode and ESP8266 Programming Mode
+    Wireless
+      ☐ Fix settings menu SSID and Password menu items to udpate when 'connect <ssid> <password>' command issued
+    General
+      ☐ Delete _config removed from xcopy.begin() while testing due to passing through to xcopycommand. delete it at startup and recreate in connect command
+    ✔ Add flux to web interface @done(19-03-24 16:16)
+    ✔ Add getPinStatus and update interface when webpage initially loads. @done(19-03-24 16:16)
     ✔ Use a pin to reflect busy to ESP8266 and communicate over existing serial port to send commands @done(19-03-23 15:32)
     ✔ Order ESP8266 for development @done(19-03-11 11:49)
     ✔ Add ESP8266 to prototype @done(19-03-20 16:33)
@@ -53,6 +59,7 @@ Todo:
       ☐ Investigate actual root cause
   Refactor:
     ☐ Reduce memory footprint
+      ☐ While HD support is removed, reduce stream object by changing streamSizeHD to streamSizeDD (13k!)
       ☐ Get rid of .begin and migrate code to constructors and change local variables to pointers
       ☐ Delete _disk when not being used to free up memory
       ☐ Only create ADFx when needed, move the creation and deletion of them into the commands
