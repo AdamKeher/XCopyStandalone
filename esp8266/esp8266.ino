@@ -9,7 +9,7 @@
 ESP8266WebServer server(80);
 WebSocketsServer webSocket(81);
 const int led = 13;
-const int busyPin = 2;
+const int busyPin = 4;
 const String _marker = "espCommand";
 
 ESPCommandLine command;
