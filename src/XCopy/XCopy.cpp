@@ -5,7 +5,7 @@ XCopy::XCopy(TFT_ST7735 *tft)
     _tft = tft;
 }
 
-void XCopy::begin(int sdCSPin, int flashCSPin, int cardDetectPin, int busyPin)
+void XCopy::begin(int sdCSPin, int flashCSPin, int cardDetectPin, int busyPin, int espResetPin, int espProgPin)
 {
 #ifdef XCOPY_DEBUG
     _ram.initialize();
@@ -16,14 +16,16 @@ void XCopy::begin(int sdCSPin, int flashCSPin, int cardDetectPin, int busyPin)
     _flashCSPin = flashCSPin;
     _cardDetectPin = cardDetectPin;
     _busyPin = busyPin;
+    _espResetPin = espResetPin;
+    _espProgPin = espProgPin;
 
     pinMode(_sdCSPin, INPUT_PULLUP);
     pinMode(_flashCSPin, INPUT_PULLUP);
     pinMode(_cardDetectPin, INPUT_PULLUP);
     pinMode(_busyPin, OUTPUT);
-
-    // ToDo: Reset ESP8266
-
+    pinMode(_espResetPin, OUTPUT);
+    pinMode(_espProgPin, OUTPUT);
+    
     Serial << "\033[2J\033[H\033[95m\033[106m";
     Serial << "                                                                          \r\n";
 
@@ -78,16 +80,17 @@ void XCopy::begin(int sdCSPin, int flashCSPin, int cardDetectPin, int busyPin)
     // Init ESP
     // -------------------------------------------------------------------------------------------
     _graphics.drawText(0, 115, ST7735_WHITE, "               Init WiFi", true);
-    _esp = new XCopyESP8266(ESPSerial, ESPBaudRate);
+    _esp = new XCopyESP8266(ESPSerial, ESPBaudRate, espResetPin, espProgPin);
+    _esp->reset();
     _esp->setEcho(false);
-    if (!_esp->begin())
-        Serial << "\033[31mESP8266 WIFI Chip initialization failed. (Serial" << ESPSerial << " @ " << ESPBaudRate << ")\033[0m\r\n";
-    else
+    if (_esp->begin())
     {
+        _esp->setCallBack(theCallbackFunction);
         _graphics.drawText(0, 115, ST7735_WHITE, "       Connecting to WiFi", true);
         Serial << "\033[32mESP8266 WIFI Chip initialized. (Serial" << ESPSerial << " @ " << ESPBaudRate << ")\033[0m\r\n";
     }
-    _esp->setCallBack(theCallbackFunction);
+    else
+        Serial << "\033[31mESP8266 WIFI Chip initialization failed. (Serial" << ESPSerial << " @ " << ESPBaudRate << ")\033[0m\r\n";
 
     // Init Command Line
     // -------------------------------------------------------------------------------------------
@@ -118,13 +121,19 @@ void XCopy::begin(int sdCSPin, int flashCSPin, int cardDetectPin, int busyPin)
     _menu.addChild("Compare Disk to ADF", undefined, parentItem);
 
     debugParentItem = _menu.addItem("Debugging", undefined);
-    _menu.addChild("Test Temp File", debuggingTempFile, debugParentItem);
-    _menu.addChild("Flash Memory Details", debuggingFlashDetails, debugParentItem);
-    _menu.addChild("Compare Flash to SD Card", debuggingCompareFlashToSDCard, debugParentItem);
-    _menu.addChild("Test Flash & SD Card", debuggingSDFLash, debugParentItem);
-    _menu.addChild("Erase Flash and Copy SD", debuggingEraseCopy, debugParentItem);
-    _menu.addChild("Serial Passthrough", debuggingSerialPassThrough, debugParentItem);
 
+    XCopyMenuItem *espParentItem = _menu.addChild("ESP", undefined, debugParentItem);
+    _menu.addChild("ESP Passthrough Mode", debuggingSerialPassThrough, espParentItem);
+    _menu.addChild("ESP Programming Mode", debuggingSerialPassThroughProg, espParentItem);
+    _menu.addChild("Reset ESP", resetESP, espParentItem);
+
+    XCopyMenuItem *flashParentItem = _menu.addChild("Flash", undefined, debugParentItem);
+    _menu.addChild("Flash Memory Details", debuggingFlashDetails, flashParentItem);
+    _menu.addChild("Test Temp File", debuggingTempFile, flashParentItem);
+    _menu.addChild("Test Flash & SD Card", debuggingSDFLash, flashParentItem);
+    _menu.addChild("Compare Flash to SD Card", debuggingCompareFlashToSDCard, flashParentItem);
+    _menu.addChild("Erase Flash and Copy SD", debuggingEraseCopy, flashParentItem);
+    
     _menu.addItem("", undefined);
     _menu.addItem("", undefined);
     _menu.addItem("", undefined);

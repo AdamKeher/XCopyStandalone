@@ -55,8 +55,10 @@ enum XCopyState
   fluxDisk = 24,
   formatDisk = 25,
   debuggingSerialPassThrough = 26,
-  setSSID = 27,
-  setPassword = 28
+  debuggingSerialPassThroughProg = 27,
+  setSSID = 28,
+  setPassword = 29,
+  resetESP = 30
 };
 
 class XCopy
@@ -64,7 +66,7 @@ class XCopy
 public:
   XCopy(TFT_ST7735 *tft);
 
-  void begin(int sdCSPin, int flashCSPin, int cardDetectPin, int busyPin);
+  void begin(int sdCSPin, int flashCSPin, int cardDetectPin, int busyPin, int espResetPin, int espProgPin);
   void update();
   void debug();
   void debugCompareFile(File sdFile, SerialFlashFile flashFile);
@@ -112,6 +114,8 @@ private:
   uint8_t _sdCSPin;
   uint8_t _flashCSPin;
   uint8_t _busyPin;
+  uint8_t _espResetPin;
+  uint8_t _espProgPin;
 
   XCopyMenuItem *verifyMenuItem;
   XCopyMenuItem *retryCountMenuItem;

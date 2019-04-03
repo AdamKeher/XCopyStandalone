@@ -214,16 +214,41 @@ void XCopy::navigateSelect()
         {
             setBusy(true);
             _xcopyState = debuggingSerialPassThrough;
-            _audio.playSelect(false); // filenames are always uppercase 8.3 format
+            _audio.playSelect(false);
             _graphics.clearScreen();
-            _graphics.drawText(0, 0, ST7735_GREEN, "Serial Passtrhough Mode", true);
-        }        
+            _graphics.drawText(0, 0, ST7735_GREEN, "ESP Passtrhough Mode", true);
+        }
+
+        if (item->command == debuggingSerialPassThroughProg)
+        {
+            setBusy(true);
+
+            _xcopyState = debuggingSerialPassThrough; // set as passthrough now ESP is in programming mode
+            _audio.playSelect(false);
+            _graphics.clearScreen();
+            _graphics.drawText(0, 0, ST7735_GREEN, "ESP Programming Mode", true);
+
+            _esp->progMode();
+        }
+
+        if (item->command == resetESP)
+        {
+            setBusy(true);
+            _xcopyState = resetESP;
+            _audio.playSelect(false);
+
+            _esp->reset();
+
+            setBusy(false);
+
+            _xcopyState = menus;
+        }
 
         if (item->command == showTime)
         {
             setBusy(true);
             _xcopyState = showTime;
-            _audio.playSelect(false); // filenames are always uppercase 8.3 format
+            _audio.playSelect(false);
             _graphics.clearScreen();
         }
 
@@ -232,7 +257,7 @@ void XCopy::navigateSelect()
             setBusy(true);
             _xcopyState = about;
             _drawnOnce = false;
-            _audio.playSelect(false); // filenames are always uppercase 8.3 format
+            _audio.playSelect(false);
             _graphics.clearScreen();
         }
 
@@ -332,7 +357,7 @@ void XCopy::navigateSelect()
             if (count > 5)
                 count = 0;
             _config->setRetryCount(count);
-            
+
             retryCountMenuItem->text = "Set Retry Count: " + String(_config->getRetryCount());
             _config->writeConfig();
             delete _config;
@@ -507,7 +532,7 @@ void XCopy::processState()
             _config = new XCopyConfig();
             _disk.diskToADF("DISKCOPY.TMP", _config->getVerify(), _config->getRetryCount(), _flashMemory);
             delete _config;
-    
+
             setBusy(false);
             _drawnOnce = true;
         }
@@ -520,7 +545,7 @@ void XCopy::processState()
             _config = new XCopyConfig();
             _disk.diskToDisk(_config->getVerify(), _config->getRetryCount());
             delete _config;
-    
+
             setBusy(false);
             _drawnOnce = true;
         }

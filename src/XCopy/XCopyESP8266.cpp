@@ -1,10 +1,33 @@
 #include "XCopyESP8266.h"
 
-XCopyESP8266::XCopyESP8266(HardwareSerial serial, uint32_t baudrate)
+XCopyESP8266::XCopyESP8266(HardwareSerial serial, uint32_t baudrate, int espResetPin, int espProgPin)
 {
     _serial = serial;
     _serial.begin(baudrate);
+
+    _espResetPin = espResetPin;
+    _espProgPin = espProgPin;
+    digitalWrite(_espResetPin, HIGH);
+    digitalWrite(_espProgPin, HIGH);
 }
+
+void XCopyESP8266::reset()
+{
+    digitalWrite(_espResetPin, LOW);
+    delay(20);
+    digitalWrite(_espResetPin, HIGH);
+}
+
+void XCopyESP8266::progMode()
+{
+    digitalWrite(_espResetPin, LOW);
+    digitalWrite(_espProgPin, LOW);
+    delay(20);
+    digitalWrite(_espResetPin, HIGH);
+    delay(20);
+    digitalWrite(_espProgPin, HIGH);
+}
+
 
 String XCopyESP8266::sendCommand(String command, bool strip, int timeout)
 {

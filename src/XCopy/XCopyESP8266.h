@@ -9,7 +9,7 @@ typedef void (*espCallbackFunction)(const String command);
 class XCopyESP8266
 {
 public:
-  XCopyESP8266(HardwareSerial serial, uint32_t baudrate);
+  XCopyESP8266(HardwareSerial serial, uint32_t baudrate, int espResetPin, int espProgPin);
   bool begin();
   bool connect(String ssid, String password, uint32_t timeout);
   String sendCommand(String command, bool strip = false, int timeout = 250);
@@ -17,6 +17,8 @@ public:
   String Version();
   void setEcho(bool status);
   void Update();
+  void reset();
+  void progMode();
 
   void setCallBack(espCallbackFunction function);
 
@@ -27,6 +29,8 @@ private:
   String _command;
   const String _marker = "xcopyCommand,";
   espCallbackFunction _espCallBack;
+  int _espResetPin;
+  int _espProgPin;
 };
 
 #endif // XCOPYESP8266_H
