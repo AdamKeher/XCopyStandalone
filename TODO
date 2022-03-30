@@ -10,7 +10,8 @@ Project Resumption:
         ✔ Updated settings "set time" to update from NTP @done(22-03-30 13:16)
         ✔ Updated date & time from NTP on startup if connected to wireless @done(22-03-30 13:16)
       ✔ Clean up startup text @done(22-03-30 21:17)
-      ☐ Fix wifi status text
+      ✔ Fix wifi status text @done(22-03-30 22:40)
+      ✔ Add "scan" command to list wireless networks @done(22-03-30 22:40)
       ☐ Move all PIN references to XCopyPin.h
       ☐ Free RAM up
     v706.2022

@@ -63,6 +63,7 @@ void XCopyCommandLine::doCommand(String command)
         Serial << F("| ip                   | show wifi ip address                                 |\r\n");
         Serial << F("| ssid                 | show wifi ssid                                       |\r\n");
         Serial << F("| websocket <msg>      | broadcast message to webclients                      |\r\n");
+        Serial << F("| scan                 | scan wireless networks                               |\r\n");
         Serial << F("|--------------------- +------------------------------------------------------|\r\n");
         Serial << F("| config               | show config settings                                 |\r\n");
         Serial << F("`----------------------'------------------------------------------------------'\r\n");
@@ -365,6 +366,13 @@ void XCopyCommandLine::doCommand(String command)
         }
 
         delete _sdcard;
+        return;
+    }
+
+    if (cmd == "scan") {
+        Serial << "Scanning: \r\n";
+        String status = _esp->sendCommand("scan\r", true, 5000);
+        Serial << status << "\r\n";
         return;
     }
 
