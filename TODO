@@ -12,7 +12,7 @@ Project Resumption:
       ✔ Clean up startup text @done(22-03-30 21:17)
       ✔ Fix wifi status text @done(22-03-30 22:40)
       ✔ Add "scan" command to list wireless networks @done(22-03-30 22:40)
-      ☐ Move all PIN references to XCopyPin.h
+      ✔ Move all PIN references to XCopyPin.h @done(22-03-30 22:43)
       ☐ Free RAM up
     v706.2022
       ✔ Fix wifi connection at startup. Failed to connect after flashing a new ESP8266 @done(25-03-26 13:14)
@@ -29,11 +29,10 @@ Project Resumption:
           ☐ Rewrite drive write routines
           ☐ Migrate XCopyDisk to XCopyFloppy routines
       ✔ Add dump config command to cli
-          Projects
-      ✔ Move XCopyStandalone to PlatformIO and include libraries @done(21-03-26 16:00)
-      ✔ Move ESP8266 webserver to PlatformIO and include libraries @done(21-03-26 16:00)
     v705.2022
-      Flash
+      ✔ Move XCopyStandalone to PlatformIO and include libraries @done(21-03-26 16:00)
+      Projects
+        ✔ Move ESP8266 webserver to PlatformIO and include libraries @done(21-03-26 16:00)
         ✔ Fix flash writing error due to early exit of serialflash write routing. Added hacky delay between writes @done(22-03-26 15:59)
     Open
       ESP8266

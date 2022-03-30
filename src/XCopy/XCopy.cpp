@@ -152,18 +152,19 @@ void XCopy::begin()
     XCopyMenuItem *espParentItem = _menu.addChild("ESP", undefined, debugParentItem);
     _menu.addChild("ESP Passthrough Mode", debuggingSerialPassThrough, espParentItem);
     _menu.addChild("ESP Programming Mode", debuggingSerialPassThroughProg, espParentItem);
+    _menu.addItem("", undefined);
     _menu.addChild("Reset ESP", resetESP, espParentItem);
 
     XCopyMenuItem *flashParentItem = _menu.addChild("Flash", undefined, debugParentItem);
-    _menu.addChild("Fault Find", debuggingFaultFind, flashParentItem);
-    _menu.addChild("Erase Flash", debuggingEraseFlash, flashParentItem);
+    XCopyMenuItem *dangerousParentitem = _menu.addChild("Dangerous", undefined, flashParentItem);
+    _menu.addChild("Erase Flash", debuggingEraseFlash, dangerousParentitem);
+    _menu.addChild("Erase Flash and Copy SD", debuggingEraseCopy, dangerousParentitem);
+    _menu.addChild("Erase Flash and Fault Find", debuggingFaultFind, dangerousParentitem);
     _menu.addChild("Flash Memory Details", debuggingFlashDetails, flashParentItem);
+    _menu.addChild("Compare Flash to SD Card", debuggingCompareFlashToSDCard, flashParentItem);
     _menu.addChild("Test Temp File", debuggingTempFile, flashParentItem);
     _menu.addChild("Test Flash & SD Card", debuggingSDFLash, flashParentItem);
-    _menu.addChild("Compare Flash to SD Card", debuggingCompareFlashToSDCard, flashParentItem);
-    _menu.addChild("Erase Flash and Copy SD", debuggingEraseCopy, flashParentItem);
     
-    _menu.addItem("", undefined);
     _menu.addItem("", undefined);
     _menu.addItem("", undefined);
     _menu.addItem("", undefined);

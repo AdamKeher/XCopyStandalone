@@ -471,7 +471,7 @@ void XCopyDebug::printBanner(const char* heading) {
 }
 
 void XCopyDebug::printHeading(const char* heading) {
-    Serial << "\r\n> " << heading << " <\r\n";
+    Serial << "\r\n> " << XCopyConsole::success(heading) << " <\r\n";
     Serial << "--------------------------------------------------------------------------\r\n";
 }
 
