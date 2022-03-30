@@ -7,6 +7,8 @@
 #include <Streaming.h>
 #include <SerialFlash.h>
 #include <SdFat.h>
+#include <TimeLib.h>
+
 /* 
   FastCRC quick hacked to force SW CRC as HW CRC used static variables
   and can't do concurrent 16/32 bit CRC's, defined & REV16 & REV32 altered
@@ -28,7 +30,7 @@ class XCopyDisk
   public:
     XCopyDisk();
     void begin(XCopyGraphics *graphics, XCopyAudio *audio, XCopyESP8266 *esp, uint8_t sdCSPin, uint8_t flashCSPin, uint8_t cardDetectPin);
-
+  
     int readDiskTrack(uint8_t trackNum, bool verify, uint8_t retryCount, bool silent = false);
     void writeDiskTrack(uint8_t trackNum, uint8_t retryCount);
 

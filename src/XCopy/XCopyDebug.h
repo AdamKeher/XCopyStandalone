@@ -8,6 +8,7 @@
 #include <SerialFlash.h>
 #include "XCopyAudio.h"
 #include "XCopyGraphics.h"
+#include "XCopyConsole.h"
 
 enum state
 {
@@ -24,13 +25,27 @@ class XCopyDebug
 
     void debugCompareFile(FatFile sdFile, SerialFlashFile flashFile);
     void debugCompareTempFile();
-    void debugEraseCopyCompare(bool erase);
-    void debug();
+    void debugFaultFind();
+    void debugEraseFlash();
+    void debugFlashDetails();
+    void debugEraseCopyCompare();    
+    void debugCompare();
+    void debugTestFlashSD();
+
+    bool initSerialFlash();
+    bool initSdCard();
+
+    uint32_t calculateSize();
+    bool eraseFlash();
     bool cardDetect();
-    void printDirectory(File dir, uint8_t numTabs);
-    void printDir();
+    void printBanner(const char* heading = "");
+    void printHeading(const char* heading = "");
+    void printDirectory(File dir, uint8_t numTabs);    
+    void listFlashFiles();
+    void compareFiles();
+    void SdTest();
     void flashTest();
-    void flashDetails();
+    unsigned long flashDetails();
 
   private:
     XCopyAudio *_audio;
@@ -51,6 +66,9 @@ class XCopyDebug
     
     state _mode = both;
     SdFat SD;
+
+    const char* debugVersion = "v0.6";
+    const char* debugYear = "2022";
 };
 
 #endif // XCOPYDEBUG_H

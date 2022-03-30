@@ -2,10 +2,9 @@
 #include <Streaming.h>
 #include <SerialFlash.h>
 
-XCopyCommandLine::XCopyCommandLine(String version, XCopyADFLib *adfLib, XCopyESP8266 *esp, XCopyConfig *config)
+XCopyCommandLine::XCopyCommandLine(String version, XCopyESP8266 *esp, XCopyConfig *config)
 {
     _version = version;
-    _adfLib = adfLib;
     _esp = esp;
     _config = config;
 }
@@ -32,32 +31,41 @@ void XCopyCommandLine::doCommand(String command)
 
     if (cmd == "help" || cmd == "?")
     {
-        Serial << ".-----------------------------------------------------------------------------.\r\n";
-        Serial << "| X-Copy Standalone                                                           |\r\n";
-        Serial << "|-----------------------------------------------------------------------------|\r\n";
-        Serial << "| Command              | Description                                          |\r\n";
-        Serial << "|----------------------+------------------------------------------------------|\r\n";
-        Serial << "| help | ?             | this help                                            |\r\n";
-        Serial << "| version | ver        | XCopy version number                                 |\r\n";
-        Serial << "| clear | cls          | clear screen                                         |\r\n";
-        Serial << "|--------------------- +------------------------------------------------------|\r\n";
-        Serial << "| boot                 | print boot block from disk                           |\r\n";
-        Serial << "| bootf                | print boot block from flash                          |\r\n";
-        Serial << "| flux                 | returns histogram of track in binary                 |\r\n";
-        Serial << "| hist                 | prints histogram of track in ascii                   |\r\n";
-        Serial << "| name                 | reads track 80 an returns disklabel in ascii         |\r\n";
-        Serial << "| print                | prints amiga track with header                       |\r\n";
-        Serial << "| read <n>             | read logical track #n from disk                      |\r\n";
-        Serial << "| readf <n>            | read logical track #n from flash                     |\r\n";
-        Serial << "| dump <filename>      | dump ADF file system information                     |\r\n";
-        Serial << "| weak                 | returns retry number for last read in binary format  |\r\n";
-        Serial << "|--------------------- +------------------------------------------------------|\r\n";
-        Serial << "| connect <ssid> <pwd> | connect to wifi network                              |\r\n";
-        Serial << "| status               | show wifi status                                     |\r\n";
-        Serial << "| ip                   | show wifi ip address                                 |\r\n";
-        Serial << "| ssid                 | show wifi ssid                                       |\r\n";
-        Serial << "| websocket <msg>      | broadcast message to webclients                      |\r\n";
-        Serial << "`----------------------'------------------------------------------------------'\r\n";
+        Serial << F(".-----------------------------------------------------------------------------.\r\n");
+        Serial << F("| X-Copy Standalone                                                           |\r\n");
+        Serial << F("|-----------------------------------------------------------------------------|\r\n");
+        Serial << F("| Command              | Description                                          |\r\n");
+        Serial << F("|----------------------+------------------------------------------------------|\r\n");
+        Serial << F("| help | ?             | this help                                            |\r\n");
+        Serial << F("| version | ver        | XCopy version number                                 |\r\n");
+        Serial << F("| clear | cls          | clear screen                                         |\r\n");
+        Serial << F("|--------------------- +------------------------------------------------------|\r\n");
+        Serial << F("| dir | ls <directory> | list files on SDCard                                 |\r\n");
+        Serial << F("| boot                 | print boot block from disk                           |\r\n");
+        Serial << F("| bootf                | print boot block from flash                          |\r\n");
+        Serial << F("| flux                 | returns histogram of track in binary                 |\r\n");
+        Serial << F("| hist                 | prints histogram of track in ascii                   |\r\n");
+        Serial << F("| name                 | reads track 80 an returns disklabel in ascii         |\r\n");
+        Serial << F("| print                | prints amiga track with header                       |\r\n");
+        Serial << F("| read <n>             | read logical track #n from disk                      |\r\n");
+        Serial << F("| readf <n>            | read logical track #n from flash                     |\r\n");
+        Serial << F("| dump <filename>      | dump ADF file system information                     |\r\n");
+        Serial << F("| weak                 | returns retry number for last read in binary format  |\r\n");
+        Serial << F("|--------------------- +------------------------------------------------------|\r\n");
+        Serial << F("| time                 | show current date & time                             |\r\n");
+        Serial << F("| settime              | set date & time via NTP server                       |\r\n");
+        Serial << F("| settime <epoch>      | set date & time with epoch value                     |\r\n");
+        Serial << F("| timezone             | show current timezone                                |\r\n");
+        Serial << F("| timezone <-12..12>   | set current time zone                                |\r\n");
+        Serial << F("|--------------------- +------------------------------------------------------|\r\n");
+        Serial << F("| connect <ssid> <pwd> | connect to wifi network                              |\r\n");
+        Serial << F("| status               | show wifi status                                     |\r\n");
+        Serial << F("| ip                   | show wifi ip address                                 |\r\n");
+        Serial << F("| ssid                 | show wifi ssid                                       |\r\n");
+        Serial << F("| websocket <msg>      | broadcast message to webclients                      |\r\n");
+        Serial << F("|--------------------- +------------------------------------------------------|\r\n");
+        Serial << F("| config               | show config settings                                 |\r\n");
+        Serial << F("`----------------------'------------------------------------------------------'\r\n");
         /*
         Serial << "| write <n>       | write logical track #n                                    |\r\n";
         Serial << "| testwrite <n>   | write logical track #n filled with 0-255                  |\r\n";
@@ -80,7 +88,7 @@ void XCopyCommandLine::doCommand(String command)
 
     if (cmd == "clear" || cmd == "cls")
     {
-        Serial << "\033[2J\033[H";
+        Serial << XCopyConsole::clearscreen() << XCopyConsole::home();
         return;
     }
 
@@ -102,6 +110,11 @@ void XCopyCommandLine::doCommand(String command)
     {
         String ipaddress = _esp->sendCommand("ip\r", true);
         Serial << ipaddress << "\r\n";
+        return;
+    }
+
+    if (cmd == "config") {
+        _config->dumpConfig();
         return;
     }
 
@@ -200,6 +213,8 @@ void XCopyCommandLine::doCommand(String command)
 
         Serial << "DEBUG-1\r\n";
 
+        XCopyADFLib *_adfLib = new XCopyADFLib();
+        _adfLib->begin(PIN_SDCS);
         _adfLib->mount(name);
 
         Serial << "DEBUG-1\r\n";
@@ -225,6 +240,8 @@ void XCopyCommandLine::doCommand(String command)
             Serial << "Error: Failed to open device '" << name << "'\r\n";
 
         _adfLib->unmount();
+        delete _adfLib;
+
         return;
     }
 
@@ -292,6 +309,65 @@ void XCopyCommandLine::doCommand(String command)
         return;
     }
 
+    if (cmd == "time") {
+        int timeZone = _config->getTimeZone();
+        Serial.printf("%02d:%02d:%02d %02d/%02d/%04d %s%02d\r\n", hour(), minute(), second(), day(), month(), year(), timeZone >= 0 ? "+" : "", timeZone);
+        return;
+    }
+
+    if (cmd == "settime") {
+        int timeZone = _config->getTimeZone();
+        Serial << "Current Time: " << XCopyTime::getTime() << " (epoch)";
+        Serial.printf(" | %02d:%02d:%02d %02d/%02d/%04d %s%02d\r\n", hour(), minute(), second(), day(), month(), year(), timeZone >= 0 ? "+" : "", timeZone);
+        time_t time = 0;        
+        if (param.length() == 0) {
+            time = _esp->getTime();
+        } else {
+            time = strtol(param.c_str(), nullptr, 10);
+        }
+        time = time + (timeZone * 60 * 60);
+        XCopyTime::syncTime(false);
+        XCopyTime::setTime(time);
+        delay(2000);
+        XCopyTime::syncTime(true);
+        delay(2000);
+        Serial << "Updated Time: " << time << " (epoch)";
+        Serial.printf(" | %02d:%02d:%02d %02d/%02d/%04d %s%02d\r\n", hour(), minute(), second(), day(), month(), year(), timeZone >= 0 ? "+" : "", timeZone);
+        return;
+    }
+
+    if (cmd == "timezone") {
+        if (param.length() > 0) {
+            int timeZone = param.toInt();
+            if (timeZone > 12) timeZone = 12;
+            if (timeZone < -12) timeZone = -12;
+            _config->setTimeZone(timeZone);
+        }
+        Serial << "Time Zone: " << _config->getTimeZone() << "\r\n";            
+        return;
+    }
+
+    if (cmd == "dir" || cmd == "ls") {
+        XCopySDCard *_sdcard = new XCopySDCard();
+
+        if (!_sdcard->cardDetect()) {
+            Serial << "No SDCard detected\r\n";
+            return;
+        }
+
+        if (!_sdcard->begin()) {
+            Serial << "SDCard failed to initialise\r\n";
+            return;
+        }
+
+        if (!_sdcard->printDirectory(param)) {
+            Serial << "Could not open directory\r\n";
+        }
+
+        delete _sdcard;
+        return;
+    }
+
     if (cmd != "")
         Serial << "Unknown command: '" << cmd << "'\r\n";
 }
@@ -313,7 +389,7 @@ void XCopyCommandLine::Update()
                 return;
 
             _command = _command.substring(0, _command.length() - 1);
-            Serial << "\033[1D \033[1D";
+            Serial << XCopyConsole::backspace();
             return;
         }
 

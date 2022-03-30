@@ -1,0 +1,31 @@
+TEENSY
+======================================
+PIN	    FUNCTION
+---	    --------
+24	    Busy Pin
+25	    ESP Reset Pin
+26	    ESP Prog Pin
+
+ESP82166
+======================================
+PIN	    FUNCTION
+---	    --------
+IO4     Busy
+TXD0    Serial
+RXD0    Serial
+
+
+PROTOTYPE NOTES:
+
+Buttons:
+    White       Reset   - pulled high 10k - pull low to reset - pin 26 on teensy
+    Black       Prog    - pulled high 10k
+    Green   
+
+Serial:
+    WIRE    EAGLE   TEENSY    ESP
+    Yellow  RX1     RX1       TXD0  16    
+    Green   TX1     TX1       RXD0  15
+
+Power:
+

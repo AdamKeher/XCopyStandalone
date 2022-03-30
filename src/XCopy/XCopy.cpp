@@ -5,100 +5,126 @@ XCopy::XCopy(TFT_ST7735 *tft)
     _tft = tft;
 }
 
-void XCopy::begin(int sdCSPin, int flashCSPin, int cardDetectPin, int busyPin, int espResetPin, int espProgPin)
+void XCopy::begin()
 {
 #ifdef XCOPY_DEBUG
     _ram.initialize();
 #endif
     Serial.begin(115200);
 
-    _sdCSPin = sdCSPin;
-    _flashCSPin = flashCSPin;
-    _cardDetectPin = cardDetectPin;
-    _busyPin = busyPin;
-    _espResetPin = espResetPin;
-    _espProgPin = espProgPin;
-
-    pinMode(_sdCSPin, INPUT_PULLUP);
-    pinMode(_flashCSPin, INPUT_PULLUP);
-    pinMode(_cardDetectPin, INPUT_PULLUP);
-    pinMode(_busyPin, OUTPUT);
-    pinMode(_espResetPin, OUTPUT);
-    pinMode(_espProgPin, OUTPUT);
+    pinMode(PIN_SDCS, INPUT_PULLUP);
+    pinMode(PIN_FLASHCS, INPUT_PULLUP);
+    pinMode(PIN_CARDDETECT, INPUT_PULLUP);
+    pinMode(PIN_BUSYPIN, OUTPUT);
+    pinMode(PIN_ESPRESETPIN, OUTPUT);
+    pinMode(PIN_ESPPROGPIN, OUTPUT);
     
-    Serial << "\033[2J\033[H\033[95m\033[106m";
-    Serial << "                                                                          \r\n";
-
-    Serial << " X-Copy Standalone ";
-    Serial << XCOPYVERSION;
-    Serial << "                          (c)2018 Adam Keher \r\n";
-    Serial << "                                                                          \033[0m\r\n";
-    Serial << "\033[12h\r\n"; // terminal echo
-
-    // Init ADF LIB
-    // -------------------------------------------------------------------------------------------
-    _adfLib = new XCopyADFLib();
-    _adfLib->begin(_sdCSPin);
+    Serial << XCopyConsole::clearscreen() << XCopyConsole::home() << XCopyConsole::background_purple() << XCopyConsole::high_yellow();
+    Serial << F("                                                                          \r\n");
+    Serial << F(" X-Copy Standalone ") << XCOPYVERSION <<  F("                           (c)2022 Adam Keher \r\n");
+    Serial << F("                                                                          \r\n");
+    Serial << XCopyConsole::reset() << XCopyConsole::echo() << F("\r\n");
 
     // Init Serial Flash
     // -------------------------------------------------------------------------------------------
-    if (!SerialFlash.begin(_flashCSPin))
-        Serial << "\033[31mSPI Flash Chip initialization failed.\033[0m\r\n";
+    Serial << F("Initialising SPI Flash RAM: ");
+    if (SerialFlash.begin(PIN_FLASHCS))
+        Serial << XCopyConsole::success("OK\r\n");
     else
-        Serial << "\033[32mSPI Flash Chip initialized.\033[0m\r\n";
+        Serial << XCopyConsole::error("ERROR\r\n");
 
     // Init Config
     // -------------------------------------------------------------------------------------------
+    Serial << F("Loading configuration: ");
     _config = new XCopyConfig(false);
     if (_config->readConfig())
-        Serial << "\033[32mConfig Loaded.\033[0m\r\n";
+        Serial << XCopyConsole::success("OK\r\n");
     else
-        Serial << "\033[31mConfig Failed to Load.\033[0m\r\n";
+        Serial << XCopyConsole::error("ERROR\r\n");
     
     // Init Audio
     // -------------------------------------------------------------------------------------------
+    Serial << F("Initialising audio: ");
     _audio.begin(_config->getVolume());
-    Serial << "\033[32mAudio initialized.\033[0m\r\n";
+    Serial << XCopyConsole::success("OK\r\n");
 
     // Init Time
     // -------------------------------------------------------------------------------------------
-    XCopyTime::setTime();
-    Serial << "\033[32mTime Set.\033[0m\r\n";
+    Serial << F("Starting realtime clock: ");
+    XCopyTime::syncTime();
+    Serial << XCopyConsole::success("OK\r\n");
 
     // Init TFT
     // -------------------------------------------------------------------------------------------
+    Serial << F("Initialising TFT: ");
     _tft->begin();
     _tft->setRotation(3);
     _tft->setCharSpacing(2);
     _graphics.begin(_tft);
-    Serial << "\033[32mTFT initialized.\033[0m\r\n";
+    Serial << XCopyConsole::success("OK\r\n");
 
     // Intro
     // -------------------------------------------------------------------------------------------
     intro();
 
+    // Init Disk Routines
+    // -------------------------------------------------------------------------------------------
+    Serial << F("Initialising drive: ");
+    _disk.begin(&_graphics, &_audio, _esp, PIN_SDCS, PIN_FLASHCS, PIN_CARDDETECT);
+    Serial << XCopyConsole::success("OK\r\n");
+
+    // Test Disk Orientation
+    // -------------------------------------------------------------------------------------------
+    Serial << F("Testing drive cable orientation: ");
+    _graphics.drawText(0, 115, ST7735_WHITE, "       Test Floppy Cable", true);
+    delay(300);
+    XCopyFloppy* _floppy = new XCopyFloppy();
+    if (_floppy->detectCableOrientation() == true) {
+        Serial << XCopyConsole::success("OK\r\n");
+    } else {
+        Serial << XCopyConsole::error("ERROR\r\n");
+        Serial << XCopyConsole::error(F("Floppy cable insererted incorrectly. Possibly upside down. Fix & reset.\r\n"));
+        _graphics.bmpDraw("XCPYLOGO.BMP", 0, 30);
+        _graphics.drawText(47, 75, ST7735_RED, "Floppy Cable", TRUE);
+        _graphics.drawText(45, 85, ST7735_RED, "Upside Down!", TRUE);
+        _graphics.drawText(44, 95, ST7735_RED, "Fix and Reset",TRUE);
+        _audio.playChime(true);
+        delay(5000);
+    }
+    delete _floppy;
+
     // Init ESP
     // -------------------------------------------------------------------------------------------
-    _graphics.drawText(0, 115, ST7735_WHITE, "               Init WiFi", true);
-    _esp = new XCopyESP8266(ESPSerial, ESPBaudRate, espResetPin, espProgPin);
+    Serial << F("Initialising ESP8266 WIFI (Serial") + String(Serial1) + F(" @ ") + String(ESPBaudRate) + F("): ") ;
+    _graphics.drawText(0, 115, ST7735_WHITE, F("               Init WiFi"), true);
+    _esp = new XCopyESP8266(ESPBaudRate, PIN_ESPRESETPIN, PIN_ESPPROGPIN);
     _esp->reset();
     _esp->setEcho(false);
     if (_esp->begin())
     {
         _esp->setCallBack(theCallbackFunction);
-        _graphics.drawText(0, 115, ST7735_WHITE, "       Connecting to WiFi", true);
-        Serial << "\033[32mESP8266 WIFI Chip initialized. (Serial" << ESPSerial << " @ " << ESPBaudRate << ")\033[0m\r\n";
+        _graphics.drawText(0, 115, ST7735_WHITE, F("       Connecting to WiFi"), true);
+
+        Serial << XCopyConsole::success("OK\r\n");
+        Serial << "Connecting to wireless network (" + _config->getSSID() + "): ";
+        if (_esp->connect(_config->getSSID(), _config->getPassword(), 20000)) {
+            Serial << XCopyConsole::success("OK\r\n");
+            // update time from NTP server
+            // -------------------------------------------------------------------------------------------
+            Serial << F("Updating time from NTP server: ");
+            delay(1000);
+            refreshTimeNtp();
+            Serial << XCopyConsole::success("OK\r\n");
+        }
+        else
+            Serial << XCopyConsole::error("Failed.\r\n");
     }
     else
-        Serial << "\033[31mESP8266 WIFI Chip initialization failed. (Serial" << ESPSerial << " @ " << ESPBaudRate << ")\033[0m\r\n";
+        Serial << XCopyConsole::error(F("ESP8266 WIFI Chip initialization failed. (Serial") + String(Serial1) + F(" @ ") + String(ESPBaudRate) + F(").\r\n"));
 
     // Init Command Line
     // -------------------------------------------------------------------------------------------
-    _command = new XCopyCommandLine(XCOPYVERSION, _adfLib, _esp, _config);
-
-    // Init Disk Routines
-    // -------------------------------------------------------------------------------------------
-    _disk.begin(&_graphics, &_audio, _esp, _sdCSPin, _flashCSPin, _cardDetectPin);
+    _command = new XCopyCommandLine(XCOPYVERSION, _esp, _config);
 
     // Init Menu
     // -------------------------------------------------------------------------------------------
@@ -119,6 +145,7 @@ void XCopy::begin(int sdCSPin, int flashCSPin, int cardDetectPin, int busyPin, i
     _menu.addChild("Format Disk", formatDisk, parentItem);
     _menu.addChild("Disk Flux", fluxDisk, parentItem);
     _menu.addChild("Compare Disk to ADF", undefined, parentItem);
+    _menu.addChild("Test Drive", testDrive, parentItem);
 
     debugParentItem = _menu.addItem("Debugging", undefined);
 
@@ -128,6 +155,8 @@ void XCopy::begin(int sdCSPin, int flashCSPin, int cardDetectPin, int busyPin, i
     _menu.addChild("Reset ESP", resetESP, espParentItem);
 
     XCopyMenuItem *flashParentItem = _menu.addChild("Flash", undefined, debugParentItem);
+    _menu.addChild("Fault Find", debuggingFaultFind, flashParentItem);
+    _menu.addChild("Erase Flash", debuggingEraseFlash, flashParentItem);
     _menu.addChild("Flash Memory Details", debuggingFlashDetails, flashParentItem);
     _menu.addChild("Test Temp File", debuggingTempFile, flashParentItem);
     _menu.addChild("Test Flash & SD Card", debuggingSDFLash, flashParentItem);
@@ -140,32 +169,54 @@ void XCopy::begin(int sdCSPin, int flashCSPin, int cardDetectPin, int busyPin, i
     _menu.addItem("", undefined);
 
     parentItem = _menu.addItem("Settings", undefined);
-    _menu.addChild("Set Time", showTime, parentItem);
-    retryCountMenuItem = _menu.addChild("Set Retry Count: " + String(_config->getRetryCount()), setRetry, parentItem);
-    verifyMenuItem = _menu.addChild("Set Verify: " + (_config->getVerify() ? String("True") : String("False")), setVerify, parentItem);
     volumeMenuItem = _menu.addChild("Set Volume: " + String(_config->getVolume()), setVolume, parentItem);
-    ssidMenuItem = _menu.addChild("SSID: " + _config->getSSID(), setSSID, parentItem);
-    passwordMenuItem = _menu.addChild("Password: " + _config->getPassword(), setPassword, parentItem);
+
+    XCopyMenuItem *timeParentItem = _menu.addChild("Time", undefined, parentItem);
+    _menu.addChild("Set Time from NTP", showTime, timeParentItem);
+    int timeZone = _config->getTimeZone();
+    timeZoneMenuItem = _menu.addChild("Set Time Zone: " + String(timeZone >= 0 ? "+" : "") + String(timeZone), setTimeZone, timeParentItem);
+
+    XCopyMenuItem *diskParentItem = _menu.addChild("Disk", undefined, parentItem);
+    retryCountMenuItem = _menu.addChild("Set Retry Count: " + String(_config->getRetryCount()), setRetry, diskParentItem);
+    verifyMenuItem = _menu.addChild("Set Verify: " + (_config->getVerify() ? String("True") : String("False")), setVerify, diskParentItem);
+    diskDelayMenuItem = _menu.addChild("Set Disk Delay: " + String(_config->getDiskDelay()) + "ms", setDiskDelay, diskParentItem);
+
+
+    XCopyMenuItem *networkParentItem = _menu.addChild("Network", undefined, parentItem);
+    ssidMenuItem = _menu.addChild("SSID: " + _config->getSSID(), setSSID, networkParentItem);
+    passwordMenuItem = _menu.addChild("Password: " + _config->getPassword(), setPassword, networkParentItem);
+
     _menu.addChild("", undefined, parentItem);
+    _menu.addChild("", undefined, parentItem);
+    _menu.addChild("Reset / Reboot", resetDevice, parentItem);
     _menu.addChild("About XCopy", about, parentItem);
 
     // delete _config;
 
     // Init Directory
     // -------------------------------------------------------------------------------------------
-    _directory.begin(&_graphics, &_disk, _sdCSPin, _flashCSPin);
+    _directory.begin(&_graphics, &_disk, PIN_SDCS, PIN_FLASHCS);
 
     // Init Message
     // -------------------------------------------------------------------------------------------
-    Serial << "\r\nType 'help' for a list of commands.\r\n";
+    Serial << F("\r\nType 'help' for a list of commands.\r\n");
     _command->printPrompt();
 
     _menu.drawMenu(_menu.getRoot());
 }
 
+void XCopy::refreshTimeNtp() {
+    XCopyTime::syncTime(false);
+    time_t time = _esp->getTime();
+    int timeZone = _config->getTimeZone();
+    time = time + (timeZone * 60 * 60);
+    XCopyTime::setTime(time);
+    XCopyTime::syncTime(true);
+}
+
 void XCopy::setBusy(bool busy)
 {
-    digitalWrite(_busyPin, busy);
+    digitalWrite(PIN_BUSYPIN, busy);
 }
 
 void XCopy::intro()

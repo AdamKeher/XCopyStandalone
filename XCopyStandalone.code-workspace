@@ -2,18 +2,22 @@
 	"folders": [
 		{
 			"path": "."
+		},
+		{
+			"name": "esp8266",
+			"path": "esp8266"
 		}
 	],
 	"settings": {
 		"files.associations": {
+			"*.tcc": "cpp",
+			"string": "cpp",
 			"initializer_list": "cpp",
-			"xstring": "cpp",
-			"xutility": "cpp",
-			"xlocale": "cpp",
-			"xlocnum": "cpp",
-			"xiosbase": "cpp",
-			"type_traits": "cpp",
-			"system_error": "cpp"
+			"limits": "cpp",
+			"cmath": "cpp",
+			"istream": "cpp",
+			"ostream": "cpp",
+			"streambuf": "cpp"
 		}
 	}
 }

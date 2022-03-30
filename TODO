@@ -1,4 +1,76 @@
-Todo:
+Project Resumption:
+  Software
+    v707.2022
+      ✔ Move all ansi text functions into XCopyConsole class @done(22-03-30 17:27)
+      ✔ Added dir / ls directory listing of SDCard from console @done(22-03-30 15:28)
+      ✔ Date & Time @done(22-03-30 13:16)
+        ✔ Added commands to manage date & time from the console. @done(22-03-30 13:16)
+        ✔ Added NTP server support using ESP8266 @done(22-03-30 13:16)
+        ✔ Added time zone setting @done(22-03-30 13:16)
+        ✔ Updated settings "set time" to update from NTP @done(22-03-30 13:16)
+        ✔ Updated date & time from NTP on startup if connected to wireless @done(22-03-30 13:16)
+      ✔ Clean up startup text @done(22-03-30 21:17)
+      ☐ Fix wifi status text
+      ☐ Move all PIN references to XCopyPin.h
+      ☐ Free RAM up
+    v706.2022
+      ✔ Fix wifi connection at startup. Failed to connect after flashing a new ESP8266 @done(25-03-26 13:14)
+      ✔ Floppy cable orientation test @done(22-03-28 13:33)
+          ✔ Add detectCableOrientation() to XCopyFloppy @done(22-03-28 13:33)
+          ✔ Test orientation on startup and display error message @done(22-03-28 13:33)
+        ☐ Rewrite floppy routines
+          ✔ Rewrite drive seek routines @done(22-03-26 16:03)
+          ☐ Configurable Delays
+            ☐ Move timing options to a common struct @started(22-03-26 21:39)
+            ✔ Create settings options for most common item @started(20-03-26 21:39) @done(22-03-28 13:33) @lasted(2y1d15h54m53s)
+          ☐ Rewrite drive read routines
+          ☐ Rewrite MFM decode / encode routines
+          ☐ Rewrite drive write routines
+          ☐ Migrate XCopyDisk to XCopyFloppy routines
+      ✔ Add dump config command to cli
+          Projects
+      ✔ Move XCopyStandalone to PlatformIO and include libraries @done(21-03-26 16:00)
+      ✔ Move ESP8266 webserver to PlatformIO and include libraries @done(21-03-26 16:00)
+    v705.2022
+      Flash
+        ✔ Fix flash writing error due to early exit of serialflash write routing. Added hacky delay between writes @done(22-03-26 15:59)
+    Open
+      ESP8266
+          ☐ Migrate SPIFF to LittleFS
+      General
+        ☐ Move SDCard code to XCopySDCard object, especially XCopyDebug. Get rid of all SD references and move to SdFat @started(22-03-30 17:33)
+        ☐ 
+        ☐ Fix busy pin ISR - possibly pin naming error with board definition
+  PCB
+    ☐ Reroute SDCS away from LDO
+    ☐ Modify SPI flash ram footprint to expand legs for easier soldering
+    ☐ Consider taking all spare pins to a header for future development if space permits
+    ☐ SD Card 
+      ✔ Change SD card to micro sd reader to make room for ESP module @done(22-03-28 00:09)
+      ☐ Hookup SD card detect
+      ☐ Fix schematic
+      ☐ Reroute to make neater
+    ✔ Add ESP8266 ESP-12S module and 47uf decoupling cap @done(22-03-28 00:09)
+    ✔ Ground all odd pins on IDC @done(22-03-28 00:09)
+    ✔ Add LDO reulator for second 3.3v source for LCD & ESP8266 @done(22-03-28 00:12)
+    ✔ Reroute all traces @done(22-03-28 00:09)
+    ✔ Look for different speaker that JLCPCB can place @done(22-03-28 17:05)
+    ✔ Clean up labels @done(22-03-30 17:31)
+    ✔ Reset buttons @done(22-03-30 17:31)
+      ✔ Can I cram reset and programming buttons in for ESP8266 - side mount button an option? @done(22-03-30 17:31)
+      ✔ Do I want to use an extra teensy pin and tie it to a jumper wire across to the poorly placed reset pad on the bottom of the teensy? @done(22-03-30 17:31)
+        ✔ disconnect pin 40 / tft_cardcs / teensy pin 29 for use as reset? @done(22-03-30 17:31)
+    ✔ Move all status LED's to single location @done(22-03-28 00:56)
+      ✔ Use same footprint for all LED's @done(22-03-28 00:56)
+    ✔ Change to 4 layer board to make routing easier. @done(22-03-28 00:08)
+      ✔ Keep board under 10x10cm to keep cost low @done(22-03-28 00:08)
+      ✔ Use inner two layers for GND and Power planes @done(22-03-28 00:08)
+      ✔ Make seperate copper pours for 3.3v, 3.3v2 & vbus @done(22-03-28 00:08)
+    ✔ Remove serial TTL header as this serial port is now used by ESP module @done(22-03-28 00:56)
+    ✔ Add electrolytic cap for VBUS power decoupling @done(22-03-30 17:31)
+    ✔ Add new logos @done(22-03-30 17:31)
+
+Legacy:
   Directory:
     ☐ Add paging of large directories > MAXSCREENITEMS
     ☐ Audio fires more than once when scrolled past MAXSCREENITEMS
@@ -20,8 +92,8 @@ Todo:
     ☐ Add support for mount, dir, cd
     ☐ Sometimes crashes with NDOS disks. Try workbnch then mutation
     ✔ track down memory leak when file open fails @done(19-03-16 10:59)
-      ✔ mem leak when adf file doesn't contain a volume / NDOS  disk (72bytes) @done(19-03-16 10:59)
-      ✔ mem leak when file is missing (~16bytes) - ADFlib didn't free volume when mounting disk failed @done(19-03-16 09:42)
+    ✔ mem leak when adf file doesn't contain a volume / NDOS  disk (72bytes) @done(19-03-16 10:59)
+    ✔ mem leak when file is missing (~16bytes) - ADFlib didn't free volume when mounting disk failed @done(19-03-16 09:42)
     ✔ track down memory leak, malloc fails after 3rd try @done(19-03-15 22:13)
     ✔ remove hardcoding of workbnch.adf and pass in param @done(19-03-15 22:13)
   HTTP:
@@ -41,19 +113,19 @@ Todo:
       ☐ Fix settings menu SSID and Password menu items to udpate when 'connect <ssid> <password>' command issued
     General
       ☐ Delete _config removed from xcopy.begin() while testing due to passing through to xcopycommand. delete it at startup and recreate in connect command
-    ✔ Add flux to web interface @done(19-03-24 16:16)
-    ✔ Add getPinStatus and update interface when webpage initially loads. @done(19-03-24 16:16)
-    ✔ Use a pin to reflect busy to ESP8266 and communicate over existing serial port to send commands @done(19-03-23 15:32)
-    ✔ Order ESP8266 for development @done(19-03-11 11:49)
-    ✔ Add ESP8266 to prototype @done(19-03-20 16:33)
-    ✔ Add control pin for busy signal teensy -> esp8266 to flag when device is occupied @done(19-03-20 16:33)
-    ✔ Display test webpage with buys signal @done(19-03-20 16:33)
-    ✔ Implement command infrastructure @done(19-03-20 16:33)
-    ✔ Truncated response received from ESP866 commands @done(19-03-21 11:25)
-    ✔ Update webserver to use SPIFFS to store files @done(19-03-22 17:03)
-    ✔ Speed up websocket command, immediate exit, no waiting when timeout is -1 @done(19-03-23 15:31)
-    ✔ Add timeout function and instant exit on completion for esp8266 functions @done(19-03-23 15:31)
-    ✔ Implement websockets for two way updates @done(19-03-23 15:31)
+      ✔ Add flux to web interface @done(19-03-24 16:16)
+      ✔ Add getPinStatus and update interface when webpage initially loads. @done(19-03-24 16:16)
+      ✔ Use a pin to reflect busy to ESP8266 and communicate over existing serial port to send commands @done(19-03-23 15:32)
+      ✔ Order ESP8266 for development @done(19-03-11 11:49)
+      ✔ Add ESP8266 to prototype @done(19-03-20 16:33)
+      ✔ Add control pin for busy signal teensy -> esp8266 to flag when device is occupied @done(19-03-20 16:33)
+      ✔ Display test webpage with buys signal @done(19-03-20 16:33)
+      ✔ Implement command infrastructure @done(19-03-20 16:33)
+      ✔ Truncated response received from ESP866 commands @done(19-03-21 11:25)
+      ✔ Update webserver to use SPIFFS to store files @done(19-03-22 17:03)
+      ✔ Speed up websocket command, immediate exit, no waiting when timeout is -1 @done(19-03-23 15:31)
+      ✔ Add timeout function and instant exit on completion for esp8266 functions @done(19-03-23 15:31)
+      ✔ Implement websockets for two way updates @done(19-03-23 15:31)
   Graphics:
     ☐ Fix lost sound after rawDraw
       ☐ Investigate actual root cause

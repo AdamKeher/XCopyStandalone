@@ -1,9 +1,9 @@
 #include "XCopyESP8266.h"
 
-XCopyESP8266::XCopyESP8266(HardwareSerial serial, uint32_t baudrate, int espResetPin, int espProgPin)
+XCopyESP8266::XCopyESP8266(uint32_t baudrate, int espResetPin, int espProgPin)
 {
-    _serial = serial;
-    _serial.begin(baudrate);
+    // _serial = Serial1;
+    Serial1.begin(baudrate);
 
     _espResetPin = espResetPin;
     _espProgPin = espProgPin;
@@ -31,9 +31,9 @@ void XCopyESP8266::progMode()
 
 String XCopyESP8266::sendCommand(String command, bool strip, int timeout)
 {
-    _serial.flush();
-    _serial.clear();
-    _serial.print(command);
+    Serial1.flush();
+    Serial1.clear();
+    Serial1.print(command);
 
     if (timeout == -1)
         return "";
@@ -48,9 +48,9 @@ String XCopyESP8266::sendCommand(String command, bool strip, int timeout)
 
     while (millis() < start + timeout)
     {
-        if (_serial.available())
+        if (Serial1.available())
         {
-            buffer[i++] = _serial.read();
+            buffer[i++] = Serial1.read();
             if (i >= len)
             {
                 if (strncmp(buffer + i - len, OK_EOC, len) == 0 || strncmp(buffer + i - len, ER_EOC, len) == 0)
@@ -108,9 +108,9 @@ String XCopyESP8266::Version()
 
 void XCopyESP8266::Update()
 {
-    while (_serial.available())
+    while (Serial1.available())
     {
-        char inChar = (char)_serial.read();
+        char inChar = (char)Serial1.read();
 
         if (inChar == 0x0a)
         {
@@ -132,4 +132,12 @@ void XCopyESP8266::Update()
 void XCopyESP8266::setCallBack(espCallbackFunction function)
 {
     _espCallBack = function;
+}
+
+time_t XCopyESP8266::getTime() {
+    String result = sendCommand("gettime\r\n", true, 5000);
+    result.replace("gettime\r\n", "");
+    result.replace("\r\n", "");
+    time_t time = 0;
+    return strtol(result.c_str(), nullptr, 10);
 }

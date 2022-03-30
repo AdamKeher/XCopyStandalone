@@ -3,7 +3,6 @@
 
 #include <Arduino.h>
 #include <SerialFlash.h>
-#include <SdFat.h>
 #include <Streaming.h>
 #include "XCopyDisk.h"
 #include "XCopyGraphics.h"

@@ -1,2 +1,4 @@
-.vscode/ipch/
-esp8266/.vscode/ipch/
+.pioenvs
+.piolibdeps
+.pio
+.vscode

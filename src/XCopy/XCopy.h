@@ -1,7 +1,7 @@
 #ifndef XCOPY_H
 #define XCOPY_H
 
-#define XCOPYVERSION "v 703.2019"
+#define XCOPYVERSION "v707.2022"
 // #define XCOPY_DEBUG = 1
 
 #define ESPSerial Serial1
@@ -14,6 +14,7 @@
 #include <Wire.h>
 #include <Streaming.h>
 #include <SdFat.h>
+#include "XCopyPins.h"
 #include "XCopyMenu.h"
 #include "XCopyCommand.h"
 #include "XCopyDisk.h"
@@ -25,6 +26,9 @@
 #include "XCopyTime.h"
 #include "XCopyADFLib.h"
 #include "XCopyESP8266.h"
+#include "XCopyFloppy.h"
+#include "XCopyDriveTest.h"
+#include "XCopyConsole.h"
 
 #ifdef XCOPY_DEBUG
 #include "RamMonitor.h"
@@ -58,7 +62,13 @@ enum XCopyState
   debuggingSerialPassThroughProg = 27,
   setSSID = 28,
   setPassword = 29,
-  resetESP = 30
+  resetESP = 30,
+  debuggingFaultFind = 31,
+  debuggingEraseFlash = 32,
+  setDiskDelay = 33,
+  testDrive = 34,
+  resetDevice = 35,
+  setTimeZone
 };
 
 class XCopy
@@ -66,7 +76,7 @@ class XCopy
 public:
   XCopy(TFT_ST7735 *tft);
 
-  void begin(int sdCSPin, int flashCSPin, int cardDetectPin, int busyPin, int espResetPin, int espProgPin);
+  void begin();
   void update();
   void debug();
   void debugCompareFile(File sdFile, SerialFlashFile flashFile);
@@ -82,13 +92,10 @@ public:
   bool cardDetect();
   void cancelOperation();
   void setBusy(bool busy);
-  bool getBusy() { return digitalRead(_busyPin); }
+  bool getBusy() { return digitalRead(PIN_BUSYPIN); }
+  void refreshTimeNtp();
 
   static void theCallbackFunction(const String command);
-
-  void printDirectory(File dir, int numTabs);
-  void printDir();
-  void flashTest();
 
   void ramReport();
 
@@ -103,25 +110,19 @@ private:
   XCopyDirectory _directory;
   XCopyGraphics _graphics;
   XCopyConfig *_config;
-  XCopyADFLib *_adfLib;
   XCopyESP8266 *_esp;
 
 #ifdef XCOPY_DEBUG
   RamMonitor _ram;
   uint32_t _lastRam = 0;
 #endif
-  uint8_t _cardDetectPin;
-  uint8_t _sdCSPin;
-  uint8_t _flashCSPin;
-  uint8_t _busyPin;
-  uint8_t _espResetPin;
-  uint8_t _espProgPin;
-
   XCopyMenuItem *verifyMenuItem;
   XCopyMenuItem *retryCountMenuItem;
   XCopyMenuItem *volumeMenuItem;
   XCopyMenuItem *ssidMenuItem;
   XCopyMenuItem *passwordMenuItem;
+  XCopyMenuItem *diskDelayMenuItem;
+  XCopyMenuItem *timeZoneMenuItem;
 
   bool _drawnOnce;
   bool _cancelOperation;

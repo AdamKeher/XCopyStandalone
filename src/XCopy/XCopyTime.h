@@ -7,8 +7,9 @@
 class XCopyTime
 {
 public:
-  static void setTime();
-
+  static void syncTime(bool enable = true);
+  static void setTime(long epoch);
+  static time_t getTime();
 private:
 
 };

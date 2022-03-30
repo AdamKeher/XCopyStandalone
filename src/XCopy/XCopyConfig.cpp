@@ -81,6 +81,29 @@ void XCopyConfig::setPassword(String value)
     _password = value;
 }
 
+void XCopyConfig::setDiskDelay(uint16_t delayMs) {
+    StaticJsonBuffer<512> jsonBuffer;
+    JsonObject &root = jsonBuffer.parseObject(_config);
+    root["diskDelay"] = delayMs;
+
+    _config = "";
+    root.printTo(_config);
+
+    _diskDelay = delayMs;
+}
+
+void XCopyConfig::setTimeZone(int timeZone) {
+    StaticJsonBuffer<512> jsonBuffer;
+    JsonObject &root = jsonBuffer.parseObject(_config);
+    root["timeZone"] = timeZone;
+
+    _config = "";
+    root.printTo(_config);
+
+    _timeZone = timeZone;
+}
+
+
 void XCopyConfig::parseConfig()
 {
     StaticJsonBuffer<512> jsonBuffer;
@@ -90,6 +113,8 @@ void XCopyConfig::parseConfig()
     _volume = root["volume"];
     _ssid = root["ssid"].asString();
     _password = root["password"].asString();
+    _diskDelay = root["diskDelay"];
+    _timeZone = root["timeZone"];
 }
 
 bool XCopyConfig::readConfig()

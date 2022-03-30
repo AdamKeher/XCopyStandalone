@@ -45,3 +45,48 @@ Major changes in progress:
 ![XCopy Board Image](https://github.com/AdamKeher/XCopyStandalone/blob/master/brd/ADF%20Copy%20v0.5.png)
 ![XCopy Board Image](https://github.com/AdamKeher/XCopyStandalone/blob/master/files/Graphics/XCopy%20Board.png)
 
+# Build Environment Notes:
+
+## VSCode Plugins:
+1. PlatoformIO with Teensy & ESP8266 board 
+2. Todo+ v4.18.4 by Fabio Spampinato
+
+## ESP8266 Build Notes:
+1. Switch PlatformIO Project Environment to "XCopyStandalone/esp8266"
+2. Plugin XCopyStandalone device and select "Debugging >> ESP >> ESP Programming Mode"
+3. Set serial port to the Teensy port, the device will passthrough serial data to the ESP8266 program
+4. Upload code
+5. Select "Debugging >> ESP >> Reset ESP"
+6. Open a serial terminal
+7. Connect to your wireless access point using the connect command
+```shell
+>> connect SSIDName Password
+```
+8. Type the following commands to confirm you have connected
+```shell
+>> status
+WiFi Status: Connected
+-----
+Mode: STA
+PHY mode: N
+Channel: 10
+AP id: 0
+Status: 5
+Auto connect: 1
+SSID (6): SSIDName
+Passphrase (12): Password
+BSSID set: 0
+>> ip
+192.168.X.XX
+>> ssid
+SSIDName
+>>
+```
+
+## How to build PlatformIO based project
+
+1. [Install PlatformIO Core](http://docs.platformio.org/page/core.html)
+2. Download [development platform with examples](https://github.com/platformio/platform-teensy/archive/develop.zip)
+3. Open the project
+4. Select 'PlatformIO:Build'
+5. Select 'PlatformIO:Upload'
