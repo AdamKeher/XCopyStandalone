@@ -128,6 +128,43 @@ void ESPCommandLine::doCommand(String command)
 
     if (cmd == "status")
     {
+        Serial << "Mode: ";
+        switch (WiFi.getMode())
+        {
+        case WIFI_OFF:
+            Serial << "OFF\r\n";
+            break;
+        case WIFI_STA:
+            Serial << "STA\r\n";
+            break;
+        case WIFI_AP:
+            Serial << "AP\r\n";
+            break;
+        case WIFI_AP_STA:
+            Serial << "AP_STA\r\n";
+            break;
+        default:
+            Serial << "Unknown\r\n";
+        }
+
+        Serial << "PHY Mode: ";
+        switch (WiFi.getPhyMode())
+        {
+        case WIFI_PHY_MODE_11B:
+            Serial << "11B\r\n";
+            break;
+        case WIFI_PHY_MODE_11G:
+            Serial << "11G\r\n";
+            break;
+        case WIFI_PHY_MODE_11N:
+            Serial << "11N\r\n";
+            break;
+        default:
+            Serial << "Unknown\r\n";
+        }
+
+        Serial << "Channel: " << WiFi.channel() << "\r\n";
+
         Serial << "WiFi Status: ";
         switch (WiFi.status())
         {
@@ -159,8 +196,18 @@ void ESPCommandLine::doCommand(String command)
             Serial << "Unknown\r\n";
         }
 
-        Serial << "-----\r\n";
-        WiFi.printDiag(Serial);
+        Serial << "Auto Connect: " << (WiFi.getAutoConnect() ? "True" : "False") << "\r\n";
+        Serial << "SSID (" << WiFi.SSID().length() << "): " << WiFi.SSID() << "\r\n";
+        
+        struct station_config conf;
+        wifi_station_get_config(&conf);
+        char passphrase[65];
+        memcpy(passphrase, conf.password, sizeof(conf.password));
+        passphrase[64] = 0;
+        Serial << "Passphrase (" << strlen(passphrase) << "): " << passphrase << "\r\n";
+
+        Serial << "BSSID set: " << WiFi.BSSIDstr() << "\r\n";
+
         Serial << OK_EOC;
 
         return;
