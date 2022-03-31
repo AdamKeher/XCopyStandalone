@@ -38,7 +38,9 @@ void ESPCommandLine::doCommand(String command)
         Serial << "| connect <ssid> <pwd> | connect to wireless network                          |\r\n";
         Serial << "| status               | show status                                          |\r\n";
         Serial << "| ip                   | show ip address                                      |\r\n";
+        Serial << "| mac                  | show mac address                                     |\r\n";
         Serial << "| ssid                 | show ssid                                            |\r\n";
+        Serial << "| gettime              | get time from NTP server                             |\r\n";
         Serial << "| echo <on|off>        | show ssid                                            |\r\n";
         Serial << "`----------------------'------------------------------------------------------'\r\n";
 
@@ -92,6 +94,14 @@ void ESPCommandLine::doCommand(String command)
     if (cmd == "ip")
     {
         Serial << WiFi.localIP() << "\r\n"
+               << OK_EOC;
+
+        return;
+    }
+
+    if (cmd == "mac")
+    {
+        Serial << WiFi.macAddress() << "\r\n"
                << OK_EOC;
 
         return;

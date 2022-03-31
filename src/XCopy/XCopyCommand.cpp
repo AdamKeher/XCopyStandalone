@@ -61,6 +61,7 @@ void XCopyCommandLine::doCommand(String command)
         Serial << F("| connect <ssid> <pwd> | connect to wifi network                              |\r\n");
         Serial << F("| status               | show wifi status                                     |\r\n");
         Serial << F("| ip                   | show wifi ip address                                 |\r\n");
+        Serial << F("| mac                  | show wifi mac address                                |\r\n");
         Serial << F("| ssid                 | show wifi ssid                                       |\r\n");
         Serial << F("| websocket <msg>      | broadcast message to webclients                      |\r\n");
         Serial << F("| scan                 | scan wireless networks                               |\r\n");
@@ -110,6 +111,13 @@ void XCopyCommandLine::doCommand(String command)
     if (cmd == "ip")
     {
         String ipaddress = _esp->sendCommand("ip\r", true);
+        Serial << ipaddress << "\r\n";
+        return;
+    }
+
+    if (cmd == "mac")
+    {
+        String ipaddress = _esp->sendCommand("mac\r", true);
         Serial << ipaddress << "\r\n";
         return;
     }
