@@ -1,3 +1,7 @@
+@font-face {
+    font-family: oldschool;
+    src: url(ThinPixel7.ttf);
+}
 body
 {
     background: black;
@@ -15,8 +19,8 @@ tbody
 }
 td
 {
-    height:40px;
-    width:40px;
+    height:28px;
+    width:28px;
     text-align: center;
 }
 .right
@@ -25,39 +29,46 @@ td
 }
 .trackDefault
 {
-    background-color: whitesmoke;
+    background-color: black;
     color: black;
     font-size: smaller;
+    border: 2px solid white;
 }
 .trackRed
 {
     background-color: red;
     color: white;
     font-size: smaller;
+    border: 2px solid white;
 }
 .trackOrange
 {
     background-color: orange;
     color: black;
     font-size: smaller;
+    border: 2px solid white;
 }
 .trackYellow
 {
     background-color: yellow;
     color: black;
     font-size: smaller;
+    border: 2px solid white;
 }
 .trackGreen
 {
     background-color: green;
     color: black;
     font-size: smaller;
+    border: 2px solid white;
+    border: 2px solid white;
 }
 .trackMagenta
 {
     background-color: magenta;
     color: white;
     font-size: smaller;
+    border: 2px solid white;
 }
 .busy
 {
@@ -95,4 +106,35 @@ td
   color: darkred;
   pointer-events: none;
   cursor: not-allowed;
+}
+.column
+{
+    background-color: black;
+    color: #87BCCB;
+    font-size: xx-large;
+    font-family: oldschool;
+}
+.black
+{
+    background-color: black;
+}
+.button1
+{
+        font-family: oldschool;
+        font-size: xx-large;;
+        border-radius: 8px;
+        background-color: #447788;
+        color:#FFCC00;
+        border-color:#BBEEFF;
+        border-width:4px;
+}
+.button2
+{
+        font-family: oldschool;
+        font-size: xx-large;;
+        border-radius: 10px;
+        background-color: #447788;
+        color:#33dd22;
+        border-color:#BBEEFF;
+        border-width:4px;
 }

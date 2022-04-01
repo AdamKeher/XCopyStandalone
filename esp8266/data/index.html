@@ -17,232 +17,292 @@
         </header>
         <div>
             <p style="margin:8px 0px">
-                <button id="copyADFtoDisk" onclick="copyADFtoDisk();">Copy ADF to
-                    Disk</button>
-                <button id="copyDisktoADF" onclick="copyDisktoADF();">Copy Disk to
+                <button color=#FFFFFF class="button1" id="copyADFtoDisk" onclick="copyADFtoDisk();">COPY ADF TO
+                    DISK</button>
+                <button class="button1" id="copyDisktoADF" onclick="copyDisktoADF();">COPY DISK TO
                     ADF</button>
-                <button id="copyDisktoDisk" onclick="copyDisktoDisk();">Copy Disk to
+                <button class="button1" id="copyDisktoDisk" onclick="copyDisktoDisk();">COPY DISK TO
                     Disk</button>
-                <button id="copyDisktoFlash" onclick="copyDisktoFlash();">Copy Disk to
-                    Flash</button>
-                <button id="copyFlashtoDisk" onclick="copyFlashtoDisk();">Copy Flash
-                    to Disk</button>
-                <button id="testDisk" onclick="testDisk();">Test
-                    Disk</button>
-                <button id="formatDisk" onclick="formatDisk();">Format
-                    Disk</button>
-                <button id="diskFlux" onclick="diskFlux();">Disk
-                    Flux</button>
+                <button class="button1" id="copyDisktoFlash" onclick="copyDisktoFlash();">COPY DISK TO
+                    FLASH</button>
+                <button class="button1" id="copyFlashtoDisk" onclick="copyFlashtoDisk();">COPY FLASH
+                    TO DISK</button>
+                <button class="button2" id="testDisk" onclick="testDisk();">TEST
+                    DISK</button>
+                <button class="button2" id="formatDisk" onclick="formatDisk();">FORMAT
+                    DISK</button>
+                <button class="button2" id="diskFlux" onclick="diskFlux();">DISK
+                    FLUX</button>
             </p>
+        <hr>
         </div>
         <div>
-            <table>
+            <table border=0 style="border-spacing: 0; border-width: 0; padding: 0; border-width: 0;">
                 <thead>
                     <tr>
-                        <td class="right" colspan=2>Status</td>
-                        <td colspan=19><span id="status"></span></td>
+                        <td colspan=4 class="black"></td>
+                        <td class="right" colspan=3>STATUS</td>
+                        <td colspan=20><span id="status"></span></td>
                     </tr>
                     <tr>
-                        <td class="right" colspan=2>DiskName</td>
-                        <td colspan=19><span id="diskname"></span></td>
+                    	<td colspan=4 class="black"></td>
+                        <td class="right" colspan=3>DISKNAME</td>
+                        <td colspan=20><span id="diskname"></span></td>
                     </tr>
                 </thead>
                 <tbody>
                     <tr>
-                        <td colspan=10>Side 1</td>
-                        <td>&nbsp;&nbsp;</td>
-                        <td colspan=10>Side 2</td>
+                    	<td colspan=4 class="black"></td>
+                        <td class="column" colspan=10>UPPER SIDE</td>
+						<td colspan=4 class="black"></td>
+                        <td class="column" colspan=10>LOWER SIDE</td>
+						</tr><td class="black" colspan="27"><img height=8px width=100% src="hr.png"></td><tr>
                     </tr>
                     <tr>
-                        <td class="trackDefault" id="track0">00</td>
-                        <td class="trackDefault" id="track2">01</td>
-                        <td class="trackDefault" id="track4">02</td>
-                        <td class="trackDefault" id="track6">03</td>
-                        <td class="trackDefault" id="track8">04</td>
-                        <td class="trackDefault" id="track10">05</td>
-                        <td class="trackDefault" id="track12">06</td>
-                        <td class="trackDefault" id="track14">07</td>
-                        <td class="trackDefault" id="track16">08</td>
-                        <td class="trackDefault" id="track18">09</td>
-                        <td></td>
-                        <td class="trackDefault" id="track1">00</td>
-                        <td class="trackDefault" id="track3">01</td>
-                        <td class="trackDefault" id="track5">02</td>
-                        <td class="trackDefault" id="track7">03</td>
-                        <td class="trackDefault" id="track9">04</td>
-                        <td class="trackDefault" id="track11">05</td>
-                        <td class="trackDefault" id="track13">06</td>
-                        <td class="trackDefault" id="track15">07</td>
-                        <td class="trackDefault" id="track17">08</td>
-                        <td class="trackDefault" id="track19">09</td>
+                    	<td colspan=5 class="black"></td>
+                        <td class="column">0</td>
+                        <td class="column">1</td>
+                        <td class="column">2</td>
+                        <td class="column">3</td>
+                        <td class="column">4</td>
+                        <td class="column">5</td>
+                        <td class="column">6</td>
+                        <td class="column">7</td>
+                        <td class="column">8</td>
+                        <td class="column">9</td>
+						<td class="black"></td>
+						<td class="black"></td>
+						<td class="column">0</td>
+                        <td class="column">1</td>
+                        <td class="column">2</td>
+                        <td class="column">3</td>
+                        <td class="column">4</td>
+                        <td class="column">5</td>
+                        <td class="column">6</td>
+                        <td class="column">7</td>
+                        <td class="column">8</td>
+                        <td class="column">9</td></tr>
+                        
+						<td colspan=4 class="black"></td>
+                        <td class="column">0</td><td class="trackDefault" id="track0"></td>
+                        <td class="trackDefault" id="track2"></td>
+                        <td class="trackDefault" id="track4"></td>
+                        <td class="trackDefault" id="track6"></td>
+                        <td class="trackDefault" id="track8"></td>
+                        <td class="trackDefault" id="track10"></td>
+                        <td class="trackDefault" id="track12"></td>
+                        <td class="trackDefault" id="track14"></td>
+                        <td class="trackDefault" id="track16"></td>
+                        <td class="trackDefault" id="track18"></td>
+                        <td class="black"></td>
+                        <td class="column">0</td>
+                        <td class="trackDefault" id="track1"></td>
+                        <td class="trackDefault" id="track3"></td>
+                        <td class="trackDefault" id="track5"></td>
+                        <td class="trackDefault" id="track7"></td>
+                        <td class="trackDefault" id="track9"></td>
+                        <td class="trackDefault" id="track11"></td>
+                        <td class="trackDefault" id="track13"></td>
+                        <td class="trackDefault" id="track15"></td>
+                        <td class="trackDefault" id="track17"></td>
+                        <td class="trackDefault" id="track19"></td>
                     </tr>
                     <tr>
-                        <td class="trackDefault" id="track20">10</td>
-                        <td class="trackDefault" id="track22">11</td>
-                        <td class="trackDefault" id="track24">12</td>
-                        <td class="trackDefault" id="track26">13</td>
-                        <td class="trackDefault" id="track28">14</td>
-                        <td class="trackDefault" id="track30">15</td>
-                        <td class="trackDefault" id="track32">16</td>
-                        <td class="trackDefault" id="track34">17</td>
-                        <td class="trackDefault" id="track36">18</td>
-                        <td class="trackDefault" id="track38">19</td>
-                        <td></td>
-                        <td class="trackDefault" id="track21">10</td>
-                        <td class="trackDefault" id="track23">11</td>
-                        <td class="trackDefault" id="track25">12</td>
-                        <td class="trackDefault" id="track27">13</td>
-                        <td class="trackDefault" id="track29">14</td>
-                        <td class="trackDefault" id="track31">15</td>
-                        <td class="trackDefault" id="track33">16</td>
-                        <td class="trackDefault" id="track35">17</td>
-                        <td class="trackDefault" id="track37">18</td>
-                        <td class="trackDefault" id="track39">19</td>
+                    	<td colspan=4 class="black"></td>
+                        <td class="column">1</td>
+                        <td class="trackDefault" id="track20"></td>
+                        <td class="trackDefault" id="track22"></td>
+                        <td class="trackDefault" id="track24"></td>
+                        <td class="trackDefault" id="track26"></td>
+                        <td class="trackDefault" id="track28"></td>
+                        <td class="trackDefault" id="track30"></td>
+                        <td class="trackDefault" id="track32"></td>
+                        <td class="trackDefault" id="track34"></td>
+                        <td class="trackDefault" id="track36"></td>
+                        <td class="trackDefault" id="track38"></td>
+                        <td class="black"></td>
+                        <td class="column">1</td>
+                        <td class="trackDefault" id="track21"></td>
+                        <td class="trackDefault" id="track23"></td>
+                        <td class="trackDefault" id="track25"></td>
+                        <td class="trackDefault" id="track27"></td>
+                        <td class="trackDefault" id="track29"></td>
+                        <td class="trackDefault" id="track31"></td>
+                        <td class="trackDefault" id="track33"></td>
+                        <td class="trackDefault" id="track35"></td>
+                        <td class="trackDefault" id="track37"></td>
+                        <td class="trackDefault" id="track39"></td>
                     </tr>
                     <tr>
-                        <td class="trackDefault" id="track40">20</td>
-                        <td class="trackDefault" id="track42">21</td>
-                        <td class="trackDefault" id="track44">22</td>
-                        <td class="trackDefault" id="track46">23</td>
-                        <td class="trackDefault" id="track48">24</td>
-                        <td class="trackDefault" id="track50">25</td>
-                        <td class="trackDefault" id="track52">26</td>
-                        <td class="trackDefault" id="track54">27</td>
-                        <td class="trackDefault" id="track56">28</td>
-                        <td class="trackDefault" id="track58">29</td>
-                        <td></td>
-                        <td class="trackDefault" id="track41">20</td>
-                        <td class="trackDefault" id="track43">21</td>
-                        <td class="trackDefault" id="track45">22</td>
-                        <td class="trackDefault" id="track47">23</td>
-                        <td class="trackDefault" id="track49">24</td>
-                        <td class="trackDefault" id="track51">25</td>
-                        <td class="trackDefault" id="track53">26</td>
-                        <td class="trackDefault" id="track55">27</td>
-                        <td class="trackDefault" id="track57">28</td>
-                        <td class="trackDefault" id="track59">29</td>
+                    	<td colspan=4 class="column">SOURCE</td>
+                    	<td class="column">2</td>
+                        <td class="trackDefault" id="track40"></td>
+                        <td class="trackDefault" id="track42"></td>
+                        <td class="trackDefault" id="track44"></td>
+                        <td class="trackDefault" id="track46"></td>
+                        <td class="trackDefault" id="track48"></td>
+                        <td class="trackDefault" id="track50"></td>
+                        <td class="trackDefault" id="track52"></td>
+                        <td class="trackDefault" id="track54"></td>
+                        <td class="trackDefault" id="track56"></td>
+                        <td class="trackDefault" id="track58"></td>
+                        <td class="black"></td>
+                        <td class="column">2</td>
+                        <td class="trackDefault" id="track41"></td>
+                        <td class="trackDefault" id="track43"></td>
+                        <td class="trackDefault" id="track45"></td>
+                        <td class="trackDefault" id="track47"></td>
+                        <td class="trackDefault" id="track49"></td>
+                        <td class="trackDefault" id="track51"></td>
+                        <td class="trackDefault" id="track53"></td>
+                        <td class="trackDefault" id="track55"></td>
+                        <td class="trackDefault" id="track57"></td>
+                        <td class="trackDefault" id="track59"></td>
                     </tr>
                     <tr>
-                        <td class="trackDefault" id="track60">30</td>
-                        <td class="trackDefault" id="track62">31</td>
-                        <td class="trackDefault" id="track64">32</td>
-                        <td class="trackDefault" id="track66">33</td>
-                        <td class="trackDefault" id="track68">34</td>
-                        <td class="trackDefault" id="track70">35</td>
-                        <td class="trackDefault" id="track72">36</td>
-                        <td class="trackDefault" id="track74">37</td>
-                        <td class="trackDefault" id="track76">38</td>
-                        <td class="trackDefault" id="track78">39</td>
-                        <td></td>
-                        <td class="trackDefault" id="track61">30</td>
-                        <td class="trackDefault" id="track63">31</td>
-                        <td class="trackDefault" id="track65">32</td>
-                        <td class="trackDefault" id="track67">33</td>
-                        <td class="trackDefault" id="track69">34</td>
-                        <td class="trackDefault" id="track71">35</td>
-                        <td class="trackDefault" id="track73">36</td>
-                        <td class="trackDefault" id="track75">37</td>
-                        <td class="trackDefault" id="track77">38</td>
-                        <td class="trackDefault" id="track79">39</td>
+                    	<td rowspan=2 class="black"><img id="Source_Flopp" style="display: visible;" src="source.png"></td>
+                    	<td rowspan=2 class="black"><img id="Source_Sd" style="display: visible;" src="sdcard.png"></td>
+                    	<td rowspan=2 class="black"><img id="Source_Flash"style="display: visible;" src="flash.png"></td>
+                    	<td class="black"></td>
+                    	<td class="column">3</td>
+                        <td class="trackDefault" id="track60"></td>
+                        <td class="trackDefault" id="track62"></td>
+                        <td class="trackDefault" id="track64"></td>
+                        <td class="trackDefault" id="track66"></td>
+                        <td class="trackDefault" id="track68"></td>
+                        <td class="trackDefault" id="track70"></td>
+                        <td class="trackDefault" id="track72"></td>
+                        <td class="trackDefault" id="track74"></td>
+                        <td class="trackDefault" id="track76"></td>
+                        <td class="trackDefault" id="track78"></td>
+                        <td class="black"></td>
+                        <td class="column">3</td>
+                        <td class="trackDefault" id="track61"></td>
+                        <td class="trackDefault" id="track63"></td>
+                        <td class="trackDefault" id="track65"></td>
+                        <td class="trackDefault" id="track67"></td>
+                        <td class="trackDefault" id="track69"></td>
+                        <td class="trackDefault" id="track71"></td>
+                        <td class="trackDefault" id="track73"></td>
+                        <td class="trackDefault" id="track75"></td>
+                        <td class="trackDefault" id="track77"></td>
+                        <td class="trackDefault" id="track79"></td>
                     </tr>
                     <tr>
-                        <td class="trackDefault" id="track80">40</td>
-                        <td class="trackDefault" id="track82">41</td>
-                        <td class="trackDefault" id="track84">42</td>
-                        <td class="trackDefault" id="track86">43</td>
-                        <td class="trackDefault" id="track88">44</td>
-                        <td class="trackDefault" id="track90">45</td>
-                        <td class="trackDefault" id="track92">46</td>
-                        <td class="trackDefault" id="track94">47</td>
-                        <td class="trackDefault" id="track96">48</td>
-                        <td class="trackDefault" id="track98">49</td>
-                        <td></td>
-                        <td class="trackDefault" id="track81">40</td>
-                        <td class="trackDefault" id="track83">41</td>
-                        <td class="trackDefault" id="track85">42</td>
-                        <td class="trackDefault" id="track87">43</td>
-                        <td class="trackDefault" id="track89">44</td>
-                        <td class="trackDefault" id="track91">45</td>
-                        <td class="trackDefault" id="track93">46</td>
-                        <td class="trackDefault" id="track95">47</td>
-                        <td class="trackDefault" id="track97">48</td>
-                        <td class="trackDefault" id="track99">49</td>
+                    	<td class="black"></td>
+                    	<td class="column">4</td>
+                        <td class="trackDefault" id="track80"></td>
+                        <td class="trackDefault" id="track82"></td>
+                        <td class="trackDefault" id="track84"></td>
+                        <td class="trackDefault" id="track86"></td>
+                        <td class="trackDefault" id="track88"></td>
+                        <td class="trackDefault" id="track90"></td>
+                        <td class="trackDefault" id="track92"></td>
+                        <td class="trackDefault" id="track94"></td>
+                        <td class="trackDefault" id="track96"></td>
+                        <td class="trackDefault" id="track98"></td>
+                        <td class="column"></td>
+                        <td class="column">4</td>
+                        <td class="trackDefault" id="track81"></td>
+                        <td class="trackDefault" id="track83"></td>
+                        <td class="trackDefault" id="track85"></td>
+                        <td class="trackDefault" id="track87"></td>
+                        <td class="trackDefault" id="track89"></td>
+                        <td class="trackDefault" id="track91"></td>
+                        <td class="trackDefault" id="track93"></td>
+                        <td class="trackDefault" id="track95"></td>
+                        <td class="trackDefault" id="track97"></td>
+                        <td class="trackDefault" id="track99"></td>
                     </tr>
                     <tr>
-                        <td class="trackDefault" id="track100">50</td>
-                        <td class="trackDefault" id="track102">51</td>
-                        <td class="trackDefault" id="track104">52</td>
-                        <td class="trackDefault" id="track106">53</td>
-                        <td class="trackDefault" id="track108">54</td>
-                        <td class="trackDefault" id="track110">55</td>
-                        <td class="trackDefault" id="track112">56</td>
-                        <td class="trackDefault" id="track114">57</td>
-                        <td class="trackDefault" id="track116">58</td>
-                        <td class="trackDefault" id="track118">59</td>
-                        <td></td>
-                        <td class="trackDefault" id="track101">50</td>
-                        <td class="trackDefault" id="track103">51</td>
-                        <td class="trackDefault" id="track105">52</td>
-                        <td class="trackDefault" id="track107">53</td>
-                        <td class="trackDefault" id="track109">54</td>
-                        <td class="trackDefault" id="track111">55</td>
-                        <td class="trackDefault" id="track113">56</td>
-                        <td class="trackDefault" id="track115">57</td>
-                        <td class="trackDefault" id="track117">58</td>
-                        <td class="trackDefault" id="track119">59</td>
+                    	<td rowspan=2 class="black"><img id="Dest_Flopp" style="display: visible;" src="destination.png"></td>
+						<td rowspan=2 class="black"><img id="Dest_Sd" style="display: visible;" src="sdcard.png"></td>
+						<td rowspan=2 class="black"><img id="Dest_Flash" style="display: visible;" src="flash.png"></td>
+						<td class="black"></td>
+                    	<td class="column">5</td>
+                        <td class="trackDefault" id="track100"></td>
+                        <td class="trackDefault" id="track102"></td>
+                        <td class="trackDefault" id="track104"></td>
+                        <td class="trackDefault" id="track106"></td>
+                        <td class="trackDefault" id="track108"></td>
+                        <td class="trackDefault" id="track110"></td>
+                        <td class="trackDefault" id="track112"></td>
+                        <td class="trackDefault" id="track114"></td>
+                        <td class="trackDefault" id="track116"></td>
+                        <td class="trackDefault" id="track118"></td>
+                        <td class="black"></td>
+                        <td class="column">5</td>
+                        <td class="trackDefault" id="track101"></td>
+                        <td class="trackDefault" id="track103"></td>
+                        <td class="trackDefault" id="track105"></td>
+                        <td class="trackDefault" id="track107"></td>
+                        <td class="trackDefault" id="track109"></td>
+                        <td class="trackDefault" id="track111"></td>
+                        <td class="trackDefault" id="track113"></td>
+                        <td class="trackDefault" id="track115"></td>
+                        <td class="trackDefault" id="track117"></td>
+                        <td class="trackDefault" id="track119"></td>
                     </tr>
                     <tr>
-                        <td class="trackDefault" id="track120">60</td>
-                        <td class="trackDefault" id="track122">61</td>
-                        <td class="trackDefault" id="track124">62</td>
-                        <td class="trackDefault" id="track126">63</td>
-                        <td class="trackDefault" id="track128">64</td>
-                        <td class="trackDefault" id="track130">65</td>
-                        <td class="trackDefault" id="track132">66</td>
-                        <td class="trackDefault" id="track134">67</td>
-                        <td class="trackDefault" id="track136">68</td>
-                        <td class="trackDefault" id="track138">69</td>
-                        <td></td>
-                        <td class="trackDefault" id="track121">60</td>
-                        <td class="trackDefault" id="track123">61</td>
-                        <td class="trackDefault" id="track125">62</td>
-                        <td class="trackDefault" id="track127">63</td>
-                        <td class="trackDefault" id="track129">64</td>
-                        <td class="trackDefault" id="track131">65</td>
-                        <td class="trackDefault" id="track133">66</td>
-                        <td class="trackDefault" id="track135">67</td>
-                        <td class="trackDefault" id="track137">68</td>
-                        <td class="trackDefault" id="track139">69</td>
+                    	<td class="black"></td>
+                    	<td class="column">6</td>
+                        <td class="trackDefault" id="track120"></td>
+                        <td class="trackDefault" id="track122"></td>
+                        <td class="trackDefault" id="track124"></td>
+                        <td class="trackDefault" id="track126"></td>
+                        <td class="trackDefault" id="track128"></td>
+                        <td class="trackDefault" id="track130"></td>
+                        <td class="trackDefault" id="track132"></td>
+                        <td class="trackDefault" id="track134"></td>
+                        <td class="trackDefault" id="track136"></td>
+                        <td class="trackDefault" id="track138"></td>
+                        <td class="black"></td>
+                        <td class="column">6</td>
+                        <td class="trackDefault" id="track121"></td>
+                        <td class="trackDefault" id="track123"></td>
+                        <td class="trackDefault" id="track125"></td>
+                        <td class="trackDefault" id="track127"></td>
+                        <td class="trackDefault" id="track129"></td>
+                        <td class="trackDefault" id="track131"></td>
+                        <td class="trackDefault" id="track133"></td>
+                        <td class="trackDefault" id="track135"></td>
+                        <td class="trackDefault" id="track137"></td>
+                        <td class="trackDefault" id="track139"></td>
                     </tr>
                     <tr>
-                        <td class="trackDefault" id="track140">70</td>
-                        <td class="trackDefault" id="track142">71</td>
-                        <td class="trackDefault" id="track144">72</td>
-                        <td class="trackDefault" id="track146">73</td>
-                        <td class="trackDefault" id="track148">74</td>
-                        <td class="trackDefault" id="track150">75</td>
-                        <td class="trackDefault" id="track152">76</td>
-                        <td class="trackDefault" id="track154">77</td>
-                        <td class="trackDefault" id="track156">78</td>
-                        <td class="trackDefault" id="track158">79</td>
-                        <td></td>
-                        <td class="trackDefault" id="track141">70</td>
-                        <td class="trackDefault" id="track143">71</td>
-                        <td class="trackDefault" id="track145">72</td>
-                        <td class="trackDefault" id="track147">73</td>
-                        <td class="trackDefault" id="track149">74</td>
-                        <td class="trackDefault" id="track151">75</td>
-                        <td class="trackDefault" id="track153">76</td>
-                        <td class="trackDefault" id="track155">77</td>
-                        <td class="trackDefault" id="track157">78</td>
-                        <td class="trackDefault" id="track159">79</td>
+                    	<td colspan=4 class="column">TARGET</td>
+                    	<td class="column">7</td>
+                        <td class="trackDefault" id="track140"></td>
+                        <td class="trackDefault" id="track142"></td>
+                        <td class="trackDefault" id="track144"></td>
+                        <td class="trackDefault" id="track146"></td>
+                        <td class="trackDefault" id="track148"></td>
+                        <td class="trackDefault" id="track150"></td>
+                        <td class="trackDefault" id="track152"></td>
+                        <td class="trackDefault" id="track154"></td>
+                        <td class="trackDefault" id="track156"></td>
+                        <td class="trackDefault" id="track158"></td>
+                        <td class="black"></td>
+                        <td class="column">7</td>
+                        <td class="trackDefault" id="track141"></td>
+                        <td class="trackDefault" id="track143"></td>
+                        <td class="trackDefault" id="track145"></td>
+                        <td class="trackDefault" id="track147"></td>
+                        <td class="trackDefault" id="track149"></td>
+                        <td class="trackDefault" id="track151"></td>
+                        <td class="trackDefault" id="track153"></td>
+                        <td class="trackDefault" id="track155"></td>
+                        <td class="trackDefault" id="track157"></td>
+                        <td class="trackDefault" id="track159"></td>
                     </tr>
                 </tbody>
                 <tfoot>
                     <tr>
+                    	<td class="black" colspan="27"></td>
+                    	</tr><tr>
                         <td class="socketClosed" id="webSocketStatus">Closed</td>
                         <td colspan="3">WebSocket Status</td>
-                        <td colspan="13"></td>
+                        <td colspan="19"></td>
                         <td colspan="3">Hardware Status</td>
                         <td class="busy" id="hardwareStatus">Busy</td>
                     </tr>
@@ -254,5 +314,4 @@
         </div>
     </center>
 </body>
-
 </html>

@@ -147,6 +147,24 @@ function setDiskname(diskname) {
 function setStatus(status) {
   element = document.getElementById('status');
   element.innerHTML = status;
+
+  if (status == "Testing Disk") {
+    document.getElementById('Source_Flopp').style.visibility = "visible";
+    document.getElementById('Source_Sd').style.visibility = "hidden";
+    document.getElementById('Source_Flash').style.visibility = "hidden";
+    
+    document.getElementById('Dest_Flopp').style.visibility = "hidden";
+    document.getElementById('Dest_Sd').style.visibility = "hidden";
+    document.getElementById('Dest_Flash').style.visibility = "hidden";
+  } else {
+    document.getElementById('Source_Flopp').style.visibility = "visible";
+    document.getElementById('Source_Sd').style.visibility = "visible";
+    document.getElementById('Source_Flash').style.visibility = "visible";
+    
+    document.getElementById('Dest_Flopp').style.visibility = "visible";
+    document.getElementById('Dest_Sd').style.visibility = "visible";
+    document.getElementById('Dest_Flash').style.visibility = "visible";
+  }
 }
 
 function resetTracks(classname = "trackDefault", start = 0) {
