@@ -17,7 +17,15 @@
 			"cmath": "cpp",
 			"istream": "cpp",
 			"ostream": "cpp",
-			"streambuf": "cpp"
+			"streambuf": "cpp",
+			"array": "cpp",
+			"deque": "cpp",
+			"list": "cpp",
+			"map": "cpp",
+			"set": "cpp",
+			"unordered_map": "cpp",
+			"vector": "cpp",
+			"bit": "cpp"
 		}
 	}
 }

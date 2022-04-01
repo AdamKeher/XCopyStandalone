@@ -102,7 +102,7 @@ void XCopy::begin()
     _esp->setEcho(false);
     if (_esp->begin())
     {
-        _esp->setCallBack(theCallbackFunction);
+        _esp->setCallBack(this, onWebCommand);
         _graphics.drawText(0, 115, ST7735_WHITE, F("       Connecting to WiFi"), true);
 
         Serial << XCopyConsole::success("OK\r\n");
@@ -222,11 +222,10 @@ void XCopy::setBusy(bool busy)
 
 void XCopy::intro()
 {
+    _graphics.clearScreen();
     _graphics.bmpDraw("XCPYLOGO.BMP", 0, 30);
-
     _graphics.drawText(50, 85, ST7735_GREEN, "iTeC/crAss");
     _graphics.drawText(50, 95, ST7735_WHITE, XCOPYVERSION);
-
     _audio.playChime(true);
 }
 
@@ -301,7 +300,9 @@ void XCopy::cancelOperation()
     }
 }
 
-void XCopy::theCallbackFunction(const String command)
-{    
+void XCopy::onWebCommand(void* obj, const String command)
+{
     Serial << "DEBUG::ESPCALLBACK::(" << command << ")\r\n";
+    XCopy* test = (XCopy*)obj;
+    test->intro();
 }

@@ -28,7 +28,6 @@ void XCopyESP8266::progMode()
     digitalWrite(_espProgPin, HIGH);
 }
 
-
 String XCopyESP8266::sendCommand(String command, bool strip, int timeout)
 {
     Serial1.flush();
@@ -118,7 +117,7 @@ void XCopyESP8266::Update()
             {
                 _command = _command.substring(_marker.length());
                 _command.replace("\r", "");
-                this->_espCallBack(_command);
+                _callback(_caller, _command);
             }
             _command = "";
         }
@@ -129,9 +128,10 @@ void XCopyESP8266::Update()
     }
 }
 
-void XCopyESP8266::setCallBack(espCallbackFunction function)
+void XCopyESP8266::setCallBack(void* caller, OnWebCommand function)
 {
-    _espCallBack = function;
+    _caller = caller;
+    _callback = function;
 }
 
 time_t XCopyESP8266::getTime() {

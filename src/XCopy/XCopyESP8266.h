@@ -4,7 +4,7 @@
 #include <Arduino.h>
 #include <Streaming.h>
 
-typedef void (*espCallbackFunction)(const String command);
+typedef void (*OnWebCommand)(void* obj, const String command);
 
 class XCopyESP8266
 {
@@ -21,7 +21,7 @@ public:
   void progMode();
   time_t getTime();
 
-  void setCallBack(espCallbackFunction function);
+  void setCallBack(void* caller, OnWebCommand function);
 
 private:
   char OK_EOC[5] = "OK\r\n";
@@ -29,7 +29,10 @@ private:
   // HardwareSerial _serial;
   String _command;
   const String _marker = "xcopyCommand,";
-  espCallbackFunction _espCallBack;
+  
+  void* _caller;
+  OnWebCommand _callback;
+
   int _espResetPin;
   int _espProgPin;
 };

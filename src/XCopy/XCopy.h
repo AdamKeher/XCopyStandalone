@@ -78,10 +78,6 @@ public:
 
   void begin();
   void update();
-  void debug();
-  void debugCompareFile(File sdFile, SerialFlashFile flashFile);
-  void debugCompareTempFile();
-  void debugEraseCopyCompare(bool erase);
   void navigateUp();
   void navigateDown();
   void navigateSelect();
@@ -89,17 +85,15 @@ public:
   void navigateRight();
   void processState();
   void intro();
-  bool cardDetect();
   void cancelOperation();
   void setBusy(bool busy);
   bool getBusy() { return digitalRead(PIN_BUSYPIN); }
   void refreshTimeNtp();
-
-  static void theCallbackFunction(const String command);
-
-  void ramReport();
-
+  static void onWebCommand(void* obj, const String command);
   XCopyState _xcopyState = menus;
+  #ifdef XCOPY_DEBUG
+  void ramReport();
+  #endif
 
 private:
   TFT_ST7735 *_tft;
