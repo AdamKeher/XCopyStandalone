@@ -149,21 +149,21 @@ function setStatus(status) {
   element.innerHTML = status;
 
   if (status == "Testing Disk") {
-    document.getElementById('Source_Flopp').style.visibility = "visible";
-    document.getElementById('Source_Sd').style.visibility = "hidden";
-    document.getElementById('Source_Flash').style.visibility = "hidden";
+    document.getElementById('src_floppy').style.visibility = "visible";
+    document.getElementById('src_sdcard').style.visibility = "hidden";
+    document.getElementById('src_flash').style.visibility = "hidden";
     
-    document.getElementById('Dest_Flopp').style.visibility = "hidden";
-    document.getElementById('Dest_Sd').style.visibility = "hidden";
-    document.getElementById('Dest_Flash').style.visibility = "hidden";
+    document.getElementById('dst_floppy').style.visibility = "hidden";
+    document.getElementById('dst_sdcard').style.visibility = "hidden";
+    document.getElementById('dst_flash').style.visibility = "hidden";
   } else {
-    document.getElementById('Source_Flopp').style.visibility = "visible";
-    document.getElementById('Source_Sd').style.visibility = "visible";
-    document.getElementById('Source_Flash').style.visibility = "visible";
+    document.getElementById('src_floppy').style.visibility = "visible";
+    document.getElementById('src_sdcard').style.visibility = "visible";
+    document.getElementById('src_flash').style.visibility = "visible";
     
-    document.getElementById('Dest_Flopp').style.visibility = "visible";
-    document.getElementById('Dest_Sd').style.visibility = "visible";
-    document.getElementById('Dest_Flash').style.visibility = "visible";
+    document.getElementById('dst_floppy').style.visibility = "visible";
+    document.getElementById('dst_sdcard').style.visibility = "visible";
+    document.getElementById('dst_flash').style.visibility = "visible";
   }
 }
 
