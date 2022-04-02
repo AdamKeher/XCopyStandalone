@@ -15,7 +15,7 @@ const String _marker = "espCommand";
 
 ESPCommandLine command;
 
-void busyISR()
+void ICACHE_RAM_ATTR busyISR()
 {
   int pinStatus = digitalRead(busyPin);
   String tmp = "pinStatus," + String(pinStatus);
@@ -125,7 +125,7 @@ void setup(void)
   pinMode(led, OUTPUT);
   digitalWrite(led, 0);
   pinMode(busyPin, INPUT);
-  // attachInterrupt(busyPin, busyISR, CHANGE);
+  attachInterrupt(busyPin, busyISR, CHANGE);
 
   Serial.begin(115200);
 
