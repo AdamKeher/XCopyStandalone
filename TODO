@@ -1,6 +1,13 @@
 Project Resumption:
   v708.2022:
     ✔ Add MAC address function @started(22-03-31 12:01) @done(22-03-31 12:13) @lasted(12m42s)
+    ✔ Fix busy pin ISR - possibly pin naming error with board definition @done(22-04-02 12:30)
+    ✔ Fixed callback issue: webinterface -> xcopy device @done(22-04-02 12:31)
+    ✔ Added source and destination globes to html
+    ✔ Cleaned minor HTML errors
+    ✔ Applied oldskool font to entire page
+    ✔ Changed status and footer areas
+    ✔ Moved source and destination areas up and made room for globes
   v707.2022:
     ✔ Move all ansi text functions into XCopyConsole class @done(22-03-30 17:27)
     ✔ Added dir / ls directory listing of SDCard from console @done(22-03-30 15:28)
@@ -44,7 +51,6 @@ Project Resumption:
     General:
       ☐ Move SDCard code to XCopySDCard object, especially XCopyDebug. Get rid of all SD references and move to SdFat @started(22-03-30 17:33)
       ☐ 
-      ☐ Fix busy pin ISR - possibly pin naming error with board definition
 
 ---------------------------------------------------------------------------------------------------
 
@@ -107,7 +113,6 @@ Legacy:
     ✔ remove hardcoding of workbnch.adf and pass in param @done(19-03-15 22:13)
   HTTP:
     Interface
-      ☐ bind callbacks to class method
       ☐ Copy files to XCopy Flash and SD Card from PC
       ☐ Rename ADF files while copying
       ☐ Speed up diskflux notification as it adds ~10sec to disk test
