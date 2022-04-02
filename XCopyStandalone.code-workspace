@@ -25,7 +25,9 @@
 			"set": "cpp",
 			"unordered_map": "cpp",
 			"vector": "cpp",
-			"bit": "cpp"
+			"bit": "cpp",
+			"functional": "cpp",
+			"sstream": "cpp"
 		}
 	}
 }

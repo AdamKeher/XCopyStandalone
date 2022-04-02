@@ -303,6 +303,44 @@ void XCopy::cancelOperation()
 void XCopy::onWebCommand(void* obj, const String command)
 {
     Serial << "DEBUG::ESPCALLBACK::(" << command << ")\r\n";
-    XCopy* test = (XCopy*)obj;
-    test->intro();
+    XCopy* xcopy = (XCopy*)obj;
+    
+    if (command == "copyADFtoDisk") {
+        xcopy->startCopyADFtoDisk();
+    }
+    else if (command == "copyDisktoADF") {
+        xcopy->startFunction(copyDiskToADF);
+    }
+    else if (command == "copyDisktoDisk") {
+        xcopy->startFunction(copyDiskToDisk);
+    }
+    else if (command == "copyDiskToFlash") {
+        xcopy->startFunction(copyDiskToFlash);
+    }
+    else if (command == "copyFlashtoDisk") {
+        xcopy->startFunction(copyFlashToDisk);
+    }
+    else if (command == "testDisk") {
+        xcopy->startFunction(testDisk);
+    }
+    else if (command == "formatDisk") {
+        xcopy->startFunction(formatDisk);
+    }
+    else if (command == "diskFlux") {
+        xcopy->startFunction(fluxDisk);
+    }
+}
+
+void XCopy::startFunction(XCopyState state) {
+    setBusy(true);
+    _menu.setCurrentItem(state);
+    _xcopyState = state;
+    _drawnOnce = false;
+    _audio.playSelect(false);
+    _graphics.clearScreen();    
+}
+
+void XCopy::startCopyADFtoDisk() {
+    startFunction(directorySelection);
+    _directory.getDirectory("/", &_disk, ".adf");
 }

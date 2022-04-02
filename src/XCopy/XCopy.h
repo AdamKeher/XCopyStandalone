@@ -14,6 +14,7 @@
 #include <Wire.h>
 #include <Streaming.h>
 #include <SdFat.h>
+#include "XCopyState.h"
 #include "XCopyPins.h"
 #include "XCopyMenu.h"
 #include "XCopyCommand.h"
@@ -34,45 +35,8 @@
 #include "RamMonitor.h"
 #endif
 
-enum XCopyState
-{
-  undefined = 0,
-  menus = 1,
-  idle = 2,
-  copyDiskToADF = 3,
-  testDisk = 4,
-  copyADFToDisk = 5,
-  showTime = 6,
-  about = 7,
-  debuggingTempFile = 8,
-  debuggingSDFLash = 9,
-  debuggingEraseCopy = 10,
-  debuggingCompareFlashToSDCard = 12,
-  copyDiskToDisk = 13,
-  directorySelection = 14,
-  setVerify = 15,
-  setRetry = 16,
-  setVolume = 17,
-  copyDiskToFlash = 18,
-  copyFlashToDisk = 19,
-  debuggingFlashDetails = 23,
-  fluxDisk = 24,
-  formatDisk = 25,
-  debuggingSerialPassThrough = 26,
-  debuggingSerialPassThroughProg = 27,
-  setSSID = 28,
-  setPassword = 29,
-  resetESP = 30,
-  debuggingFaultFind = 31,
-  debuggingEraseFlash = 32,
-  setDiskDelay = 33,
-  testDrive = 34,
-  resetDevice = 35,
-  setTimeZone
-};
 
-class XCopy
-{
+class XCopy {
 public:
   XCopy(TFT_ST7735 *tft);
 
@@ -89,6 +53,8 @@ public:
   void setBusy(bool busy);
   bool getBusy() { return digitalRead(PIN_BUSYPIN); }
   void refreshTimeNtp();
+  void startFunction(XCopyState state);
+  void startCopyADFtoDisk();
   static void onWebCommand(void* obj, const String command);
   XCopyState _xcopyState = menus;
   #ifdef XCOPY_DEBUG

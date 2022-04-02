@@ -1,5 +1,6 @@
 Project Resumption:
   v708.2022:
+    ✔ Hook up commands other than ADF to Disk from web interface - ignore incorrect status text @done(22-04-02 18:00)
     ✔ Add MAC address function @started(22-03-31 12:01) @done(22-03-31 12:13) @lasted(12m42s)
     ✔ Fix busy pin ISR - possibly pin naming error with board definition @done(22-04-02 12:30)
     ✔ Fixed callback issue: webinterface -> xcopy device @done(22-04-02 12:31)

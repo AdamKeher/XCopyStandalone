@@ -278,75 +278,44 @@ void XCopy::navigateSelect()
             _graphics.clearScreen();
         }
 
-        if (item->command == copyDiskToADF)
-        {
-            setBusy(true);
-            _xcopyState = copyDiskToADF;
-            _drawnOnce = false;
-            _audio.playSelect(false);
-            _graphics.clearScreen();
-        }
-
-        if (item->command == copyDiskToFlash)
-        {
-            setBusy(true);
-            _xcopyState = copyDiskToFlash;
-            _drawnOnce = false;
-            _audio.playSelect(false);
-            _graphics.clearScreen();
-        }
-
-        if (item->command == copyFlashToDisk)
-        {
-            setBusy(true);
-            _xcopyState = copyFlashToDisk;
-            _drawnOnce = false;
-            _audio.playSelect(false);
-            _graphics.clearScreen();
-        }
-
-        if (item->command == testDisk)
-        {
-            setBusy(true);
-            _xcopyState = testDisk;
-            _drawnOnce = false;
-            _audio.playSelect(false);
-            _graphics.clearScreen();
-        }        
-
-        if (item->command == fluxDisk)
-        {
-            setBusy(true);
-            _xcopyState = fluxDisk;
-            _drawnOnce = false;
-            _audio.playSelect(false);
-            _graphics.clearScreen();
-        }
-
-        if (item->command == formatDisk)
-        {
-            setBusy(true);
-            _xcopyState = formatDisk;
-            _drawnOnce = false;
-            _audio.playSelect(false);
-            _graphics.clearScreen();
-        }
-
         if (item->command == copyADFToDisk)
         {
-            setBusy(true);
-            _xcopyState = directorySelection;
-            _drawnOnce = false;
-            _audio.playSelect(false);
-            _directory.getDirectory("/", &_disk, ".adf");
+            startCopyADFtoDisk();
+        }
+
+        if (item->command == copyDiskToADF)
+        {
+            startFunction(copyDiskToADF);
         }
 
         if (item->command == copyDiskToDisk)
         {
-            setBusy(true);
-            _xcopyState = copyDiskToDisk;
-            _drawnOnce = false;
-            _audio.playSelect(false);
+            startFunction(copyDiskToDisk);
+        }
+
+        if (item->command == copyDiskToFlash)
+        {
+            startFunction(copyDiskToFlash);
+        }
+
+        if (item->command == copyFlashToDisk)
+        {
+            startFunction(copyFlashToDisk);
+        }
+
+        if (item->command == testDisk)
+        {
+            startFunction(testDisk);
+        }        
+
+        if (item->command == formatDisk)
+        {
+            startFunction(formatDisk);
+        }
+
+        if (item->command == fluxDisk)
+        {
+            startFunction(fluxDisk);
         }
 
         if (item->command == setVerify)
@@ -662,10 +631,7 @@ void XCopy::processState()
     {
         if (_drawnOnce == false)
         {
-            // _config = new XCopyConfig();
             _disk.testDisk(_config->getRetryCount());
-            // delete _config;
-
             setBusy(false);
             _drawnOnce = true;
         }
