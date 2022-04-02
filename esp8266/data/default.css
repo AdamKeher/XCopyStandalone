@@ -17,6 +17,13 @@ tbody
     background-color:lightblue;
     color:black;
 }
+table
+{
+    border-spacing: 0; 
+    border-width: 0; 
+    padding: 0; 
+    border-width: 0;
+}
 td
 {
     height:28px;
