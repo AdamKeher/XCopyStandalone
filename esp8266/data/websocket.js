@@ -71,6 +71,10 @@ connection.onclose = function () {
   console.log('WebSocket connection closed');
 };
 
+function onLoad() {
+  setIconsGlobesOff();
+}
+
 function componentToHex(c) {
   var hex = c.toString(16);
   return hex.length == 1 ? "0" + hex : hex;
@@ -144,26 +148,36 @@ function setDiskname(diskname) {
   element.innerHTML = diskname;
 }
 
+function setIcons(group, floppy, sdcard, flash) {
+  document.getElementById(group + '_floppy').className = floppy ? "" : "gray";
+  document.getElementById(group + '_sdcard').className = sdcard ? "" : "gray";
+  document.getElementById(group + '_flash').className = flash ? "" : "gray";
+}
+
+function setGlobes(group, floppy, sdcard, flash) {
+  document.getElementById(group + '_floppy_globe').className = floppy ? "" : "gray";
+  document.getElementById(group + '_sdcard_globe').className = sdcard ? "" : "gray";
+  document.getElementById(group + '_flash_globe').className = flash ? "" : "gray";
+}
+
+function setIconsGlobesOff() {
+  setIcons("src", false, false, false);
+  setIcons("dst", false, false, false);
+  setGlobes("src", false, false, false);
+  setGlobes("dst", false, false, false);
+}
+
 function setStatus(status) {
   element = document.getElementById('status');
   element.innerHTML = status;
 
   if (status == "Testing Disk") {
-    document.getElementById('src_floppy').style.visibility = "visible";
-    document.getElementById('src_sdcard').style.visibility = "hidden";
-    document.getElementById('src_flash').style.visibility = "hidden";
-    
-    document.getElementById('dst_floppy').style.visibility = "hidden";
-    document.getElementById('dst_sdcard').style.visibility = "hidden";
-    document.getElementById('dst_flash').style.visibility = "hidden";
+    setIcons("src", true, false, false);
+    setIcons("dst", false, false, false);
+    setGlobes("src", true, false, false);
+    setGlobes("dst", false, false, false);
   } else {
-    document.getElementById('src_floppy').style.visibility = "visible";
-    document.getElementById('src_sdcard').style.visibility = "visible";
-    document.getElementById('src_flash').style.visibility = "visible";
-    
-    document.getElementById('dst_floppy').style.visibility = "visible";
-    document.getElementById('dst_sdcard').style.visibility = "visible";
-    document.getElementById('dst_flash').style.visibility = "visible";
+    setIconsGlobesOff();
   }
 }
 

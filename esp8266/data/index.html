@@ -10,7 +10,7 @@
     <link rel="stylesheet" type="text/css" href="default.css">
 </head>
 
-<body>
+<body onload="onLoad();">
     <center>
         <header>
             <img src="xcopy.png">
@@ -40,14 +40,12 @@
             <table>
                 <thead>
                     <tr>
-                        <td colspan=4 class="black"></td>
-                        <td class="right" colspan=3>STATUS</td>
-                        <td colspan=20><span id="status"></span></td>
+                        <td colspan=4 class="header">STATUS</td>
+                        <td colspan=23><span id="status"></span></td>
                     </tr>
                     <tr>
-                    	<td colspan=4 class="black"></td>
-                        <td class="right" colspan=3>DISKNAME</td>
-                        <td colspan=20><span id="diskname"></span></td>
+                    	<td colspan=4 class="header">DISKNAME</td>
+                        <td colspan=23><span id="diskname"></span></td>
                     </tr>
                 </thead>
                 <tbody>
@@ -59,7 +57,8 @@
 						</tr><td class="black" colspan="27"><img height=8px width=100% src="hr.png"></td><tr>
                     </tr>
                     <tr>
-                    	<td colspan=5 class="black"></td>
+                    	<td colspan=4 class="column">SOURCE</td>
+                        <td class="column"></td>
                         <td class="column">0</td>
                         <td class="column">1</td>
                         <td class="column">2</td>
@@ -81,9 +80,13 @@
                         <td class="column">6</td>
                         <td class="column">7</td>
                         <td class="column">8</td>
-                        <td class="column">9</td></tr>
-                        
-						<td colspan=4 class="black"></td>
+                        <td class="column">9</td>
+                    </tr>
+                    <tr>
+                        <td rowspan=2 class="black"><img id="src_floppy" style="display: visible;" src="floppysrc.png"></td>
+                    	<td rowspan=2 class="black"><img id="src_sdcard" style="display: visible;" src="sdcard.png"></td>
+                    	<td rowspan=2 class="black"><img id="src_flash"style="display: visible;" src="flash.png"></td>
+						<td class="black"></td>
                         <td class="column">0</td><td class="trackDefault" id="track0"></td>
                         <td class="trackDefault" id="track2"></td>
                         <td class="trackDefault" id="track4"></td>
@@ -108,7 +111,7 @@
                         <td class="trackDefault" id="track19"></td>
                     </tr>
                     <tr>
-                    	<td colspan=4 class="black"></td>
+						<td class="black"></td>
                         <td class="column">1</td>
                         <td class="trackDefault" id="track20"></td>
                         <td class="trackDefault" id="track22"></td>
@@ -134,7 +137,10 @@
                         <td class="trackDefault" id="track39"></td>
                     </tr>
                     <tr>
-                    	<td colspan=4 class="column">SOURCE</td>
+						<td class="black"><img id="src_floppy_globe" src="selected.png"></td>
+						<td class="black"><img id="src_sdcard_globe" src="selected.png"></td>
+						<td class="black"><img id="src_flash_globe" src="selected.png"></td>
+						<td class="black"></td>
                     	<td class="column">2</td>
                         <td class="trackDefault" id="track40"></td>
                         <td class="trackDefault" id="track42"></td>
@@ -160,10 +166,7 @@
                         <td class="trackDefault" id="track59"></td>
                     </tr>
                     <tr>
-                    	<td rowspan=2 class="black"><img id="src_floppy" style="display: visible;" src="floppysrc.png"></td>
-                    	<td rowspan=2 class="black"><img id="src_sdcard" style="display: visible;" src="sdcard.png"></td>
-                    	<td rowspan=2 class="black"><img id="src_flash"style="display: visible;" src="flash.png"></td>
-                    	<td class="black"></td>
+                    	<td colspan=4 class="black"></td>
                     	<td class="column">3</td>
                         <td class="trackDefault" id="track60"></td>
                         <td class="trackDefault" id="track62"></td>
@@ -189,8 +192,11 @@
                         <td class="trackDefault" id="track79"></td>
                     </tr>
                     <tr>
-                    	<td class="black"></td>
-                    	<td class="column">4</td>
+                    	<td rowspan=2 class="black"><img id="dst_floppy" style="display: visible;" src="floppydest.png"></td>
+						<td rowspan=2 class="black"><img id="dst_sdcard" style="display: visible;" src="sdcard.png"></td>
+						<td rowspan=2 class="black"><img id="dst_flash" style="display: visible;" src="flash.png"></td>
+						<td class="black"></td>
+                        <td class="column">4</td>
                         <td class="trackDefault" id="track80"></td>
                         <td class="trackDefault" id="track82"></td>
                         <td class="trackDefault" id="track84"></td>
@@ -215,9 +221,6 @@
                         <td class="trackDefault" id="track99"></td>
                     </tr>
                     <tr>
-                    	<td rowspan=2 class="black"><img id="dst_floppy" style="display: visible;" src="floppydest.png"></td>
-						<td rowspan=2 class="black"><img id="dst_sdcard" style="display: visible;" src="sdcard.png"></td>
-						<td rowspan=2 class="black"><img id="dst_flash" style="display: visible;" src="flash.png"></td>
 						<td class="black"></td>
                     	<td class="column">5</td>
                         <td class="trackDefault" id="track100"></td>
@@ -244,7 +247,10 @@
                         <td class="trackDefault" id="track119"></td>
                     </tr>
                     <tr>
-                    	<td class="black"></td>
+						<td class="black"><img id="dst_floppy_globe" src="selected.png"></td>
+						<td class="black"><img id="dst_sdcard_globe" src="selected.png"></td>
+						<td class="black"><img id="dst_flash_globe" src="selected.png"></td>
+						<td class="black"></td>
                     	<td class="column">6</td>
                         <td class="trackDefault" id="track120"></td>
                         <td class="trackDefault" id="track122"></td>
@@ -301,14 +307,15 @@
                     	<td class="black" colspan="27"></td>
                     	</tr><tr>
                         <td class="socketClosed" id="webSocketStatus">Closed</td>
-                        <td colspan="3">WebSocket Status</td>
-                        <td colspan="19"></td>
-                        <td colspan="3">Hardware Status</td>
-                        <td class="busy" id="hardwareStatus">Busy</td>
+                        <td class="status" colspan="3">WebSocket Status</td>
+                        <td class="status" colspan="16"></td>
+                        <td class="status" colspan="5">Hardware Status</td>
+                        <td class="busy" colspan="2" id="hardwareStatus">Busy</td>
                     </tr>
                 </tfoot>
             </table>
         </div>
+        <br/>
         <div>
             <canvas id="fluxCanvas" width="320" height="256" style="background-color: black; border:1px solid darkgrey;"></canvas>
         </div>

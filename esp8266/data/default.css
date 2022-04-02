@@ -11,6 +11,8 @@ thead
 {
     background-color:blue;
     color: #fff;
+    font-size: xx-large;
+    font-family: oldschool;
 }
 tbody
 {
@@ -29,10 +31,6 @@ td
     height:28px;
     width:28px;
     text-align: center;
-}
-.right
-{
-    text-align: right;
 }
 .trackDefault
 {
@@ -79,9 +77,10 @@ td
 }
 .busy
 {
+    font-size: medium;
+    font-family: oldschool;
     background-color: red;
     color: white;
-    font-size: smaller;
 }
 .idle
 {
@@ -91,21 +90,24 @@ td
 }
 .socketOpen
 {
+    font-size:medium;
+    font-family: oldschool;
     background-color: green;
     color: white;
-    font-size: smaller;
 }
 .socketClosed
 {
+    font-size: medium;
+    font-family: oldschool;
     background-color: red;
     color: white;
-    font-size: smaller;
 }
 .socketError
 {
+    font-size: medium;
+    font-family: oldschool;
     background-color: orange;
     color: white;
-    font-size: smaller;
 }
 .disable
 {
@@ -120,6 +122,21 @@ td
     color: #87BCCB;
     font-size: xx-large;
     font-family: oldschool;
+}
+.header
+{
+    background-color:darkblue;
+    font-size: xx-large;
+    font-family: oldschool;
+    padding-right: 10px;
+    text-align: center;
+}
+.status
+{
+    font-size: xx-large;
+    font-family: oldschool;
+    padding-right: 10px;
+    text-align: right;
 }
 .black
 {
@@ -144,4 +161,8 @@ td
         color:#33dd22;
         border-color:#BBEEFF;
         border-width:4px;
+}
+.gray {
+    -webkit-filter: grayscale(100%); /* Safari 6.0 - 9.0 */
+    filter: grayscale(100%);
 }
