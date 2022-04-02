@@ -1,7 +1,7 @@
 #ifndef ESPCOMMAND_H
 #define ESPCOMMAND_H
 
-#define ESPVersion "XCopyESP v0.1"
+#define ESPVersion "XCopyESP v0.2"
 
 #include <Arduino.h>
 #include <Streaming.h>
