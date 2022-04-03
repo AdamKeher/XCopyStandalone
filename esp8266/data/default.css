@@ -7,12 +7,28 @@ body
     background: black;
     color: white;
 }
+
+/* Table */
+table
+{
+    border-spacing: 0; 
+    border-width: 0; 
+    padding: 0px;
+    margin: 0px;
+}
 thead
 {
     background-color:blue;
     color: #fff;
-    font-size: xx-large;
+}
+th
+{
     font-family: oldschool;
+    font-size: xx-large;
+    font-weight: normal;
+    text-align: center;
+    border-width: 1px;
+    border-color: darkred;
 }
 .blackhead
 {
@@ -23,26 +39,45 @@ tbody
     background-color:lightblue;
     color:black;
 }
-table
-{
-    border-spacing: 0; 
-    border-width: 0; 
-    padding: 0; 
-    border-width: 0;
-}
 td
 {
+    font-family: oldschool;
+    font-size: xx-large;
     height:28px;
-    width:28px;
+    width:28px;    
+    padding: 0px;
+    margin: 0px;
+    text-align: center;
+    border-color: darkred;
+    border-width: 1px;
+    background-color: black;
+}
+.tdhr
+{
+    background: black;
+    height:12px;
+}
+.header
+{
+    background-color:darkblue;
+    font-size: xx-large;
+    font-family: oldschool;
+    padding-right: 10px;
     text-align: center;
 }
-.fluxCanvas
+.column
 {
     background-color: black;
-    border:1px solid darkgrey;
-    width: 320px;
-    height: 256px;
+    color: #87BCCB;
+    font-size: xx-large;
+    font-family: oldschool;
 }
+.black
+{
+    background-color: black;
+}
+
+/* Track Colors */
 .trackDefault
 {
     background-color: black;
@@ -86,6 +121,25 @@ td
     font-size: smaller;
     border: 2px solid white;
 }
+
+/* Table */
+
+.fluxCanvas
+{
+    background-color: black;
+    border:1px solid darkgrey;
+    width: 320px;
+    height: 256px;
+}
+
+/* Status Bar */
+.status
+{
+    font-size: xx-large;
+    font-family: oldschool;
+    padding-right: 10px;
+    text-align: right;
+}
 .busy
 {
     font-size: medium;
@@ -120,39 +174,8 @@ td
     background-color: orange;
     color: white;
 }
-.disable
-{
-  background-color: red;
-  color: darkred;
-  pointer-events: none;
-  cursor: not-allowed;
-}
-.column
-{
-    background-color: black;
-    color: #87BCCB;
-    font-size: xx-large;
-    font-family: oldschool;
-}
-.header
-{
-    background-color:darkblue;
-    font-size: xx-large;
-    font-family: oldschool;
-    padding-right: 10px;
-    text-align: center;
-}
-.status
-{
-    font-size: xx-large;
-    font-family: oldschool;
-    padding-right: 10px;
-    text-align: right;
-}
-.black
-{
-    background-color: black;
-}
+
+/* Buttons */
 .button1
 {
         font-family: oldschool;
@@ -173,6 +196,16 @@ td
         border-color:#BBEEFF;
         border-width:4px;
 }
+.disable
+{
+  background-color: red;
+  color: darkred;
+  pointer-events: none;
+  cursor: not-allowed;
+}
+
+/* Icons */
+
 .gray {
     -webkit-filter: grayscale(100%); /* Safari 6.0 - 9.0 */
     filter: grayscale(100%);

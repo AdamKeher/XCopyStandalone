@@ -7,6 +7,7 @@
     <meta name="theme-color" content="#00878f">
     <meta content='width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0' name='viewport'>
     <link rel="stylesheet" href="xterm.css" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous">
     <link rel="stylesheet" type="text/css" href="default.css">
     <script src="xterm.js" type="text/javascript"></script>
     <script src="websocket.js" type="text/javascript"></script>
@@ -42,26 +43,31 @@
             <table>
                 <thead>
                     <tr>
-                        <td colspan=4 class="header">MODE</td>
-                        <td colspan=23><span id="mode"></span></td>
+                        <th colspan=4 class="header">MODE</th>
+                        <th colspan=23><span id="mode"></span></th>
                     </tr>
                     <tr>
-                        <td colspan=4 class="header">STATUS</td>
-                        <td colspan=23><span id="status"></span></td>
+                        <th colspan=4 class="header">STATUS</th>
+                        <th colspan=23><span id="status"></span></th>
                     </tr>
                     <tr>
-                    	<td colspan=4 class="header">DISKNAME</td>
-                        <td colspan=23><span id="diskname"></span></td>
+                    	<th colspan=4 class="header">DISKNAME</th>
+                        <th colspan=23><span id="diskname"></span></th>
                     </tr>
                 </thead>
                 <tbody>
+                    <tr>
+                        <td class="tdhr" colspan="27"><img height=8px width=100% src="hr.png"></td>
+                    </tr>
+                    <tr>
+                        <td colspan="27">ADAM</td>
+                    </tr>
                     <tr>
                     	<td colspan=4 class="black"></td>
                         <td class="column" colspan=11>UPPER SIDE</td>
 						<td colspan=1 class="black"></td>
                         <td class="column" colspan=11>LOWER SIDE</td>
                     </tr>
-                    </tr><td class="black" colspan="27"><img height=8px width=100% src="hr.png"></td><tr>
                     <tr>
                     	<td colspan=4 class="column">SOURCE</td>
                         <td class="column"></td>
@@ -76,7 +82,7 @@
                         <td class="column">8</td>
                         <td class="column">9</td>
 						<td class="black"></td>
-						<td class="black"></td>
+						<td class="column"></td>
 						<td class="column">0</td>
                         <td class="column">1</td>
                         <td class="column">2</td>
@@ -213,7 +219,7 @@
                         <td class="trackDefault" id="track94"></td>
                         <td class="trackDefault" id="track96"></td>
                         <td class="trackDefault" id="track98"></td>
-                        <td class="column"></td>
+                        <td class="black"></td>
                         <td class="column">4</td>
                         <td class="trackDefault" id="track81"></td>
                         <td class="trackDefault" id="track83"></td>
