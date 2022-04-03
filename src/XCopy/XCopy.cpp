@@ -18,50 +18,52 @@ void XCopy::begin()
     pinMode(PIN_BUSYPIN, OUTPUT);
     pinMode(PIN_ESPRESETPIN, OUTPUT);
     pinMode(PIN_ESPPROGPIN, OUTPUT);
-    
-    Serial << XCopyConsole::clearscreen() << XCopyConsole::home() << XCopyConsole::background_purple() << XCopyConsole::high_yellow();
-    Serial << F("                                                                          \r\n");
-    Serial << F(" X-Copy Standalone ") << XCOPYVERSION <<  F("                           (c)2022 Adam Keher \r\n");
-    Serial << F("                                                                          \r\n");
-    Serial << XCopyConsole::reset() << XCopyConsole::echo() << F("\r\n");
+
+    Log.setESP(_esp);
+
+    Log << XCopyConsole::clearscreen() << XCopyConsole::home() << XCopyConsole::background_purple() << XCopyConsole::high_yellow();
+    Log << F("                                                                          \r\n");
+    Log << F(" X-Copy Standalone ") << XCOPYVERSION <<  F("                           (c)2022 Adam Keher \r\n");
+    Log << F("                                                                          \r\n");
+    Log << XCopyConsole::reset() << XCopyConsole::echo() << F("\r\n");
 
     // Init Serial Flash
     // -------------------------------------------------------------------------------------------
-    Serial << F("Initialising SPI Flash RAM: ");
+    Log << F("Initialising SPI Flash RAM: ");
     if (SerialFlash.begin(PIN_FLASHCS))
-        Serial << XCopyConsole::success("OK\r\n");
+        Log << XCopyConsole::success("OK\r\n");
     else
-        Serial << XCopyConsole::error("ERROR\r\n");
+        Log << XCopyConsole::error("ERROR\r\n");
 
     // Init Config
     // -------------------------------------------------------------------------------------------
-    Serial << F("Loading configuration: ");
+    Log << F("Loading configuration: ");
     _config = new XCopyConfig(false);
     if (_config->readConfig())
-        Serial << XCopyConsole::success("OK\r\n");
+        Log << XCopyConsole::success("OK\r\n");
     else
-        Serial << XCopyConsole::error("ERROR\r\n");
+        Log << XCopyConsole::error("ERROR\r\n");
     
     // Init Audio
     // -------------------------------------------------------------------------------------------
-    Serial << F("Initialising audio: ");
+    Log << F("Initialising audio: ");
     _audio.begin(_config->getVolume());
-    Serial << XCopyConsole::success("OK\r\n");
+    Log << XCopyConsole::success("OK\r\n");
 
     // Init Time
     // -------------------------------------------------------------------------------------------
-    Serial << F("Starting realtime clock: ");
+    Log << F("Starting realtime clock: ");
     XCopyTime::syncTime();
-    Serial << XCopyConsole::success("OK\r\n");
+    Log << XCopyConsole::success("OK\r\n");
 
     // Init TFT
     // -------------------------------------------------------------------------------------------
-    Serial << F("Initialising TFT: ");
+    Log << F("Initialising TFT: ");
     _tft->begin();
     _tft->setRotation(3);
     _tft->setCharSpacing(2);
     _graphics.begin(_tft);
-    Serial << XCopyConsole::success("OK\r\n");
+    Log << XCopyConsole::success("OK\r\n");
 
     // Intro
     // -------------------------------------------------------------------------------------------
@@ -69,21 +71,21 @@ void XCopy::begin()
 
     // Init Disk Routines
     // -------------------------------------------------------------------------------------------
-    Serial << F("Initialising drive: ");
+    Log << F("Initialising drive: ");
     _disk.begin(&_graphics, &_audio, _esp, PIN_SDCS, PIN_FLASHCS, PIN_CARDDETECT);
-    Serial << XCopyConsole::success("OK\r\n");
+    Log << XCopyConsole::success("OK\r\n");
 
     // Test Disk Orientation
     // -------------------------------------------------------------------------------------------
-    Serial << F("Testing drive cable orientation: ");
+    Log << F("Testing drive cable orientation: ");
     _graphics.drawText(0, 115, ST7735_WHITE, "       Test Floppy Cable", true);
     delay(300);
     XCopyFloppy* _floppy = new XCopyFloppy();
     if (_floppy->detectCableOrientation() == true) {
-        Serial << XCopyConsole::success("OK\r\n");
+        Log << XCopyConsole::success("OK\r\n");
     } else {
-        Serial << XCopyConsole::error("ERROR\r\n");
-        Serial << XCopyConsole::error(F("Floppy cable insererted incorrectly. Possibly upside down. Fix & reset.\r\n"));
+        Log << XCopyConsole::error("ERROR\r\n");
+        Log << XCopyConsole::error(F("Floppy cable insererted incorrectly. Possibly upside down. Fix & reset.\r\n"));
         _graphics.bmpDraw("XCPYLOGO.BMP", 0, 30);
         _graphics.drawText(47, 75, ST7735_RED, "Floppy Cable", TRUE);
         _graphics.drawText(45, 85, ST7735_RED, "Upside Down!", TRUE);
@@ -95,7 +97,7 @@ void XCopy::begin()
 
     // Init ESP
     // -------------------------------------------------------------------------------------------
-    Serial << F("Initialising ESP8266 WIFI (Serial") + String(Serial1) + F(" @ ") + String(ESPBaudRate) + F("): ") ;
+    Log << F("Initialising ESP8266 WIFI (Serial") + String(Serial1) + F(" @ ") + String(ESPBaudRate) + F("): ") ;
     _graphics.drawText(0, 115, ST7735_WHITE, F("               Init WiFi"), true);
     _esp = new XCopyESP8266(ESPBaudRate, PIN_ESPRESETPIN, PIN_ESPPROGPIN);
     _esp->reset();
@@ -105,22 +107,22 @@ void XCopy::begin()
         _esp->setCallBack(this, onWebCommand);
         _graphics.drawText(0, 115, ST7735_WHITE, F("       Connecting to WiFi"), true);
 
-        Serial << XCopyConsole::success("OK\r\n");
-        Serial << "Connecting to wireless network (" + _config->getSSID() + "): ";
+        Log << XCopyConsole::success("OK\r\n");
+        Log << "Connecting to wireless network (" + _config->getSSID() + "): ";
         if (_esp->connect(_config->getSSID(), _config->getPassword(), 20000)) {
-            Serial << XCopyConsole::success("OK\r\n");
+            Log << XCopyConsole::success("OK\r\n");
             // update time from NTP server
             // -------------------------------------------------------------------------------------------
-            Serial << F("Updating time from NTP server: ");
+            Log << F("Updating time from NTP server: ");
             delay(1000);
             refreshTimeNtp();
-            Serial << XCopyConsole::success("OK\r\n");
+            Log << XCopyConsole::success("OK\r\n");
         }
         else
-            Serial << XCopyConsole::error("Failed.\r\n");
+            Log << XCopyConsole::error("Failed.\r\n");
     }
     else
-        Serial << XCopyConsole::error(F("ESP8266 WIFI Chip initialization failed. (Serial") + String(Serial1) + F(" @ ") + String(ESPBaudRate) + F(").\r\n"));
+        Log << XCopyConsole::error(F("ESP8266 WIFI Chip initialization failed. (Serial") + String(Serial1) + F(" @ ") + String(ESPBaudRate) + F(").\r\n"));
 
     // Init Command Line
     // -------------------------------------------------------------------------------------------
@@ -200,7 +202,7 @@ void XCopy::begin()
 
     // Init Message
     // -------------------------------------------------------------------------------------------
-    Serial << F("\r\nType 'help' for a list of commands.\r\n");
+    Log << F("\r\nType 'help' for a list of commands.\r\n");
     _command->printPrompt();
 
     _menu.drawMenu(_menu.getRoot());
@@ -233,19 +235,19 @@ void XCopy::intro()
 void XCopy::ramReport()
 {
     _ram.run();
-    Serial << F("\r\n=[memory report]============\r\n");
-    Serial << F("total: ") << _ram.total() / 1024 << F("kb\r\n");
+    Log << F("\r\n=[memory report]============\r\n");
+    Log << F("total: ") << _ram.total() / 1024 << F("kb\r\n");
     uint32_t avalue = _ram.adj_free();
-    Serial << F("free: ") << (avalue + 512) << F(" b (") << (((float)avalue) / _ram.total()) * 10 << F("%%)\r\n");
+    Log << F("free: ") << (avalue + 512) << F(" b (") << (((float)avalue) / _ram.total()) * 10 << F("%%)\r\n");
     avalue = _ram.stack_total();
-    Serial << F("stack: ") << (avalue + 512) << F(" b (") << (((float)avalue) / _ram.total()) * 10 << F("%%)\r\n");
+    Log << F("stack: ") << (avalue + 512) << F(" b (") << (((float)avalue) / _ram.total()) * 10 << F("%%)\r\n");
     avalue = _ram.heap_total();
-    Serial << F(" heap: ") << (avalue + 512) << F(" b (") << (((float)avalue) / _ram.total()) * 10 << F("%%)\r\n");
+    Log << F(" heap: ") << (avalue + 512) << F(" b (") << (((float)avalue) / _ram.total()) * 10 << F("%%)\r\n");
     if (_ram.warning_crash())
-        Serial << F("**Warning: stack and heap crash possible\r\n");
+        Log << F("**Warning: stack and heap crash possible\r\n");
     if (_ram.warning_lowmem())
-        Serial << F("**Warning: unallocated memory running low\r\n");
-    Serial << F("=[memory report]============\r\n");
+        Log << F("**Warning: unallocated memory running low\r\n");
+    Log << F("=[memory report]============\r\n");
 }
 #endif
 
@@ -302,7 +304,7 @@ void XCopy::cancelOperation()
 
 void XCopy::onWebCommand(void* obj, const String command)
 {
-    Serial << "DEBUG::ESPCALLBACK::(" << command << ")\r\n";
+    // Log << "DEBUG::ESPCALLBACK::(" << command << ")\r\n";
     XCopy* xcopy = (XCopy*)obj;
     
     if (command == "copyADFtoDisk") {
@@ -332,7 +334,38 @@ void XCopy::onWebCommand(void* obj, const String command)
 }
 
 void XCopy::startFunction(XCopyState state) {
+    switch (state) {
+        case copyADFToDisk:
+            _esp->setMode("Copy ADF to Disk");
+            break;
+        case copyDiskToADF:
+            _esp->setMode("Copy Disk to ADF");
+            break;
+        case copyDiskToDisk:
+            _esp->setMode("Copy Disk to Disk");
+            break;
+        case copyDiskToFlash:
+            _esp->setMode("Copy Disk to Flash");
+            break;
+        case copyFlashToDisk:
+            _esp->setMode("Copy Flash to Disk");
+            break;
+        case testDisk:
+            Log << "Start: " << "Copy ADF to Disk";
+            _esp->setMode("Test Disk");
+            break;
+        case fluxDisk:
+            _esp->setMode("Flux Disk");
+            break;
+        case formatDisk:
+            _esp->setMode("Format Disk");
+            break;
+        default: 
+            _esp->setMode("Unknown");
+    }
+
     setBusy(true);
+    _esp->setState(state);
     _menu.setCurrentItem(state);
     _xcopyState = state;
     _drawnOnce = false;

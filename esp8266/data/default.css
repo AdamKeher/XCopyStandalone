@@ -14,6 +14,10 @@ thead
     font-size: xx-large;
     font-family: oldschool;
 }
+.blackhead
+{
+    background-color:black;
+}
 tbody
 {
     background-color:lightblue;
@@ -31,6 +35,13 @@ td
     height:28px;
     width:28px;
     text-align: center;
+}
+.fluxCanvas
+{
+    background-color: black;
+    border:1px solid darkgrey;
+    width: 320px;
+    height: 256px;
 }
 .trackDefault
 {

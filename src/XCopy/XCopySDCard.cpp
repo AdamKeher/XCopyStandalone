@@ -28,45 +28,54 @@ bool XCopySDCard::printDirectory(String directory, bool color) {
         displayName = "/" + displayName;
     }
 
-    Serial << "Directory: '" << displayName << "'\r\n";
+    Log << "Directory: '" << displayName << "'\r\n";
 
     if (!root.open(directory.c_str())) {
         return false;
     }
 
     while (file.openNext(&root, O_RDONLY)) {
-        file.printModifyDateTime(&Serial);
-        Serial.write(' ');
-        file.printFileSize(&Serial);
-        Serial.write(' ');
+        char line[512];
+
+        // date & size
+        dir_t dir;
+        file.dirEntry(&dir);
+        uint16_t date = dir.lastWriteDate;
+        uint16_t time = dir.lastWriteTime;
+        sprintf(line, "%04d-%02d-%02d %02d:%02d:%02d %11d", FAT_YEAR(date), FAT_MONTH(date), FAT_DAY(date), FAT_HOUR(time), FAT_MINUTE(time), FAT_SECOND(time), dir.fileSize);
+
+        // filename
+        char lfnBuffer[220];
+        char filename[255];
+        file.getName(lfnBuffer, 220);
         if (file.isDir()) {
-            // color directory.
-            if (color) Serial << XCopyConsole::high_yellow();
-            file.printName(&Serial);
-            Serial << "/";
-            if (color) Serial << XCopyConsole::reset();
+            // color directory
+            sprintf(lfnBuffer, "%s/", lfnBuffer);
+            if (color) {
+                sprintf(filename, "%s%s%s",  XCopyConsole::high_yellow().c_str(), lfnBuffer, XCopyConsole::reset().c_str());
+            }
         } else {
             // color adf files
-            char lfnBuffer[256];
-            file.getName(lfnBuffer, 255);
-            if (String(lfnBuffer).toLowerCase().endsWith(".adf")) {
-                if (color) Serial << XCopyConsole::high_green();
-                Serial << lfnBuffer;
-                if (color) Serial << XCopyConsole::reset();
+            if (color & String(lfnBuffer).toLowerCase().endsWith(".adf")) {
+                sprintf(filename, "%s%s%s", XCopyConsole::high_green().c_str(), lfnBuffer, XCopyConsole::reset().c_str());
             } else {
-                Serial << lfnBuffer;
+                sprintf(filename, lfnBuffer);
             }
         }
-        Serial.println();
+
+        // final line
+        sprintf(line, "%s %s\r\n", line, filename);
+        Log << line;
+
         file.close();
     }
     
     if (root.getError()) {
-        Serial.println("openNext failed");
+        Log << "openNext failed";
         return false;
     }
 
-    root.close();
+
 
     return true;
 }

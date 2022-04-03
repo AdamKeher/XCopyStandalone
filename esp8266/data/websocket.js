@@ -1,4 +1,5 @@
 var connection = new WebSocket('ws://' + location.hostname + ':81/', ['arduino']);
+var term;
 
 connection.onopen = function () {
   element = document.getElementById('webSocketStatus');
@@ -28,9 +29,12 @@ connection.onerror = function (error) {
 };
 
 connection.onmessage = function (e) {
-  console.log('Server: ', e.data);
-
-  var res = e.data.split(",", 5);
+  message = e.data;
+  
+  message = message.replaceAll('\033[^M', '\r');
+  message = message.replaceAll('\033[^J', '\n');
+  console.log('Server: ', message);
+  var res = message.split(",", 5);
 
   if (res[0] == "pinStatus") {
     setHardwareStatus(res[1]);
@@ -60,6 +64,10 @@ connection.onmessage = function (e) {
 
   if (res[0] == "setStatus") {
     setStatus(res[1]);
+  }
+
+  if (res[0] == "setMode") {
+    setMode(res[1]);
   }
 
   if (res[0] == "flux") {
@@ -93,6 +101,11 @@ connection.onmessage = function (e) {
       setDestination(false, false, false);
     }
   }
+
+  if (res[0] == "log") {
+    term.write(res[1]);
+    // log(res[1]);
+  }
 };
 
 connection.onclose = function () {
@@ -100,6 +113,9 @@ connection.onclose = function () {
 };
 
 function onLoad() {
+  term = new Terminal();
+  term.open(document.getElementById('terminal'));
+  term.write('\x1B[1;3;32mXCopy Standalone\x1B[0m Logging Console\r\n');
   setIconsGlobesOff();
 }
 
@@ -207,6 +223,11 @@ function setStatus(status) {
   element.innerHTML = status;
 }
 
+function setMode(mode) {
+  element = document.getElementById('mode');
+  element.innerHTML = mode;
+}
+
 function resetTracks(classname = "trackDefault", start = 0) {
   for (i = start; i < 160; i++) {
     setTrack(i, classname)
@@ -266,5 +287,9 @@ function formatDisk() {
 
 function diskFlux() {
   connection.send("diskFlux");
+}
+
+function log(text) {
+  term.write(text);
 }
 

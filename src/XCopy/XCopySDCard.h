@@ -6,6 +6,7 @@
 #include <SdFat.h>
 #include <sdios.h>
 #include "XCopyPins.h"
+#include "XCopyLog.h"
 #include "XCopyConsole.h"
 
 class XCopySDCard

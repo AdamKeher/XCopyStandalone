@@ -15,6 +15,7 @@
 #include <Streaming.h>
 #include <SdFat.h>
 #include "XCopyState.h"
+#include "XCopyLog.h"
 #include "XCopyPins.h"
 #include "XCopyMenu.h"
 #include "XCopyCommand.h"
@@ -34,7 +35,6 @@
 #ifdef XCOPY_DEBUG
 #include "RamMonitor.h"
 #endif
-
 
 class XCopy {
 public:

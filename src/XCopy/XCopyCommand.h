@@ -5,6 +5,7 @@
 #include <Streaming.h>
 #include "FloppyDrive.h"
 #include "XCopyPins.h"
+#include "XCopyLog.h"
 #include "XCopyADFLib.h"
 #include "XCopyESP8266.h"
 #include "XCopyConfig.h"

@@ -16,11 +16,14 @@ public:
   String sendCommand(String command, bool strip = false, int timeout = 250);
   void sendWebSocket(String command);
 
+
+  void setMode(String text) { sendWebSocket("setMode," + text); }
   void setStatus(String text) { sendWebSocket("setStatus," + text); }
   void setDiskName(String name) { sendWebSocket("setDiskname," + name); }
   void setTrack(int trackNumber, String color) { sendWebSocket("setTrack," + String(trackNumber) + "," + color); }
   void resetDisk() { sendWebSocket("resetDisk"); }
   void setState(XCopyState state) { sendWebSocket("setState," + String(state)); }
+  void log(String text) { sendWebSocket("log," + text); };
 
   String Version();
   void setEcho(bool status);

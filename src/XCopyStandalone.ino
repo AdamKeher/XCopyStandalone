@@ -15,6 +15,7 @@
 TFT_ST7735 tft = TFT_ST7735(PIN_TFTCS, PIN_DC, PIN_RST);
 FivePosNavigation navigation = FivePosNavigation(PIN_NAVIGATION_UP_PIN, PIN_NAVIGATION_DOWN_PIN, PIN_NAVIGATION_LEFT_PIN, PIN_NAVIGATION_RIGHT_PIN, PIN_NAVIGATION_PUSH_PIN);
 XCopy xcopy = XCopy(&tft);
+XCopyLog Log = XCopyLog();
 
 void navigationCallBack(uint8_t change_mask, FivePosNavigationState state, uint32_t duration) {
   if ((change_mask & FIVEPOSNAVIGATION_DOWN) && state.down)
