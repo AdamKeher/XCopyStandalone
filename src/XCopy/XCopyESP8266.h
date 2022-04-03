@@ -3,6 +3,7 @@
 
 #include <Arduino.h>
 #include <Streaming.h>
+#include "XCopyState.h"
 
 typedef void (*OnWebCommand)(void* obj, const String command);
 
@@ -14,6 +15,13 @@ public:
   bool connect(String ssid, String password, uint32_t timeout);
   String sendCommand(String command, bool strip = false, int timeout = 250);
   void sendWebSocket(String command);
+
+  void setStatus(String text) { sendWebSocket("setStatus," + text); }
+  void setDiskName(String name) { sendWebSocket("setDiskname," + name); }
+  void setTrack(int trackNumber, String color) { sendWebSocket("setTrack," + String(trackNumber) + "," + color); }
+  void resetDisk() { sendWebSocket("resetDisk"); }
+  void setState(XCopyState state) { sendWebSocket("setState," + String(state)); }
+
   String Version();
   void setEcho(bool status);
   void Update();

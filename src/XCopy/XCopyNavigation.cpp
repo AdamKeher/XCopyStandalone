@@ -631,7 +631,7 @@ void XCopy::processState()
     {
         if (_drawnOnce == false)
         {
-            _disk.testDisk(_config->getRetryCount());
+            _disk.testDiskette(_config->getRetryCount());
             setBusy(false);
             _drawnOnce = true;
         }

@@ -65,6 +65,34 @@ connection.onmessage = function (e) {
   if (res[0] == "flux") {
     drawFlux(res[1], res[2]);
   }
+
+  if (res[0] == "setState") {
+    // copyDiskToADF
+    if (res[1] == 3) {
+      setSource(true, false, false);
+      setDestination(false, true, false);
+    }
+    // copyADFToDisk
+    if (res[1] == 5) {
+      setSource(false, true, false);
+      setDestination(true, false, false);
+    }
+    // copyDiskToDisk
+    if (res[1] == 13) {
+      setSource(true, false, false);
+      setDestination(true, false, false);
+    }
+    // fluxDisk
+    if (res[1] == 24) {
+      setSource(true, false, false);
+      setDestination(false, false, false);
+    }
+    // testDisk
+    if (res[1] == 4) {
+      setSource(true, false, false);
+      setDestination(false, false, false);
+    }
+  }
 };
 
 connection.onclose = function () {
@@ -148,6 +176,15 @@ function setDiskname(diskname) {
   element.innerHTML = diskname;
 }
 
+function setSource(floppy, sdcard, flash) {
+  setIcons("src", floppy, sdcard, flash);
+  setGlobes("src", floppy, sdcard, flash);
+}
+function setDestination(floppy, sdcard, flash) {
+  setIcons("dst", floppy, sdcard, flash);
+  setGlobes("dst", floppy, sdcard, flash);
+}
+
 function setIcons(group, floppy, sdcard, flash) {
   document.getElementById(group + '_floppy').className = floppy ? "" : "gray";
   document.getElementById(group + '_sdcard').className = sdcard ? "" : "gray";
@@ -161,24 +198,13 @@ function setGlobes(group, floppy, sdcard, flash) {
 }
 
 function setIconsGlobesOff() {
-  setIcons("src", false, false, false);
-  setIcons("dst", false, false, false);
-  setGlobes("src", false, false, false);
-  setGlobes("dst", false, false, false);
+  setSource(false, false, false);
+  setDestination(false, false, false);
 }
 
 function setStatus(status) {
   element = document.getElementById('status');
   element.innerHTML = status;
-
-  if (status == "Testing Disk") {
-    setIcons("src", true, false, false);
-    setIcons("dst", false, false, false);
-    setGlobes("src", true, false, false);
-    setGlobes("dst", false, false, false);
-  } else {
-    setIconsGlobesOff();
-  }
 }
 
 function resetTracks(classname = "trackDefault", start = 0) {

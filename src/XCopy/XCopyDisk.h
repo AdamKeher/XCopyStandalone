@@ -8,7 +8,6 @@
 #include <SerialFlash.h>
 #include <SdFat.h>
 #include <TimeLib.h>
-
 /* 
   FastCRC quick hacked to force SW CRC as HW CRC used static variables
   and can't do concurrent 16/32 bit CRC's, defined & REV16 & REV32 altered
@@ -17,6 +16,7 @@
 #include "XCopyAudio.h"
 #include "XCopyGraphics.h"
 #include "FloppyDrive.h"
+#include "XCopyState.h"
 #include "XCopyESP8266.h"
 
 enum ADFFileSource
@@ -41,7 +41,7 @@ class XCopyDisk
     void drawFlux(uint8_t trackNum, uint8_t scale = 2, uint8_t yoffset = 0);
     static void dateTime(uint16_t *date, uint16_t *time);
     void changeDisk();
-    void testDisk(uint8_t retryCount);
+    void testDiskette(uint8_t retryCount);
     String getADFVolumeName(String ADFFileName, ADFFileSource = _sdCard);
 
     bool cardDetect() { return digitalRead(_cardDetectPin) == 0 ? true : false; };
