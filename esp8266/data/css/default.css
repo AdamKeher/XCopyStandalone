@@ -1,0 +1,155 @@
+/* Main Page
+-------------------------------------------------- */
+
+html {
+    position: relative;
+    min-height: 100%;
+}
+
+body {
+    background-color: #1e1e1e;    
+    color: white;
+    margin-top: 10px;
+    margin-bottom: 90px; /* Margin bottom by footer height */
+}
+
+.container {
+    width: auto;
+    max-width: 680px;
+    padding: 0 15px;
+}
+
+/* Header
+-------------------------------------------------- */
+
+.xcopylogo {
+    position: absolute;    
+    top: -60px;
+}
+
+.nav-link {
+    color: white;
+}
+
+.nav-link:hover {
+    color: gray;
+}
+
+/* Headings
+-------------------------------------------------- */
+
+.diskcopyInfoHeader {
+    width:0%;
+    background-color: white;
+    color: black;
+    padding-left: 10px;
+    padding-right: 10px;
+    text-align: center;
+}
+
+.diskcopyInfoText {
+    background-color:darkblue;
+    color: white;
+    padding-left: 10px;
+    padding-right: 10px;
+    text-align: center;
+}
+
+/* Tracks
+-------------------------------------------------- */
+
+.table-sm {
+    width: 100%;
+    background-color: black;
+}
+
+.table-sm td
+{
+    height:40px;
+    width:40px;    
+    text-align: center;
+}
+
+.track {
+    font-size: smaller;
+    background-color: #151515;
+    color: white;
+    border: 1px solid white;
+}
+
+.trackRed
+{
+    background-color: red;
+    color: white;
+}
+.trackOrange
+{
+    background-color: orange;
+    color: black;
+}
+.trackYellow
+{
+    background-color: yellow;
+    color: black;
+}
+.trackGreen
+{
+    background-color: green;
+    color: white;
+}
+.trackMagenta
+{
+    background-color: magenta;
+    color: white;
+}
+
+/* Icons
+-------------------------------------------------- */
+
+.gray {
+    -webkit-filter: grayscale(100%); /* Safari 6.0 - 9.0 */
+    filter: grayscale(100%);
+}
+
+/* Pin Status
+-------------------------------------------------- */
+
+.busy
+{
+    background-color: red;
+    color: white;
+}
+.idle
+{
+    background-color: green;
+    color: white;
+}
+
+/* Footer
+-------------------------------------------------- */
+
+.footer {
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    height: 90px; /* Set the fixed height of the footer here */
+    line-height: 90px; /* Vertically center the text there */
+    background-color: lightgray;
+}
+
+.statusfooter
+{
+    position: relative;
+    top: -35px;
+}
+
+/* Flux
+-------------------------------------------------- */
+
+.fluxCanvas
+{
+    background-color: black;
+    border:1px solid darkgrey;
+    width: 320px;
+    height: 256px;
+}

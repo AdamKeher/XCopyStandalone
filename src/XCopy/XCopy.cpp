@@ -334,35 +334,35 @@ void XCopy::onWebCommand(void* obj, const String command)
 }
 
 void XCopy::startFunction(XCopyState state) {
-    switch (state) {
-        case copyADFToDisk:
-            _esp->setMode("Copy ADF to Disk");
-            break;
-        case copyDiskToADF:
-            _esp->setMode("Copy Disk to ADF");
-            break;
-        case copyDiskToDisk:
-            _esp->setMode("Copy Disk to Disk");
-            break;
-        case copyDiskToFlash:
-            _esp->setMode("Copy Disk to Flash");
-            break;
-        case copyFlashToDisk:
-            _esp->setMode("Copy Flash to Disk");
-            break;
-        case testDisk:
-            Log << "Start: " << "Copy ADF to Disk";
-            _esp->setMode("Test Disk");
-            break;
-        case fluxDisk:
-            _esp->setMode("Flux Disk");
-            break;
-        case formatDisk:
-            _esp->setMode("Format Disk");
-            break;
-        default: 
-            _esp->setMode("Unknown");
-    }
+    // switch (state) {
+    //     case copyADFToDisk:
+    //         _esp->setMode("Copy ADF to Disk");
+    //         break;
+    //     case copyDiskToADF:
+    //         _esp->setMode("Copy Disk to ADF");
+    //         break;
+    //     case copyDiskToDisk:
+    //         _esp->setMode("Copy Disk to Disk");
+    //         break;
+    //     case copyDiskToFlash:
+    //         _esp->setMode("Copy Disk to Flash");
+    //         break;
+    //     case copyFlashToDisk:
+    //         _esp->setMode("Copy Flash to Disk");
+    //         break;
+    //     case testDisk:
+    //         Log << "Start: " << "Copy ADF to Disk";
+    //         _esp->setMode("Test Disk");
+    //         break;
+    //     case fluxDisk:
+    //         _esp->setMode("Flux Disk");
+    //         break;
+    //     case formatDisk:
+    //         _esp->setMode("Format Disk");
+    //         break;
+    //     default: 
+    //         _esp->setMode("Unknown");
+    // }
 
     setBusy(true);
     _esp->setState(state);
