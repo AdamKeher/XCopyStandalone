@@ -1,7 +1,7 @@
 #ifndef XCOPY_H
 #define XCOPY_H
 
-#define XCOPYVERSION "v708.2022"
+#define XCOPYVERSION "v709.2022"
 // #define XCOPY_DEBUG = 1
 
 #define ESPSerial Serial1
