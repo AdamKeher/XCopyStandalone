@@ -12,7 +12,7 @@ bool XCopySDCard::cardDetect() {
     return digitalRead(PIN_CARDDETECT) == 0 ? true : false;
 }
 
-bool XCopySDCard::printDirectory(String directory, bool color) {
+bool XCopySDCard::printDirectory(String directory, bool color) {    
     SdFat sd;
     SdFile root;
     SdFile file;
@@ -75,7 +75,79 @@ bool XCopySDCard::printDirectory(String directory, bool color) {
         return false;
     }
 
-
-
     return true;
+}
+
+// GenericList<XCopyFile> *XCopySDCard::getFiles(String directory) {    
+void XCopySDCard::getFiles(String directory) {    
+    GenericList<XCopyFile> list;
+
+    SdFat sd;
+    SdFile root;
+    SdFile file;
+
+    if (directory == "") { directory = "/"; }
+    directory = directory.replace("'", "");
+    directory = directory.replace("\"", "");
+
+    directory = "/";
+
+    if (!root.open(directory.c_str())) {
+        return;
+    }
+
+    char sdate[11];
+    char stime[9];
+    dir_t dir;
+    int count = 0;
+
+    while (file.openNext(&root, O_RDONLY)) {
+        Serial << ++count << "\r\n";
+
+        if (list.size() > 30) break;
+
+        XCopyFile *xFile = new XCopyFile();
+
+        file.dirEntry(&dir);
+
+        // date & size
+        uint16_t date = dir.lastWriteDate;
+        uint16_t time = dir.lastWriteTime;
+        sprintf(sdate, "%04d-%02d-%02d", FAT_YEAR(date), FAT_MONTH(date), FAT_DAY(date));
+        sprintf(stime, "%02d:%02d:%02d", FAT_HOUR(time), FAT_MINUTE(time), FAT_SECOND(time));
+        xFile->date = String(sdate);
+        xFile->time = String(stime);
+
+        // filesize
+        xFile->size = dir.fileSize;
+
+        // filename
+        char lfnBuffer[255];
+        file.getName(lfnBuffer, 255);
+        xFile->filename = String(lfnBuffer);
+        xFile->isDirectory = file.isDir() ? true : false;
+        xFile->isADF = xFile->filename.toLowerCase().endsWith(".adf") ? true : false;
+
+        list.add(xFile);
+
+        file.close();
+    }
+
+    if (root.getError()) {
+        Log << "openNext failed";
+    }
+
+    root.close();
+
+    Serial << "List Size: " << list.size() << "\r\n";
+
+    // Node<XCopyFile> *p = list->head;
+    // while (p) {
+    //     Serial << p->data->filename << "," << p->data->size << "," << p->data->isDirectory << "," << p->data->isADF << "\r\n";
+    //     p = p->next;
+    // }
+
+    // delete list;
+
+    // return list;
 }

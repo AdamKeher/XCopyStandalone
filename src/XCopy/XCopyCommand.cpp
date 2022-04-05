@@ -386,10 +386,34 @@ void XCopyCommandLine::doCommand(String command)
     }
 
     if (cmd == "test") {
-        Log << "ESP::LOG: Testing\r\nLine Breaks\r\n";
+        XCopySDCard *_sdcard = new XCopySDCard();
+        
+        if (!_sdcard->cardDetect()) {
+            Log << "No SDCard detected\r\n";
+            return;
+        }
+
+        if (!_sdcard->begin()) {
+            Log << "SDCard failed to initialise\r\n";
+            return;
+        }
+
+        _sdcard->getFiles(param);
+
+        // GenericList<XCopyFile> *list = _sdcard->getFiles(param);
+        // Node<XCopyFile> *p = list->head;
+        // while (p) {
+        //     XCopyFile *xFile = p->data;
+        //     Serial << "File: " << xFile->filename << "," << xFile->size << "," << xFile->isDirectory << "," << xFile->isADF << "\r\n";
+        //     p = p->next;
+        // }
+        // delete list;
+        // delete p;
+
+        delete _sdcard;
+
         return;
     }
-
 
     if (cmd != "")
         Log << "Unknown command: '" << cmd << "'\r\n";
