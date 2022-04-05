@@ -851,6 +851,9 @@ void XCopyDisk::diskFlux()
         return;
     }
 
+    String diskName = getName();
+    _esp->setDiskName(diskName);
+
     for (int trackNum = 0; trackNum < 160; trackNum++)
     {
         if (_cancelOperation)
