@@ -12,75 +12,68 @@ bool XCopySDCard::cardDetect() {
     return digitalRead(PIN_CARDDETECT) == 0 ? true : false;
 }
 
-bool XCopySDCard::printDirectory(String directory, bool color) {    
+// TODO: These functions have a maxItems parameter as they is not currently enough memory
+// change them to some sort of getNext() type arrangement
+GenericList<XCopyFile> *XCopySDCard::getXFiles(String directory, int maxItems) {    
+    GenericList<XCopyFile> *list = new GenericList<XCopyFile>;
+
     SdFat sd;
     SdFile root;
     SdFile file;
 
     if (directory == "") { directory = "/"; }
-    String displayName = directory;
-    displayName = displayName.replace("'", "");
-    displayName = displayName.replace("\"", "");
-    directory = displayName;
+    directory = directory.replace("'", "");
     directory = directory.replace("\"", "");
 
-    if (!displayName.startsWith("/")) { 
-        displayName = "/" + displayName;
-    }
-
-    Log << "Directory: '" << displayName << "'\r\n";
-
     if (!root.open(directory.c_str())) {
-        return false;
+        return list;
     }
+
+    char sdate[11];
+    char stime[9];
+    dir_t dir;
 
     while (file.openNext(&root, O_RDONLY)) {
-        char line[512];
+        if (list->size() > maxItems) break;
+
+        XCopyFile *newfile = new XCopyFile();
+        file.dirEntry(&dir);
 
         // date & size
-        dir_t dir;
-        file.dirEntry(&dir);
         uint16_t date = dir.lastWriteDate;
         uint16_t time = dir.lastWriteTime;
-        sprintf(line, "%04d-%02d-%02d %02d:%02d:%02d %11d", FAT_YEAR(date), FAT_MONTH(date), FAT_DAY(date), FAT_HOUR(time), FAT_MINUTE(time), FAT_SECOND(time), dir.fileSize);
+        sprintf(sdate, "%04d-%02d-%02d", FAT_YEAR(date), FAT_MONTH(date), FAT_DAY(date));
+        sprintf(stime, "%02d:%02d:%02d", FAT_HOUR(time), FAT_MINUTE(time), FAT_SECOND(time));
+        newfile->date = String(sdate);
+        newfile->time = String(stime);
+
+        // filesize
+        newfile->size = dir.fileSize;
 
         // filename
-        char lfnBuffer[220];
-        char filename[255];
-        file.getName(lfnBuffer, 220);
-        if (file.isDir()) {
-            // color directory
-            sprintf(lfnBuffer, "%s/", lfnBuffer);
-            if (color) {
-                sprintf(filename, "%s%s%s",  XCopyConsole::high_yellow().c_str(), lfnBuffer, XCopyConsole::reset().c_str());
-            }
-        } else {
-            // color adf files
-            if (color & String(lfnBuffer).toLowerCase().endsWith(".adf")) {
-                sprintf(filename, "%s%s%s", XCopyConsole::high_green().c_str(), lfnBuffer, XCopyConsole::reset().c_str());
-            } else {
-                sprintf(filename, lfnBuffer);
-            }
-        }
+        char lfnBuffer[255];
+        file.getName(lfnBuffer, 255);
+        newfile->filename = String(lfnBuffer);
 
-        // final line
-        sprintf(line, "%s %s\r\n", line, filename);
-        Log << line;
+        // bools
+        newfile->isDirectory = file.isDir();
+        newfile->isADF = newfile->filename.toLowerCase().endsWith(".adf");
 
+        list->add(newfile);
         file.close();
     }
-    
+
     if (root.getError()) {
-        Log << "openNext failed";
-        return false;
+        Serial << "openNext failed";
     }
 
-    return true;
+    root.close();
+
+    return list;
 }
 
-// GenericList<XCopyFile> *XCopySDCard::getFiles(String directory) {    
-void XCopySDCard::getFiles(String directory) {    
-    GenericList<XCopyFile> list;
+GenericList<String> *XCopySDCard::getFiles(String directory, int maxItems) {    
+    GenericList<String> *list = new GenericList<String>;
 
     SdFat sd;
     SdFile root;
@@ -93,20 +86,17 @@ void XCopySDCard::getFiles(String directory) {
     directory = "/";
 
     if (!root.open(directory.c_str())) {
-        return;
+        return list;
     }
 
     char sdate[11];
     char stime[9];
     dir_t dir;
-    int count = 0;
 
     while (file.openNext(&root, O_RDONLY)) {
-        Serial << ++count << "\r\n";
+        String *newline = new String("");
 
-        if (list.size() > 30) break;
-
-        XCopyFile *xFile = new XCopyFile();
+        if (list->size() > maxItems) break;
 
         file.dirEntry(&dir);
 
@@ -115,39 +105,28 @@ void XCopySDCard::getFiles(String directory) {
         uint16_t time = dir.lastWriteTime;
         sprintf(sdate, "%04d-%02d-%02d", FAT_YEAR(date), FAT_MONTH(date), FAT_DAY(date));
         sprintf(stime, "%02d:%02d:%02d", FAT_HOUR(time), FAT_MINUTE(time), FAT_SECOND(time));
-        xFile->date = String(sdate);
-        xFile->time = String(stime);
+        newline->append(String(sdate));
+        newline->append("," + String(stime));
 
         // filesize
-        xFile->size = dir.fileSize;
+        newline->append("," + String(dir.fileSize));
 
         // filename
         char lfnBuffer[255];
         file.getName(lfnBuffer, 255);
-        xFile->filename = String(lfnBuffer);
-        xFile->isDirectory = file.isDir() ? true : false;
-        xFile->isADF = xFile->filename.toLowerCase().endsWith(".adf") ? true : false;
-
-        list.add(xFile);
+        newline->append("," + String(lfnBuffer));
+        newline->append("," + String(file.isDir()));
+        newline->append("," + String(String(lfnBuffer).toLowerCase().endsWith(".adf")));
+        list->add(newline);
 
         file.close();
     }
 
     if (root.getError()) {
-        Log << "openNext failed";
+        Serial << "openNext failed";
     }
 
     root.close();
 
-    Serial << "List Size: " << list.size() << "\r\n";
-
-    // Node<XCopyFile> *p = list->head;
-    // while (p) {
-    //     Serial << p->data->filename << "," << p->data->size << "," << p->data->isDirectory << "," << p->data->isADF << "\r\n";
-    //     p = p->next;
-    // }
-
-    // delete list;
-
-    // return list;
+    return list;
 }

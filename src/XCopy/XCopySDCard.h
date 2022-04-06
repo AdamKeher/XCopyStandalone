@@ -7,7 +7,6 @@
 #include <sdios.h>
 #include "GenericList.h"
 #include "XCopyPins.h"
-#include "XCopyLog.h"
 #include "XCopyConsole.h"
 #include "XCopyFile.h"
 
@@ -17,8 +16,9 @@ class XCopySDCard
     bool begin();
     bool cardDetect();
     bool printDirectory(String directory, bool color = true);
-    // GenericList<XCopyFile> *getFiles(String directory);
-    void getFiles(String directory);
+    GenericList<String> *getFiles(String directory, int maxItems);
+    GenericList<XCopyFile> *getXFiles(String directory, int maxItems);
+    
   private:
     SdFat _sd;
 };
