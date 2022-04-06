@@ -331,6 +331,9 @@ void XCopy::onWebCommand(void* obj, const String command)
     else if (command == "diskFlux") {
         xcopy->startFunction(fluxDisk);
     }
+    else if (command == "getSdFiles") {
+        xcopy->startFunction(getSdFiles);
+    }
 }
 
 void XCopy::startFunction(XCopyState state) {
@@ -363,6 +366,13 @@ void XCopy::startFunction(XCopyState state) {
     //     default: 
     //         _esp->setMode("Unknown");
     // }
+
+    if (state == getSdFiles) {
+        setBusy(true);
+        _esp->updateWebSdCardFiles("/");
+        setBusy(false);
+        return;
+    }
 
     setBusy(true);
     _esp->setState(state);
