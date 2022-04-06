@@ -42,7 +42,6 @@ String XCopyESP8266::sendCommand(String command, bool strip, int timeout)
     char buffer[512];
     int i = 0;
     int len = strlen(OK_EOC);
-    bool found = false;
     uint32_t start = millis();
 
     while (millis() < start + timeout)
@@ -54,7 +53,6 @@ String XCopyESP8266::sendCommand(String command, bool strip, int timeout)
             {
                 if (strncmp(buffer + i - len, OK_EOC, len) == 0 || strncmp(buffer + i - len, ER_EOC, len) == 0)
                 {
-                    found = true;
                     break;
                 }
             }
@@ -138,122 +136,53 @@ time_t XCopyESP8266::getTime() {
     String result = sendCommand("gettime\r\n", true, 5000);
     result.replace("gettime\r\n", "");
     result.replace("\r\n", "");
-    time_t time = 0;
     return strtol(result.c_str(), nullptr, 10);
 }
 
 bool XCopyESP8266::updateWebSdCardFiles(String directory) {
+    sendWebSocket(F("clearSdFiles"));
+
     XCopySDCard *_sdcard = new XCopySDCard();
-    
+
+
     if (!_sdcard->cardDetect()) {
-        // Log << F("No SDCard detected\r\n");
+        // send error via websocket
         delete _sdcard;
         return false;
     }
 
     if (!_sdcard->begin()) {
-        // Log << F("SDCard failed to initialise\r\n");
-        delete _sdcard;
-        return false;
-    }
-    
-    SdFat sd;
-    SdFile root;
-    SdFile file;
-
-    if (directory == "") { directory = "/"; }
-    directory = directory.replace("'", "");
-    directory = directory.replace("\"", "");
-
-    if (!root.open(directory.c_str())) {
+        // send error via websocket
         delete _sdcard;
         return false;
     }
 
-    sendWebSocket(F("clearSdFiles"));
+    if (!_sdcard->open(directory)) {
+        // send error via websocket
+        delete _sdcard;
+        return false;
+    }
 
-    char sdate[11];
-    char stime[9];
-    dir_t dir;
-
-    while (file.openNext(&root, O_RDONLY)) {
+    while (_sdcard->next()) {
         String newline;
-
-        file.dirEntry(&dir);
-
-        // date & size
-        uint16_t date = dir.lastWriteDate;
-        uint16_t time = dir.lastWriteTime;
-        sprintf(sdate, "%04d-%02d-%02d", FAT_YEAR(date), FAT_MONTH(date), FAT_DAY(date));
-        sprintf(stime, "%02d:%02d:%02d", FAT_HOUR(time), FAT_MINUTE(time), FAT_SECOND(time));
-        newline.append(String(sdate));
-        newline.append("&" + String(stime));
-
-        // filesize
-        newline.append("&" + String(dir.fileSize));
-
-        // filename
-        char lfnBuffer[255];
-        file.getName(lfnBuffer, 255);
-        newline.append("&" + String(lfnBuffer));
-        newline.append("&" + String(file.isDir()));
-        newline.append("&" + String(String(lfnBuffer).toLowerCase().endsWith(".adf")));
+       
+        newline.append(_sdcard->getfile().date);
+        newline.append("&" + _sdcard->getfile().time);
+        newline.append("&" + String(_sdcard->getfile().size));
+        newline.append("&" + _sdcard->getfile().filename);        
+        newline.append("&").append(_sdcard->getfile().isDirectory ? "1" : "0");
+        newline.append("&").append(_sdcard->getfile().isADF ? "1" : "0");
 
         // send command
-        String command = "addSdFile,";
-        command.append(newline).append("\r");
-        sendWebSocket(command);
+        sendWebSocket(F("addSdFile,") + newline + F("\r"));
 
-        file.close();
-    }
-
-    if (root.getError()) {
-        Serial << "openNext failed";
+        // slow down to allow transfer to web
+        delay(10);
     }
 
     sendWebSocket(F("drawSdFiles"));
 
-    root.close();
     delete _sdcard;
+
+    return true;
 }
-
-// bool XCopyESP8266::updateWebSdCardFiles(String directory) {
-//         XCopySDCard *_sdcard = new XCopySDCard();
-        
-//         if (!_sdcard->cardDetect()) {
-//             // Log << F("No SDCard detected\r\n");
-//             return false;
-//         }
-
-//         if (!_sdcard->begin()) {
-//             // Log << F("SDCard failed to initialise\r\n");
-//             return false;
-//         }
-
-//         GenericList<String> *list = _sdcard->getFiles(directory, 40);
-
-//         sendWebSocket(F("clearSdFiles"));
-
-//         Node<String> *p = list->head;
-//         while (p) {
-//             // use & as delimiter so there isnt a conflict with the web code also 
-//             // using ',' as a command and param delimiter
-//             String command = "addSdFile,";
-//             String data = String(p->data->c_str());
-//             Serial << data << "\r\n";
-//             data = data.replace(",", "&");
-//             command.append(data).append("\r");
-//             sendWebSocket(command);
-//             p = p->next;
-//         }
-//         delete p;
-
-//         sendWebSocket(F("drawSdFiles"));
-
-//         Serial << "END\r\n\r\n";
-
-//         delete list;
-//         delete _sdcard;
-
-//         return;
-// }
