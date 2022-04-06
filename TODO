@@ -8,7 +8,8 @@ Project Resumption:
     ✔ Added xterm.js web log with ANSI terminal features @done(22-04-06 15:50)
       ☐ Implement input for full web terminal
     ✔ Added SD Card file browser to web ui @done(22-04-06 15:51)
-      ☐ Implement sub directories
+      ✔ Implement sub directories @done(22-04-06 17:56)
+      ☐ Implement file download
       ☐ Implement file upload
       ☐ Implement file delete
       ☐ Change to less memory intesive process as it currently limmits how files are returned in terminal ls and web ui due to ram constraints

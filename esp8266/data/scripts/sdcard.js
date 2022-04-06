@@ -1,16 +1,34 @@
 var sdFiles = [];
+var sdPath = "/"
 
 function drawSdFiles() {
+  $('#sdcardPath').html(sdPath);
   $('#sdcardTable tbody').empty();
+
+  if (sdPath != "/") {
+    var parentPath = sdPath;
+    if (parentPath.endsWith("/")) {
+      parentPath = parentPath.substring(0, parentPath.length-1);
+    }
+    var parentPath = parentPath.substring(0, parentPath.lastIndexOf("/")+1);
+    tablerow = "<tr><td colspan='4'><a onclick=\"getSdFiles('" + parentPath + "');\" href='#'>..</a></td></tr>";
+    $('#sdcardTable tbody').append(tablerow);
+  }
 
   sdFiles.forEach(file => {
     var filename = file.name;
     if (file.isDir) { filename = "<span class='sdcardDirectory'>" + file.name + "</span>"; }
     if (file.isADF) { filename = "<span class='sdcardADF'>" + file.name + "</span>"; }
-    filename = "<a onclick=\"getSdFiles('" + file.name + "');\" href='/scard/" + file.name + "'>" + filename + "</a>";
+    if (file.isDir) {
+      filename = "<a onclick=\"getSdFiles('" + sdPath + file.name + "/" + "');\" href=\"#\">" + filename + "</a>";
+    } else {
+      filename = "<a href='/scard" + sdPath + file.name + "'>" + filename + "</a>";
+    }
     tablerow = "<tr><td>" + file.date + "</td><td>" + file.time + "</td><td>" + file.size + "</td><td>" + filename + "</td></tr>";
     $('#sdcardTable tbody').append(tablerow);
   });
+
+  $('#sdcardFileCount').html(sdFiles.length);
 }
 
 function clearSdFiles() {

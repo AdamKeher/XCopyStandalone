@@ -336,7 +336,6 @@ void XCopy::onWebCommand(void* obj, const String command)
         if (command.indexOf(",") > 0) {
             _param = command.substring(command.indexOf(",") + 1);
         }        
-        Serial << "getSdFiles::" << _param << "\r\n";
         xcopy->startFunction(getSdFiles, _param);
     }
 }

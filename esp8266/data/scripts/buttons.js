@@ -67,6 +67,7 @@ function diskcopy(name) {
 }
 
 function getSdFiles(param) {
+    sdPath = param;
     connection.send("getSdFiles," + param);
 }
   
