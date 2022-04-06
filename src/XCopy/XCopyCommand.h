@@ -4,6 +4,7 @@
 #include <Arduino.h>
 #include <Streaming.h>
 #include "FloppyDrive.h"
+#include "GenericList.h"
 #include "XCopyPins.h"
 #include "XCopyLog.h"
 #include "XCopyADFLib.h"
@@ -21,6 +22,7 @@ public:
   void doCommand(String command);
   String getCommand() { return _command; }
   void printPrompt();
+  bool printDirectory(String directory, bool color = true);
   void Update();
 
 private:

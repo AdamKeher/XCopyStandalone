@@ -349,23 +349,25 @@ void XCopyCommandLine::doCommand(String command)
     }
 
     if (cmd == "dir" || cmd == "ls") {
-        XCopySDCard *_sdcard = new XCopySDCard();
+        printDirectory(param);
 
-        if (!_sdcard->cardDetect()) {
-            Log << F("No SDCard detected\r\n");
-            return;
-        }
+        // XCopySDCard *_sdcard = new XCopySDCard();
 
-        if (!_sdcard->begin()) {
-            Log << F("SDCard failed to initialise\r\n");
-            return;
-        }
+        // if (!_sdcard->cardDetect()) {
+        //     Log << F("No SDCard detected\r\n");
+        //     return;
+        // }
 
-        if (!_sdcard->printDirectory(param)) {
-            Log << F("Could not open directory\r\n");
-        }
+        // if (!_sdcard->begin()) {
+        //     Log << F("SDCard failed to initialise\r\n");
+        //     return;
+        // }
 
-        delete _sdcard;
+        // if (!_sdcard->printDirectory(param)) {
+        //     Log << F("Could not open directory\r\n");
+        // }
+
+        // delete _sdcard;
         return;
     }
 
@@ -376,33 +378,9 @@ void XCopyCommandLine::doCommand(String command)
         return;
     }
 
-    if (cmd == F("test")) {
-        XCopySDCard *_sdcard = new XCopySDCard();
-        
-        if (!_sdcard->cardDetect()) {
-            Log << F("No SDCard detected\r\n");
-            return;
-        }
-
-        if (!_sdcard->begin()) {
-            Log << F("SDCard failed to initialise\r\n");
-            return;
-        }
-
-        // _sdcard->webListFiles(param);
-
-        GenericList<String> *list = _sdcard->getFiles2(param);
-
-        Node<String> *p = list->head;
-        while (p) {
-            Serial << p->data->c_str() << F("\r\n");
-            p = p->next;
-        }
-        delete p;
-
-        delete list;
-        delete _sdcard;
-
+    if (cmd == F("ping")) {
+        String status = _esp->sendCommand(F("ping\r"), true, 5000);
+        Log << status << F("\r\n");
         return;
     }
 
@@ -442,6 +420,47 @@ void XCopyCommandLine::doCommand(String command)
 void XCopyCommandLine::printPrompt()
 {
     Log << ">> ";
+}
+
+bool XCopyCommandLine::printDirectory(String directory, bool color) {    
+    XCopySDCard *_sdcard = new XCopySDCard();
+
+    if (!_sdcard->cardDetect()) {
+        Log << F("No SDCard detected\r\n");
+        return false;
+    }
+
+    if (!_sdcard->begin()) {
+        Log << F("SDCard failed to initialise\r\n");
+        return false;
+    }
+
+    GenericList<XCopyFile> *_list = _sdcard->getXFiles(directory, 20);
+
+    Node<XCopyFile> *node = _list->head;
+    XCopyFile *file;
+    while (node) {
+        file = node->data;
+        char filesize[12];
+        sprintf(filesize, "%11d", file->size);
+        String filename = file->filename;
+        if (file->isDirectory) {
+            filename.append("/");
+            if (color) {
+                filename = XCopyConsole::high_yellow() + filename + XCopyConsole::reset();
+            }
+        } else if (file->isADF & color) {
+                filename = XCopyConsole::high_green()+ filename + XCopyConsole::reset();
+        }
+        Log << file->date + " " + file->time + " " + String(filesize) + " " + filename + "\r\n";;
+
+        node = node->next;
+    }
+
+    delete _list;
+    delete _sdcard;
+
+    return true;
 }
 
 void XCopyCommandLine::Update()
