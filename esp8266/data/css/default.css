@@ -153,3 +153,26 @@ body {
     width: 320px;
     height: 256px;
 }
+
+/* SD Table
+-------------------------------------------------- */
+.sdcardTable th {
+    background-color: white;
+    color: black;    
+}
+
+.sdcardTable td a {
+    color: lightblue;
+}
+
+.sdcardTable td a:hover {
+    color: white;
+}
+
+.sdcardDirectory {
+    color: yellow;
+}
+
+.sdcardADF {
+    color: limegreen;
+}

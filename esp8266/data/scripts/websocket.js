@@ -119,4 +119,16 @@ connection.onmessage = function (e) {
     term.write(res[1]);
     // log(res[1]);
   }
+
+  if (res[0] == "clearSdFiles") {
+    clearSdFiles();
+  }
+
+  if (res[0] == "addSdFile") {
+    addSdFile(res[1]);
+  }
+
+  if (res[0] == "drawSdFiles") {
+    drawSdFiles();
+  }
 };

@@ -65,6 +65,10 @@ function diskcopy(name) {
     setState(name);
     connection.send(name);
 }
+
+function getSdFiles() {
+    connection.send("getSdFiles");
+}
   
 function diskcopyCancel() {
     // TODO: handle cancellation / send back to xcopydevice
