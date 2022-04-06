@@ -7,14 +7,7 @@ class XCopyFile
 {
   public:
     XCopyFile() {}
-    XCopyFile(XCopyFile *item) { 
-      filename = item->filename;
-      date = item->date;
-      time = item->time;
-      size = item->size;
-      isADF = item->isADF;
-      isDirectory = item->isDirectory;
-    }
+ 
 
     String filename = "";
     String date = "";
