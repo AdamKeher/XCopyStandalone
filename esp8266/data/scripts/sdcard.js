@@ -22,7 +22,7 @@ function drawSdFiles() {
     if (file.isDir) {
       filename = "<a onclick=\"getSdFiles('" + sdPath + file.name + "/" + "');\" href=\"#\">" + filename + "</a>";
     } else {
-      filename = "<a href='/scard" + sdPath + file.name + "'>" + filename + "</a>";
+      filename = "<a href='/sdcard" + sdPath + file.name + "'>" + filename + "</a>";
     }
     tablerow = "<tr><td>" + file.date + "</td><td>" + file.time + "</td><td>" + file.size + "</td><td>" + filename + "</td></tr>";
     $('#sdcardTable tbody').append(tablerow);
