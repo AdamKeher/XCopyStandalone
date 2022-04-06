@@ -16,6 +16,9 @@ class XCopySDCard
     bool begin();
     bool cardDetect();
     bool printDirectory(String directory, bool color = true);
+    
+    // TODO: These functions have a maxItems parameter as they is not currently enough memory
+    //       change them to some sort of getNext() type arrangement
     GenericList<String> *getFiles(String directory, int maxItems);
     GenericList<XCopyFile> *getXFiles(String directory, int maxItems);
     

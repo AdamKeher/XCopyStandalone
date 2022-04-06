@@ -12,8 +12,6 @@ bool XCopySDCard::cardDetect() {
     return digitalRead(PIN_CARDDETECT) == 0 ? true : false;
 }
 
-// TODO: These functions have a maxItems parameter as they is not currently enough memory
-// change them to some sort of getNext() type arrangement
 GenericList<XCopyFile> *XCopySDCard::getXFiles(String directory, int maxItems) {    
     GenericList<XCopyFile> *list = new GenericList<XCopyFile>;
 
