@@ -630,7 +630,7 @@ bool XCopyDisk::diskToADF(String ADFFileName, bool verify, uint8_t retryCount, A
 
 void XCopyDisk::adfToDisk(String ADFFileName, bool verify, uint8_t retryCount, ADFFileSource source)
 {
-    if (source = _flashMemory) {
+    if (source == _flashMemory) {
         // flash memory
         _esp->setState(copyFlashToDisk);
         _esp->setStatus("Copying ADF from Flash to Disk");
