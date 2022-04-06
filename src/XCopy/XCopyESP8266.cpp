@@ -164,7 +164,9 @@ bool XCopyESP8266::updateWebSdCardFiles(String directory) {
             // use & as delimiter so there isnt a conflict with the web code also 
             // using ',' as a command and param delimiter
             String command = "addSdFile,";
-            String data = String(p->data->c_str()).replace(",", "&");
+            String data = String(p->data->c_str());
+            Serial << data << "\r\n";
+            data = data.replace(",", "&");
             command.append(data).append("\r");
             sendWebSocket(command);
             p = p->next;
@@ -172,6 +174,8 @@ bool XCopyESP8266::updateWebSdCardFiles(String directory) {
         delete p;
 
         sendWebSocket(F("drawSdFiles"));
+
+        Serial << "END\r\n\r\n";
 
         delete list;
         delete _sdcard;

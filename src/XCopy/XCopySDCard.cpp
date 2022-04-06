@@ -81,8 +81,6 @@ GenericList<String> *XCopySDCard::getFiles(String directory, int maxItems) {
     directory = directory.replace("'", "");
     directory = directory.replace("\"", "");
 
-    directory = "/";
-
     if (!root.open(directory.c_str())) {
         return list;
     }

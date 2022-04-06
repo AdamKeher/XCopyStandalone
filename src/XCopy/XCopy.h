@@ -53,7 +53,7 @@ public:
   void setBusy(bool busy);
   bool getBusy() { return digitalRead(PIN_BUSYPIN); }
   void refreshTimeNtp();
-  void startFunction(XCopyState state);
+  void startFunction(XCopyState state, String param = "");
   void startCopyADFtoDisk();
   static void onWebCommand(void* obj, const String command);
   XCopyState _xcopyState = menus;

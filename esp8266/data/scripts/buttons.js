@@ -66,8 +66,8 @@ function diskcopy(name) {
     connection.send(name);
 }
 
-function getSdFiles() {
-    connection.send("getSdFiles");
+function getSdFiles(param) {
+    connection.send("getSdFiles," + param);
 }
   
 function diskcopyCancel() {

@@ -7,7 +7,7 @@ function drawSdFiles() {
     var filename = file.name;
     if (file.isDir) { filename = "<span class='sdcardDirectory'>" + file.name + "</span>"; }
     if (file.isADF) { filename = "<span class='sdcardADF'>" + file.name + "</span>"; }
-    filename = "<a href='/scard/" + file.name + "'>" + filename + "</a>";
+    filename = "<a onclick=\"getSdFiles('" + file.name + "');\" href='/scard/" + file.name + "'>" + filename + "</a>";
     tablerow = "<tr><td>" + file.date + "</td><td>" + file.time + "</td><td>" + file.size + "</td><td>" + filename + "</td></tr>";
     $('#sdcardTable tbody').append(tablerow);
   });

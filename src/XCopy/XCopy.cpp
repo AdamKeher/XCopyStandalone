@@ -331,12 +331,17 @@ void XCopy::onWebCommand(void* obj, const String command)
     else if (command == "diskFlux") {
         xcopy->startFunction(fluxDisk);
     }
-    else if (command == "getSdFiles") {
-        xcopy->startFunction(getSdFiles);
+    else if (command.startsWith("getSdFiles")) {
+        String _param = "/";
+        if (command.indexOf(",") > 0) {
+            _param = command.substring(command.indexOf(",") + 1);
+        }        
+        Serial << "getSdFiles::" << _param << "\r\n";
+        xcopy->startFunction(getSdFiles, _param);
     }
 }
 
-void XCopy::startFunction(XCopyState state) {
+void XCopy::startFunction(XCopyState state, String param) {
     // switch (state) {
     //     case copyADFToDisk:
     //         _esp->setMode("Copy ADF to Disk");
@@ -369,7 +374,7 @@ void XCopy::startFunction(XCopyState state) {
 
     if (state == getSdFiles) {
         setBusy(true);
-        _esp->updateWebSdCardFiles("/");
+        _esp->updateWebSdCardFiles(param);
         setBusy(false);
         return;
     }
