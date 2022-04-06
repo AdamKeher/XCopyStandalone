@@ -23,13 +23,13 @@ void XCopyCommandLine::doCommand(String command)
         cmd.toLowerCase();
     }
 
-    if (cmd == "version" || cmd == "ver")
+    if (cmd == F("version") || cmd == F("ver"))
     {
-        Log << "Version: " << _version << "\r\n";
+        Log << F("Version: ") << _version << F("\r\n");
         return;
     }
 
-    if (cmd == "help" || cmd == "?")
+    if (cmd == F("help") || cmd == F("?"))
     {
         Log << F(".-----------------------------------------------------------------------------.\r\n");
         Log << F("| X-Copy Standalone                                                           |\r\n");
@@ -67,6 +67,7 @@ void XCopyCommandLine::doCommand(String command)
         Log << F("| scan                 | scan wireless networks                               |\r\n");
         Log << F("|--------------------- +------------------------------------------------------|\r\n");
         Log << F("| config               | show config settings                                 |\r\n");
+        Log << F("| mem                  | show memory stats                                    |\r\n");
         Log << F("`----------------------'------------------------------------------------------'\r\n");
         /*
         Log << "| write <n>       | write logical track #n                                    |\r\n";
@@ -88,46 +89,46 @@ void XCopyCommandLine::doCommand(String command)
         return;
     }
 
-    if (cmd == "clear" || cmd == "cls")
+    if (cmd == F("clear") || cmd == F("cls"))
     {
         Log << XCopyConsole::clearscreen() << XCopyConsole::home();
         return;
     }
 
-    if (cmd == "status")
+    if (cmd == F("status"))
     {
-        String status = _esp->sendCommand("status\r", true);
-        Log << status << "\r\n";
+        String status = _esp->sendCommand(F("status\r"), true);
+        Log << status << F("\r\n");
         return;
     }
 
-    if (cmd == "ssid")
+    if (cmd == F("ssid"))
     {
-        String ssid = _esp->sendCommand("ssid\r", true);
-        Log << ssid << "\r\n";
+        String ssid = _esp->sendCommand(F("ssid\r"), true);
+        Log << ssid << F("\r\n");
         return;
     }
 
-    if (cmd == "ip")
+    if (cmd == F("ip"))
     {
-        String ipaddress = _esp->sendCommand("ip\r", true);
-        Log << ipaddress << "\r\n";
+        String ipaddress = _esp->sendCommand(F("ip\r"), true);
+        Log << ipaddress << F("\r\n");
         return;
     }
 
-    if (cmd == "mac")
+    if (cmd == F("mac"))
     {
-        String ipaddress = _esp->sendCommand("mac\r", true);
-        Log << ipaddress << "\r\n";
+        String ipaddress = _esp->sendCommand(F("mac\r"), true);
+        Log << ipaddress << F("\r\n");
         return;
     }
 
-    if (cmd == "config") {
+    if (cmd == F("config")) {
         _config->dumpConfig();
         return;
     }
 
-    if (cmd == "connect")
+    if (cmd == F("connect"))
     {
         String ssid = param.substring(0, param.indexOf(" "));
         String password = param.substring(param.indexOf(" ") + 1);
@@ -142,39 +143,39 @@ void XCopyCommandLine::doCommand(String command)
         _config->writeConfig();
 
         if (_esp->connect(ssid, password, 20000))
-            Log << "Connected to '" << ssid << "'\r\n";
+            Log << F("Connected to '") << ssid << F("'\r\n");
         else
-            Log << "Error: Connection to '" << ssid << "' failed\r\n";
+            Log << F("Error: Connection to '") << ssid << F("' failed\r\n");
         return;
     }
 
-    if (cmd == "hist")
+    if (cmd == F("hist"))
     {
         analyseHist(false);
         printHist();
         return;
     }
 
-    if (cmd == "flux")
+    if (cmd == F("flux"))
     {
         analyseHist(true);
         printFlux();
         return;
     }
 
-    if (cmd == "weak")
+    if (cmd == F("weak"))
     {
-        Log << getWeakTrack() << "\r\n";
+        Log << getWeakTrack() << F("\r\n");
         return;
     }
 
-    if (cmd == "name")
+    if (cmd == F("name"))
     {
-        Log << "Diskname: " << getName() << "\r\n";
+        Log << F("Diskname: ") << getName() << F("\r\n");
         return;
     }
 
-    if (cmd == "readf")
+    if (cmd == F("readf"))
     {
         if (param == "")
             param = "0";
@@ -197,56 +198,47 @@ void XCopyCommandLine::doCommand(String command)
         return;
     }
 
-    if (cmd == "read")
+    if (cmd == F("read"))
     {
         Log.printf("Reading Track %d\t", param.toInt());
         gotoLogicTrack(param.toInt());
         uint8_t errors = readTrack(false);
         if (errors != -1)
         {
-            Log << "Sectors found: " << getSectorCnt() << " Errors found: ";
+            Log << F("Sectors found: ") << getSectorCnt() << F(" Errors found: ");
             Serial.print(errors, BIN);
-            Log << " Track expected: " << param.toInt() << " Track found: " << getTrackInfo() << " bitCount: " << getBitCount() << " (Read OK)\r\n";
+            Log << F(" Track expected: ") << param.toInt() << F(" Track found: ") << getTrackInfo() << F(" bitCount: ") << getBitCount() << F(" (Read OK)\r\n");
         }
         else
         {
-            Log << "bitCount: " << getBitCount() << " (Read failed!)\r\n";
+            Log << F("bitCount: ") << getBitCount() << F(" (Read failed!)\r\n");
         }
         return;
     }
 
-    if (cmd == "dump")
+    if (cmd == F("dump"))
     {
         char name[128];
         param.toCharArray(name, 128);
-
-        Log << "DEBUG-1\r\n";
 
         XCopyADFLib *_adfLib = new XCopyADFLib();
         _adfLib->begin(PIN_SDCS);
         _adfLib->mount(name);
 
-        Log << "DEBUG-1\r\n";
-
         if (_adfLib->getDevice())
         {
-            Log << "DEBUG0\r\n";
-
             _adfLib->printDevice(_adfLib->getDevice());
-
-            Log << "DEBUG1\r\n";
 
             _adfLib->openVolume(_adfLib->getDevice());
             if (_adfLib->getVolume())
             {
-                Log << "DEBUG2\r\n";
                 _adfLib->printVolume(_adfLib->getVolume());
             }
             else
-                Log << "Error: Failed to open volume '" << name << "'\r\n";
+                Log << F("Error: Failed to open volume '") << name << F("'\r\n");
         }
         else
-            Log << "Error: Failed to open device '" << name << "'\r\n";
+            Log << F("Error: Failed to open device '") << name << F("'\r\n");
 
         _adfLib->unmount();
         delete _adfLib;
@@ -254,19 +246,19 @@ void XCopyCommandLine::doCommand(String command)
         return;
     }
 
-    if (cmd == "bootf")
+    if (cmd == F("bootf"))
     {
-        cmd = "boot";
-        param = "f";
+        cmd = F("boot");
+        param = F("f");
         return;
     }
 
-    if (cmd == "boot")
+    if (cmd == F("boot"))
     {
         Log.printf("Reading Track %d\r\n", 0);
 
         param.toLowerCase();
-        if (param == "flash" || param == "f")
+        if (param == F("flash") || param == F("f"))
         {
             SerialFlashFile flashFile = SerialFlash.open("DISKCOPY.TMP");
             flashFile.seek(0 * 11 * 512);
@@ -290,13 +282,13 @@ void XCopyCommandLine::doCommand(String command)
             uint8_t errors = readTrack(false);
             if (errors != -1)
             {
-                Log << "Sectors found: " << getSectorCnt() << " Errors found: ";
+                Log << F("Sectors found: ") << getSectorCnt() << F(" Errors found: ");
                 Serial.print(errors, BIN);
-                Log << " Track expected: " << param.toInt() << " Track found: " << getTrackInfo() << " bitCount: " << getBitCount() << " (Read OK)\r\n";
+                Log << F(" Track expected: ") << param.toInt() << F(" Track found: ") << getTrackInfo() << F(" bitCount: ") << getBitCount() << F(" (Read OK)\r\n");
             }
             else
             {
-                Log << "bitCount: " << getBitCount() << " (Read failed!)\r\n";
+                Log << F("bitCount: ") << getBitCount() << F(" (Read failed!)\r\n");
             }
         }
 
@@ -304,30 +296,29 @@ void XCopyCommandLine::doCommand(String command)
         return;
     }
 
-    if (cmd == "print")
+    if (cmd == F("print"))
     {
         printTrack();
-        Log << "OK\r\n";
+        Log << F("OK\r\n");
         return;
     }
 
-    if (cmd == "websocket")
+    if (cmd == F("websocket"))
     {
         _esp->sendWebSocket(param);
-        Log << "broadcast: '" << param << "'\r\n";
+        Log << F("broadcast: '") << param << F("'\r\n");
         return;
     }
 
-    if (cmd == "time") {
+    if (cmd == F("time")) {
         int timeZone = _config->getTimeZone();
-        Serial.printf("%02d:%02d:%02d %02d/%02d/%04d %s%02d\r\n", hour(), minute(), second(), day(), month(), year(), timeZone >= 0 ? "+" : "", timeZone);
         Log.printf("%02d:%02d:%02d %02d/%02d/%04d %s%02d\r\n", hour(), minute(), second(), day(), month(), year(), timeZone >= 0 ? "+" : "", timeZone);
         return;
     }
 
-    if (cmd == "settime") {
+    if (cmd == F("settime")) {
         int timeZone = _config->getTimeZone();
-        Log << "Current Time: " << XCopyTime::getTime() << " (epoch)";
+        Log << F("Current Time: ") << XCopyTime::getTime() << F(" (epoch)");
         Log.printf(" | %02d:%02d:%02d %02d/%02d/%04d %s%02d\r\n", hour(), minute(), second(), day(), month(), year(), timeZone >= 0 ? "+" : "", timeZone);
         time_t time = 0;        
         if (param.length() == 0) {
@@ -341,19 +332,19 @@ void XCopyCommandLine::doCommand(String command)
         delay(2000);
         XCopyTime::syncTime(true);
         delay(2000);
-        Log << "Updated Time: " << time << " (epoch)";
+        Log << F("Updated Time: ") << time << F(" (epoch)");
         Log.printf(" | %02d:%02d:%02d %02d/%02d/%04d %s%02d\r\n", hour(), minute(), second(), day(), month(), year(), timeZone >= 0 ? "+" : "", timeZone);
         return;
     }
 
-    if (cmd == "timezone") {
+    if (cmd == F("timezone")) {
         if (param.length() > 0) {
             int timeZone = param.toInt();
             if (timeZone > 12) timeZone = 12;
             if (timeZone < -12) timeZone = -12;
             _config->setTimeZone(timeZone);
         }
-        Log << "Time Zone: " << _config->getTimeZone() << "\r\n";            
+        Log << F("Time Zone: ") << _config->getTimeZone() << F("\r\n");            
         return;
     }
 
@@ -361,56 +352,85 @@ void XCopyCommandLine::doCommand(String command)
         XCopySDCard *_sdcard = new XCopySDCard();
 
         if (!_sdcard->cardDetect()) {
-            Log << "No SDCard detected\r\n";
+            Log << F("No SDCard detected\r\n");
             return;
         }
 
         if (!_sdcard->begin()) {
-            Log << "SDCard failed to initialise\r\n";
+            Log << F("SDCard failed to initialise\r\n");
             return;
         }
 
         if (!_sdcard->printDirectory(param)) {
-            Log << "Could not open directory\r\n";
+            Log << F("Could not open directory\r\n");
         }
 
         delete _sdcard;
         return;
     }
 
-    if (cmd == "scan") {
-        Log << "Scanning: \r\n";
-        String status = _esp->sendCommand("scan\r", true, 5000);
-        Log << status << "\r\n";
+    if (cmd == F("scan")) {
+        Log << F("Scanning: \r\n");
+        String status = _esp->sendCommand(F("scan\r"), true, 5000);
+        Log << status << F("\r\n");
         return;
     }
 
-    if (cmd == "test") {
+    if (cmd == F("test")) {
         XCopySDCard *_sdcard = new XCopySDCard();
         
         if (!_sdcard->cardDetect()) {
-            Log << "No SDCard detected\r\n";
+            Log << F("No SDCard detected\r\n");
             return;
         }
 
         if (!_sdcard->begin()) {
-            Log << "SDCard failed to initialise\r\n";
+            Log << F("SDCard failed to initialise\r\n");
             return;
         }
 
-        _sdcard->getFiles(param);
+        // _sdcard->webListFiles(param);
 
-        // GenericList<XCopyFile> *list = _sdcard->getFiles(param);
-        // Node<XCopyFile> *p = list->head;
-        // while (p) {
-        //     XCopyFile *xFile = p->data;
-        //     Serial << "File: " << xFile->filename << "," << xFile->size << "," << xFile->isDirectory << "," << xFile->isADF << "\r\n";
-        //     p = p->next;
-        // }
-        // delete list;
-        // delete p;
+        GenericList<String> *list = _sdcard->getFiles2(param);
 
+        Node<String> *p = list->head;
+        while (p) {
+            Serial << p->data->c_str() << F("\r\n");
+            p = p->next;
+        }
+        delete p;
+
+        delete list;
         delete _sdcard;
+
+        return;
+    }
+
+    if (cmd == F("mem")) {
+        uint32_t stackTop;
+        uint32_t heapTop;
+
+        // current position of the stack.
+        stackTop = (uint32_t) &stackTop;
+
+        // current position of heap.
+        void* hTop = malloc(1);
+        heapTop = (uint32_t) hTop;
+        free(hTop);
+
+        char sStackTop[12];
+        char sHeapTop[12];
+
+        sprintf(sStackTop, "0x%08" PRIx32, stackTop);
+        sprintf(sHeapTop, "0x%08" PRIx32,  heapTop);
+
+        // sprintf(sStackTop, "0x%08X", stackTop);
+        // sprintf(sHeapTop, "0x%08X", heapTop);
+
+        // The difference is (approximately) the free, available ram.        
+        Log << F("Stack Top: ") << sStackTop << F("\r\n");
+        Log << F("Heap Top: ") << sHeapTop << F("\r\n");
+        Log << F("Free: ") << (stackTop - heapTop) << F(" bytes free\r\n");
 
         return;
     }
