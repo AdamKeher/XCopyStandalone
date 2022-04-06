@@ -34,7 +34,8 @@ enum XCopyState {
   setDiskDelay = 33,
   testDrive = 34,
   resetDevice = 35,
-  setTimeZone
+  getSdFiles = 36,
+  setTimeZone = 37
 };
 
 #endif // XCOPYSTATE_H
