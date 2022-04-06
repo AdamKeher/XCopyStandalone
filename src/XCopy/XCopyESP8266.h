@@ -4,6 +4,7 @@
 #include <Arduino.h>
 #include <Streaming.h>
 #include "XCopyState.h"
+#include "XCopySDCard.h"
 
 typedef void (*OnWebCommand)(void* obj, const String command);
 
@@ -24,6 +25,7 @@ public:
   void resetDisk() { sendWebSocket("resetDisk"); }
   void setState(XCopyState state) { sendWebSocket("setState," + String(state)); }
   void log(String text) { sendWebSocket("log," + text); };
+  bool updateWebSdCardFiles(String directory);
 
   String Version();
   void setEcho(bool status);

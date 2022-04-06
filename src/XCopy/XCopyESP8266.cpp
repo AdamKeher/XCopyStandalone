@@ -141,3 +141,40 @@ time_t XCopyESP8266::getTime() {
     time_t time = 0;
     return strtol(result.c_str(), nullptr, 10);
 }
+
+bool XCopyESP8266::updateWebSdCardFiles(String directory) {
+        XCopySDCard *_sdcard = new XCopySDCard();
+        
+        if (!_sdcard->cardDetect()) {
+            // Log << F("No SDCard detected\r\n");
+            return false;
+        }
+
+        if (!_sdcard->begin()) {
+            // Log << F("SDCard failed to initialise\r\n");
+            return false;
+        }
+
+        GenericList<String> *list = _sdcard->getFiles(directory, 40);
+
+        sendWebSocket(F("clearSdFiles"));
+
+        Node<String> *p = list->head;
+        while (p) {
+            // use & as delimiter so there isnt a conflict with the web code also 
+            // using ',' as a command and param delimiter
+            String command = "addSdFile,";
+            String data = String(p->data->c_str()).replace(",", "&");
+            command.append(data).append("\r");
+            sendWebSocket(command);
+            p = p->next;
+        }
+        delete p;
+
+        sendWebSocket(F("drawSdFiles"));
+
+        delete list;
+        delete _sdcard;
+
+        return;
+}
