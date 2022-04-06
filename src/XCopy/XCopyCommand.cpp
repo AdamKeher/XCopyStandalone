@@ -348,26 +348,9 @@ void XCopyCommandLine::doCommand(String command)
         return;
     }
 
-    if (cmd == "dir" || cmd == "ls") {
+    if (cmd == F("dir") || cmd == F("ls")) {
         printDirectory(param);
 
-        // XCopySDCard *_sdcard = new XCopySDCard();
-
-        // if (!_sdcard->cardDetect()) {
-        //     Log << F("No SDCard detected\r\n");
-        //     return;
-        // }
-
-        // if (!_sdcard->begin()) {
-        //     Log << F("SDCard failed to initialise\r\n");
-        //     return;
-        // }
-
-        // if (!_sdcard->printDirectory(param)) {
-        //     Log << F("Could not open directory\r\n");
-        // }
-
-        // delete _sdcard;
         return;
     }
 
@@ -426,38 +409,46 @@ bool XCopyCommandLine::printDirectory(String directory, bool color) {
     XCopySDCard *_sdcard = new XCopySDCard();
 
     if (!_sdcard->cardDetect()) {
-        Log << F("No SDCard detected\r\n");
+        Log << _sdcard->getError() << "\r\n";
+        delete _sdcard;
         return false;
     }
 
     if (!_sdcard->begin()) {
-        Log << F("SDCard failed to initialise\r\n");
+        Log << _sdcard->getError() << "\r\n";
+        delete _sdcard;
         return false;
     }
 
-    GenericList<XCopyFile> *_list = _sdcard->getXFiles(directory, 20);
+    if (!_sdcard->open(directory)) {
+        Log << _sdcard->getError() << "\r\n";
+        delete _sdcard;
+        return false;
+    }
 
-    Node<XCopyFile> *node = _list->head;
-    XCopyFile *file;
-    while (node) {
-        file = node->data;
+    int _count = 0;
+    while (_sdcard->next()) {
+        _count++;
         char filesize[12];
-        sprintf(filesize, "%11d", file->size);
-        String filename = file->filename;
-        if (file->isDirectory) {
+        sprintf(filesize, "%11d", _sdcard->getfile().size);
+        String filename = _sdcard->getfile().filename;
+        if (_sdcard->getfile().isDirectory) {
             filename.append("/");
             if (color) {
                 filename = XCopyConsole::high_yellow() + filename + XCopyConsole::reset();
             }
-        } else if (file->isADF & color) {
+        } else if (_sdcard->getfile().isADF & color) {
                 filename = XCopyConsole::high_green()+ filename + XCopyConsole::reset();
         }
-        Log << file->date + " " + file->time + " " + String(filesize) + " " + filename + "\r\n";;
 
-        node = node->next;
+        Log << _count << ": " << _sdcard->getfile().date + " " + _sdcard->getfile().time + " " + String(filesize) + " " + filename + "\r\n";
+
+        // slow down to allow transfer to web
+        delay(10);
     }
 
-    delete _list;
+    Log << "file count: " + String(_count) + "\r\n";
+    
     delete _sdcard;
 
     return true;
