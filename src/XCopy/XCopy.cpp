@@ -359,7 +359,7 @@ void XCopy::onWebCommand(void* obj, const String command)
 void XCopy::sendFile(String path) {
    setBusy(true);
 
-   Serial << "CALLBACK::sendFile::path: '" << path << "'\r\n";
+   Serial << "Sending file: '" << path << "'\r\n";
     
     XCopySDCard *_sdCard = new XCopySDCard();
     _sdCard->begin();
@@ -410,6 +410,7 @@ void XCopy::sendFile(String path) {
     delete _sdCard;
 
     Serial.println("Done");
+
     setBusy(false);
 }
 
