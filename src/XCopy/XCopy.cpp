@@ -377,7 +377,7 @@ void XCopy::sendFile(String path) {
     }
 
     // copy data from sd file to flash file
-    size_t bufferSize = 2048;
+    size_t bufferSize = 1024;
     char buffer[bufferSize];
     int readsize = 0;
 
@@ -387,7 +387,7 @@ void XCopy::sendFile(String path) {
         readsize = file.read(buffer, bufferSize);
         Serial1.write(buffer, readsize);
         Serial.print(".");
-
+        delay(100);
     } while (readsize != 0);
 
     Serial << "\r\nSent file '";

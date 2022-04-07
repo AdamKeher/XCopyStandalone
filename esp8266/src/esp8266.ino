@@ -55,8 +55,8 @@ String getContentType(String filename)
     return "application/x-zip";
   else if (filename.endsWith(".gz"))
     return "application/x-gzip";
-  else if (filename.endsWith(".adf") == true)
-    return "application/x-binary";
+  // else if (filename.endsWith(".adf") == true)
+  //   return "application/x-binary";
     
   return "text/plain";
 }
