@@ -59,6 +59,7 @@ void XCopyCommandLine::doCommand(String command)
         Log << F("| timezone <-12..12>   | set current time zone                                |\r\n");
         Log << F("|--------------------- +------------------------------------------------------|\r\n");
         Log << F("| connect <ssid> <pwd> | connect to wifi network                              |\r\n");
+        Log << F("| clearwifi            | clears wifi settings from configuration              |\r\n");        
         Log << F("| status               | show wifi status                                     |\r\n");
         Log << F("| ip                   | show wifi ip address                                 |\r\n");
         Log << F("| mac                  | show wifi mac address                                |\r\n");
@@ -130,13 +131,13 @@ void XCopyCommandLine::doCommand(String command)
 
     if (cmd == F("connect"))
     {
-        String ssid = param.substring(0, param.indexOf(" "));
-        String password = param.substring(param.indexOf(" ") + 1);
-        if (ssid == "" || password == "" || param.indexOf(" ") == -1)
-        {
-            Log << "Error: must supply ssid and password.\r\n";
+        if (param == "" || param.indexOf(" ") == -1) {
+            Log << F("Error: ssid and password parameters required to connect to WiFi.\r\n");
             return;
         }
+
+        String ssid = param.substring(0, param.indexOf(" "));
+        String password = param.substring(param.indexOf(" ") + 1);
 
         _config->setSSID(ssid);
         _config->setPassword(password);
@@ -146,6 +147,15 @@ void XCopyCommandLine::doCommand(String command)
             Log << F("Connected to '") << ssid << F("'\r\n");
         else
             Log << F("Error: Connection to '") << ssid << F("' failed\r\n");
+        return;
+    }
+
+    if (cmd == F("clearwifi")) {
+        _config->setSSID("");
+        _config->setPassword("");
+        _config->writeConfig();
+        _config->dumpConfig();
+        Log << "WiFi settings cleared\r\n";
         return;
     }
 

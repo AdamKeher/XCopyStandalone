@@ -97,6 +97,7 @@ void XCopy::begin()
 
     // Init ESP
     // -------------------------------------------------------------------------------------------
+
     Log << F("Initialising ESP8266 WIFI (Serial") + String(Serial1) + F(" @ ") + String(ESPBaudRate) + F("): ") ;
     _graphics.drawText(0, 115, ST7735_WHITE, F("               Init WiFi"), true);
     _esp = new XCopyESP8266(ESPBaudRate, PIN_ESPRESETPIN, PIN_ESPPROGPIN);
@@ -104,25 +105,33 @@ void XCopy::begin()
     _esp->setEcho(false);
     if (_esp->begin())
     {
-        _esp->setCallBack(this, onWebCommand);
+        Log << XCopyConsole::success("OK\r\n");
         _graphics.drawText(0, 115, ST7735_WHITE, F("       Connecting to WiFi"), true);
 
-        Log << XCopyConsole::success("OK\r\n");
-        Log << "Connecting to wireless network (" + _config->getSSID() + "): ";
-        if (_esp->connect(_config->getSSID(), _config->getPassword(), 20000)) {
-            Log << XCopyConsole::success("OK\r\n");
-            // update time from NTP server
-            // -------------------------------------------------------------------------------------------
-            Log << F("Updating time from NTP server: ");
-            delay(1000);
-            refreshTimeNtp();
-            Log << XCopyConsole::success("OK\r\n");
+        _esp->setCallBack(this, onWebCommand);
+
+
+        Log << F("Connecting to wireless network (") + _config->getSSID() + "): ";
+
+        if (_config->getSSID() == "" || _config->getPassword() == "") {
+            Log << XCopyConsole::error(F(" Failed. No SSID or password set\r\n"));
+        } 
+        else {
+            if (_esp->connect(_config->getSSID(), _config->getPassword(), 20000)) {
+                Log << XCopyConsole::success(F("OK\r\n"));
+                // update time from NTP server
+                // -------------------------------------------------------------------------------------------
+                Log << F("Updating time from NTP server: ");
+                delay(1000);
+                refreshTimeNtp();
+                Log << XCopyConsole::success(F("OK\r\n"));
+            }
+            else
+                Log << XCopyConsole::error(F("Failed\r\n"));
         }
-        else
-            Log << XCopyConsole::error("Failed.\r\n");
     }
     else
-        Log << XCopyConsole::error(F("ESP8266 WIFI Chip initialization failed. (Serial") + String(Serial1) + F(" @ ") + String(ESPBaudRate) + F(").\r\n"));
+        Log << XCopyConsole::error(F("Failed\r\n"));
 
     // Init Command Line
     // -------------------------------------------------------------------------------------------
