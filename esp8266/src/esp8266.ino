@@ -97,18 +97,66 @@ bool handleFileRead(String path)
   }
 
   if (path.startsWith("/sdcard/")) {   
-    server.setContentLength(CONTENT_LENGTH_UNKNOWN);
-
     int bufferSize = 2048;
     char buffer[bufferSize];
     size_t readSize = 0;
     size_t totalsize = 0;
     bool filesending = true;
     unsigned long lastDataTime = millis();
+    size_t filesize = 0;
 
+    // strip /sdcard prefix for local SD Card path
     if (path.startsWith("/sdcard")) {
       path = path.substring(7);
     }
+
+    // // get file size
+    // Serial.printf("xcopyCommand,sendSize,%s\r\n", path.c_str());
+
+    // String OK_EOC = "\r\nOK\r\n";
+    // String ER_EOC = "\r\nER\r\n";
+
+    // String ssize = "";
+
+    // while (true) {
+    //   while (Serial.available()) {
+    //       size_t readSize = Serial.readBytes(buffer, bufferSize);
+    //       if (readSize > 0) {
+    //         totalsize += readSize;
+    //       }
+    //       // command.doCommand("broadcast read: " + String(buffer));
+    //   }
+
+    //   ssize += String("buffer");
+
+    //   if (ssize.endsWith(OK_EOC)) {
+    //     ssize.replace(OK_EOC, "");
+    //     command.doCommand("broadcast convert: " + ssize);
+    //     // filesize = ssize.toInt();
+    //     break;
+    //   }
+
+    //   if (ssize.endsWith(ER_EOC)) {
+    //     break;
+    //   }
+
+    //   // timeout if size not received in 2.5 seconds
+    //   if (millis() - lastDataTime > 2500) {
+    //       break;
+    //   }
+    // }
+
+    // Serial << "File Size: " << filesize << "\r\n";
+    // command.doCommand("broadcast " + String(filesize));
+
+    // if (filesize == 0) {
+    //   return false;
+    // }
+
+    // return false;
+
+    // get file
+    server.setContentLength(CONTENT_LENGTH_UNKNOWN);
 
     server.send(200, contentType.c_str(), "");
     Serial.printf("xcopyCommand,sendFile,%s\r\n", path.c_str());
@@ -117,7 +165,7 @@ bool handleFileRead(String path)
       while (Serial.available()) {
           lastDataTime = millis();
 
-          size_t readSize = Serial.readBytes(buffer, 1024);
+          size_t readSize = Serial.readBytes(buffer, bufferSize);
           if (readSize > 0) {
             totalsize += readSize;
             server.sendContent(buffer, readSize);

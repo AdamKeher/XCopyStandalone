@@ -342,8 +342,11 @@ void XCopy::onWebCommand(void* obj, const String command)
         String path = command.substring(command.indexOf(",")+1);
         xcopy->sendFile(path);
     }
+    else if (command.startsWith("sendSize")) {
+        String path = command.substring(command.indexOf(",")+1);
+        xcopy->sendSize(path);
+    }
 }
-
 void XCopy::sendFile(String path) {
    setBusy(true);
 
@@ -387,7 +390,7 @@ void XCopy::sendFile(String path) {
         readsize = file.read(buffer, bufferSize);
         Serial1.write(buffer, readsize);
         Serial.print(".");
-        delay(100);
+        delay(75);
     } while (readsize != 0);
 
     Serial << "\r\nSent file '";
@@ -395,6 +398,54 @@ void XCopy::sendFile(String path) {
     Serial << "': " << file.fileSize() << " in " << (millis() - time) / 1000.0f << "s\r\n";
 
     file.close();
+    delete _sdCard;
+
+    Serial.println("Done");
+    setBusy(false);
+}
+
+void XCopy::sendSize(String path) {
+    setBusy(true);
+
+    Serial << "CALLBACK::sendSize::path: '" << path << "'\r\n";
+
+    char OK_EOC[7] = "\r\nOK\r\n";
+    char ER_EOC[7] = "\r\nER\r\n";
+
+    XCopySDCard *_sdCard = new XCopySDCard();
+    _sdCard->begin();
+    
+    if (!_sdCard->cardDetect()) {
+        Serial << _sdCard->getError() + "\r\n";
+        Serial1.print(ER_EOC);
+        delete _sdCard;
+        setBusy(false);
+        return;
+    }
+
+    if (!_sdCard->begin()) {
+        Serial << _sdCard->getError() + "\r\n";
+        Serial1.print(ER_EOC);
+        delete _sdCard;
+        setBusy(false);
+        return;
+    }
+
+    FatFile file;
+    bool fresult = file.open(path.c_str());
+    if (!fresult) {
+        Serial << "SD file open failed";
+        Serial1.print(ER_EOC);
+        delete _sdCard;
+        setBusy(false);
+        return;
+    }
+    size_t size = file.fileSize();
+    file.close();
+
+    Serial1.print(size);
+    Serial1.print(OK_EOC);
+
     delete _sdCard;
 
     Serial.println("Done");
