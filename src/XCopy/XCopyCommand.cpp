@@ -444,7 +444,7 @@ bool XCopyCommandLine::printDirectory(String directory, bool color) {
         Log << _count << ": " << _sdcard->getfile().date + " " + _sdcard->getfile().time + " " + String(filesize) + " " + filename + "\r\n";
 
         // slow down to allow transfer to web
-        delay(10);
+        delay(6);
     }
 
     Log << "file count: " + String(_count) + "\r\n";

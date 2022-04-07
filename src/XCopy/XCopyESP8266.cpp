@@ -177,7 +177,7 @@ bool XCopyESP8266::updateWebSdCardFiles(String directory) {
         sendWebSocket(F("addSdFile,") + newline + F("\r"));
 
         // slow down to allow transfer to web
-        delay(10);
+        delay(6);
     }
 
     sendWebSocket(F("drawSdFiles"));
