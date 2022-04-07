@@ -7,6 +7,8 @@
 #include <FS.h>
 #include <WebSocketsServer.h>
 
+#define ESPBaudRate 576000
+
 ESP8266WebServer server(80);
 WebSocketsServer webSocket(81);
 const int led = 13;
@@ -176,7 +178,7 @@ void setup(void)
   pinMode(busyPin, INPUT);
   attachInterrupt(busyPin, busyISR, CHANGE);
 
-  Serial.begin(115200);
+  Serial.begin(ESPBaudRate);
 
   if (MDNS.begin("esp8266"))
     Serial.println("MDNS responder started");

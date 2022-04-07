@@ -5,7 +5,7 @@
 // #define XCOPY_DEBUG = 1
 
 #define ESPSerial Serial1
-#define ESPBaudRate 115200
+#define ESPBaudRate 576000
 
 #include <Arduino.h>
 #include "TFT_ST7735.h"
