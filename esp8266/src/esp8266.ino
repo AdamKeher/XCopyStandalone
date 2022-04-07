@@ -15,15 +15,18 @@ const String _marker = "espCommand";
 
 ESPCommandLine command;
 
+volatile int busyState = 0;
 void ICACHE_RAM_ATTR busyISR()
 {
-  int pinStatus = digitalRead(busyPin);
-  String tmp = "pinStatus," + String(pinStatus);
+  busyState = digitalRead(busyPin);  
+  String tmp = "pinStatus," + String(busyState);
   webSocket.broadcastTXT(tmp);
 }
 
 String getContentType(String filename)
-{
+{ 
+  filename.toLowerCase();
+
   if (filename.endsWith(".htm"))
     return "text/html";
   else if (filename.endsWith(".html"))
@@ -40,6 +43,8 @@ String getContentType(String filename)
     return "image/jpeg";
   else if (filename.endsWith(".ico"))
     return "image/x-icon";
+  if (filename.endsWith(".text"))
+    return "text/plain";
   else if (filename.endsWith(".xml"))
     return "text/xml";
   else if (filename.endsWith(".pdf"))
@@ -48,6 +53,9 @@ String getContentType(String filename)
     return "application/x-zip";
   else if (filename.endsWith(".gz"))
     return "application/x-gzip";
+  else if (filename.endsWith(".adf") == true)
+    return "application/x-binary";
+    
   return "text/plain";
 }
 
@@ -72,17 +80,58 @@ void handleNotFound()
 
 bool handleFileRead(String path)
 {
-  if (path.endsWith("/"))
+  if (path.endsWith("/")) {
     path += "index.html";
-  String contentType = getContentType(path);
+  }
 
-  // Serial.println("handleFileRead: " + path);
+  String contentType = getContentType(path);
 
   if (SPIFFS.exists(path))
   {
     File file = SPIFFS.open(path, "r");
     size_t sent = server.streamFile(file, contentType);
     file.close();
+    return true;
+  }
+
+  if (path.startsWith("/sdcard/")) {   
+    server.setContentLength(CONTENT_LENGTH_UNKNOWN);
+
+    int bufferSize = 2048;
+    char buffer[bufferSize];
+    size_t readSize = 0;
+    size_t totalsize = 0;
+    bool filesending = true;
+    unsigned long lastDataTime = millis();
+
+    if (path.startsWith("/sdcard")) {
+      path = path.substring(7);
+    }
+
+    server.send(200, contentType.c_str(), "");
+    Serial.printf("xcopyCommand,sendFile,%s\r\n", path.c_str());
+
+    while (filesending) {
+      while (Serial.available()) {
+          lastDataTime = millis();
+
+          size_t readSize = Serial.readBytes(buffer, 1024);
+          if (readSize > 0) {
+            totalsize += readSize;
+            server.sendContent(buffer, readSize);
+          }
+      }
+
+      // timeout if no data received for 1 seconds
+      if (millis() - lastDataTime > 1000) {
+          break;
+      }
+    }
+
+    server.sendContent("");
+
+    Serial.printf("xcopyCommand,sendEnd\r\n");
+
     return true;
   }
 

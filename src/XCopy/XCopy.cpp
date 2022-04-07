@@ -338,6 +338,67 @@ void XCopy::onWebCommand(void* obj, const String command)
         }        
         xcopy->startFunction(getSdFiles, _param);
     }
+    else if (command.startsWith("sendFile")) {
+        String path = command.substring(command.indexOf(",")+1);
+        xcopy->sendFile(path);
+    }
+}
+
+void XCopy::sendFile(String path) {
+   setBusy(true);
+
+   Serial << "CALLBACK::sendFile::path: '" << path << "'\r\n";
+    
+    XCopySDCard *_sdCard = new XCopySDCard();
+    _sdCard->begin();
+    
+    if (!_sdCard->cardDetect()) {
+        Serial << _sdCard->getError() + "\r\n";
+        delete _sdCard;
+        setBusy(false);
+        return;
+    }
+
+    if (!_sdCard->begin()) {
+        Serial << _sdCard->getError() + "\r\n";
+        delete _sdCard;
+        setBusy(false);
+        return;
+    }
+
+    FatFile file;
+    bool fresult = file.open(path.c_str());
+
+    if (!fresult) {
+        Serial << "SD file open failed";
+        delete _sdCard;
+        setBusy(false);
+        return;
+    }
+
+    // copy data from sd file to flash file
+    size_t bufferSize = 2048;
+    char buffer[bufferSize];
+    int readsize = 0;
+
+    unsigned long time = millis();
+
+    do {
+        readsize = file.read(buffer, bufferSize);
+        Serial1.write(buffer, readsize);
+        Serial.print(".");
+
+    } while (readsize != 0);
+
+    Serial << "\r\nSent file '";
+    file.printName();
+    Serial << "': " << file.fileSize() << " in " << (millis() - time) / 1000.0f << "s\r\n";
+
+    file.close();
+    delete _sdCard;
+
+    Serial.println("Done");
+    setBusy(false);
 }
 
 void XCopy::startFunction(XCopyState state, String param) {

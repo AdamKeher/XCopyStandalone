@@ -55,6 +55,7 @@ public:
   void refreshTimeNtp();
   void startFunction(XCopyState state, String param = "");
   void startCopyADFtoDisk();
+  void sendFile(String path);
   static void onWebCommand(void* obj, const String command);
   XCopyState _xcopyState = menus;
   #ifdef XCOPY_DEBUG
