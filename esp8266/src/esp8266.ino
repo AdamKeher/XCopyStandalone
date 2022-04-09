@@ -100,64 +100,31 @@ bool handleFileRead(String path)
     int bufferSize = 2048;
     char buffer[bufferSize];
     size_t readSize = 0;
-    size_t totalsize = 0;
+    double totalsize = 0;
     bool filesending = true;
     unsigned long lastDataTime = millis();
-    size_t filesize = 0;
+    double filesize = 0;
 
     // strip /sdcard prefix for local SD Card path
     if (path.startsWith("/sdcard")) {
       path = path.substring(7);
     }
-
-    // // get file size
-    // Serial.printf("xcopyCommand,sendSize,%s\r\n", path.c_str());
-
-    // String OK_EOC = "\r\nOK\r\n";
-    // String ER_EOC = "\r\nER\r\n";
-
-    // String ssize = "";
-
-    // while (true) {
-    //   while (Serial.available()) {
-    //       size_t readSize = Serial.readBytes(buffer, bufferSize);
-    //       if (readSize > 0) {
-    //         totalsize += readSize;
-    //       }
-    //       // command.doCommand("broadcast read: " + String(buffer));
-    //   }
-
-    //   ssize += String("buffer");
-
-    //   if (ssize.endsWith(OK_EOC)) {
-    //     ssize.replace(OK_EOC, "");
-    //     command.doCommand("broadcast convert: " + ssize);
-    //     // filesize = ssize.toInt();
-    //     break;
-    //   }
-
-    //   if (ssize.endsWith(ER_EOC)) {
-    //     break;
-    //   }
-
-    //   // timeout if size not received in 2.5 seconds
-    //   if (millis() - lastDataTime > 2500) {
-    //       break;
-    //   }
-    // }
-
-    // Serial << "File Size: " << filesize << "\r\n";
-    // command.doCommand("broadcast " + String(filesize));
-
-    // if (filesize == 0) {
-    //   return false;
-    // }
-
-    // return false;
+    
+    // get file size
+    String ssize = "";
+    Serial.printf("\r\n");
+    Serial.printf("xcopyCommand,sendSize,%s\r\n", path.c_str());
+    ssize = Serial.readStringUntil('\n');
+    ssize.replace("\n", "");
+    if (ssize.startsWith("error")) {
+      return false;
+    }
+    if (ssize != "") {
+      filesize = ssize.toDouble();
+    }
 
     // get file
-    server.setContentLength(CONTENT_LENGTH_UNKNOWN);
-
+    server.setContentLength(filesize <= 0 ? CONTENT_LENGTH_UNKNOWN : filesize);
     server.send(200, contentType.c_str(), "");
     Serial.printf("xcopyCommand,sendFile,%s\r\n", path.c_str());
 
@@ -171,6 +138,8 @@ bool handleFileRead(String path)
             server.sendContent(buffer, readSize);
           }
       }
+
+      if (totalsize >= filesize) { break; }
 
       // timeout if no data received for 1 seconds
       if (millis() - lastDataTime > 1000) {

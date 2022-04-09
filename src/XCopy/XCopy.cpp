@@ -400,7 +400,7 @@ void XCopy::sendFile(String path) {
         Serial1.write(buffer, readsize);
         Serial.print(".");
         delay(75);
-    } while (readsize != 0);
+    } while (readsize > 0);
 
     Serial << "\r\nSent file '";
     file.printName();
@@ -417,17 +417,12 @@ void XCopy::sendFile(String path) {
 void XCopy::sendSize(String path) {
     setBusy(true);
 
-    Serial << "CALLBACK::sendSize::path: '" << path << "'\r\n";
-
-    char OK_EOC[7] = "\r\nOK\r\n";
-    char ER_EOC[7] = "\r\nER\r\n";
-
     XCopySDCard *_sdCard = new XCopySDCard();
     _sdCard->begin();
     
     if (!_sdCard->cardDetect()) {
         Serial << _sdCard->getError() + "\r\n";
-        Serial1.print(ER_EOC);
+        Serial1.print("errorcard\n");
         delete _sdCard;
         setBusy(false);
         return;
@@ -435,7 +430,7 @@ void XCopy::sendSize(String path) {
 
     if (!_sdCard->begin()) {
         Serial << _sdCard->getError() + "\r\n";
-        Serial1.print(ER_EOC);
+        Serial1.print("errorinit\n");
         delete _sdCard;
         setBusy(false);
         return;
@@ -445,7 +440,7 @@ void XCopy::sendSize(String path) {
     bool fresult = file.open(path.c_str());
     if (!fresult) {
         Serial << "SD file open failed";
-        Serial1.print(ER_EOC);
+        Serial1.print("erroropen\n");
         delete _sdCard;
         setBusy(false);
         return;
@@ -454,7 +449,7 @@ void XCopy::sendSize(String path) {
     file.close();
 
     Serial1.print(size);
-    Serial1.print(OK_EOC);
+    Serial1.print("\n");
 
     delete _sdCard;
 
