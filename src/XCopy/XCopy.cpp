@@ -458,36 +458,6 @@ void XCopy::sendSize(String path) {
 }
 
 void XCopy::startFunction(XCopyState state, String param) {
-    // switch (state) {
-    //     case copyADFToDisk:
-    //         _esp->setMode("Copy ADF to Disk");
-    //         break;
-    //     case copyDiskToADF:
-    //         _esp->setMode("Copy Disk to ADF");
-    //         break;
-    //     case copyDiskToDisk:
-    //         _esp->setMode("Copy Disk to Disk");
-    //         break;
-    //     case copyDiskToFlash:
-    //         _esp->setMode("Copy Disk to Flash");
-    //         break;
-    //     case copyFlashToDisk:
-    //         _esp->setMode("Copy Flash to Disk");
-    //         break;
-    //     case testDisk:
-    //         Log << "Start: " << "Copy ADF to Disk";
-    //         _esp->setMode("Test Disk");
-    //         break;
-    //     case fluxDisk:
-    //         _esp->setMode("Flux Disk");
-    //         break;
-    //     case formatDisk:
-    //         _esp->setMode("Format Disk");
-    //         break;
-    //     default: 
-    //         _esp->setMode("Unknown");
-    // }
-
     if (state == getSdFiles) {
         setBusy(true);
         _esp->updateWebSdCardFiles(param);
