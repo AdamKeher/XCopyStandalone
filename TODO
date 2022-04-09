@@ -1,5 +1,7 @@
 Project Resumption:
   v708.2022:
+    ✔ Fix width of flux canvas in webui as it's not wide enough @done(22-04-09 22:35)
+    ☐ Test all disk routines from TFT and Web to make sure new code isn't causing bo
     ✔ Added bootcamp to the web ui @done(22-04-06 15:50)
     ✔ Added jquery to the web ui @done(22-04-06 15:50)
     ✔ Updated web ui look and feel @done(22-04-06 15:50)
@@ -9,7 +11,9 @@ Project Resumption:
       ☐ Implement input for full web terminal
     ✔ Added SD Card file browser to web ui @done(22-04-06 15:51)
       ✔ Implement sub directories @done(22-04-06 17:56)
-      ☐ Implement file download
+      ✔ Implement file download @started(22-04-07 12:02) @done(22-04-07 20:45) @lasted(8h43m57s)
+        ☐ Try to spead it up, it's sloooooooooooow
+        ☐ Finished sendSize command so we can set the http header for content length for the file being sent
       ☐ Implement file upload
       ☐ Implement file delete
       ☐ Change to less memory intesive process as it currently limmits how files are returned in terminal ls and web ui due to ram constraints
@@ -65,7 +69,7 @@ Project Resumption:
         ☐ Migrate SPIFF to LittleFS
     General:
       ☐ Move SDCard code to XCopySDCard object, especially XCopyDebug. Get rid of all SD references and move to SdFat @started(22-03-30 17:33)
-      ☐ 
+      ☐ Update mode, status and diskname for all disk activities
 
 ---------------------------------------------------------------------------------------------------
 
