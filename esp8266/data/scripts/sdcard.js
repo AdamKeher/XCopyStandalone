@@ -12,7 +12,7 @@ function drawSdFiles() {
       parentPath = parentPath.substring(0, parentPath.length-1);
     }
     var parentPath = parentPath.substring(0, parentPath.lastIndexOf("/")+1);
-    tablerow = "<tr><td colspan='4'><a onclick=\"getSdFiles('" + parentPath + "');\" href='#'>..</a></td></tr>";
+    tablerow = "<tr><td colspan='4'><a onclick=\"getSdFiles('" + parentPath + "');\" href='#'><i class=\"fa-solid fa-circle-chevron-up\"></i> ..</a></td></tr>";
     $('#sdcardTable tbody').append(tablerow);
   }
 
@@ -40,7 +40,7 @@ function drawSdFiles() {
       parentPath = parentPath.substring(0, parentPath.length-1);
     }
     var parentPath = parentPath.substring(0, parentPath.lastIndexOf("/")+1);
-    tablerow = "<tr><td colspan='4'><a onclick=\"getSdFiles('" + parentPath + "');\" href='#'>..</a></td></tr>";
+    tablerow = "<tr><td colspan='4'><a onclick=\"getSdFiles('" + parentPath + "');\" href='#'><i class=\"fa-solid fa-circle-chevron-up\"></i> ..</a></td></tr>";
     $('#fileselectTable tbody').append(tablerow);
   }
 
