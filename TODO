@@ -1,25 +1,25 @@
 Project Resumption:
   v708.2022:    
     ☐ Change javascript states from lowercase 'to' to capitalised 'To' i.e copyFlashtoDisk -> copyFlashToDisk to match teensy states
+    ☐ Don't reset webui state when files loaded for select modal dialog
+    ☐ Figure out why the download function occasionly resends the file. Probably something to do with contentlength, as thats when it was noticed
+    ☐ Check _config. See if it is properly destroyed and created throughout the project
+    ☐ Switch web ui to correct tab when starting function from teensy menu
+    ✔ Removed debug output from ADFlib to clean up results from dump command @done(22-04-10 23:15)
     ✔ WebUI not calling copyDiskToFlash @done(22-04-10 22:56)
     ✔ Fixed WebUI status icons for Flash to Disk. Was showing flash to flash @done(22-04-10 22:39)
     ✔ Add font awesome icons @done(22-04-10 21:50)
     ✔ Add refresh button to select modal dialog @done(22-04-10 21:53)
     ✔ Move writeADFFile to specific copyADFtoDisk state and code so we can cancel the function etc @done(22-04-10 22:39)
       ✔ Currently neeeds to clear screen at start of function @done(22-04-10 22:39)
-    ☐ Don't reset webui state when files loaded for select modal dialog
-    ☐ Figure out why the download function occasionly resends the file. Probably something to do with contentlength, as thats when it was noticed
-    ☐ Check _config. See if it is properly destroyed and created throughout the project
     ✔ Set url anchor when tab is selected @done(22-04-10 14:01)
     ✔ refresh the current directory when refresh hit instead of root @done(22-04-10 14:01)
     ✔ Force vertical scrollbar so screen is always aligned regardless of tab @done(22-04-10 14:01)
-    ☐ Switch web ui to correct tab when starting function from teensy menu
     ✔ Select tab from url anchor via javscript on page load @done(22-04-10 14:02)
     ✔ Fix url encoded file names @done(22-04-10 12:54)
     ✔ Flushed serial port before sending command from esp to teensy. Patched bug where every second command was missed
     ✔ Add fixed footer to bottom of webui @done(22-04-10 12:02)
     ✔ Fix width of flux canvas in webui as it's not wide enough @done(22-04-09 22:35)
-    ☐ Test all disk routines from TFT and Web to make sure new code isn't causing crashes
     ✔ Added bootcamp to the web ui @done(22-04-06 15:50)
     ✔ Added jquery to the web ui @done(22-04-06 15:50)
     ✔ Updated web ui look and feel @done(22-04-06 15:50)
@@ -156,10 +156,10 @@ Legacy:
         ☐ Send binary data. Attempt
         ☐ Increase serial baud rate
       ☐ Fix flux lerp function
-      ☐ Use bootstrap or angular for HTML
+      ✔ Use bootstrap or angular for HTML @done(22-04-10 23:18)
     ESP8266EX
       ☐ Add reset (rst low / pin 25) and program (gpio0 low / pin 26)
-      ☐ Add seperate debugging menu item for Serial Passthrough Mode and ESP8266 Programming Mode
+      ✔ Add seperate debugging menu item for Serial Passthrough Mode and ESP8266 Programming Mode @done(22-04-10 23:18)
     Wireless
       ☐ Fix settings menu SSID and Password menu items to udpate when 'connect <ssid> <password>' command issued
     General
