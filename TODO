@@ -1,5 +1,7 @@
 Project Resumption:
   v708.2022:    
+    ✔ Add font awesome icons @done(22-04-10 21:50)
+    ✔ Add refresh button to select modal dialog @done(22-04-10 21:53)
     ☐ Move writeADFFile to specific copyADFtoDisk state and code so we can cancel the function etc
       ☐ Currently neeeds to clear screen at start of function  
     ☐ Don't reset webui state when files loaded for select modal dialog
