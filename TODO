@@ -1,6 +1,7 @@
 Project Resumption:
   v708.2022:    
     ☐ Move writeADFFile to specific copyADFtoDisk state and code so we can cancel the function etc
+      ☐ Currently neeeds to clear screen at start of function  
     ☐ Don't reset webui state when files loaded for select modal dialog
     ☐ Figure out why the download function occasionly resends the file. Probably something to do with contentlength, as thats when it was noticed
     ☐ Check _config. See if it is properly destroyed and created throughout the project
