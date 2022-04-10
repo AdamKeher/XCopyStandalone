@@ -316,10 +316,7 @@ void XCopy::onWebCommand(void* obj, const String command)
     // Log << "DEBUG::ESPCALLBACK::(" << command << ")\r\n";
     XCopy* xcopy = (XCopy*)obj;
     
-    if (command == "copyADFtoDisk") {
-        xcopy->startCopyADFtoDisk();
-    }
-    else if (command == "copyDisktoADF") {
+    if (command == "copyDisktoADF") {
         xcopy->startFunction(copyDiskToADF);
     }
     else if (command == "copyDisktoDisk") {
@@ -351,9 +348,12 @@ void XCopy::onWebCommand(void* obj, const String command)
         String path = command.substring(command.indexOf(",")+1);
         xcopy->sendFile(path);
     }
+    
+    // (command == "copyADFtoDisk") {
+    //     xcopy->startCopyADFtoDisk();
     else if (command.startsWith("writeADFFile")) {
         String path = command.substring(command.indexOf(",")+1);
-        Serial.print("DEBUG::WRITEADF::'" + path + "'");
+        xcopy->startCopyADFtoDisk(path);
     }
 }
 
@@ -440,7 +440,13 @@ void XCopy::startFunction(XCopyState state, String param) {
     _graphics.clearScreen();    
 }
 
-void XCopy::startCopyADFtoDisk() {
-    startFunction(directorySelection);
-    _directory.getDirectory("/", &_disk, ".adf");
+void XCopy::startCopyADFtoDisk(String path) {
+    if (path == "") {
+        startFunction(directorySelection);
+        _directory.getDirectory("/", &_disk, ".adf");
+    } else {
+        setBusy(true);
+        _disk.adfToDisk(path, _config->getVerify(), _config->getRetryCount());
+        setBusy(false);
+    }
 }

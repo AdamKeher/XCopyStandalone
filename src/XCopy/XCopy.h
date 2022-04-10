@@ -54,7 +54,7 @@ public:
   bool getBusy() { return digitalRead(PIN_BUSYPIN); }
   void refreshTimeNtp();
   void startFunction(XCopyState state, String param = "");
-  void startCopyADFtoDisk();
+  void startCopyADFtoDisk(String path  = "");
   void sendFile(String path);
   void sendSize(String path);
   static void onWebCommand(void* obj, const String command);
