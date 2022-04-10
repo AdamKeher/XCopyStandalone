@@ -44,13 +44,13 @@
             </div>
             <ul class="nav nav-tabs" id="xcopyTab" role="tablist">
                 <li class="nav-item" role="presentation">
-                    <button class="nav-link active" id="diskcopy-tab" data-bs-toggle="tab" data-bs-target="#diskcopy" type="button" role="tab" aria-controls="diskcopy" aria-selected="true">Disk Copy</button>
+                    <button class="nav-link active" id="diskcopy-tab" onclick="history.pushState(null, '', '#diskcopy');" data-bs-toggle="tab" data-bs-target="#diskcopy" type="button" role="tab" aria-controls="diskcopy" aria-selected="true">Disk Copy</button>
                 </li>
                 <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="sdcard-tab" data-bs-toggle="tab" data-bs-target="#sdcard" type="button" role="tab" aria-controls="sdcard" aria-selected="false">SD Card</button>
+                    <button class="nav-link" id="sdcard-tab" onclick="history.pushState(null, '', '#sdcard');" data-bs-toggle="tab" data-bs-target="#sdcard" type="button" role="tab" aria-controls="sdcard" aria-selected="false">SD Card</button>
                 </li>
                 <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="log-tab" data-bs-toggle="tab" data-bs-target="#log" type="button" role="tab" aria-controls="log" aria-selected="false">Log</button>
+                    <button class="nav-link" id="log-tab" onclick="history.pushState(null, '', '#log');" data-bs-toggle="tab" data-bs-target="#log" type="button" role="tab" aria-controls="log" aria-selected="false">Log</button>
                 </li>
             </ul>
             <div class="tab-content" id="xcopyTabContent">
@@ -376,7 +376,7 @@
                     <p>
                         <div class="btn-group me-2" role="group" aria-label="First group">
                             <button type="button" class="btn btn-primary">Upload File</button>
-                            <button type="button" class="btn btn-primary" onclick="getSdFiles('/');">Refresh</button>
+                            <button type="button" class="btn btn-primary" onclick="getSdFiles(sdPath);">Refresh</button>
                         </div>
                     </p>
                     <p><hr/></p>
