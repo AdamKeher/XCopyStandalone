@@ -129,18 +129,18 @@ body {
 -------------------------------------------------- */
 
 .footer {
-    position: absolute;
+    position: fixed;
     bottom: 0;
     width: 100%;
-    height: 90px; /* Set the fixed height of the footer here */
-    line-height: 90px; /* Vertically center the text there */
+    height: 90px;
+    line-height: 90px;
     background-color: lightgray;
 }
 
 .statusfooter
-{
+{    
     position: relative;
-    top: -35px;
+    top: -25px;
 }
 
 /* Flux
