@@ -55,7 +55,7 @@ function drawSdFiles() {
       if (file.isDir) {
         filename = "<a onclick=\"getSdFiles('" + sdPath + file.name + "/" + "');\" href=\"#\">" + filename + "</a>";
       } else {
-        filename = "<a onclick=\"writeADFFile('" + file.name + "');\" href=\"#\">" + filename + "</a>";
+        filename = "<a onclick=\"writeADFFile('" + sdPath + file.name + "');\" href=\"#\">" + filename + "</a>";
       }
       tablerow = "<tr><td>" + file.date + "</td><td>" + file.time + "</td><td>" + file.size + "</td><td>" + filename + "</td></tr>";
       console.log(tablerow);
