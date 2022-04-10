@@ -1,6 +1,15 @@
 Project Resumption:
-  v708.2022:
-    ☐ Fix url encoded file names
+  v708.2022:    
+    ☐ Move writeADFFile to specific copyADFtoDisk state and code so we can cancel the function etc
+    ☐ Don't reset webui state when files loaded for select modal dialog
+    ☐ Figure out why the download function occasionly resends the file. Probably something to do with contentlength, as thats when it was noticed
+    ☐ Check _config. See if it is properly destroyed and created throughout the project
+    ✔ Set url anchor when tab is selected @done(22-04-10 14:01)
+    ✔ refresh the current directory when refresh hit instead of root @done(22-04-10 14:01)
+    ✔ Force vertical scrollbar so screen is always aligned regardless of tab @done(22-04-10 14:01)
+    ☐ Switch web ui to correct tab when starting function from teensy menu
+    ✔ Select tab from url anchor via javscript on page load @done(22-04-10 14:02)
+    ✔ Fix url encoded file names @done(22-04-10 12:54)
     ✔ Flushed serial port before sending command from esp to teensy. Patched bug where every second command was missed
     ✔ Add fixed footer to bottom of webui @done(22-04-10 12:02)
     ✔ Fix width of flux canvas in webui as it's not wide enough @done(22-04-09 22:35)
