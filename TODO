@@ -1,9 +1,12 @@
 Project Resumption:
   v708.2022:    
+    ☐ Change javascript states from lowercase 'to' to capitalised 'To' i.e copyFlashtoDisk -> copyFlashToDisk to match teensy states
+    ✔ WebUI not calling copyDiskToFlash @done(22-04-10 22:56)
+    ✔ Fixed WebUI status icons for Flash to Disk. Was showing flash to flash @done(22-04-10 22:39)
     ✔ Add font awesome icons @done(22-04-10 21:50)
     ✔ Add refresh button to select modal dialog @done(22-04-10 21:53)
-    ☐ Move writeADFFile to specific copyADFtoDisk state and code so we can cancel the function etc
-      ☐ Currently neeeds to clear screen at start of function  
+    ✔ Move writeADFFile to specific copyADFtoDisk state and code so we can cancel the function etc @done(22-04-10 22:39)
+      ✔ Currently neeeds to clear screen at start of function @done(22-04-10 22:39)
     ☐ Don't reset webui state when files loaded for select modal dialog
     ☐ Figure out why the download function occasionly resends the file. Probably something to do with contentlength, as thats when it was noticed
     ☐ Check _config. See if it is properly destroyed and created throughout the project
