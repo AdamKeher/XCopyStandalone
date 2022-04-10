@@ -40,7 +40,7 @@ function setState(state) {
         setMode('Copy Flash to Disk');
         $('#' + state).removeClass('btn-primary').addClass('btn-light');
         setIconsSrc(false, false, true);
-        setIconsDest(false, false, true);
+        setIconsDest(true, false, false);
     }
     else if (state == 'testDisk') {
         setMode('Test Disk AA');

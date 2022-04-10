@@ -313,7 +313,7 @@ void XCopy::cancelOperation()
 
 void XCopy::onWebCommand(void* obj, const String command)
 {
-    // Log << "DEBUG::ESPCALLBACK::(" << command << ")\r\n";
+    Log << "DEBUG::ESPCALLBACK::(" << command << ")\r\n";
     XCopy* xcopy = (XCopy*)obj;
     
     if (command == "copyDisktoADF") {
@@ -322,7 +322,8 @@ void XCopy::onWebCommand(void* obj, const String command)
     else if (command == "copyDisktoDisk") {
         xcopy->startFunction(copyDiskToDisk);
     }
-    else if (command == "copyDiskToFlash") {
+    else if (command == "copyDisktoFlash") {
+        Serial << "DEBUG::copyFlashtoDisk!\r\n";
         xcopy->startFunction(copyDiskToFlash);
     }
     else if (command == "copyFlashtoDisk") {
