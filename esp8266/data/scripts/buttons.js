@@ -9,71 +9,81 @@ function resetButtons() {
     $('#copyFlashtoDisk').removeClass('btn-light').addClass('btn-primary');
 }
 
-function setState(tempname) {
-    console.log("State: '" + tempname + "'");
+function setState(state) {
+    console.log("State: '" + state + "'");
 
-    if (tempname == 'copyADFtoDisk') {
+    if (state == 'copyADFtoDisk') {
         setMode('Copy ADF to Disk');
-        $('#' + tempname).removeClass('btn-primary').addClass('btn-light');
+        $('#' + state).removeClass('btn-primary').addClass('btn-light');
         setIconsSrc(false, true, false);
         setIconsDest(true, false, false);
     }
-    else if (tempname == 'copyDisktoADF') {
+    else if (state == 'copyDisktoADF') {
         setMode('Copy Disk to ADF');
-        $('#' + tempname).removeClass('btn-primary').addClass('btn-light');
+        $('#' + state).removeClass('btn-primary').addClass('btn-light');
         setIconsSrc(true, false, false);
         setIconsDest(false, true, false);
     }
-    else if (tempname == 'copyDisktoDisk') {
+    else if (state == 'copyDisktoDisk') {
         setMode('Copy Disk to Disk');
-        $('#' + tempname).removeClass('btn-primary').addClass('btn-light');
+        $('#' + state).removeClass('btn-primary').addClass('btn-light');
         setIconsSrc(true, false, false);
         setIconsDest(true, false, false);
     }
-    else if (tempname == 'copyDisktoFlash') {
+    else if (state == 'copyDisktoFlash') {
         setMode('Copy Disk to Flash');
-        $('#' + tempname).removeClass('btn-primary').addClass('btn-light');
+        $('#' + state).removeClass('btn-primary').addClass('btn-light');
         setIconsSrc(true, false, false);
         setIconsDest(false, false, true);
     }
-    else if (tempname == 'copyFlashtoDisk') {
+    else if (state == 'copyFlashtoDisk') {
         setMode('Copy Flash to Disk');
-        $('#' + tempname).removeClass('btn-primary').addClass('btn-light');
+        $('#' + state).removeClass('btn-primary').addClass('btn-light');
         setIconsSrc(false, false, true);
         setIconsDest(false, false, true);
     }
-    else if (tempname == 'testDisk') {
+    else if (state == 'testDisk') {
         setMode('Test Disk AA');
         setIconsSrc(true, false, false);
         setIconsDest(false, false, false);
     }
-    else if (tempname == 'formatDisk') {
+    else if (state == 'formatDisk') {
         setMode('Format Disk');
-        $('#' + tempname).removeClass('btn-primary').addClass('btn-light');
+        $('#' + state).removeClass('btn-primary').addClass('btn-light');
         setIconsSrc(true, false, false);
         setIconsDest(false, false, false);
     }
-    else if (tempname == 'fluxDisk') {
+    else if (state == 'fluxDisk') {
         setMode('Disk Flux');
         setIconsSrc(true, false, false);
         setIconsDest(false, false, false);
     }        
 }
 
-function diskcopy(name) {
+function diskcopy(state) {
     resetButtons();
-    setState(name);
-    connection.send(name);
+    setState(state);
+    if (state == 'copyADFtoDisk') {
+        showsSelectDialog();
+    } else {
+        connection.send(state);
+    }
 }
 
-function getSdFiles(param) {
-    sdPath = param;
-    connection.send("getSdFiles," + param);
+function getSdFiles(path) {
+    sdPath = path;
+    connection.send("getSdFiles," + sdPath);
 }
   
 function diskcopyCancel() {
     // TODO: handle cancellation / send back to xcopydevice
     disableInterface(false);
+}
+
+
+function writeADFFile(path) {
+    $('#staticBackdrop').modal('hide');
+    connection.send("writeADFFile," + path);
 }
   
 // function copyADFtoDisk() {

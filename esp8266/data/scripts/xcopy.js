@@ -64,3 +64,7 @@ function setStatus(status) {
 function setMode(mode) {
   $('#mode').html(mode);
 }
+
+function showsSelectDialog() {
+  if (sdFiles.length == 0) getSdFiles(sdPath);
+}
