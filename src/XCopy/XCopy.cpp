@@ -362,6 +362,7 @@ void XCopy::sendFile(String path) {
     _sdCard->begin();
     
     if (!_sdCard->cardDetect()) {
+        Serial1.print("error");
         Serial << _sdCard->getError() + "\r\n";
         delete _sdCard;
         setBusy(false);
@@ -369,6 +370,7 @@ void XCopy::sendFile(String path) {
     }
 
     if (!_sdCard->begin()) {
+        Serial1.print("error");
         Serial << _sdCard->getError() + "\r\n";
         delete _sdCard;
         setBusy(false);
@@ -379,6 +381,7 @@ void XCopy::sendFile(String path) {
     bool fresult = file.open(path.c_str());
 
     if (!fresult) {
+        Serial1.print("error");
         Serial << "SD file open failed";
         delete _sdCard;
         setBusy(false);
