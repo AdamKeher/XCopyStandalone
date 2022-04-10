@@ -4,6 +4,9 @@ var term
 // --------------------------------------------------------
 
 function onLoad() {
+  var hash = location.hash;
+  if (hash != "") { setTab(hash); }
+
   disableGlobes();
   term = new Terminal({
     rows: 45,
@@ -12,6 +15,11 @@ function onLoad() {
   term.open(document.getElementById('terminal'));
   term.write('\x1B[1;3;32mXCopy Standalone\x1B[0m Logging Console\r\n');
   $('#diskcopy_cancel').prop('disabled', true);
+}
+
+function setTab(tabName) {
+  tabName += "-tab";
+  $(tabName).tab('show')
 }
 
 // UI
