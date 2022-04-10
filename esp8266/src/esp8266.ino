@@ -124,7 +124,9 @@ bool handleFileRead(String path)
     }
 
     // get file
-    server.setContentLength(filesize <= 0 ? CONTENT_LENGTH_UNKNOWN : filesize);
+    // server.setContentLength(filesize <= 0 ? CONTENT_LENGTH_UNKNOWN : filesize);
+    server.setContentLength(CONTENT_LENGTH_UNKNOWN);
+
     server.send(200, contentType.c_str(), "");
     Serial.printf("xcopyCommand,sendFile,%s\r\n", path.c_str());
 

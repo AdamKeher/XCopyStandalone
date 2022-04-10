@@ -389,7 +389,7 @@ void XCopy::sendFile(String path) {
     }
 
     // copy data from sd file to flash file
-    size_t bufferSize = 1024;
+    size_t bufferSize = 2048;
     char buffer[bufferSize];
     int readsize = 0;
 
