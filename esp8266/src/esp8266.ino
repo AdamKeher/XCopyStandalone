@@ -100,58 +100,55 @@ bool handleFileRead(String path)
     int bufferSize = 2048;
     char buffer[bufferSize];
     size_t readSize = 0;
-    double totalsize = 0;
-    bool filesending = true;
+    size_t totalsize = 0;
     unsigned long lastDataTime = millis();
-    double filesize = 0;
+    size_t filesize = 0;
 
     // strip /sdcard prefix for local SD Card path
     if (path.startsWith("/sdcard")) {
       path = path.substring(7);
     }
-    
+
+    // flush
+    Serial.printf("\r\n");
+
+    // request file
+    Serial.printf("xcopyCommand,sendFile,%s\r\n", path.c_str());
+
     // get file size
     String ssize = "";
-    Serial.printf("\r\n");
-    Serial.printf("xcopyCommand,sendSize,%s\r\n", path.c_str());
     ssize = Serial.readStringUntil('\n');
     ssize.replace("\n", "");
     if (ssize.startsWith("error")) {
       return false;
     }
-    if (ssize != "") {
-      filesize = ssize.toDouble();
-    }
+    sscanf(ssize.c_str(), "%zu", &filesize);
+
+    // start http send
+    server.setContentLength(filesize <= 0 ? CONTENT_LENGTH_UNKNOWN : filesize);
+    // server.setContentLength(CONTENT_LENGTH_UNKNOWN);
+    server.send(200, contentType.c_str(), "");
 
     // get file
-    // server.setContentLength(filesize <= 0 ? CONTENT_LENGTH_UNKNOWN : filesize);
-    server.setContentLength(CONTENT_LENGTH_UNKNOWN);
-
-    server.send(200, contentType.c_str(), "");
-    Serial.printf("xcopyCommand,sendFile,%s\r\n", path.c_str());
-
-    while (filesending) {
+    while (true) {
       while (Serial.available()) {
           lastDataTime = millis();
-
           size_t readSize = Serial.readBytes(buffer, bufferSize);
-          if (readSize > 0) {
-            totalsize += readSize;
-            server.sendContent(buffer, readSize);
-          }
+          totalsize += readSize;
+          // send http data
+          server.sendContent(buffer, readSize);
       }
 
+      // exit all bytes of file received
       if (totalsize >= filesize) { break; }
 
       // timeout if no data received for 1 seconds
       if (millis() - lastDataTime > 1000) {
-          break;
+          // finish http send
+          server.sendContent("");
+          return false;
       }
     }
-
-    server.sendContent("");
-
-    Serial.printf("xcopyCommand,sendEnd\r\n");
 
     return true;
   }

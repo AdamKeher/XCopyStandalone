@@ -351,11 +351,8 @@ void XCopy::onWebCommand(void* obj, const String command)
         String path = command.substring(command.indexOf(",")+1);
         xcopy->sendFile(path);
     }
-    else if (command.startsWith("sendSize")) {
-        String path = command.substring(command.indexOf(",")+1);
-        xcopy->sendSize(path);
-    }
 }
+
 void XCopy::sendFile(String path) {
    setBusy(true);
 
@@ -388,6 +385,11 @@ void XCopy::sendFile(String path) {
         return;
     }
 
+    // send file size
+    size_t size = file.fileSize();
+    Serial1.print(size);
+    Serial1.print("\n");
+
     // copy data from sd file to flash file
     size_t bufferSize = 2048;
     char buffer[bufferSize];
@@ -411,49 +413,6 @@ void XCopy::sendFile(String path) {
 
     Serial.println("Done");
 
-    setBusy(false);
-}
-
-void XCopy::sendSize(String path) {
-    setBusy(true);
-
-    XCopySDCard *_sdCard = new XCopySDCard();
-    _sdCard->begin();
-    
-    if (!_sdCard->cardDetect()) {
-        Serial << _sdCard->getError() + "\r\n";
-        Serial1.print("errorcard\n");
-        delete _sdCard;
-        setBusy(false);
-        return;
-    }
-
-    if (!_sdCard->begin()) {
-        Serial << _sdCard->getError() + "\r\n";
-        Serial1.print("errorinit\n");
-        delete _sdCard;
-        setBusy(false);
-        return;
-    }
-
-    FatFile file;
-    bool fresult = file.open(path.c_str());
-    if (!fresult) {
-        Serial << "SD file open failed";
-        Serial1.print("erroropen\n");
-        delete _sdCard;
-        setBusy(false);
-        return;
-    }
-    size_t size = file.fileSize();
-    file.close();
-
-    Serial1.print(size);
-    Serial1.print("\n");
-
-    delete _sdCard;
-
-    Serial.println("Done");
     setBusy(false);
 }
 
