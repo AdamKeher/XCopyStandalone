@@ -445,8 +445,15 @@ void XCopy::startCopyADFtoDisk(String path) {
         startFunction(directorySelection);
         _directory.getDirectory("/", &_disk, ".adf");
     } else {
+        // startFunction(directorySelection);
         setBusy(true);
-        _disk.adfToDisk(path, _config->getVerify(), _config->getRetryCount());
+        _directory.getDirectory("/", &_disk, ".adf");
+        _xcopyState = copyADFToDisk;
+        _audio.playSelect(false);
+        _graphics.clearScreen();
+        // _config = new XCopyConfig();
+        _disk.adfToDisk(path, _config->getVerify(), _config->getRetryCount(), _sdCard);
+        // delete _config;
         setBusy(false);
     }
 }
