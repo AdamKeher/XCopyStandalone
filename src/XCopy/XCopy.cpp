@@ -351,6 +351,10 @@ void XCopy::onWebCommand(void* obj, const String command)
         String path = command.substring(command.indexOf(",")+1);
         xcopy->sendFile(path);
     }
+    else if (command.startsWith("writeADFFile")) {
+        String path = command.substring(command.indexOf(",")+1);
+        Serial.print("DEBUG::WRITEADF::'" + path + "'");
+    }
 }
 
 void XCopy::sendFile(String path) {
