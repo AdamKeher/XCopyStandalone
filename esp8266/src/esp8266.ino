@@ -109,10 +109,8 @@ bool handleFileRead(String path)
       path = path.substring(7);
     }
 
-    // flush
-    Serial.printf("\r\n");
-
     // request file
+    Serial.print("\r\n");
     Serial.printf("xcopyCommand,sendFile,%s\r\n", path.c_str());
 
     // get file size
@@ -161,11 +159,13 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t lenght)
   switch (type)
   {
   case WStype_DISCONNECTED: // if the websocket is disconnected
+    Serial.print("\r\n");
     Serial.printf("xcopyCommand,disconnect,%u\r\n", num);
     break;
   case WStype_CONNECTED:
   { // if a new websocket connection is established
     IPAddress ip = webSocket.remoteIP(num);
+    Serial.print("\r\n");
     Serial.printf("xcopyCommand,connected,%u,%d.%d.%d.%d,%s\r\n", num, ip[0], ip[1], ip[2], ip[3], payload);
   }
   break;
@@ -180,6 +180,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t lenght)
     }
     else
     {
+      Serial.print("\r\n");
       Serial.printf("xcopyCommand,%s\r\n", cmd.c_str());
     }
     break;
