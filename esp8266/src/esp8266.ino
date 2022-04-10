@@ -109,6 +109,8 @@ bool handleFileRead(String path)
       path = path.substring(7);
     }
 
+    path = server.urlDecode(path);
+
     // request file
     Serial.print("\r\n");
     Serial.printf("xcopyCommand,sendFile,%s\r\n", path.c_str());
