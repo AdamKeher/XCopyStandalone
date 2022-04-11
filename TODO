@@ -2,9 +2,11 @@ Project Resumption:
   v708.2022:    
     ☐ Change javascript states from lowercase 'to' to capitalised 'To' i.e copyFlashtoDisk -> copyFlashToDisk to match teensy states
     ☐ Don't reset webui state when files loaded for select modal dialog
-    ☐ Figure out why the download function occasionly resends the file. Probably something to do with contentlength, as thats when it was noticed
     ☐ Check _config. See if it is properly destroyed and created throughout the project
     ☐ Switch web ui to correct tab when starting function from teensy menu
+    ✔ Added cat command to print files to terminal @done(22-04-11 17:42)
+    ✔ Added rm command to delete files from terminal @done(22-04-11 17:42)
+    ✔ Flash esp led when web request being processed @done(22-04-11 14:57)
     ✔ Removed debug output from ADFlib to clean up results from dump command @done(22-04-10 23:15)
     ✔ WebUI not calling copyDiskToFlash @done(22-04-10 22:56)
     ✔ Fixed WebUI status icons for Flash to Disk. Was showing flash to flash @done(22-04-10 22:39)
@@ -30,9 +32,12 @@ Project Resumption:
     ✔ Added SD Card file browser to web ui @done(22-04-06 15:51)
       ✔ Implement sub directories @done(22-04-06 17:56)
       ✔ Implement file download @started(22-04-07 12:02) @done(22-04-07 20:45) @lasted(8h43m57s)
+        ☐ Figure out why the download function occasionly resends the file. Probably something to do with contentlength, as thats when it was noticed
         ☐ Try to spead it up, it's sloooooooooooow
         ✔ Finished sendSize command so we can set the http header for content length for the file being sent @done(22-04-10 12:01)
-      ☐ Implement file upload
+      ✔ Implement file upload @done(22-04-12 00:17)
+        ☐ Skin upload with bootstrap
+        ☐ Implement percentage bar & related info
       ☐ Implement file delete
       ✔ Change to less memory intesive process as it currently limmits how files are returned in terminal ls and web ui due to ram constraints @done(22-04-10 12:02)
   v708.2022:
