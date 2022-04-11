@@ -52,6 +52,7 @@ void XCopyCommandLine::doCommand(String command)
         Log << F("| dump <filename>      | dump ADF file system information                     |\r\n");
         Log << F("| weak                 | returns retry number for last read in binary format  |\r\n");
         Log << F("| cat <filename>       | writes contents of file to terminal                  |\r\n");
+        Log << F("| rm <filename>        | delete file from sdcard                              |\r\n");
         Log << F("|--------------------- +------------------------------------------------------|\r\n");
         Log << F("| time                 | show current date & time                             |\r\n");
         Log << F("| settime              | set date & time via NTP server                       |\r\n");
@@ -409,7 +410,7 @@ void XCopyCommandLine::doCommand(String command)
 
     if (cmd == F("cat")) {
         if (param == "") {
-            Log << "missing file paramater\r\n";
+            Log << F("missing file paramater\r\n");
             return;
         }
         
@@ -431,7 +432,7 @@ void XCopyCommandLine::doCommand(String command)
         FatFile file;
         bool fresult = file.open(param.c_str());
         if (!fresult) {
-            Log << "SD file open failed\r\n";
+            Log << F("unable to open: '") + param + F("'\r\n");
             delete _sdCard;
             return;
         }
@@ -449,7 +450,39 @@ void XCopyCommandLine::doCommand(String command)
         file.close();
         delete _sdCard;
 
-        Log << "[-- eof]\r\n";
+        Log << F("[-- eof]\r\n");
+
+        return;
+    }
+
+    if (cmd == F("rm")) {
+        if (param == "") {
+            Log << F("missing file paramater\r\n");
+            return;
+        }
+        
+        XCopySDCard *_sdCard = new XCopySDCard();
+        _sdCard->begin();
+        
+        if (!_sdCard->cardDetect()) {
+            Log << _sdCard->getError() + "\r\n";
+            delete _sdCard;
+            return;
+        }
+
+        if (!_sdCard->begin()) {
+            Log <<  _sdCard->getError() + "\r\n";
+            delete _sdCard;
+            return;
+        }
+
+        if (_sdCard->deleteFile(param)) {
+            Log << "'" + param + F("' deleted\r\n");
+        } else {
+            Log << F("unable to delete: '") + param + F("'\r\n");
+        }
+
+        delete _sdCard;
 
         return;
     }
