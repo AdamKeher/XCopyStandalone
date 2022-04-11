@@ -15,6 +15,27 @@ function onLoad() {
   term.open(document.getElementById('terminal'));
   term.write('\x1B[1;3;32mXCopy Standalone\x1B[0m Logging Console\r\n');
   $('#diskcopy_cancel').prop('disabled', true);
+
+  $("#uploadButton").click(function() {
+      var fd = new FormData();
+      var files = $('#file')[0].files[0];
+      fd.append('file', files);
+      $.ajax({
+          url: '/upload?filesize=' + files.size,
+          type: 'post',
+          data: fd,
+          contentType: false,
+          processData: false,
+          success: function(response){
+              if(response != 0){
+                  alert('file uploaded');
+              }
+              else{
+                  alert('file not uploaded');
+              }
+          },
+      });
+  });
 }
 
 function setTab(tabName) {
