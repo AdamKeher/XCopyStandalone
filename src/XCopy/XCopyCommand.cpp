@@ -51,6 +51,7 @@ void XCopyCommandLine::doCommand(String command)
         Log << F("| readf <n>            | read logical track #n from flash                     |\r\n");
         Log << F("| dump <filename>      | dump ADF file system information                     |\r\n");
         Log << F("| weak                 | returns retry number for last read in binary format  |\r\n");
+        Log << F("| cat <filename>       | writes contents of file to terminal                  |\r\n");
         Log << F("|--------------------- +------------------------------------------------------|\r\n");
         Log << F("| time                 | show current date & time                             |\r\n");
         Log << F("| settime              | set date & time via NTP server                       |\r\n");
@@ -402,6 +403,53 @@ void XCopyCommandLine::doCommand(String command)
         Log << F("Stack Top: ") << sStackTop << F("\r\n");
         Log << F("Heap Top: ") << sHeapTop << F("\r\n");
         Log << F("Free: ") << (stackTop - heapTop) << F(" bytes free\r\n");
+
+        return;
+    }
+
+    if (cmd == F("cat")) {
+        if (param == "") {
+            Log << "missing file paramater\r\n";
+            return;
+        }
+        
+        XCopySDCard *_sdCard = new XCopySDCard();
+        _sdCard->begin();
+        
+        if (!_sdCard->cardDetect()) {
+            Log << _sdCard->getError() + "\r\n";
+            delete _sdCard;
+            return;
+        }
+
+        if (!_sdCard->begin()) {
+            Log <<  _sdCard->getError() + "\r\n";
+            delete _sdCard;
+            return;
+        }
+
+        FatFile file;
+        bool fresult = file.open(param.c_str());
+        if (!fresult) {
+            Log << "SD file open failed\r\n";
+            delete _sdCard;
+            return;
+        }
+
+        size_t bufferSize = 2048;
+        char buffer[bufferSize];
+        int readsize = 0;
+        unsigned long time = millis();
+
+        do {
+            readsize = file.read(buffer, bufferSize);            
+            Serial.write(buffer, readsize);
+        } while (readsize > 0);
+
+        file.close();
+        delete _sdCard;
+
+        Log << "[-- eof]\r\n";
 
         return;
     }
