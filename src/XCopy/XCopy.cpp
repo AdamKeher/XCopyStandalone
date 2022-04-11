@@ -348,7 +348,15 @@ void XCopy::onWebCommand(void* obj, const String command)
         String path = command.substring(command.indexOf(",")+1);
         xcopy->sendFile(path);
     }
-    
+    else if (command.startsWith("getFile")) {
+        size_t filesize = 0;
+        String path = command.substring(command.indexOf(",")+1);        
+        String ssize = path.substring(path.indexOf(",")+1);
+        path = path.substring(1, path.indexOf(","));
+        sscanf(ssize.c_str(), "%zu", &filesize);
+
+        xcopy->getFile(path, filesize);
+    }
     // (command == "copyADFtoDisk") {
     //     xcopy->startCopyADFtoDisk();
     else if (command.startsWith("writeADFFile")) {
@@ -422,6 +430,91 @@ void XCopy::sendFile(String path) {
 
     setBusy(false);
 }
+
+void XCopy::getFile(String path, size_t filesize) {
+   setBusy(true);
+
+   Serial << "Getting file: '" << path << "' (" << filesize << ")\r\n";
+    
+    XCopySDCard *_sdCard = new XCopySDCard();
+    _sdCard->begin();
+    
+    if (!_sdCard->cardDetect()) {
+        Serial1.print("error,detect\n");
+        Serial << _sdCard->getError() + "\r\n";
+        delete _sdCard;
+        setBusy(false);
+        return;
+    }
+
+    if (!_sdCard->begin()) {
+        Serial1.print("error,init\n");
+        Serial << _sdCard->getError() + "\r\n";
+        delete _sdCard;
+        setBusy(false);
+        return;
+    }    
+
+    if (_sdCard->fileExists(path)) {
+        Serial1.print("error,exists\n");
+        Serial << _sdCard->getError() + "\r\n";
+        delete _sdCard;
+        setBusy(false);
+        return;
+    }
+
+    FatFile file;
+    bool fresult = file.open(path.c_str(), O_RDWR | O_CREAT);
+    if (!fresult) {
+        Serial1.print("error,open\n");
+        Serial << "SD file open failed";
+        delete _sdCard;
+        setBusy(false);
+        return;
+    }
+
+    // send file size
+    Serial1.print("OK\n");
+
+    // copy data from sd file to flash file
+    size_t bufferSize = 2048;
+    char buffer[bufferSize];
+    int readsize = 0;
+
+    unsigned long time = millis();
+    unsigned long lasttime = millis();
+    size_t totalsize = 0;
+
+    do {
+        while (Serial1.available()) {
+            lasttime = millis();
+            readsize = Serial1.readBytes(buffer, bufferSize);
+            if (readsize > 0) {
+                totalsize += readsize;
+                file.write(buffer, readsize);
+                Serial.print(".");            
+            }
+            if (totalsize >= filesize) {
+                Serial << "Exact File Size!\r\n";
+                break;
+            }
+        }
+
+        if (millis() - lasttime > 1000) { break; }
+    } while (true);
+
+    Serial << "\r\nReceived file '";
+    file.printName();
+    Serial << "': " << file.fileSize() << " in " << (millis() - time) / 1000.0f << "s\r\n";
+
+    file.close();
+    delete _sdCard;
+
+    Serial.println("Done");
+
+    setBusy(false);
+}
+
 
 void XCopy::startFunction(XCopyState state, String param) {
     if (state == getSdFiles) {

@@ -56,7 +56,7 @@ public:
   void startFunction(XCopyState state, String param = "");
   void startCopyADFtoDisk(String path  = "");
   void sendFile(String path);
-  void sendSize(String path);
+  void getFile(String path, size_t size);
   static void onWebCommand(void* obj, const String command);
   XCopyState _xcopyState = menus;
   #ifdef XCOPY_DEBUG
