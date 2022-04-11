@@ -11,7 +11,7 @@
 
 ESP8266WebServer server(80);
 WebSocketsServer webSocket(81);
-const int led = 13;
+const int led = 2;
 const int busyPin = 4;
 const String _marker = "espCommand";
 
@@ -156,6 +156,51 @@ bool handleFileRead(String path)
   return false;
 }
 
+bool handleFileUpload() {
+  digitalWrite(led, 0);
+
+  HTTPUpload& upload = server.upload();
+  
+  size_t filesize = 0;
+  String ssize = server.arg("filesize");
+  sscanf(ssize.c_str(), "%zu", &filesize);
+
+  if (upload.status == UPLOAD_FILE_START) {
+    String path = upload.filename;
+    if(!path.startsWith("/")) path = "/"+path;
+
+    // request file start
+    Serial.print("\r\n");
+    Serial.printf("xcopyCommand,getFile,%s,%d\r\n", path.c_str(), filesize);
+
+    // file creation error?
+    String response = "";
+    response = Serial.readStringUntil('\n');
+    response.replace("\n", "");
+    webSocket.broadcastTXT(String("log,response: " + response).c_str());
+    
+    if (response.startsWith("error")) {
+      response.replace("error,", "");
+      String url = "/#sdcard?fileerror=";
+      url.concat(response);
+      server.sendHeader("Location", url);
+      server.send(303);
+      digitalWrite(led, 1);
+      return false;
+    }
+  } 
+  else if (upload.status == UPLOAD_FILE_WRITE) {
+    Serial.write(upload.buf, upload.currentSize);
+    delay(125);
+  }
+  else if (upload.status == UPLOAD_FILE_END) {
+    server.send(200, "text/plain", String("200: OK<br>File uploaded: " + upload.filename + "(" + String(filesize) + ")").c_str());
+  }
+
+  digitalWrite(led, 1);
+  return true;
+}
+
 void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t lenght)
 { // When a WebSocket message is received
   switch (type)
@@ -193,7 +238,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t lenght)
 void setup(void)
 {
   pinMode(led, OUTPUT);
-  digitalWrite(led, 0);
+  digitalWrite(led, 1);
   pinMode(busyPin, INPUT);
   attachInterrupt(busyPin, busyISR, CHANGE);
 
@@ -211,11 +256,13 @@ void setup(void)
   Serial.println("WebSockets server started");
   webSocket.onEvent(webSocketEvent);
 
+  server.on("/upload", HTTP_GET, handleNotFound);
+  server.on("/upload", HTTP_POST, [](){ server.send(200); }, handleFileUpload);
   server.onNotFound([]() {
-    digitalWrite(led, 1);
+    digitalWrite(led, 0);
     if (!handleFileRead(server.uri()))
       handleNotFound();
-    digitalWrite(led, 0);
+    digitalWrite(led, 1);
   });
   server.begin();
   Serial.println("HTTP server started");
