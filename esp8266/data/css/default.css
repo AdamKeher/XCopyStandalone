@@ -178,8 +178,12 @@ body {
     color: limegreen;
 }
 
-/* SD Table
+/* Modal
 -------------------------------------------------- */
 .modal {
     color: black;
+}
+
+.websocket {
+    background: #180202d4;
 }

@@ -33,6 +33,7 @@
         <script src="./scripts/flux.js" type="text/javascript"></script>
         <script src="./scripts/tracks.js" type="text/javascript"></script>
         <script src="./scripts/sdcard.js" type="text/javascript"></script>
+        <script src="./scripts/re-websocket.min.js" type="text/javascript"></script>
         <script src="./scripts/websocket.js" type="text/javascript"></script>
         <script src="./scripts/xcopy.js" type="text/javascript"></script>
 
@@ -474,6 +475,22 @@
                     <div class="modal-footer">
                         <button type="button" class="btn btn-primary" onclick="getSdFiles(sdPath);"><i class="fa-solid fa-rotate-right"></i> Refresh</button>
                         <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Cancel</button>
+                    </div>
+                </div>
+                </div>
+            </div>
+
+            <!-- Modal websocket not connected -->
+            <div class="modal websocket fade" id="websocketModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="websocketModalLabel" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <div class="alert alert-danger" role="alert">
+                            <h5 class="modal-title" id="websocketModalLabel"><i class="fa-solid fa-bomb"></i> Websocket Error: Connection Failed</h5>
+                        </div>
+                    </div>
+                    <div class="modal-body">
+                        Websocket connection failed. Currently retrying to connect to device.
                     </div>
                 </div>
                 </div>
