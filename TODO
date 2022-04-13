@@ -6,6 +6,7 @@ Project Resumption:
     ☐ Don't reset webui state when files loaded for select modal dialog
     ☐ Check _config. See if it is properly destroyed and created throughout the project
     ☐ Switch web ui to correct tab when starting function from teensy menu
+    ✔ Dim & disable tabs in WebUI when device is busy @done(22-04-13 17:40)
     ✔ Display flux when dump floppy @done(22-04-13 16:51)
     ✔ Add AK74 link to the footer @done(22-04-13 17:12)
     ✔ Added cat command to print files to terminal @done(22-04-11 17:42)

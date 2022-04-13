@@ -101,7 +101,9 @@ function setTab(tabName) {
 function disableInterface(isBusy) {
   if (isBusy) {
     $('button').prop('disabled', true);
+    $('button').addClass('disabled');
     $('#diskcopy_cancel').prop('disabled', false);
+    $('#diskcopy_cancel').removeClass('disabled');
   } else {
     $('#copyADFtoDisk').removeClass('btn-light').addClass('btn-primary');
     $('#copyDisktoADF').removeClass('btn-light').addClass('btn-primary');
@@ -109,7 +111,9 @@ function disableInterface(isBusy) {
     $('#copyDisktoFlash').removeClass('btn-light').addClass('btn-primary');
     $('#copyFlashtoDisk').removeClass('btn-light').addClass('btn-primary');
     $('button').prop('disabled', false);
+    $('button').removeClass('disabled');
     $('#diskcopy_cancel').prop('disabled', true);
+    $('#diskcopy_cancel').addClass('disabled');
     disableGlobes();
   }
 }
