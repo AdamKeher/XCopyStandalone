@@ -58,7 +58,6 @@ function drawSdFiles() {
         filename = "<a onclick=\"writeADFFile('" + sdPath + file.name + "');\" href=\"#\">" + filename + "</a>";
       }
       tablerow = "<tr><td>" + file.date + "</td><td>" + file.time + "</td><td>" + file.size + "</td><td>" + filename + "</td></tr>";
-      console.log(tablerow);
       $('#fileselectTable tbody').append(tablerow);
     });
 }
