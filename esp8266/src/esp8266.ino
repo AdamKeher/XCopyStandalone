@@ -218,6 +218,9 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t lenght)
   case WStype_TEXT: // if new text data is received
   {
     String cmd = (char *)payload;
+    if (cmd == "ping") {
+      webSocket.sendTXT(num, "pong");
+    }
     if (cmd.startsWith(_marker))
     {
       cmd = cmd.substring(_marker.length()+1);
