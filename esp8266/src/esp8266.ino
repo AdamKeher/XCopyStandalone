@@ -183,8 +183,7 @@ bool handleFileUpload() {
       response.replace("error,", "");
       String url = "/#sdcard?fileerror=";
       url.concat(response);
-      server.sendHeader("Location", url);
-      server.send(303);
+      server.send(409, "text/plain", String("409: Conflict - Upload error: " + upload.filename + "(" + String(filesize) + ")").c_str());
       digitalWrite(led, 1);
       return false;
     }
@@ -194,7 +193,7 @@ bool handleFileUpload() {
     delay(125);
   }
   else if (upload.status == UPLOAD_FILE_END) {
-    server.send(200, "text/plain", String("200: OK<br>File uploaded: " + upload.filename + "(" + String(filesize) + ")").c_str());
+    server.send(200, "text/plain", String("200: OK - File uploaded: " + upload.filename + "(" + String(filesize) + ")").c_str());
   }
 
   digitalWrite(led, 1);

@@ -15,26 +15,78 @@ function onLoad() {
   term.open(document.getElementById('terminal'));
   term.write('\x1B[1;3;32mXCopy Standalone\x1B[0m Logging Console\r\n');
   $('#diskcopy_cancel').prop('disabled', true);
+  $('#file').change(fileUploadChange);
+  $('#selectButton').click(function() { file.click(); });
+  $("#uploadButton").click(fileUploadSelect);
+}
 
-  $("#uploadButton").click(function() {
-      var fd = new FormData();
-      var files = $('#file')[0].files[0];
-      fd.append('file', files);
-      $.ajax({
-          url: '/upload?filesize=' + files.size,
-          type: 'post',
-          data: fd,
-          contentType: false,
-          processData: false,
-          success: function(response){
-              if(response != 0){
-                  alert('file uploaded');
-              }
-              else{
-                  alert('file not uploaded');
-              }
-          },
-      });
+function fileUploadChange() {
+  if ($('#file')[0].files.length == 0) {
+    $("#uploadSuccess").hide();
+    $("#uploadError").hide();
+    $("#uploadNoFileError").hide();
+    $("#uploadDetails").hide();
+    return;
+  }
+
+  $('#uploadProgress').width('0%').html('0%');
+  var files = $('#file')[0].files[0];
+  $('#filename').html(files.name);
+  $('#filesize').html(files.size);
+  $("#uploadSuccess").hide();
+  $("#uploadError").hide();
+  $("#uploadNoFileError").hide();
+  $("#uploadDetails").show();
+}
+
+function fileUploadSelect() {
+  $("#uploadSuccess").hide();
+  $("#uploadError").hide();
+
+  if ($('#file')[0].files.length == 0) {
+    $("#uploadNoFileError").show();
+    $("#uploadDetails").hide();
+    return;
+  }
+
+  $("#uploadNoFileError").hide();
+  $("#uploadDetails").show();
+  $('#uploadProgress').width('0%');
+
+  var fd = new FormData();
+  var files = $('#file')[0].files[0];
+  fd.append('file', files);
+
+  $.ajax({
+    xhr: function() {
+      var xhr = new window.XMLHttpRequest();
+      xhr.upload.addEventListener("progress", function(evt) {
+          if (evt.lengthComputable) {
+              var percentComplete = (evt.loaded / evt.total) * 100;
+              $('#uploadProgress').width(percentComplete + '%');
+          }
+      }, false);
+      return xhr;
+    },
+    url: '/upload?filesize=' + files.size,
+    type: 'post',
+    data: fd,
+    contentType: false,
+    processData: false,
+    success: function(response){
+        if(response != 0){
+          $("#uploadSuccess").show();
+          $("#uploadError").hide();
+        }
+        else{
+          $("#uploadSuccess").hide();
+          $("#uploadError").show();
+        }
+    },
+    error: function(){
+      $("#uploadSuccess").hide();
+      $("#uploadError").show();
+    }
   });
 }
 

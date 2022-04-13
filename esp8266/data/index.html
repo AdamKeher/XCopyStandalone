@@ -383,13 +383,36 @@
                     <p>
                         <div class="btn-group me-2" role="group" aria-label="First group">
                             <form method="post" action="/upload" enctype="multipart/form-data">
-                                <input id="file" type="file" name="name">
-                                <input class="button" type="submit" value="Upload">
+                                <input id="file" type="file" name="name" style="display:none">
+                                <button type="button" id="selectButton" class="btn btn-primary"><i class="fa-solid fa-file-arrow-up"></i> Upload</button>
                             </form>
-                            <button type="button" id="uploadButton" class="btn btn-primary"><i class="fa-solid fa-file-arrow-up"></i> Upload File</button>
-                            <button type="button" class="btn btn-primary" onclick="getSdFiles(sdPath);"><i class="fa-solid fa-rotate-right"></i> Refresh</button>                            
-                        </div>                     
+                            <button type="button" class="btn btn-primary" onclick="getSdFiles(sdPath);"><i class="fa-solid fa-rotate-right"></i> Refresh</button>
+                        </div>
                     </p>
+                    <div id="uploadDetails" style="display: none;">
+                        <p>
+                            <strong>Filename:</strong> <span id="filename">filename.adf</span>
+                            <br>
+                            <strong>Filesize:</strong> <span id="filesize">0</span>
+                            <div class="progress">
+                                <div id="uploadProgress" class="progress-bar" role="progressbar" style="width: 15%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                            </div>
+                            <br>
+                            <button type="button" id="uploadButton" class="btn btn-success"><i class="fa-solid fa-play"></i> Start</button>
+                        </p>
+                    </div>
+                    <div id="uploadNoFileError" style="display: none;" class="alert alert-danger alert-dismissible fade show" role="alert">
+                        <strong>Upload Error!</strong> You must select a file for upload
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                    <div id="uploadSuccess" style="display: none;" class="alert alert-success alert-dismissible fade show" role="alert">
+                        <strong>Success</strong> Your file has uploaded
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                    <div id="uploadError" style="display: none;" class="alert alert-danger alert-dismissible fade show" role="alert">
+                        <strong>Upload Error!</strong> Upload failed
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
                     <p><hr/></p>
                     <p>Path: <span id="sdcardPath">/</span></p>
                     <p>

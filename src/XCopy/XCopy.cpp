@@ -441,7 +441,7 @@ void XCopy::getFile(String path, size_t filesize) {
     
     if (!_sdCard->cardDetect()) {
         Serial1.print("error,detect\n");
-        Serial << _sdCard->getError() + "\r\n";
+        Serial << "Error: Card detect error\r\n";
         delete _sdCard;
         setBusy(false);
         return;
@@ -449,7 +449,7 @@ void XCopy::getFile(String path, size_t filesize) {
 
     if (!_sdCard->begin()) {
         Serial1.print("error,init\n");
-        Serial << _sdCard->getError() + "\r\n";
+        Serial << "Error: Initialisation error\r\n";
         delete _sdCard;
         setBusy(false);
         return;
@@ -457,7 +457,7 @@ void XCopy::getFile(String path, size_t filesize) {
 
     if (_sdCard->fileExists(path)) {
         Serial1.print("error,exists\n");
-        Serial << _sdCard->getError() + "\r\n";
+        Serial << "Error: File exists\r\n";
         delete _sdCard;
         setBusy(false);
         return;
@@ -467,7 +467,7 @@ void XCopy::getFile(String path, size_t filesize) {
     bool fresult = file.open(path.c_str(), O_RDWR | O_CREAT);
     if (!fresult) {
         Serial1.print("error,open\n");
-        Serial << "SD file open failed";
+        Serial << "Error: SD file open failed\r\n";
         delete _sdCard;
         setBusy(false);
         return;
