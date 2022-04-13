@@ -15,13 +15,13 @@ function onLoad() {
   term.open(document.getElementById('terminal'));
   term.write('\x1B[1;3;32mXCopy Standalone\x1B[0m Logging Console\r\n');
   $('#diskcopy_cancel').prop('disabled', true);
-  $('#file').change(fileUploadChange);
-  $('#selectButton').click(function() { file.click(); });
-  $("#uploadButton").click(fileUploadSelect);
+  $('#uploadFile').change(fileUploadChange);
+  $('#uploadSelectButton').click(function() { file.click(); });
+  $("#uploadStartButton").click(fileUploadSelect);
 }
 
 function fileUploadChange() {
-  if ($('#file')[0].files.length == 0) {
+  if ($('#uploadFile')[0].files.length == 0) {
     $("#uploadSuccess").hide();
     $("#uploadError").hide();
     $("#uploadNoFileError").hide();
@@ -30,9 +30,9 @@ function fileUploadChange() {
   }
 
   $('#uploadProgress').width('0%').html('0%');
-  var files = $('#file')[0].files[0];
-  $('#filename').html(files.name);
-  $('#filesize').html(files.size);
+  var files = $('#uploadFile')[0].files[0];
+  $('#uploadFilename').html(files.name);
+  $('#uploadFileSize').html(files.size);
   $("#uploadSuccess").hide();
   $("#uploadError").hide();
   $("#uploadNoFileError").hide();
@@ -43,7 +43,7 @@ function fileUploadSelect() {
   $("#uploadSuccess").hide();
   $("#uploadError").hide();
 
-  if ($('#file')[0].files.length == 0) {
+  if ($('#uploadFile')[0].files.length == 0) {
     $("#uploadNoFileError").show();
     $("#uploadDetails").hide();
     return;
