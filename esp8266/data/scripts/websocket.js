@@ -41,10 +41,6 @@ connection.onerror = function (error) {
   console.log('WebSocket Error ', error);
 };
 
-connection.onclose = function () {
-  console.log('WebSocket connection closed');
-};
-
 connection.onmessage = function (e) {
   message = e.data;
   
