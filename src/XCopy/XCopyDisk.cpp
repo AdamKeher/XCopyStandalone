@@ -849,6 +849,7 @@ void XCopyDisk::diskFlux()
 {
     _esp->setStatus("Disk Flux");
     _esp->setState(fluxDisk);
+    _esp->resetDisk();
 
     _cancelOperation = false;
 
