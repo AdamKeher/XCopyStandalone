@@ -1,9 +1,13 @@
 Project Resumption:
   v708.2022:    
+    ☐ Crashes when directory too large in ADF write
+    ☐ When SD Card refresh is hit, you can no longer upload files!?
     ☐ Change javascript states from lowercase 'to' to capitalised 'To' i.e copyFlashtoDisk -> copyFlashToDisk to match teensy states
     ☐ Don't reset webui state when files loaded for select modal dialog
     ☐ Check _config. See if it is properly destroyed and created throughout the project
     ☐ Switch web ui to correct tab when starting function from teensy menu
+    ✔ Display flux when dump floppy @done(22-04-13 16:51)
+    ✔ Add AK74 link to the footer @done(22-04-13 17:12)
     ✔ Added cat command to print files to terminal @done(22-04-11 17:42)
     ✔ Added rm command to delete files from terminal @done(22-04-11 17:42)
     ✔ Flash esp led when web request being processed @done(22-04-11 14:57)
