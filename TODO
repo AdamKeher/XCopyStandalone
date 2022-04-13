@@ -1,7 +1,7 @@
 Project Resumption:
   v708.2022:    
-    ☐ Crashes when directory too large in ADF write
-    ☐ When SD Card refresh is hit, you can no longer upload files!?
+    ☐ Crashes when directory too large in ADF write - WebUI OK
+    ☐ When SD Card refresh is hit in WebUI, you can no longer upload files!?
     ☐ Change javascript states from lowercase 'to' to capitalised 'To' i.e copyFlashtoDisk -> copyFlashToDisk to match teensy states
     ☐ Don't reset webui state when files loaded for select modal dialog
     ☐ Check _config. See if it is properly destroyed and created throughout the project
