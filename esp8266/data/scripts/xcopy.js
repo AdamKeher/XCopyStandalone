@@ -16,8 +16,8 @@ function onLoad() {
   term.write('\x1B[1;3;32mXCopy Standalone\x1B[0m Logging Console\r\n');
   $('#diskcopy_cancel').prop('disabled', true);
   $('#uploadFile').change(fileUploadChange);
-  $('#uploadSelectButton').click(function() { file.click(); });
-  $("#uploadStartButton").click(fileUploadSelect);
+  $('#uploadSelect').click(function() { uploadFile.click(); });
+  $("#uploadStart").click(fileUploadSelect);
 }
 
 function fileUploadChange() {
@@ -54,7 +54,7 @@ function fileUploadSelect() {
   $('#uploadProgress').width('0%');
 
   var fd = new FormData();
-  var files = $('#file')[0].files[0];
+  var files = $('#uploadFile')[0].files[0];
   fd.append('file', files);
 
   $.ajax({
