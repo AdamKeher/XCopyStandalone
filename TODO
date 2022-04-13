@@ -42,8 +42,8 @@ Project Resumption:
         ☐ Try to spead it up, it's sloooooooooooow
         ✔ Finished sendSize command so we can set the http header for content length for the file being sent @done(22-04-10 12:01)
       ✔ Implement file upload @done(22-04-12 00:17)
-        ☐ Skin upload with bootstrap
-        ☐ Implement percentage bar & related info
+        ✔ Skin upload with bootstrap @done(22-04-13 18:05)
+        ✔ Implement percentage bar & related info @done(22-04-13 18:05)
       ☐ Implement file delete
       ✔ Change to less memory intesive process as it currently limmits how files are returned in terminal ls and web ui due to ram constraints @done(22-04-10 12:02)
   v708.2022:
