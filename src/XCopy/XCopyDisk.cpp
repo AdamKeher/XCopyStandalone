@@ -177,36 +177,37 @@ void XCopyDisk::writeDiskTrack(uint8_t trackNum, uint8_t retryCount)
 
 void XCopyDisk::drawFlux(uint8_t trackNum, uint8_t scale, uint8_t yoffset)
 {
-    String histData;
+    // web interface
+    String data = "";
+    for (int i = 0; i < 255; i++) {
+        data = data + String(getHist()[i]);
+        data = data + "|";
+    }
+    _esp->sendWebSocket("flux," + String(trackNum) + "," + data);
 
+    // tft screen
+    int scaled = 0;
     for (int i = 0; i < 255; i = i + scale)
     {
-        int hist = 0;
-        for (int s = 0; s < scale; s++)
+        // scale hist value
+        for (int s = 0; s < scale; s++) { scaled += getHist()[i + s]; }
+
+        // draw hist
+        if (scaled > 0)
         {
-            hist += getHist()[i + s];
+            scaled = (scaled / (32 * scale));
+            scaled = scaled < 255 ? scaled : 255;
+            float ratio = scaled / 255.0f;
 
-            histData.append(getHist()[i + s]);
-            histData.append("|");
-        }
-
-        if (hist > 0)
-        {
-            hist = (hist / (32 * scale));
-            hist = hist < 255 ? hist : 255;
-            float ratio = hist / 255.0f;
-
-            if (hist < 5)
+            if (scaled < 5)
                 _graphics->getTFT()->drawPixel(trackNum, yoffset, _graphics->LerpRGB(ST7735_WHITE, ST7735_YELLOW, ratio));
-            else if (hist < 50)
+            else if (scaled < 50)
                 _graphics->getTFT()->drawPixel(trackNum, yoffset, _graphics->LerpRGB(ST7735_YELLOW, ST7735_ORANGE, ratio));
             else
                 _graphics->getTFT()->drawPixel(trackNum, yoffset, _graphics->LerpRGB(ST7735_ORANGE, ST7735_RED, ratio));
         }
         yoffset++;
     }
-
-    _esp->sendWebSocket("flux," + String(trackNum) + "," + histData);
 }
 
 String XCopyDisk::getADFVolumeName(String ADFFileName, ADFFileSource source)
@@ -465,6 +466,10 @@ bool XCopyDisk::diskToADF(String ADFFileName, bool verify, uint8_t retryCount, A
         ADFFlashFile.seek(0);
     }
 
+    // clear XCopy logo for flux
+    _graphics->getTFT()->fillRect(0, 85, _graphics->getTFT()->width(), _graphics->getTFT()->height()-85, ST7735_BLACK);
+    _graphics->getTFT()->drawFastHLine(0, 85, _graphics->getTFT()->width(), ST7735_GREEN);
+
     // YELLOW = Begin, GREEN = Read OK, ORANGE = Read after Retries, RED = Read Error, MAGENTA = Verify Error
     for (int trackNum = 0; trackNum < 160; trackNum++)
     {
@@ -479,6 +484,10 @@ bool XCopyDisk::diskToADF(String ADFFileName, bool verify, uint8_t retryCount, A
 
         // read track
         int readResult = readDiskTrack(trackNum, false, retryCount);
+
+        // draw flux
+        analyseHist(true);
+        drawFlux(trackNum, 6, 85);
 
         if (getWeakTrack())
         {
@@ -757,7 +766,7 @@ void XCopyDisk::adfToDisk(String ADFFileName, bool verify, uint8_t retryCount, A
         if (verify)
         {
             // read track
-            readDiskTrack(trackNum, trackNum, retryCount);
+            readDiskTrack(trackNum, true, retryCount);
 
             bool compareError = false;
             byte buffer[512];
@@ -921,6 +930,7 @@ void XCopyDisk::testDiskette(uint8_t retryCount)
         // read track
         readDiskTrack(trackNum, false, retryCount);
 
+        // draw flux
         analyseHist(true);
         drawFlux(trackNum, 6, 85);
     }
