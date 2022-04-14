@@ -1,15 +1,17 @@
 // Web Sockets
 // --------------------------------------------------------
 var connection = new ReconnectingWebSocket('ws://' + location.hostname + ':81/', ['arduino'], {debug: true, reconnectInterval: 3000, timeoutInterval: 5000, automaticOpen: true });
+var connectionState = false; 
 
 setupWebsocket();
 
 function ping() {
-  if (!uploadInProgress) {
+  if (!uploadInProgress && connectionState) {
     connection.send('ping');
     tm = setTimeout(function () {
       console.log('WebSocket Timeout');
-      connection.refresh();
+      $('#websocketModal').modal('show');
+      connectionState = false;
     }, 1000);
   }
 }
@@ -25,18 +27,21 @@ function setWebsocketStatus(status) {
       .addClass('alert-success')
       .html('Websocket Open');
     $('#websocketModal').modal('hide');
+    connectionState = true;
   }
   else if (status == 'closed') {
     $('#websocketStatus')
       .addClass('alert-warning')
       .html('Websocket Closed');
     $('#websocketModal').modal('show');
+    connectionState = false;
   }
   else {
     $('#websocketStatus')
       .addClass('alert-danger')
       .html('Websocket Error');
     $('#websocketModal').modal('show');
+    connectionState = false;
   }
 }
 
