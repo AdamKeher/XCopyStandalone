@@ -11,35 +11,20 @@
     }
 }
 
+@mixin diskTrack($background, $text) {
+    background-color: $background;
+    color: $text;
+}
+
 .track {
     font-size: smaller;
     background-color: #151515;
     color: $textColor;
     border: 1px solid white;
-}
 
-.trackRed
-{
-    background-color: red;
-    color: $textColor;
-}
-.trackOrange
-{
-    background-color: orange;
-    color: $textColorDark;
-}
-.trackYellow
-{
-    background-color: yellow;
-    color: $textColorDark;
-}
-.trackGreen
-{
-    background-color: green;
-    color: $textColor;
-}
-.trackMagenta
-{
-    background-color: magenta;
-    color: $textColor;
+    &.red { @include diskTrack(red, $textColor); }
+    &.orange { @include diskTrack(orange, $textColorDark); }
+    &.yellow { @include diskTrack(yellow, $textColorDark); }
+    &.green { @include diskTrack(green, $textColor); }
+    &.magenta { @include diskTrack(magenta, $textColor); }
 }

@@ -82,27 +82,27 @@ body {
   border: 1px solid white;
 }
 
-.trackRed {
+.track.red {
   background-color: red;
   color: white;
 }
 
-.trackOrange {
+.track.orange {
   background-color: orange;
   color: black;
 }
 
-.trackYellow {
+.track.yellow {
   background-color: yellow;
   color: black;
 }
 
-.trackGreen {
+.track.green {
   background-color: green;
   color: white;
 }
 
-.trackMagenta {
+.track.magenta {
   background-color: magenta;
   color: white;
 }

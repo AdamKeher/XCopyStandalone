@@ -78,7 +78,7 @@ int XCopyDisk::readDiskTrack(uint8_t trackNum, bool verify, uint8_t retryCount, 
         // read track
         if (!silent)
             _graphics->drawTrack(trackNum / 2, trackNum % 2, true, false, 0, verify, ST7735_YELLOW);
-        _esp->setTrack(trackNum, "trackYellow");
+        _esp->setTrack(trackNum, "yellow");
         gotoLogicTrack(trackNum);
         errors = readTrack(true);
 
@@ -88,20 +88,20 @@ int XCopyDisk::readDiskTrack(uint8_t trackNum, bool verify, uint8_t retryCount, 
             {
                 if (!silent)
                     _graphics->drawTrack(trackNum / 2, trackNum % 2, true, false, 0, verify, ST7735_YELLOW);
-                _esp->setTrack(trackNum, "trackYellow");
+                _esp->setTrack(trackNum, "yellow");
             }
             else
             {
                 if (!silent)
                     _graphics->drawTrack(trackNum / 2, trackNum % 2, true, false, 0, verify, ST7735_GREEN);
-                _esp->setTrack(trackNum, "trackGreen");
+                _esp->setTrack(trackNum, "green");
             }
         }
         else
         {
             if (!silent)
                 _graphics->drawTrack(trackNum / 2, trackNum % 2, true, true, retries + 1, verify, ST7735_RED);
-            _esp->setTrack(trackNum, "trackRed");
+            _esp->setTrack(trackNum, "red");
             retries++;
             _audio->playBong(false);
             delay(1000);
@@ -117,13 +117,13 @@ int XCopyDisk::readDiskTrack(uint8_t trackNum, bool verify, uint8_t retryCount, 
     {
         if (!silent)
             _graphics->drawTrack(trackNum / 2, trackNum % 2, true, false, 0, verify, ST7735_RED);
-        _esp->setTrack(trackNum, "trackRed");
+        _esp->setTrack(trackNum, "red");
     }
     else if (errors == 0 && retries > 0)
     {
         if (!silent)
             _graphics->drawTrack(trackNum / 2, trackNum % 2, true, false, 0, verify, ST7735_ORANGE);
-        _esp->setTrack(trackNum, "trackOrange");
+        _esp->setTrack(trackNum, "orange");
     }
 
     return errors == -1 ? errors : retries;
@@ -138,19 +138,19 @@ void XCopyDisk::writeDiskTrack(uint8_t trackNum, uint8_t retryCount)
     {
         // write track
         _graphics->drawTrack(trackNum / 2, trackNum % 2, true, false, 0, false, ST7735_YELLOW);
-        _esp->setTrack(trackNum, "trackYellow");
+        _esp->setTrack(trackNum, "yellow");
         gotoLogicTrack(trackNum);
         errors = writeTrack();
 
         if (errors != -1)
         {
             _graphics->drawTrack(trackNum / 2, trackNum % 2, true, false, 0, false, ST7735_GREEN);
-            _esp->setTrack(trackNum, "trackGreen");
+            _esp->setTrack(trackNum, "green");
         }
         else
         {
             _graphics->drawTrack(trackNum / 2, trackNum % 2, true, true, retries + 1, false, ST7735_RED);
-            _esp->setTrack(trackNum, "trackRed");
+            _esp->setTrack(trackNum, "red");
             Serial << "Write failed! - Try: << " << retries + 1 << "\r\n";
             retries++;
             _audio->playBong(false);
@@ -166,12 +166,12 @@ void XCopyDisk::writeDiskTrack(uint8_t trackNum, uint8_t retryCount)
     if (errors == -1)
     {
         _graphics->drawTrack(trackNum / 2, trackNum % 2, true, false, 0, false, ST7735_RED);
-        _esp->setTrack(trackNum, "trackRed");
+        _esp->setTrack(trackNum, "red");
     }
     else if (errors == 0 && retries > 0)
     {
         _graphics->drawTrack(trackNum / 2, trackNum % 2, true, false, 0, false, ST7735_ORANGE);
-        _esp->setTrack(trackNum, "trackOrange");
+        _esp->setTrack(trackNum, "orange");
     }
 }
 
@@ -310,7 +310,7 @@ void XCopyDisk::OperationCancelled(uint8_t trackNum)
     if (trackNum >= 0)
     {
         _graphics->drawDisk(trackNum, ST7735_RED);
-        _esp->sendWebSocket("resetTracks,trackRed," + String(trackNum));
+        _esp->sendWebSocket("resetTracks,red," + String(trackNum));
     }
     _audio->playBong(false);
 }
@@ -598,13 +598,13 @@ bool XCopyDisk::diskToADF(String ADFFileName, bool verify, uint8_t retryCount, A
             if (compareError)
             {
                 _graphics->drawTrack(trackNum / 2, trackNum % 2, true, false, 0, true, ST7735_MAGENTA);
-                _esp->setTrack(trackNum, "trackMagenta,");
+                _esp->setTrack(trackNum, "magenta,");
                 _audio->playBong(false);
             }
             else
             {
                 _graphics->drawTrack(trackNum / 2, trackNum % 2, true, false, 0, true, ST7735_GREEN);
-                _esp->setTrack(trackNum, "trackGreen");
+                _esp->setTrack(trackNum, "green");
             }
         }
     }
@@ -798,13 +798,13 @@ void XCopyDisk::adfToDisk(String ADFFileName, bool verify, uint8_t retryCount, A
             if (compareError)
             {
                 _graphics->drawTrack(trackNum / 2, trackNum % 2, true, false, 0, false, ST7735_MAGENTA);
-                _esp->setTrack(trackNum, "trackMagenta");
+                _esp->setTrack(trackNum, "magenta");
                 _audio->playBong(false);
             }
             else
             {
                 _graphics->drawTrack(trackNum / 2, trackNum % 2, true, false, 0, false, ST7735_GREEN);
-                _esp->setTrack(trackNum, "trackGreen");
+                _esp->setTrack(trackNum, "green");
             }
         }
     }
