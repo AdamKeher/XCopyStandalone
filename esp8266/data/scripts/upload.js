@@ -1,4 +1,5 @@
 var ajaxUpload
+var uploadInProgress = false;
 
 function fileUploadChange() {
     if ($('#uploadFile')[0].files.length == 0) {
@@ -19,8 +20,20 @@ function fileUploadChange() {
     $("#uploadDetails").show();
 }
 
+function fileUploadCancelClick() {
+    if (uploadInProgress) {
+        fileUploadCancel('aborted'); 
+    } else {
+        $('#uploadDetails').hide();
+        $('#uploadFile')[0].value = null;
+    }
+}
+
 function fileUploadCancel(reason) {
-    ajaxUpload.abort();
+    try {
+        ajaxUpload.abort();
+    } catch (error) { }
+    
     if (reason == "exists") {
         $('#uploadErrorDetails').html('The file you have selected already exists on the SD card.');
     }
@@ -32,6 +45,9 @@ function fileUploadCancel(reason) {
     }
     else if (reason == "open") {
         $('#uploadErrorDetails').html('The file failed to open for writing on the SD card.');
+    }
+    else if (reason == "aborted") {
+        $('#uploadErrorDetails').html('The file upload was aborted by the user. A partial file will be saved to the SD card.');
     }
     else {
         $('#uploadErrorDetails').html('Unknown error.');
@@ -59,6 +75,7 @@ function fileUploadSelect() {
   
     ajaxUpload = $.ajax({
         xhr: function() {
+            uploadInProgress = true;
             $('#uploadErrorDetails').html('Unknown error.');
             var xhr = new window.XMLHttpRequest();
             xhr.upload.addEventListener("progress", function(evt) {
@@ -75,6 +92,7 @@ function fileUploadSelect() {
         contentType: false,
         processData: false,
         success: function(response){
+            uploadInProgress = false;
             if(response != 0){
             $("#uploadSuccess").show();
             $("#uploadError").hide();
@@ -85,8 +103,9 @@ function fileUploadSelect() {
             }
         },
         error: function(){
-        $("#uploadSuccess").hide();
-        $("#uploadError").show();
+            uploadInProgress = false;
+            $("#uploadSuccess").hide();
+            $("#uploadError").show();
         }
     });
 }

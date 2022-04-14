@@ -4,12 +4,14 @@ var connection = new ReconnectingWebSocket('ws://' + location.hostname + ':81/',
 
 setupWebsocket();
 
-function ping() { 
-  connection.send('ping');
-  tm = setTimeout(function () {
-    console.log('WebSocket Timeout');
-    connection.refresh();
-  }, 1000);
+function ping() {
+  if (!uploadInProgress) {
+    connection.send('ping');
+    tm = setTimeout(function () {
+      console.log('WebSocket Timeout');
+      connection.refresh();
+    }, 1000);
+  }
 }
 
 function setWebsocketStatus(status) {
