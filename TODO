@@ -12,11 +12,17 @@ Project Resumption:
       ☐ Don't reset webui state when files loaded for select modal dialog
       ☐ File upload not reliable - sometimes too short.
       ☐ Add uploaded filesize does not match saved filesize error
-      ☐ Crashes when directory too large in ADF write - WebUI OK
-    ☐ Switch web ui to correct tab when starting function from teensy menu
+    ☐ Update mode, status and diskname for all disk activities
+    ☐ Compiler warnings
+      ☐ Clean up compiler warnings for esp8266
+      ☐ Clean up compiler warnings for teensy
+    ☐ Work on terminal log
+      ☐ Connect termial emulator to ESP via websocket, should speed it up a little
+      ☐ Accept terminal input in the webbrowser
     ☐ Change javascript states from lowercase 'to' to capitalised 'To' i.e copyFlashtoDisk -> copyFlashToDisk to match teensy states
+    ☐ Crashes when directory too large in ADF write - WebUI OK
     ☐ Check _config. See if it is properly destroyed and created throughout the project
-    ☐ Clean up compiler warnings
+      ✔ Switch web ui to correct tab when starting function from teensy menu @done(22-04-14 16:30)
     ✔ Refactors ESP8266 SPIFFS code to LittleFS @done(22-04-14 15:39)
     ✔ Improve websocket server / client disconnection code @done(22-04-14 13:35)
     ✔ Flux disk does not clear the WebUI @done(22-04-13 23:36)
@@ -103,16 +109,7 @@ Project Resumption:
     ✔ Move XCopyStandalone to PlatformIO and include libraries @done(21-03-26 16:00)
     Projects:
       ✔ Move ESP8266 webserver to PlatformIO and include libraries @done(21-03-26 16:00)
-      ✔ Fix flash writing error due to early exit of serialflash write routing. Added hacky delay between writes @done(22-03-26 15:59)
-  
----------------------------------------------------------------------------------------------------
-
-  Open:
-    ESP8266:
-        ☐ Migrate SPIFF to LittleFS
-    General:
-      ☐ Move SDCard code to XCopySDCard object, especially XCopyDebug. Get rid of all SD references and move to SdFat @started(22-03-30 17:33)
-      ☐ Update mode, status and diskname for all disk activities
+      ✔ Fix flash writing error due to early exit of serialflash write routing. Added hacky delay between writes @done(22-03-26 15:59) 
 
 ---------------------------------------------------------------------------------------------------
 
