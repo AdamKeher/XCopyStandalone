@@ -438,29 +438,24 @@ void XCopy::getFile(String path, size_t filesize) {
     
     XCopySDCard *_sdCard = new XCopySDCard();
     _sdCard->begin();
-    
+    bool error = false;
+
     if (!_sdCard->cardDetect()) {
         Serial1.print("error,detect\n");
         Serial << "Error: Card detect error\r\n";
-        delete _sdCard;
-        setBusy(false);
-        return;
+        error = true;
     }
 
     if (!_sdCard->begin()) {
         Serial1.print("error,init\n");
         Serial << "Error: Initialisation error\r\n";
-        delete _sdCard;
-        setBusy(false);
-        return;
+        error = true;
     }    
 
     if (_sdCard->fileExists(path)) {
         Serial1.print("error,exists\n");
         Serial << "Error: File exists\r\n";
-        delete _sdCard;
-        setBusy(false);
-        return;
+        error = true;
     }
 
     FatFile file;
@@ -468,6 +463,10 @@ void XCopy::getFile(String path, size_t filesize) {
     if (!fresult) {
         Serial1.print("error,open\n");
         Serial << "Error: SD file open failed\r\n";
+        error = true;
+    }
+
+    if (error) {
         delete _sdCard;
         setBusy(false);
         return;
