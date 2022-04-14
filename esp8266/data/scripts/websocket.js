@@ -16,6 +16,12 @@ function ping() {
   }
 }
 
+function webSocketRefresh() {
+  try {
+    connection.refresh();
+  } catch (error) { }
+}
+
 function setWebsocketStatus(status) {
   $('#websocketStatus')
     .removeClass('alert-danger')
