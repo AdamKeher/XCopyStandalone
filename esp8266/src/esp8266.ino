@@ -124,6 +124,8 @@ bool handleFileRead(String path)
     }
     sscanf(ssize.c_str(), "%zu", &filesize);
 
+    webSocket.broadcastTXT("download,start");
+
     // start http send
     server.setContentLength(filesize <= 0 ? CONTENT_LENGTH_UNKNOWN : filesize);
     // server.setContentLength(CONTENT_LENGTH_UNKNOWN);
@@ -146,10 +148,13 @@ bool handleFileRead(String path)
       if (millis() - lastDataTime > 1000) {
           // finish http send
           server.sendContent("");
+          webSocket.broadcastTXT("download,end");
           return false;
       }
     }
 
+    webSocket.broadcastTXT("download,end");
+    
     return true;
   }
 

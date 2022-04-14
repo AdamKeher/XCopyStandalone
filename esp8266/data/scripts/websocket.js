@@ -6,13 +6,25 @@ var connectionState = false;
 setupWebsocket();
 
 function ping() {
-  if (!uploadInProgress && connectionState) {
+  if (!fileTransferInProgress && connectionState) {
     connection.send('ping');
     tm = setTimeout(function () {
       console.log('WebSocket Timeout');
-      setWebsocketStatus("closed");
+      if (!fileTransferInProgress) { setWebsocketStatus("closed"); }
       connectionState = false;
     }, 1000);
+  }
+}
+
+function setHardwareStatus(status) {  
+  element = document.getElementById('hardwareStatus');
+  if (status == 0) {
+    $('#hardwareStatus').removeClass('alert-danger').addClass('alert-success').html('Device Idle');
+    disableInterface(false);
+  }
+  else if (status == 1) {
+    $('#hardwareStatus').removeClass('alert-success').addClass('alert-danger').html('Device Busy');
+    disableInterface(true);
   }
 }
 
@@ -164,6 +176,15 @@ function setupWebsocket() {
 
     if (res[0] == "cancelUpload") {
       fileUploadCancel(res[1]);
+    }
+
+    if (res[0] == "download") {
+      if (res[1] == "start") {
+        fileTransferInProgress = true
+      }
+      if (res[1] == "end") {
+        fileTransferInProgress = false;
+      }
     }
   };
 }

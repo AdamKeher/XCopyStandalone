@@ -52,18 +52,6 @@ function disableInterface(isBusy) {
   }
 }
 
-function setHardwareStatus(status) {  
-  element = document.getElementById('hardwareStatus');
-  if (status == 0) {
-    $('#hardwareStatus').removeClass('alert-danger').addClass('alert-success').html('Device Idle');
-    disableInterface(false);
-  }
-  else if (status == 1) {
-    $('#hardwareStatus').removeClass('alert-success').addClass('alert-danger').html('Device Busy');
-    disableInterface(true);
-  }
-}
-
 function setDiskname(diskname) {
   $('#diskname').html(diskname);
 }

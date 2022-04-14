@@ -1,5 +1,5 @@
 var ajaxUpload
-var uploadInProgress = false;
+var fileTransferInProgress = false;
 
 function fileUploadChange() {
     if ($('#uploadFile')[0].files.length == 0) {
@@ -21,7 +21,7 @@ function fileUploadChange() {
 }
 
 function fileUploadCancelClick() {
-    if (uploadInProgress) {
+    if (fileTransferInProgress) {
         fileUploadCancel('aborted'); 
     } else {
         $('#uploadDetails').hide();
@@ -75,7 +75,7 @@ function fileUploadSelect() {
   
     ajaxUpload = $.ajax({
         xhr: function() {
-            uploadInProgress = true;
+            fileTransferInProgress = true;
             $('#uploadErrorDetails').html('Unknown error.');
             var xhr = new window.XMLHttpRequest();
             xhr.upload.addEventListener("progress", function(evt) {
@@ -92,7 +92,7 @@ function fileUploadSelect() {
         contentType: false,
         processData: false,
         success: function(response){
-            uploadInProgress = false;
+            fileTransferInProgress = false;
             if(response != 0){
             $("#uploadSuccess").show();
             $("#uploadError").hide();
@@ -103,7 +103,7 @@ function fileUploadSelect() {
             }
         },
         error: function(){
-            uploadInProgress = false;
+            fileTransferInProgress = false;
             $("#uploadSuccess").hide();
             $("#uploadError").show();
         }
