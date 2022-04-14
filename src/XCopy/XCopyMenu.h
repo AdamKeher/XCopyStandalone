@@ -53,7 +53,11 @@ public:
   void redraw() {
     _graphics->clearScreen();
     _graphics->drawHeader();
-    drawMenu(_currentItem);
+    XCopyMenuItem *item = _currentItem;
+    if (item->parent != nullptr) {
+      item = item->parent->firstChild;
+    }
+    drawMenu(item);
   };
 
 private:
