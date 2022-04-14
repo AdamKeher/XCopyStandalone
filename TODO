@@ -4,12 +4,14 @@ Project Resumption:
       ✔ When SD Card refresh is hit in WebUI, you can no longer upload files!? @done(22-04-14 10:09)
       ✔ Failed uploads (file exists, sd card error etc) need to cancel the xhr transfer @done(22-04-14 11:15)
       ✔ Report back failed upload reason to user @done(22-04-14 11:15)
-      ☐ Websocket cannot repsond while uploading causing false websocket disconnect failure
+      ✔ Websocket cannot repsond while uploading causing false websocket disconnect failure @done(22-04-14 11:31)
+      ✔ Add cancel button to file upload dialog @done(22-04-14 12:06)
+      ☐ Don't reset webui state when files loaded for select modal dialog
+      ☐ Indicate on the TFT when files are being sent and received
       ☐ File upload not reliable - sometimes too short.
         ☐ Add uploaded filesize does not match saved filesize error
     ☐ Crashes when directory too large in ADF write - WebUI OK
     ☐ Change javascript states from lowercase 'to' to capitalised 'To' i.e copyFlashtoDisk -> copyFlashToDisk to match teensy states
-    ☐ Don't reset webui state when files loaded for select modal dialog
     ☐ Check _config. See if it is properly destroyed and created throughout the project
     ☐ Switch web ui to correct tab when starting function from teensy menu
     ☐ Clean up compiler warnings
