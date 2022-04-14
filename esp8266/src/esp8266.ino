@@ -6,6 +6,7 @@
 #include "ESPCommand.h"
 #include <FS.h>
 #include <WebSocketsServer.h>
+#include <LITTLEFS.h>
 
 #define ESPBaudRate 576000
 
@@ -88,9 +89,9 @@ bool handleFileRead(String path)
 
   String contentType = getContentType(path);
 
-  if (SPIFFS.exists(path))
+  if (LittleFS.exists(path))
   {
-    File file = SPIFFS.open(path, "r");
+    File file = LittleFS.open(path, "r");
     size_t sent = server.streamFile(file, contentType);
     file.close();
     return true;
@@ -256,8 +257,8 @@ void setup(void)
   else
     Serial.println("MDNS responder failed to start");
 
-  SPIFFS.begin();
-  Serial.println("SPIFFS started");
+  LittleFS.begin();
+  Serial.println("LittleFS started");
 
   webSocket.begin();
   Serial.println("WebSockets server started");

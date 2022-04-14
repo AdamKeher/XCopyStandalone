@@ -11,6 +11,7 @@
 #include <WebSocketsServer.h>
 #include <NTPClient.h>
 #include <WiFiUdp.h>
+#include <LittleFS.h>
 
 class ESPCommandLine
 {

@@ -30,7 +30,7 @@ void ESPCommandLine::doCommand(String command)
         Serial << "| version | ver        | XCopy ESP8266 version number                         |\r\n";
         Serial << "| clear | cls          | clear screen                                         |\r\n";
         Serial << "|----------------------+------------------------------------------------------|\r\n";
-        Serial << "| dir | ls             | list all SPIFFS files                                |\r\n";
+        Serial << "| dir | ls             | list all LittleFS files                              |\r\n";
         Serial << "| broadcast <msg>      | broadcast websocket message                          |\r\n";
         Serial << "|----------------------+------------------------------------------------------|\r\n";
         Serial << "| scan                 | list wifi networks                                   |\r\n";
@@ -78,7 +78,7 @@ void ESPCommandLine::doCommand(String command)
     if (cmd == "dir" || cmd == "ls")
     {
         String directory = "";
-        Dir dir = SPIFFS.openDir("/");
+        Dir dir = LittleFS.openDir("/");
         while (dir.next())
         {
             directory += dir.fileName();
