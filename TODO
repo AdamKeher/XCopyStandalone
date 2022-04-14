@@ -6,7 +6,9 @@ Project Resumption:
       ✔ Report back failed upload reason to user @done(22-04-14 11:15)
       ✔ Websocket cannot repsond while uploading causing false websocket disconnect failure @done(22-04-14 11:31)
       ✔ Add cancel button to file upload dialog @done(22-04-14 12:06)
-      ☐ Indicate on the TFT when files are being sent and received
+      ☐ Websocket cannot repsond while downloading causing false websocket disconnect failure
+      ✔ Add connect button to websocket error modal @done(22-04-14 14:05)
+      ✔ Indicate on the TFT when files are being sent and received @done(22-04-14 13:53)
       ☐ Don't reset webui state when files loaded for select modal dialog
       ☐ File upload not reliable - sometimes too short.
         ☐ Add uploaded filesize does not match saved filesize error
