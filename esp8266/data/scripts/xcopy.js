@@ -36,6 +36,8 @@ function disableInterface(isBusy) {
     $('#diskcopy_cancel').removeClass('disabled');
     $('#uploadCancel').prop('disabled', false);
     $('#uploadCancel').removeClass('disabled');
+    $('#websocketReconnectButton').prop('disabled', false);
+    $('#websocketReconnectButton').removeClass('disabled');
   } else {
     $('#copyADFtoDisk').removeClass('btn-light').addClass('btn-primary');
     $('#copyDisktoADF').removeClass('btn-light').addClass('btn-primary');

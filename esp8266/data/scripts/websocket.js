@@ -10,7 +10,7 @@ function ping() {
     connection.send('ping');
     tm = setTimeout(function () {
       console.log('WebSocket Timeout');
-      $('#websocketModal').modal('show');
+      setWebsocketStatus("closed");
       connectionState = false;
     }, 1000);
   }
@@ -60,7 +60,7 @@ function setupWebsocket() {
   };
   
   connection.onclose = function () {
-    setWebsocketStatus("closed");
+    // setWebsocketStatus("closed");
     console.log('WebSocket Closed');
   };
   
