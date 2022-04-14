@@ -176,11 +176,11 @@ bool handleFileUpload() {
     // file creation error?
     String response = "";
     response = Serial.readStringUntil('\n');
-    response.replace("\n", "");
-    webSocket.broadcastTXT(String("log,response: " + response).c_str());
-    
+    response.replace("\n", "");  
+
     if (response.startsWith("error")) {
       response.replace("error,", "");
+      webSocket.broadcastTXT(String("cancelUpload," + response).c_str());
       String url = "/#sdcard?fileerror=";
       url.concat(response);
       server.send(409, "text/plain", String("409: Conflict - Upload error: " + upload.filename + "(" + String(filesize) + ")").c_str());
