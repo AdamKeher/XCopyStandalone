@@ -6,18 +6,18 @@ Project Resumption:
       ✔ Report back failed upload reason to user @done(22-04-14 11:15)
       ✔ Websocket cannot repsond while uploading causing false websocket disconnect failure @done(22-04-14 11:31)
       ✔ Add cancel button to file upload dialog @done(22-04-14 12:06)
-      ☐ Websocket cannot repsond while downloading causing false websocket disconnect failure
+      ✔ Websocket cannot repsond while downloading causing false websocket disconnect failure @done(22-04-14 15:22)
       ✔ Add connect button to websocket error modal @done(22-04-14 14:05)
       ✔ Indicate on the TFT when files are being sent and received @done(22-04-14 13:53)
       ☐ Don't reset webui state when files loaded for select modal dialog
       ☐ File upload not reliable - sometimes too short.
-        ☐ Add uploaded filesize does not match saved filesize error
-    ☐ Crashes when directory too large in ADF write - WebUI OK
+      ☐ Add uploaded filesize does not match saved filesize error
+      ☐ Crashes when directory too large in ADF write - WebUI OK
+    ☐ Switch web ui to correct tab when starting function from teensy menu
     ☐ Change javascript states from lowercase 'to' to capitalised 'To' i.e copyFlashtoDisk -> copyFlashToDisk to match teensy states
     ☐ Check _config. See if it is properly destroyed and created throughout the project
-    ☐ Switch web ui to correct tab when starting function from teensy menu
     ☐ Clean up compiler warnings
-    ☐ Refactors ESP8266 SPIFFS code to LittleFS
+    ✔ Refactors ESP8266 SPIFFS code to LittleFS @done(22-04-14 15:39)
     ✔ Improve websocket server / client disconnection code @done(22-04-14 13:35)
     ✔ Flux disk does not clear the WebUI @done(22-04-13 23:36)
     ✔ Detect websocket server / client disconnect quickly @done(22-04-13 23:26)
