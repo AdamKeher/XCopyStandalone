@@ -1,13 +1,20 @@
 Project Resumption:
   v708.2022:    
+    ☐ File Upload
+      ✔ When SD Card refresh is hit in WebUI, you can no longer upload files!? @done(22-04-14 10:09)
+      ✔ Failed uploads (file exists, sd card error etc) need to cancel the xhr transfer @done(22-04-14 11:15)
+      ✔ Report back failed upload reason to user @done(22-04-14 11:15)
+      ☐ Websocket cannot repsond while uploading causing false websocket disconnect failure
+      ☐ File upload not reliable - sometimes too short.
+        ☐ Add uploaded filesize does not match saved filesize error
     ☐ Crashes when directory too large in ADF write - WebUI OK
-    ☐ When SD Card refresh is hit in WebUI, you can no longer upload files!?
     ☐ Change javascript states from lowercase 'to' to capitalised 'To' i.e copyFlashtoDisk -> copyFlashToDisk to match teensy states
     ☐ Don't reset webui state when files loaded for select modal dialog
     ☐ Check _config. See if it is properly destroyed and created throughout the project
     ☐ Switch web ui to correct tab when starting function from teensy menu
-    ☐ File upload not reliable - sometimes too short.
-    ☐ Flux disk does not clear the WebUI
+    ☐ Clean up compiler warnings
+    ☐ Refactors ESP8266 SPIFFS code to LittleFS
+    ✔ Flux disk does not clear the WebUI @done(22-04-13 23:36)
     ✔ Detect websocket server / client disconnect quickly @done(22-04-13 23:26)
     ✔ Dim & disable tabs in WebUI when device is busy @done(22-04-13 17:40)
     ✔ Display flux when dump floppy @done(22-04-13 16:51)
