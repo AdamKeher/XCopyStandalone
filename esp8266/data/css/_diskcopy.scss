@@ -1,0 +1,62 @@
+/* Headings
+-------------------------------------------------- */
+
+@mixin diskcopyInfo {
+    padding-left: 10px;
+    padding-right: 10px;
+    text-align: center;
+}
+
+.diskcopyInfoHeader {
+    background-color: white;
+    color: $textColorDark;
+    @include diskcopyInfo();
+}
+
+.diskcopyInfoText {
+    background-color:darkblue;
+    color: $textColor;
+    @include diskcopyInfo();
+}
+
+/* Icons
+-------------------------------------------------- */
+
+.gray {
+    filter: grayscale(100%);
+}
+
+/* Tracks
+-------------------------------------------------- */
+
+@import "./diskcopyTracks";
+
+
+/* Flux
+-------------------------------------------------- */
+
+.fluxCanvas
+{
+    background-color: black;
+    border:1px solid darkgrey;
+}
+
+/* Modal
+-------------------------------------------------- */
+.modal {
+    color: black;
+}
+
+.websocket {
+    background: #180202d4;
+    .modal-content {
+        display: flex;
+        justify-content: center;
+        align-items: center;    
+    }
+    p {
+        display: flex;
+        align-items: center;
+        justify-content: center
+    }
+}

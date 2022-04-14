@@ -1,0 +1,24 @@
+/* SD Table
+-------------------------------------------------- */
+
+.sdcardTable {
+    th {
+        background-color: white;
+        color: black;    
+    }
+    
+    td a {
+        color: lightblue;
+        &:hover {
+            color: white;
+        }
+    }
+}
+
+.sdcardDirectory {
+    color: yellow;
+}
+
+.sdcardADF {
+    color: limegreen;
+}

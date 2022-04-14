@@ -1,0 +1,45 @@
+.table-sm {
+    width: 100%;
+    background-color: black;
+    color: $textColor;
+
+    td
+    {
+        height:40px;
+        width:40px;    
+        text-align: center;
+    }
+}
+
+.track {
+    font-size: smaller;
+    background-color: #151515;
+    color: $textColor;
+    border: 1px solid white;
+}
+
+.trackRed
+{
+    background-color: red;
+    color: $textColor;
+}
+.trackOrange
+{
+    background-color: orange;
+    color: $textColorDark;
+}
+.trackYellow
+{
+    background-color: yellow;
+    color: $textColorDark;
+}
+.trackGreen
+{
+    background-color: green;
+    color: $textColor;
+}
+.trackMagenta
+{
+    background-color: magenta;
+    color: $textColor;
+}

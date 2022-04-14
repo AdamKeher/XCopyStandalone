@@ -1,189 +1,201 @@
 /* Main Page
 -------------------------------------------------- */
-
 html {
-    position: relative;
-    min-height: 100%;
+  position: relative;
+  min-height: 100%;
 }
 
 body {
-    background-color: #1e1e1e;    
-    color: white;
-    margin-top: 10px;
-    margin-bottom: 90px; /* Margin bottom by footer height */
-    overflow-y: scroll; /* Show vertical scrollbar */    
+  background-color: #1e1e1e;
+  color: white;
+  margin-top: 10px;
+  margin-bottom: 90px;
+  /* Margin bottom by footer height */
+  overflow-y: scroll;
+  /* Show vertical scrollbar */
 }
 
 .container {
-    width: auto;
-    max-width: 680px;
-    padding: 0 15px;
+  width: auto;
+  max-width: 680px;
+  padding: 0 15px;
 }
 
 /* Header
 -------------------------------------------------- */
-
 .xcopylogo {
-    position: absolute;    
-    top: -60px;
+  position: absolute;
+  top: -60px;
 }
 
 .nav-link {
-    color: white;
+  color: white;
 }
 
 .nav-link:hover {
-    color: gray;
+  color: gray;
 }
 
 /* Headings
 -------------------------------------------------- */
-
 .diskcopyInfoHeader {
-    width:0%;
-    background-color: white;
-    color: black;
-    padding-left: 10px;
-    padding-right: 10px;
-    text-align: center;
+  background-color: white;
+  color: black;
+  padding-left: 10px;
+  padding-right: 10px;
+  text-align: center;
 }
 
 .diskcopyInfoText {
-    background-color:darkblue;
-    color: white;
-    padding-left: 10px;
-    padding-right: 10px;
-    text-align: center;
-}
-
-/* Tracks
--------------------------------------------------- */
-
-.table-sm {
-    width: 100%;
-    background-color: black;
-}
-
-.table-sm td
-{
-    height:40px;
-    width:40px;    
-    text-align: center;
-}
-
-.track {
-    font-size: smaller;
-    background-color: #151515;
-    color: white;
-    border: 1px solid white;
-}
-
-.trackRed
-{
-    background-color: red;
-    color: white;
-}
-.trackOrange
-{
-    background-color: orange;
-    color: black;
-}
-.trackYellow
-{
-    background-color: yellow;
-    color: black;
-}
-.trackGreen
-{
-    background-color: green;
-    color: white;
-}
-.trackMagenta
-{
-    background-color: magenta;
-    color: white;
+  background-color: darkblue;
+  color: white;
+  padding-left: 10px;
+  padding-right: 10px;
+  text-align: center;
 }
 
 /* Icons
 -------------------------------------------------- */
-
 .gray {
-    -webkit-filter: grayscale(100%); /* Safari 6.0 - 9.0 */
-    filter: grayscale(100%);
+  -webkit-filter: grayscale(100%);
+          filter: grayscale(100%);
 }
 
-/* Pin Status
+/* Tracks
 -------------------------------------------------- */
-
-.busy
-{
-    background-color: red;
-    color: white;
-}
-.idle
-{
-    background-color: green;
-    color: white;
+.table-sm {
+  width: 100%;
+  background-color: black;
+  color: white;
 }
 
-/* Footer
--------------------------------------------------- */
-
-.footer {
-    position: fixed;
-    bottom: 0;
-    width: 100%;
-    height: 90px;
-    line-height: 90px;
-    background-color: lightgray;
+.table-sm td {
+  height: 40px;
+  width: 40px;
+  text-align: center;
 }
 
-.statusfooter
-{    
-    position: relative;
-    top: -25px;
+.track {
+  font-size: smaller;
+  background-color: #151515;
+  color: white;
+  border: 1px solid white;
+}
+
+.trackRed {
+  background-color: red;
+  color: white;
+}
+
+.trackOrange {
+  background-color: orange;
+  color: black;
+}
+
+.trackYellow {
+  background-color: yellow;
+  color: black;
+}
+
+.trackGreen {
+  background-color: green;
+  color: white;
+}
+
+.trackMagenta {
+  background-color: magenta;
+  color: white;
 }
 
 /* Flux
 -------------------------------------------------- */
-
-.fluxCanvas
-{
-    background-color: black;
-    border:1px solid darkgrey;
-    /* width: 320px; */
-    /* height: 256px; */
-}
-
-/* SD Table
--------------------------------------------------- */
-.sdcardTable th {
-    background-color: white;
-    color: black;    
-}
-
-.sdcardTable td a {
-    color: lightblue;
-}
-
-.sdcardTable td a:hover {
-    color: white;
-}
-
-.sdcardDirectory {
-    color: yellow;
-}
-
-.sdcardADF {
-    color: limegreen;
+.fluxCanvas {
+  background-color: black;
+  border: 1px solid darkgrey;
 }
 
 /* Modal
 -------------------------------------------------- */
 .modal {
-    color: black;
+  color: black;
 }
 
 .websocket {
-    background: #180202d4;
+  background: #180202d4;
 }
+
+.websocket .modal-content {
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-pack: center;
+      -ms-flex-pack: center;
+          justify-content: center;
+  -webkit-box-align: center;
+      -ms-flex-align: center;
+          align-items: center;
+}
+
+.websocket p {
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-align: center;
+      -ms-flex-align: center;
+          align-items: center;
+  -webkit-box-pack: center;
+      -ms-flex-pack: center;
+          justify-content: center;
+}
+
+/* Footer
+-------------------------------------------------- */
+.footer {
+  position: fixed;
+  bottom: 0;
+  width: 100%;
+  height: 90px;
+  line-height: 90px;
+  background-color: lightgray;
+}
+
+.statusfooter {
+  position: relative;
+  top: -25px;
+}
+
+/* Pin Status
+-------------------------------------------------- */
+.busy {
+  background-color: red;
+  color: white;
+}
+
+.idle {
+  background-color: green;
+  color: white;
+}
+
+/* SD Table
+-------------------------------------------------- */
+.sdcardTable th {
+  background-color: white;
+  color: black;
+}
+
+.sdcardTable td a {
+  color: lightblue;
+}
+
+.sdcardTable td a:hover {
+  color: white;
+}
+
+.sdcardDirectory {
+  color: yellow;
+}
+
+.sdcardADF {
+  color: limegreen;
+}
+/*# sourceMappingURL=default.css.map */
