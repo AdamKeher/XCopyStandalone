@@ -400,6 +400,10 @@ void XCopy::sendFile(String path) {
         return;
     }
 
+    _graphics.clearScreen();
+    _graphics.bmpDraw("XCPYLOGO.BMP", 0, 30);
+    _graphics.drawText(44, 85, ST7735_GREEN, "Sending File", TRUE);
+
     // send file size
     size_t size = file.fileSize();
     Serial1.print(size);
@@ -427,6 +431,8 @@ void XCopy::sendFile(String path) {
     delete _sdCard;
 
     Serial.println("Done");
+
+    _menu.redraw();
 
     setBusy(false);
 }
@@ -472,6 +478,10 @@ void XCopy::getFile(String path, size_t filesize) {
         return;
     }
 
+    _graphics.clearScreen();
+    _graphics.bmpDraw("XCPYLOGO.BMP", 0, 30);
+    _graphics.drawText(42, 85, ST7735_GREEN, "Receiving File", TRUE);
+
     // send file size
     Serial1.print("OK\n");
 
@@ -510,6 +520,8 @@ void XCopy::getFile(String path, size_t filesize) {
     delete _sdCard;
 
     Serial.println("Done");
+
+    _menu.redraw();
 
     setBusy(false);
 }
