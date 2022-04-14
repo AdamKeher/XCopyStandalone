@@ -21,8 +21,10 @@ function onLoad() {
 }
 
 function setTab(tabName) {
-  tabName += "-tab";
-  $(tabName).tab('show')
+  if (!tabName.startsWith('#')) tabName = '#' + tabName;
+  try {
+    $(tabName + "-tab").tab('show')
+  } catch (error) { }
 }
 
 // UI

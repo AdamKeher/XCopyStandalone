@@ -319,6 +319,9 @@ void XCopyDisk::OperationCancelled(uint8_t trackNum)
 
 bool XCopyDisk::diskToADF(String ADFFileName, bool verify, uint8_t retryCount, ADFFileSource destination)
 {
+    _esp->setTab("diskcopy");
+    _esp->resetDisk();
+
     if (destination == _flashMemory) {
         // flash
         _esp->setStatus("Copying Disk to ADF in Flash");
@@ -340,7 +343,6 @@ bool XCopyDisk::diskToADF(String ADFFileName, bool verify, uint8_t retryCount, A
     _graphics->bmpDraw("XCPYLOGO.BMP", 0, 87);
     _graphics->drawDiskName("");
     _graphics->drawDisk();
-    _esp->resetDisk();
 
     if (!diskChange())
     {
@@ -639,6 +641,8 @@ bool XCopyDisk::diskToADF(String ADFFileName, bool verify, uint8_t retryCount, A
 
 void XCopyDisk::adfToDisk(String ADFFileName, bool verify, uint8_t retryCount, ADFFileSource source)
 {
+    _esp->setTab("diskcopy");
+
     if (source == _flashMemory) {
         // flash memory
         _esp->setState(copyFlashToDisk);
@@ -814,6 +818,7 @@ void XCopyDisk::adfToDisk(String ADFFileName, bool verify, uint8_t retryCount, A
 
 void XCopyDisk::diskToDisk(bool verify, uint8_t retryCount)
 {
+    _esp->setTab("diskcopy");
     _esp->setStatus("Copying Disk to Disk");
     _esp->setState(copyDiskToDisk);
 
@@ -847,6 +852,7 @@ void XCopyDisk::diskToDisk(bool verify, uint8_t retryCount)
 
 void XCopyDisk::diskFlux()
 {
+    _esp->setTab("diskcopy");
     _esp->setStatus("Disk Flux");
     _esp->setState(fluxDisk);
     _esp->resetDisk();
@@ -896,15 +902,15 @@ void XCopyDisk::diskFlux()
 
 void XCopyDisk::testDiskette(uint8_t retryCount)
 {
+    _esp->setTab("diskcopy");
     _esp->setStatus("Testing Disk");  
     _esp->setState(testDisk);
+    _esp->resetDisk();
 
     _cancelOperation = false;
 
     _graphics->drawDiskName("");
     _graphics->drawDisk();
-
-    _esp->resetDisk();
 
     if (!diskChange())
     {

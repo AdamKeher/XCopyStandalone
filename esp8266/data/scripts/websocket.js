@@ -186,5 +186,9 @@ function setupWebsocket() {
         fileTransferInProgress = false;
       }
     }
+
+    if (res[0] == "setTab") {
+      setTab(res[1]);
+    }
   };
 }

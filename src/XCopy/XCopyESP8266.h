@@ -26,6 +26,7 @@ public:
   void setState(XCopyState state) { sendWebSocket("setState," + String(state)); }
   void log(String text) { sendWebSocket("log," + text); };
   bool updateWebSdCardFiles(String directory);
+  void setTab(String tab) { sendWebSocket("setTab," + tab); }
 
   String Version();
   void setEcho(bool status);
