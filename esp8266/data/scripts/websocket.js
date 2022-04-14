@@ -148,5 +148,9 @@ function setupWebsocket() {
     if (res[0] == "drawSdFiles") {
       drawSdFiles();
     }
+
+    if (res[0] == "cancelUpload") {
+      fileUploadCancel(res[1]);
+    }
   };
 }
