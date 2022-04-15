@@ -45,7 +45,7 @@ function setState(state) {
         setIconsDest(true, false, false);
     }
     else if (state == 'testDisk') {
-        setMode('Test Disk AA');
+        setMode('Test Disk');
         setIconsSrc(true, false, false);
         setIconsDest(false, false, false);
     }
