@@ -159,7 +159,11 @@ body {
 .key .size, .key .text {
   width: 30px;
   height: 30px;
-  margin-bottom: 10px;
+  margin-bottom: 20px;
+}
+
+.key .size:last-child, .key .text:last-child {
+  margin-bottom: 0px;
 }
 
 .key .text {
