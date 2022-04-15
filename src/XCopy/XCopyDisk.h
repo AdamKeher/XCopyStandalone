@@ -32,7 +32,7 @@ class XCopyDisk
     void begin(XCopyGraphics *graphics, XCopyAudio *audio, XCopyESP8266 *esp, uint8_t sdCSPin, uint8_t flashCSPin, uint8_t cardDetectPin);
   
     int readDiskTrack(uint8_t trackNum, bool verify, uint8_t retryCount, bool silent = false);
-    void writeDiskTrack(uint8_t trackNum, uint8_t retryCount);
+    int writeDiskTrack(uint8_t trackNum, uint8_t retryCount);
 
     bool diskToADF(String ADFFileName, bool verify, uint8_t retryCount, ADFFileSource destination = _sdCard);
     void adfToDisk(String ADFFileName, bool verify, uint8_t retryCount, ADFFileSource source = _sdCard);
