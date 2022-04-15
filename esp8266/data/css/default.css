@@ -159,6 +159,7 @@ body {
 .key .size, .key .text {
   width: 30px;
   height: 30px;
+  margin-bottom: 10px;
 }
 
 .key .text {
