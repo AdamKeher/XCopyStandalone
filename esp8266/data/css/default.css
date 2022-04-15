@@ -23,11 +23,6 @@ body {
 
 /* Header
 -------------------------------------------------- */
-.xcopylogo {
-  position: absolute;
-  top: -60px;
-}
-
 .nav-link {
   color: white;
 }
@@ -148,6 +143,29 @@ body {
           justify-content: center;
 }
 
+/* SD Table
+-------------------------------------------------- */
+.sdcardTable th {
+  background-color: white;
+  color: black;
+}
+
+.sdcardTable td a {
+  color: lightblue;
+}
+
+.sdcardTable td a:hover {
+  color: white;
+}
+
+.sdcardDirectory {
+  color: yellow;
+}
+
+.sdcardADF {
+  color: limegreen;
+}
+
 /* Footer
 -------------------------------------------------- */
 .footer {
@@ -175,27 +193,3 @@ body {
   background-color: green;
   color: white;
 }
-
-/* SD Table
--------------------------------------------------- */
-.sdcardTable th {
-  background-color: white;
-  color: black;
-}
-
-.sdcardTable td a {
-  color: lightblue;
-}
-
-.sdcardTable td a:hover {
-  color: white;
-}
-
-.sdcardDirectory {
-  color: yellow;
-}
-
-.sdcardADF {
-  color: limegreen;
-}
-/*# sourceMappingURL=default.css.map */
