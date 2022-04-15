@@ -16,6 +16,7 @@ Project Resumption:
       ✔ Update UI @done(22-04-15 14:53)
       ☐ Set text in app
     ☐ Add wifi strength output
+    ☐ Add read / write color key for disk operations
     ☐ Figure out Giants packet loss / flux drawing issue
       ✔ Increase websocket ping / pong health check timeout from 1000ms to 3000ms @done(22-04-15 23:09)
     ☐ Move diskname / ADF filename to under Source and Target
