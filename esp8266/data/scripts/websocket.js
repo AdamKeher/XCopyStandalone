@@ -12,7 +12,7 @@ function ping() {
       console.log('WebSocket Timeout');
       if (!fileTransferInProgress) { setWebsocketStatus("closed"); }
       connectionState = false;
-    }, 1000);
+    }, 3000);
   }
 }
 
