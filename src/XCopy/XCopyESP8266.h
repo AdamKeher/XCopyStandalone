@@ -21,7 +21,11 @@ public:
   void setMode(String text) { sendWebSocket("setMode," + text); }
   void setStatus(String text) { sendWebSocket("setStatus," + text); }
   void setDiskName(String name) { sendWebSocket("setDiskname," + name); }
-  void setTrack(int trackNumber, String color) { sendWebSocket("setTrack," + String(trackNumber) + "," + color); }
+  void setTrack(int trackNumber, String color, String text = "") { 
+    String command = "setTrack," + String(trackNumber) + "," + color;
+    if (text != "") command += "," + text;
+    sendWebSocket(command);
+  }
   void resetDisk() { sendWebSocket("resetDisk"); }
   void setState(XCopyState state) { sendWebSocket("setState," + String(state)); }
   void log(String text) { sendWebSocket("log," + text); };
