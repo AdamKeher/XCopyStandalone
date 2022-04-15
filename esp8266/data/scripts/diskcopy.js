@@ -11,7 +11,7 @@ function resetButtons() {
 
 function setState(state) {
     console.log("State: '" + state + "'");
-
+    $('#diskname').html('[Unknown]');
     $('#disknameUI').hide();
 
     if (state == 'copyADFtoDisk') {
@@ -93,7 +93,8 @@ function setStatus(status) {
     $('#status').html(status);
 }
   
-function setDiskName(diskname) {
+function setDiskname(diskname) {
+    if (diskname == '') diskname = '[Unknown]';
     $('#diskname').html(diskname);
     $('#disknameUI').show();
 }

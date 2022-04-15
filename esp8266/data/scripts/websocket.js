@@ -113,7 +113,6 @@ function setupWebsocket() {
     }
   
     if (res[0] == "resetDisk") {
-      setDiskname("");
       resetTracks("track", 0);
       clearFlux();
     }
