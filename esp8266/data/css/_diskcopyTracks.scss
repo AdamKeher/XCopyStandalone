@@ -1,3 +1,5 @@
+/* Tracks
+-------------------------------------------------- */
 .table-sm {
     width: 100%;
     background-color: black;
@@ -10,10 +12,6 @@
         text-align: center;
         // debug borders
         // border: 1px solid red;
-    }
-
-    .key {
-        font-size: smaller;
     }
 }
 
@@ -34,4 +32,23 @@
     &.orange { @include diskTrack(orange, $textColorDark); }
     &.red { @include diskTrack(red, $textColor); }
     &.magenta { @include diskTrack(magenta, $textColor); }
+}
+
+/* Disk Read / Write Key
+-------------------------------------------------- */
+.key {
+    border: 1px solid white;
+    width: 450px;
+    padding: 20px;
+
+    .size {
+        width: 30px;
+        height: 30px;
+    }
+
+    .text {
+        @extend .size;
+        margin-left: 10px;
+        width: auto;
+    }
 }

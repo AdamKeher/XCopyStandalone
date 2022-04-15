@@ -375,37 +375,49 @@
                                 <tr>
                                     <td colspan="28"></td>
                                 </tr>
-                                <tr>
-                                    <td colspan=4>Key</td>
-                                    <td class="track white"></td>
-                                    <td colspan=3 class="key">Seeking</td>
-                                    <td class="track green"></td>
-                                    <td colspan=3 class="key">OK</td>
-                                    <td class="track yellow"></td>
-                                    <td colspan=3 class="key">Quick Retry</td>
-                                    <td class="track orange"></td>
-                                    <td colspan=3 class="key">Full Retry</td>
-                                    <td class="track red"></td>
-                                    <td colspan=3 class="key">Error</td>
-                                    <td class="track magenta"></td>
-                                    <td colspan=3 class="key">Verify Error</td>
-                                </tr>
-                                <tr>
-                                    <td colspan="28"></td>
-                                </tr>
                             </tbody>
                         </table>
                     </p>
                     <p>
+
                         <table class="table table-dark">
                             <thead>
                                 <tr>
-                                    <th><i class="fa-solid fa-compact-disc"></i> Flux</th>
+                                    <th style="width: 0px;"><i class="fa-solid fa-compact-disc"></i> Flux</th>
+                                    <th><i class="fa-solid fa-key"></i> Disk Read / Write Key</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <tr>
                                     <td><canvas class="fluxCanvas" id="fluxCanvas" width="322" height="256"></canvas></td>
+                                    <td>
+
+                                                <div class="container float-start key">
+                                                    <div class="row">
+                                                        <div class="col-1">
+                                                            <div class="size track white"></div>
+                                                            <div class="size track green"></div>
+                                                            <div class="size track yellow"></div>
+                                                        </div>
+                                                        <div class="col-5">
+                                                            <div class="text">Seek</div>
+                                                            <div class="text">OK</div>
+                                                            <div class="text">Quick Retry</div>
+                                                        </div>
+                                                        <div class="col-1">
+                                                            <div class="size track orange"></div>
+                                                            <div class="size track red"></div>
+                                                            <div class="size track magenta"></div>
+                                                        </div>
+                                                        <div class="col-5">
+                                                            <div class="text">Full Retry</div>
+                                                            <div class="text">Error</div>
+                                                            <div class="text">Verify Error</div>
+                                                        </div>                                                        
+                                                    </div>
+                                                </div>                                                
+
+                                    </td>
                                 </tr>
                             </tbody>
                         </table>

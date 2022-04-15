@@ -56,61 +56,6 @@ body {
           filter: grayscale(100%);
 }
 
-/* Tracks
--------------------------------------------------- */
-.table-sm {
-  width: 100%;
-  background-color: black;
-  color: white;
-}
-
-.table-sm td {
-  height: 40px;
-  width: 40px;
-  text-align: center;
-}
-
-.table-sm .key {
-  font-size: smaller;
-}
-
-.track {
-  font-size: smaller;
-  background-color: #151515;
-  color: white;
-  border: 1px solid white;
-}
-
-.track.white {
-  background-color: whitesmoke;
-  color: black;
-}
-
-.track.green {
-  background-color: green;
-  color: white;
-}
-
-.track.yellow {
-  background-color: yellow;
-  color: black;
-}
-
-.track.orange {
-  background-color: orange;
-  color: black;
-}
-
-.track.red {
-  background-color: red;
-  color: white;
-}
-
-.track.magenta {
-  background-color: magenta;
-  color: white;
-}
-
 /* Flux
 -------------------------------------------------- */
 .fluxCanvas {
@@ -150,6 +95,75 @@ body {
   -webkit-box-pack: center;
       -ms-flex-pack: center;
           justify-content: center;
+}
+
+/* Tracks
+-------------------------------------------------- */
+.table-sm {
+  width: 100%;
+  background-color: black;
+  color: white;
+}
+
+.table-sm td {
+  height: 40px;
+  width: 40px;
+  text-align: center;
+}
+
+.track {
+  font-size: smaller;
+  background-color: #151515;
+  color: white;
+  border: 1px solid white;
+}
+
+.track.white {
+  background-color: whitesmoke;
+  color: black;
+}
+
+.track.green {
+  background-color: green;
+  color: white;
+}
+
+.track.yellow {
+  background-color: yellow;
+  color: black;
+}
+
+.track.orange {
+  background-color: orange;
+  color: black;
+}
+
+.track.red {
+  background-color: red;
+  color: white;
+}
+
+.track.magenta {
+  background-color: magenta;
+  color: white;
+}
+
+/* Disk Read / Write Key
+-------------------------------------------------- */
+.key {
+  border: 1px solid white;
+  width: 450px;
+  padding: 20px;
+}
+
+.key .size, .key .text {
+  width: 30px;
+  height: 30px;
+}
+
+.key .text {
+  margin-left: 10px;
+  width: auto;
 }
 
 /* SD Table
