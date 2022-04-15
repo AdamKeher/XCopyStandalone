@@ -68,6 +68,7 @@ body {
   height: 40px;
   width: 40px;
   text-align: center;
+  border: 1px solid red;
 }
 
 .track {
@@ -77,14 +78,14 @@ body {
   border: 1px solid white;
 }
 
-.track.red {
-  background-color: red;
+.track.white {
+  background-color: white;
   color: white;
 }
 
-.track.orange {
-  background-color: orange;
-  color: black;
+.track.green {
+  background-color: green;
+  color: white;
 }
 
 .track.yellow {
@@ -92,8 +93,13 @@ body {
   color: black;
 }
 
-.track.green {
-  background-color: green;
+.track.orange {
+  background-color: orange;
+  color: black;
+}
+
+.track.red {
+  background-color: red;
   color: white;
 }
 
