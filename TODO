@@ -13,6 +13,7 @@ Project Resumption:
       ☐ File upload not reliable - sometimes too short.
       ☐ Add uploaded filesize does not match saved filesize error
     ☐ Update mode, status and diskname for all disk activities
+    ☐ Add wifi strength output
     ☐ Compiler warnings
       ☐ Clean up compiler warnings for esp8266
       ☐ Clean up compiler warnings for teensy

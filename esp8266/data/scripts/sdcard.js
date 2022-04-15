@@ -77,3 +77,8 @@ function addSdFile(details) {
   file.isADF = values[5] == "1" ? true : false;
   sdFiles.push(file);
 }
+
+function getSdFiles(path) {
+    sdPath = path;
+    connection.send("getSdFiles," + sdPath);
+}

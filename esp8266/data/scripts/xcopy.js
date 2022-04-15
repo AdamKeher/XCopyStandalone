@@ -53,19 +53,3 @@ function disableInterface(isBusy) {
     disableGlobes();
   }
 }
-
-function setDiskname(diskname) {
-  $('#diskname').html(diskname);
-}
-
-function setStatus(status) {
-  $('#status').html(status);
-}
-
-function setMode(mode) {
-  $('#mode').html(mode);
-}
-
-function showsSelectDialog() {
-  if (sdFiles.length == 0) getSdFiles(sdPath);
-}

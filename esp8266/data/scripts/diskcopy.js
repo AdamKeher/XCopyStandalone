@@ -1,6 +1,6 @@
-// Buttons
+// UI
 // --------------------------------------------------------
-
+ 
 function resetButtons() {
     $('#copyADFtoDisk').removeClass('btn-light').addClass('btn-primary');
     $('#copyDisktoADF').removeClass('btn-light').addClass('btn-primary');
@@ -11,6 +11,8 @@ function resetButtons() {
 
 function setState(state) {
     console.log("State: '" + state + "'");
+
+    $('#disknameUI').hide();
 
     if (state == 'copyADFtoDisk') {
         setMode('Copy ADF to Disk');
@@ -64,56 +66,74 @@ function diskcopy(state) {
     resetButtons();
     setState(state);
     if (state == 'copyADFtoDisk') {
-        showsSelectDialog();
+        if (sdFiles.length == 0) getSdFiles(sdPath);
     } else {
         connection.send(state);
     }
 }
 
-function getSdFiles(path) {
-    sdPath = path;
-    connection.send("getSdFiles," + sdPath);
-}
-  
+// TODO: handle cancellation / send back to xcopydevice
 function diskcopyCancel() {
-    // TODO: handle cancellation / send back to xcopydevice
     disableInterface(false);
 }
-
 
 function writeADFFile(path) {
     $('#staticBackdrop').modal('hide');
     connection.send("writeADFFile," + path);
 }
+
+// Mode / Status / Diskname
+// --------------------------------------------------------
+
+function setMode(mode) {
+    $('#mode').html(mode);
+}
+
+function setStatus(status) {
+    $('#status').html(status);
+}
   
-// function copyADFtoDisk() {
-//     connection.send("copyADFtoDisk");
-//   }
+function setDiskName(diskname) {
+    $('#diskname').html(diskname);
+    $('#disknameUI').show();
+}
+
+// Tracks
+// --------------------------------------------------------
+
+function setTrack(trackNum, classname, text = "") {
+    $('#track' + trackNum).attr("class", "track " + classname);
+    $('#track' + trackNum).html(text)
+}
   
-//   function copyDisktoADF() {
-//     connection.send("copyDisktoADF");
-//   }
+function resetTracks(classname = "", start = 0) {
+    for (i = start; i < 160; i++) {
+        $('#track' + i).attr("class", classname == "" ? "track" : "track " + classname);
+        $('#track' + i).html("");
+    }
+}
+
+// Icons
+// --------------------------------------------------------
+
+function setIcons(group, floppy, sdcard, flash) {
+    document.getElementById(group + '_floppy').className = floppy ? "" : "gray";
+    document.getElementById(group + '_sdcard').className = sdcard ? "" : "gray";
+    document.getElementById(group + '_flash').className = flash ? "" : "gray";
+    document.getElementById(group + '_floppy_globe').className = floppy ? "" : "gray";
+    document.getElementById(group + '_sdcard_globe').className = sdcard ? "" : "gray";
+    document.getElementById(group + '_flash_globe').className = flash ? "" : "gray";
+}
   
-//   function copyDisktoDisk() {
-//     connection.send("copyDisktoDisk");
-//   }
-  
-//   function copyDisktoFlash() {
-//     connection.send("copyDisktoFlash");
-//   }
-  
-//   function copyFlashtoDisk() {
-//     connection.send("copyFlashtoDisk");
-//   }
-  
-//   function testDisk() {
-//     connection.send("testDisk");
-//   }
-  
-//   function formatDisk() {
-//     connection.send("formatDisk");
-//   }
-  
-//   function diskFlux() {
-//     connection.send("diskFlux");
-//   }
+function setIconsSrc(floppy, sdcard, flash) {
+setIcons("src", floppy, sdcard, flash);
+}
+
+function setIconsDest(floppy, sdcard, flash) {
+setIcons("dst", floppy, sdcard, flash);
+}
+
+function disableGlobes() {
+setIconsSrc(false, false, false);
+setIconsDest(false, false, false);
+}
