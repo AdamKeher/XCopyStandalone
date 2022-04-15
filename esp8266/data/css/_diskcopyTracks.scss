@@ -24,7 +24,7 @@
     color: $textColor;
     border: 1px solid white;
 
-    &.white { @include diskTrack(white, $textColor); }
+    &.white { @include diskTrack(white, $textColorDark); }
     &.green { @include diskTrack(green, $textColor); }
     &.yellow { @include diskTrack(yellow, $textColorDark); }
     &.orange { @include diskTrack(orange, $textColorDark); }
