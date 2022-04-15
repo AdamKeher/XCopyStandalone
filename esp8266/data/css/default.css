@@ -68,7 +68,10 @@ body {
   height: 40px;
   width: 40px;
   text-align: center;
-  border: 1px solid red;
+}
+
+.table-sm .key {
+  font-size: smaller;
 }
 
 .track {
@@ -79,7 +82,7 @@ body {
 }
 
 .track.white {
-  background-color: white;
+  background-color: whitesmoke;
   color: black;
 }
 
