@@ -13,10 +13,16 @@ Project Resumption:
       ☐ File upload not reliable - sometimes too short.
       ☐ Add uploaded filesize does not match saved filesize error
     ☐ Update mode, status and diskname for all disk activities
+      ✔ Update UI @done(22-04-15 14:53)
+      ☐ Set text in app
     ☐ Add wifi strength output
+    ☐ Figure out Giants packet loss / flux drawing issue
+      ✔ Increase websocket ping / pong health check timeout from 1000ms to 3000ms @done(22-04-15 23:09)
+    ☐ Move diskname / ADF filename to under Source and Target
     ☐ Compiler warnings
       ☐ Clean up compiler warnings for esp8266
       ☐ Clean up compiler warnings for teensy
+    ☐ Implement disk delay. Currently in setup but not in code
     ☐ Work on terminal log
       ☐ Connect termial emulator to ESP via websocket, should speed it up a little
       ☐ Accept terminal input in the webbrowser
@@ -101,7 +107,7 @@ Project Resumption:
       ☐ Rewrite floppy routines
         ✔ Rewrite drive seek routines @done(22-03-26 16:03)
         ☐ Configurable Delays
-          ☐ Move timing options to a common struct @started(22-03-26 21:39)
+          ☐ Move timing options to a common struct
           ✔ Create settings options for most common item @started(20-03-26 21:39) @done(22-03-28 13:33) @lasted(2y1d15h54m53s)
         ☐ Rewrite drive read routines
         ☐ Rewrite MFM decode / encode routines
