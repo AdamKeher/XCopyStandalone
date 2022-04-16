@@ -207,7 +207,7 @@ void XCopy::begin()
 
     // Init Directory
     // -------------------------------------------------------------------------------------------
-    _directory.begin(&_graphics, &_disk, PIN_SDCS, PIN_FLASHCS);
+    _directory.begin(&_graphics, &_disk);
 
     // Init Message
     // -------------------------------------------------------------------------------------------

@@ -126,7 +126,7 @@ void XCopy::navigateSelect()
             return;
 
         // avoid changing the name to a fixed lowercase/upprcase for comparison.
-        String itemName = item->name;
+        String itemName = item->longName;
 
         if (item->isDirectory() && item->source == sdCard)
         {
@@ -146,7 +146,7 @@ void XCopy::navigateSelect()
             _audio.playSelect(false);
             _graphics.clearScreen();
             // _config = new XCopyConfig();
-            _disk.adfToDisk(item->path + item->name, _config->getVerify(), _config->getRetryCount(), _sdCard);
+            _disk.adfToDisk(item->path + item->longName, _config->getVerify(), _config->getRetryCount(), _sdCard);
             // delete _config;
         }
         else if (itemName.toLowerCase().endsWith(".adf") && item->source == flashMemory)
@@ -155,7 +155,7 @@ void XCopy::navigateSelect()
             _audio.playBack(false);
             _graphics.clearScreen();
             // _config = new XCopyConfig();
-            _disk.adfToDisk(item->path + item->name, _config->getVerify(), _config->getRetryCount(), _flashMemory);
+            _disk.adfToDisk(item->path + item->longName, _config->getVerify(), _config->getRetryCount(), _flashMemory);
             // delete _config;
         }
 

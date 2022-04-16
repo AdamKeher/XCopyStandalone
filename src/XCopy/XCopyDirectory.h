@@ -6,30 +6,26 @@
 #include <Streaming.h>
 #include "XCopyDisk.h"
 #include "XCopyGraphics.h"
+#include "XCopySDCard.h"
+#include "XCopyPins.h"
 
 #define ITEMSPERSCREEN 12
 
-enum XCopyDirectoryEntrySource
-{
+enum XCopyDirectoryEntrySource {
   flashMemory = 0,
   sdCard = 1
 };
 
-class XCopyDirectoryEntry
-{
+class XCopyDirectoryEntry {
 public:
   XCopyDirectoryEntry();
 
   bool isDirectory() { return _isDirectory; }
   void setIsDirectory(bool value) { _isDirectory = value; }
-  String name;
-  String longName;
-  String date;
-  unsigned long size;
+  bool isIncorrectSize = false;
   String path;
-  String volumeName;
+  String longName;
   XCopyDirectoryEntrySource source;
-
   struct XCopyDirectoryEntry *prev;
   struct XCopyDirectoryEntry *next;
 
@@ -45,7 +41,7 @@ public:
   bool down();
   bool up();
 
-  void begin(XCopyGraphics *graphics, XCopyDisk *disk, uint8_t sdCSPin, uint8_t flashPin);
+  void begin(XCopyGraphics *graphics, XCopyDisk *disk);
   void clear();
   void getDirectoryFlash(bool root, XCopyDisk *disk, String filter = "");
   void getDirectory(String path, XCopyDisk *disk, String filter = "", bool dirAtTop = true);
@@ -83,14 +79,8 @@ private:
   XCopyDirectoryEntry *_currentItem;
   uint16_t _index;
   String _currentPath;
-
-  uint8_t _sdCSPin;
-  uint8_t _flashCSPin;
-
   XCopyGraphics *_graphics;
   XCopyDisk *_disk;
-
-  SdFat SD;
 };
 
 #endif // XCOPYDIRECTORY_H
