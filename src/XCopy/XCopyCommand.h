@@ -14,6 +14,7 @@
 #include "XCopySDCard.h"
 #include "XCopyConsole.h"
 #include <TimeLib.h>
+#include <MD5.h>
 
 class XCopyCommandLine
 {
