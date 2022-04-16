@@ -72,7 +72,7 @@ void XCopyDisk::drawFlux(uint8_t trackNum, uint8_t scale, uint8_t yoffset)
         data = data + String(getHist()[i]);
         data = data + "|";
     }
-    _esp->sendWebSocket("flux," + String(trackNum) + "," + data);
+    _esp->print("broadcast flux," + String(trackNum) + "," + data + "\r\n");
 
     // tft screen
     int scaled = 0;
