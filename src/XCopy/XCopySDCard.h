@@ -24,6 +24,9 @@ class XCopySDCard
     String getError() { return _error; }
     bool fileExists(String path) { return _sd.exists(path.c_str()); }
     bool deleteFile(String path) { return _sd.remove(path.c_str()); }
+    bool makeDirectory(String path) { return _sd.mkdir(path.c_str()); }
+
+    SdFat getSdFat() { return _sd; }
 
     // TODO: These functions have a maxItems parameter as they is not currently enough memory
     //       change them to some sort of getNext() type arrangement
