@@ -72,7 +72,7 @@ void XCopy::begin()
     // Init Disk Routines
     // -------------------------------------------------------------------------------------------
     Log << F("Initialising drive: ");
-    _disk.begin(&_graphics, &_audio, _esp, PIN_SDCS, PIN_FLASHCS, PIN_CARDDETECT);
+    _disk.begin(&_graphics, &_audio, _esp);
     Log << XCopyConsole::success("OK\r\n");
 
     // Test Disk Orientation
