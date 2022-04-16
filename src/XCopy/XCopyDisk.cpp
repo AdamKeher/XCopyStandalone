@@ -610,8 +610,6 @@ bool XCopyDisk::diskToADF(String ADFFileName, bool verify, uint8_t retryCount, A
 }
 
 void XCopyDisk::adfToDisk(String ADFFileName, bool verify, uint8_t retryCount, ADFFileSource source) {
-    Serial << "DEBUG::00\r\n";
-
     _esp->setTab("diskcopy");
 
     if (source == _flashMemory) {
@@ -649,14 +647,11 @@ void XCopyDisk::adfToDisk(String ADFFileName, bool verify, uint8_t retryCount, A
         return;
     }
 
-    Serial << "DEBUG::01\r\n";
-
     File ADFFile;
     SerialFlashFile ADFFlashFile;
     XCopySDCard *_sdcard = new XCopySDCard();
 
     if (source == _sdCard) {
-        Serial << "DEBUG::02\r\n";
         if (!_sdcard->begin()) {
             _graphics->drawText(0, 10, ST7735_RED, "SD Init Failed");
             _esp->setStatus("SD Init Failed");
@@ -664,7 +659,6 @@ void XCopyDisk::adfToDisk(String ADFFileName, bool verify, uint8_t retryCount, A
             delete _sdcard;
             return;
         }
-        Serial << "DEBUG::03\r\n";
 
         ADFFile = _sdcard->getSdFat().open(ADFFileName.c_str(), FILE_READ);
         if (!ADFFile) {
