@@ -310,6 +310,14 @@ int XCopyDisk::writeDiskTrack(uint8_t trackNum, uint8_t retryCount)
 
 //
 
+String XCopyDisk::generateADFFileName(String diskname) {
+    String path = String(SD_ADF_PATH);
+    char dtBuffer[32];
+    sprintf(dtBuffer, "%04d%02d%02d %02d%02d", year(), month(), day(), hour(), minute());
+    String datetime = String(dtBuffer);
+    return "/" + path + "/" + datetime + " " + diskname + ".adf";
+}
+
 // TODO: Create XCopyLogFile object? Move CRC code into function. 
 bool XCopyDisk::diskToADF(String ADFFileName, bool verify, uint8_t retryCount, ADFFileSource destination) {
     FastCRC32 CRC32;

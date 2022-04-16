@@ -43,6 +43,7 @@ class XCopyDisk
     void changeDisk();
     void testDiskette(uint8_t retryCount);
     String getADFVolumeName(String ADFFileName, ADFFileSource = _sdCard);
+    String generateADFFileName(String diskname);
 
     bool cardDetect() { return digitalRead(_cardDetectPin) == 0 ? true : false; };
 
