@@ -310,67 +310,56 @@ int XCopyDisk::writeDiskTrack(uint8_t trackNum, uint8_t retryCount)
 
 //
 
-bool XCopyDisk::diskToADF(String ADFFileName, bool verify, uint8_t retryCount, ADFFileSource destination)
-{
-    _esp->setTab("diskcopy");
-    _esp->resetDisk();
-
-    if (destination == _flashMemory) {
-        // flash
-        _esp->setStatus("Copying Disk to ADF in Flash");
-        _esp->setState(copyDiskToFlash);
-    }
-    else {
-        // sdcard
-        _esp->setStatus("Copying Disk to ADF on SDCard");
-        _esp->setState(copyDiskToADF);
-    }
-
+// TODO: Create XCopyLogFile object? Move CRC code into function. 
+bool XCopyDisk::diskToADF(String ADFFileName, bool verify, uint8_t retryCount, ADFFileSource destination) {
     FastCRC32 CRC32;
     FastCRC16 CRC16;
     uint32_t disk_crc32 = 0;
     uint16_t track_crc16 = 0;
-
     _cancelOperation = false;
-
-    _graphics->bmpDraw("XCPYLOGO.BMP", 0, 87);
-    _graphics->drawDiskName("");
-    _graphics->drawDisk();
-
-    if (!diskChange())
-    {
-        _graphics->drawText(0, 10, ST7735_RED, "No Disk Inserted");
-        _esp->setStatus("No Disk Inserted");
-        _audio->playBong(false);
-        return false;
-    }
-
-    String diskName = getName();
-    _graphics->drawDiskName(diskName);
-    _esp->setDiskName(diskName);
-
-    File ADFFile;
-    File ADFLogFile;
-    SerialFlashFile ADFFlashFile;
+    String statusText = "";
+    String diskName = "";
 
     int readErrors = 0;
     int weakTracks = 0;
     int totalReadErrors = 0;
     int totalWeakTracks = 0;
+    
+    File ADFFile;
+    File ADFLogFile;
+    SerialFlashFile ADFFlashFile;
+
+    _graphics->bmpDraw("XCPYLOGO.BMP", 0, 87);
+    _graphics->drawDiskName("");
+    _graphics->drawDisk();
+
+    _esp->setTab("diskcopy");
+    _esp->resetDisk();
+    _esp->setState(destination == _sdCard ? copyDiskToADF : copyDiskToFlash);
+    statusText = String("Copying Disk to ").append(destination == _sdCard ? ADFFileName +  " on SD Card" : "Flash memory");   
+    _esp->setStatus(statusText);
+
+    if (!diskChange()) {
+        _graphics->drawText(0, 10, ST7735_RED, "No Disk Inserted");
+        _esp->setStatus("No disk inserted");
+        _audio->playBong(false);
+        return false;
+    }
+
+    diskName = getName();
+    _graphics->drawDiskName(diskName);
+    _esp->setDiskName(diskName);
 
     // Open SD File or SerialFile
-    if (destination == _sdCard)
-    {
-        if (!SD.begin(_sdCSPin))
-        {
+    if (destination == _sdCard) {
+        if (!SD.begin(_sdCSPin)) {
             _graphics->drawText(0, 10, ST7735_RED, "SD Init Failed");
-            _esp->setStatus("SD Init Failed");
+            _esp->setStatus("SD card initialisation failed");
             _audio->playBong(false);
             return false;
         }
 
-        if (!SD.exists(SD_ADF_PATH))
-        {
+        if (!SD.exists(SD_ADF_PATH)) {
             SD.mkdir(SD_ADF_PATH);
         }
 
@@ -380,37 +369,33 @@ bool XCopyDisk::diskToADF(String ADFFileName, bool verify, uint8_t retryCount, A
         String fileName = String(buffer) + " " + diskName + ".adf";
         String fullPath = "/" + String(SD_ADF_PATH) + "/" + fileName;
 
-        if (SD.exists(fullPath.c_str()))
-            SD.remove(fullPath.c_str());
+        if (SD.exists(fullPath.c_str())) SD.remove(fullPath.c_str());
 
         String logfileName = String(buffer) + " " + diskName + ".log";
         logfileName = "/" + String(SD_ADF_PATH) + "/" + logfileName;
 
-        if (SD.exists(logfileName.c_str()))
-            SD.remove(logfileName.c_str());
+        if (SD.exists(logfileName.c_str())) SD.remove(logfileName.c_str());
 
         SdFile::dateTimeCallback(dateTime);
         ADFFile = SD.open(fullPath.c_str(), FILE_WRITE);
         ADFLogFile = SD.open(logfileName.c_str(), FILE_WRITE);
         SdFile::dateTimeCallbackCancel();
 
-        if (!ADFFile)
-        {
+        if (!ADFFile) {
             ADFFile.close();
             ADFLogFile.close();
             _graphics->drawText(0, 10, ST7735_RED, "SD ADF File Open Failed");
-            _esp->setStatus("SD ADF File Open Failed");
+            _esp->setStatus("File '" + ADFFileName + "' failed to open on the SD card");
             _audio->playBong(false);
 
             return false;
         }
 
-        if (!ADFLogFile)
-        {
+        if (!ADFLogFile) {
             ADFFile.close();
             ADFLogFile.close();
             _graphics->drawText(0, 10, ST7735_RED, "SD Log File Open Failed");
-            _esp->setStatus("SD Log File Open Failed");
+            _esp->setStatus("File '" + logfileName + "' failed to open on the SD card");
             _audio->playBong(false);
 
             return false;
@@ -424,12 +409,10 @@ bool XCopyDisk::diskToADF(String ADFFileName, bool verify, uint8_t retryCount, A
         ADFLogFile.println("\t\"timestamp\": " + String(now()) + ",");
         ADFLogFile.println("\t\"tracks\": [");
     }
-    else if (destination == _flashMemory)
-    {
-        if (!SerialFlash.begin(_flashCSPin))
-        {
+    else if (destination == _flashMemory) {
+        if (!SerialFlash.begin(_flashCSPin)) {
             _graphics->drawText(0, 10, ST7735_RED, "Serial Flash Init Failed");
-            _esp->setStatus("Serial Flash Init Failed");
+            _esp->setStatus("Onboard serial Flash failed to initialise");
             _audio->playBong(false);
             return false;
         }
@@ -441,19 +424,16 @@ bool XCopyDisk::diskToADF(String ADFFileName, bool verify, uint8_t retryCount, A
 
         ADFFlashFile.erase();
 
-        while (!SerialFlash.ready())
-        {
-        }
+        while (!SerialFlash.ready()) { }
 
         _graphics->drawText("Done");
         _esp->setStatus("Erasing Flash ... Done");
 
         ADFFlashFile = SerialFlash.open(ADFFileName.c_str());
-        if (!ADFFlashFile)
-        {
+        if (!ADFFlashFile) {
             ADFFlashFile.close();
             _graphics->drawText(0, 10, ST7735_RED, "Serial Flash File Open Failed", true);
-            _esp->setStatus("Serial Flash File Open Failed");
+            _esp->setStatus("Serial flash file failed to open");
             _audio->playBong(false);
             return false;
         }
@@ -466,10 +446,8 @@ bool XCopyDisk::diskToADF(String ADFFileName, bool verify, uint8_t retryCount, A
     _graphics->getTFT()->drawFastHLine(0, 85, _graphics->getTFT()->width(), ST7735_GREEN);
 
     // YELLOW = Begin, GREEN = Read OK, ORANGE = Read after Retries, RED = Read Error, MAGENTA = Verify Error
-    for (int trackNum = 0; trackNum < 160; trackNum++)
-    {
-        if (_cancelOperation)
-        {
+    for (int trackNum = 0; trackNum < 160; trackNum++) {
+        if (_cancelOperation) {
             OperationCancelled(trackNum);
             ADFLogFile.println("\r\nCancelled.");
             ADFLogFile.close();
@@ -484,14 +462,12 @@ bool XCopyDisk::diskToADF(String ADFFileName, bool verify, uint8_t retryCount, A
         analyseHist(true);
         drawFlux(trackNum, 6, 85);
 
-        if (getWeakTrack())
-        {
+        if (getWeakTrack()) {
             weakTracks += getWeakTrack();
             totalWeakTracks++;
         }
 
-        if (readResult != 0)
-        {
+        if (readResult != 0) {
             // if there has been error on either side, set error for whole cylinder else increment retry count
             if (readErrors == -1 || readResult == -1)
                 readErrors = -1;
@@ -501,12 +477,10 @@ bool XCopyDisk::diskToADF(String ADFFileName, bool verify, uint8_t retryCount, A
         }
 
         // calculate CRC
-        if (destination == _sdCard)
-        {
+        if (destination == _sdCard) {
             uint8_t side = trackNum % 2;
 
-            for (int sec = 0; sec < 11; sec++)
-            {
+            for (int sec = 0; sec < 11; sec++) {
                 struct Sector *aSec = (Sector *)&getTrack()[sec].sector;
 
                 // total disk CRC
@@ -516,20 +490,17 @@ bool XCopyDisk::diskToADF(String ADFFileName, bool verify, uint8_t retryCount, A
                     disk_crc32 = CRC32.crc32_upd(aSec->data, sizeof(aSec->data));
 
                 // cyl CRC16
-                if (sec == 0 && side == 0)
-                {
+                if (sec == 0 && side == 0) {
                     // Serial << "trackNum: " << trackNum << " Side: " << side << " Sec: " << sec << " CCITT\r\n";
                     track_crc16 = CRC16.ccitt(aSec->data, sizeof(aSec->data));
                 }
-                else
-                {
+                else {
                     // Serial << "trackNum: " << trackNum << " Side: " << side << " Sec: " << sec << " CCITT_UPD\r\n";
                     track_crc16 = CRC16.ccitt_upd(aSec->data, sizeof(aSec->data));
                 }
             }
 
-            if (side == 1)
-            {
+            if (side == 1) {
                 uint8_t cylinder = (trackNum - 1) / 2;
                 ADFLogFile.print("\t\t{ \"track\": " + String(cylinder) + ", \"crc16\": \"0x");
                 ADFLogFile.print(track_crc16, HEX);
@@ -542,8 +513,7 @@ bool XCopyDisk::diskToADF(String ADFFileName, bool verify, uint8_t retryCount, A
         }
 
         // write track (11 sectors per track)
-        for (int i = 0; i < 11; i++)
-        {
+        for (int i = 0; i < 11; i++) {
             const struct Sector *aSec = (Sector *)&getTrack()[i].sector;
             if (destination == _sdCard)
             {
@@ -560,8 +530,7 @@ bool XCopyDisk::diskToADF(String ADFFileName, bool verify, uint8_t retryCount, A
         }
 
         // verify
-        if (verify)
-        {
+        if (verify) {
             // reread track to compare to file
             readDiskTrack(trackNum, true, retryCount);
 
@@ -575,8 +544,7 @@ bool XCopyDisk::diskToADF(String ADFFileName, bool verify, uint8_t retryCount, A
                 ADFFlashFile.seek(ADFFlashFile.position() - 11 * 512);
 
             // compare sectors to file
-            for (int i = 0; i < 11; i++)
-            {
+            for (int i = 0; i < 11; i++) {
                 const struct Sector *aSec = (Sector *)&getTrack()[i].sector;
 
                 if (destination == _sdCard)
@@ -588,22 +556,19 @@ bool XCopyDisk::diskToADF(String ADFFileName, bool verify, uint8_t retryCount, A
                     compareError = true;
             }
 
-            if (compareError)
-            {
+            if (compareError) {
                 _graphics->drawTrack(trackNum / 2, trackNum % 2, true, false, 0, true, ST7735_MAGENTA);
                 _esp->setTrack(trackNum, "magenta,");
                 _audio->playBong(false);
             }
-            else
-            {
+            else {
                 _graphics->drawTrack(trackNum / 2, trackNum % 2, true, false, 0, true, ST7735_GREEN);
                 _esp->setTrack(trackNum, "green");
             }
         }
     }
 
-    if (destination == _sdCard)
-    {
+    if (destination == _sdCard) {
         ADFLogFile.println("\t],");
         ADFLogFile.println("\t\"readErrors\": " + String(totalReadErrors) + ",");
         ADFLogFile.println("\t\"weakTracks\": " + String(totalWeakTracks) + ",");
@@ -618,16 +583,9 @@ bool XCopyDisk::diskToADF(String ADFFileName, bool verify, uint8_t retryCount, A
     ADFFlashFile.close();
     _audio->playBoing(false);
 
-    if (destination == _flashMemory) {
-        // flash
-        _esp->setStatus("Copying Disk to ADF in Flash Complete");
-        _esp->setState(copyDiskToFlash);
-    }
-    else {
-        // sdcard
-        _esp->setStatus("Copying Disk to ADF on SDCard Complete");
-        _esp->setState(copyDiskToADF);
-    }
+    statusText = String("Copying Disk to ").append(destination == _sdCard ? ADFFileName +  " on SD Card" : "Flash memory").append(" complete");
+    _esp->setStatus(statusText);
+    _esp->setState(destination == _sdCard ? copyDiskToADF : copyDiskToFlash);
 
     return true;
 }
