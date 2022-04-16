@@ -16,6 +16,7 @@ public:
   bool connect(String ssid, String password, uint32_t timeout);
   String sendCommand(String command, bool strip = false, int timeout = 250);
   void sendWebSocket(String command);
+  void print(String text) { Serial1.print(text); };
 
 
   void setMode(String text) { sendWebSocket("setMode," + text); }
