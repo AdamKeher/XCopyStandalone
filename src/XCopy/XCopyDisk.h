@@ -19,6 +19,7 @@
 #include "XCopyState.h"
 #include "XCopyESP8266.h"
 #include "XCopySDCard.h"
+#include "MD5.h"
 
 enum ADFFileSource
 {
@@ -36,7 +37,6 @@ class XCopyDisk
     void changeDisk();
     String getADFVolumeName(String ADFFileName, ADFFileSource = _sdCard);
     String generateADFFileName(String diskname);
-    bool cardDetect() { return _sdcard->cardDetect(); };
 
     int readDiskTrack(uint8_t trackNum, bool verify, uint8_t retryCount, bool silent = false);
     int writeDiskTrack(uint8_t trackNum, uint8_t retryCount);
@@ -56,7 +56,6 @@ class XCopyDisk
     XCopyAudio *_audio;
     XCopyGraphics *_graphics;
     XCopyESP8266 *_esp;
-    XCopySDCard *_sdcard;
     volatile bool _cancelOperation = false;
 };
 
