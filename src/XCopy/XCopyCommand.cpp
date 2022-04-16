@@ -539,6 +539,7 @@ void XCopyCommandLine::doCommand(String command)
 
         return;
     }
+
     if (cmd != "")
         Log << "Unknown command: '" << cmd << "'\r\n";
 }
