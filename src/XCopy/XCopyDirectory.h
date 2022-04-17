@@ -11,11 +11,6 @@
 
 #define ITEMSPERSCREEN 12
 
-enum XCopyDirectoryEntrySource {
-  flashMemory = 0,
-  sdCard = 1
-};
-
 class XCopyDirectoryEntry {
 public:
   XCopyDirectoryEntry();
@@ -23,9 +18,8 @@ public:
   bool isDirectory() { return _isDirectory; }
   void setIsDirectory(bool value) { _isDirectory = value; }
   bool isIncorrectSize = false;
-  String path;
   String longName;
-  XCopyDirectoryEntrySource source;
+  ADFFileSource source;
   struct XCopyDirectoryEntry *prev;
   struct XCopyDirectoryEntry *next;
 

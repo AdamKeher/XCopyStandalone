@@ -51,47 +51,37 @@ bool XCopyDirectory::down()
 
 void XCopyDirectory::getDirectoryFlash(bool root, XCopyDisk *disk, String filter)
 {
-    if (!SerialFlash.begin(PIN_FLASHCS))
-    {
+    if (!SerialFlash.begin(PIN_FLASHCS)) {
         Serial << "\r\nError Accessing SPI Flash.\r\n";
         return;
     }
 
-    if (root)
-    {
+    if (root) {
         XCopyDirectoryEntry *defaultItems = new XCopyDirectoryEntry();
         defaultItems->setIsDirectory(true);
-        defaultItems->source = flashMemory;
+        defaultItems->source = _flashMemory;
         defaultItems->longName = "Built In ADF Files";
-        defaultItems->path = "/Built In ADF Files/";
         addRoot(defaultItems);
     }
-    else
-    {
+    else {
         clear();
         _currentPath = "/Built In ADF Files/";
         SerialFlash.opendir();
-        while (1)
-        {
+        while (1) {
             char filename[64];
             uint32_t filesize;
 
-            if (SerialFlash.readdir(filename, sizeof(filename), filesize))
-            {
-                if (String(filename).toUpperCase().endsWith(filter.toUpperCase()))
-                {
+            if (SerialFlash.readdir(filename, sizeof(filename), filesize)) {
+                if (String(filename).toUpperCase().endsWith(filter.toUpperCase())) {
                     XCopyDirectoryEntry *flashFile = new XCopyDirectoryEntry();
                     flashFile->setIsDirectory(false);
                     flashFile->longName = filename;
-                    flashFile->source = flashMemory;
-                    flashFile->path = "";
+                    flashFile->source = _flashMemory;
                     flashFile = addItem(flashFile);
                 }
             }
-            else
-            {
-                break; // no more files
-            }
+            // no more files
+            else { break; }
         }
     }
 }
@@ -124,10 +114,8 @@ void XCopyDirectory::getDirectory(String path, XCopyDisk *disk, String filter, b
         return;
     }
 
-    // int count = 0;
     while (true)
     {
-        // if (count++ == 7) break;
         SdFile entry;
         if (!entry.openNext(&root, O_RDONLY)) break;
 
@@ -138,16 +126,14 @@ void XCopyDirectory::getDirectory(String path, XCopyDisk *disk, String filter, b
             XCopyDirectoryEntry *item = new XCopyDirectoryEntry();
             item->longName = lfnBuffer;
             item->setIsDirectory(true);
-            item->path = path + lfnBuffer + '/';
-            item->source = sdCard;
+            item->source = _sdCard;
             addItem(item);
         } 
         else if ((String(lfnBuffer).toUpperCase().endsWith(filter.toUpperCase()) || filter == "")) {
             XCopyDirectoryEntry *item = new XCopyDirectoryEntry();
             item->longName = lfnBuffer;
             item->setIsDirectory(false);
-            item->path = path;
-            item->source = sdCard;
+            item->source = _sdCard;
             if (entry.fileSize() != 901120) item->isIncorrectSize = true;
 
             addItem(item);
@@ -349,7 +335,6 @@ void XCopyDirectory::printItem(XCopyDirectoryEntry *item)
 {
     Serial << "{\r\n";
     Serial << "        Item: " << item->longName << "\r\n";
-    Serial << "        Path: " << item->path << "\r\n";
     Serial << "   Directory: " << (item->isDirectory() ? "TRUE" : "FALSE") << "\r\n";
     Serial << "      Source: " << item->source << "\r\n";
     Serial << "        Prev: " << (item->prev == NULL ? "NULL" : item->prev->longName) << "\r\n";
@@ -397,7 +382,7 @@ void XCopyDirectory::drawDirectory(bool clearScreen)
         _graphics->setCursor(5, 0 + (count * 10));
         if (item->isDirectory())
         {
-            if (item->source == flashMemory)
+            if (item->source == _flashMemory)
                 _graphics->drawText(ST7735_CYAN, ">> ");
             else
                 _graphics->drawText(ST7735_YELLOW, ">> ");
@@ -410,7 +395,7 @@ void XCopyDirectory::drawDirectory(bool clearScreen)
         _graphics->drawText(color, item->longName);
 
         // draw fullscreen thumbnail or information footer
-        if (item->source == flashMemory && isCurrentItem(item))
+        if (item->source == _flashMemory && isCurrentItem(item))
         {
             String imageName = item->longName.substring(0, item->longName.lastIndexOf(".")) + ".565";
             if (SerialFlash.exists(imageName.c_str()))

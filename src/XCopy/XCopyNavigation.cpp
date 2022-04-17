@@ -79,12 +79,6 @@ void XCopy::navigateLeft()
             _directory.getDirectory(path, &_disk, ".adf");
 
             XCopyDirectoryEntry *item = _directory.getRoot();
-            while (item != NULL)
-            {
-                if (item->path == oldPath)
-                    break;
-                item = item->next;
-            }
 
             _directory.setCurrentItem(item);
             _directory.setIndex(_directory.getItemIndex(item));
@@ -126,37 +120,27 @@ void XCopy::navigateSelect()
             return;
 
         // avoid changing the name to a fixed lowercase/upprcase for comparison.
-        String itemName = item->longName;
 
-        if (item->isDirectory() && item->source == sdCard)
+        if (item->isDirectory() && item->source == _sdCard)
         {
+            String directory = _directory.getCurrentPath() + item->longName + "/";
             _audio.playBack(false);
-            _directory.getDirectory(item->path, &_disk, ".adf");
+            _directory.getDirectory(directory, &_disk, ".adf");
             _directory.drawDirectory(true);
         }
-        else if (item->isDirectory() && item->source == flashMemory)
+        else if (item->isDirectory() && item->source == _flashMemory)
         {
             _audio.playBack(false);
             _directory.getDirectoryFlash(false, &_disk, ".adf");
             _directory.drawDirectory(true);
         }
-        else if (itemName.toLowerCase().endsWith(".adf") && item->source == sdCard)
+        else if (item->longName.toLowerCase().endsWith(".adf"))
         {
             _xcopyState = copyADFToDisk;
             _audio.playSelect(false);
             _graphics.clearScreen();
-            // _config = new XCopyConfig();
-            _disk.adfToDisk(item->path + item->longName, _config->getVerify(), _config->getRetryCount(), _sdCard);
-            // delete _config;
-        }
-        else if (itemName.toLowerCase().endsWith(".adf") && item->source == flashMemory)
-        {
-            _xcopyState = copyADFToDisk;
-            _audio.playBack(false);
-            _graphics.clearScreen();
-            // _config = new XCopyConfig();
-            _disk.adfToDisk(item->path + item->longName, _config->getVerify(), _config->getRetryCount(), _flashMemory);
-            // delete _config;
+            String itemname = (item->source == _sdCard ? _directory.getCurrentPath() + item->longName : item->longName.toUpperCase());
+            _disk.adfToDisk(itemname, _config->getVerify(), _config->getRetryCount(), item->source);
         }
 
         return;
