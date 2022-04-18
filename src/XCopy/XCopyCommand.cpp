@@ -57,6 +57,7 @@ void XCopyCommandLine::doCommand(String command)
         Log << F("| rm <filename>        | delete file from sdcard                              |\r\n");
         Log << F("|--------------------- +------------------------------------------------------|\r\n");
         Log << F("| writeadf <filename>  | write adf file to floppy disk                        |\r\n");
+        Log << F("| testdisk             | test floppy disk                                     |\r\n");
         Log << F("|--------------------- +------------------------------------------------------|\r\n");
         Log << F("| time                 | show current date & time                             |\r\n");
         Log << F("| settime              | set date & time via NTP server                       |\r\n");
@@ -582,6 +583,17 @@ void XCopyCommandLine::doCommand(String command)
         return;        
     }
 
+    if (cmd == F("testdisk")) {
+        if (!diskChange()) {
+            Log << "Disk not inserted into floppy\r\n";
+            return;
+        }
+
+        _callback(_caller, "testDisk");
+
+        return;        
+    }
+
     if (cmd != "")
         Log << "Unknown command: '" << cmd << "'\r\n";
 }
@@ -640,6 +652,12 @@ bool XCopyCommandLine::printDirectory(String directory, bool color) {
     return true;
 }
 
+void XCopyCommandLine::setCallBack(void* caller, OnWebCommand function)
+{
+    _caller = caller;
+    _callback = function;
+}
+
 void XCopyCommandLine::Update()
 {
     while (Serial.available())
@@ -673,3 +691,4 @@ void XCopyCommandLine::Update()
         }
     }
 }
+

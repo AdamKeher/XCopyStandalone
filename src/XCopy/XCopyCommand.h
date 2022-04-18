@@ -17,6 +17,8 @@
 #include <TimeLib.h>
 #include <MD5.h>
 
+typedef void (*OnWebCommand)(void* obj, const String command);
+
 class XCopyCommandLine
 {
 public:
@@ -27,12 +29,17 @@ public:
   bool printDirectory(String directory, bool color = true);
   void Update();
 
+  void setCallBack(void* caller, OnWebCommand function);
+
 private:
   String _command;
   String _version;
   XCopyESP8266 *_esp;
   XCopyConfig *_config;
   XCopyDisk *_disk;
+
+  void* _caller;
+  OnWebCommand _callback;
 };
 
 #endif // XCOPYCOMMAND

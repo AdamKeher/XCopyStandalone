@@ -136,6 +136,7 @@ void XCopy::begin()
     // Init Command Line
     // -------------------------------------------------------------------------------------------
     _command = new XCopyCommandLine(XCOPYVERSION, _esp, _config, &_disk);
+    _command->setCallBack(this, onWebCommand);
 
     // Init Menu
     // -------------------------------------------------------------------------------------------
@@ -526,7 +527,6 @@ void XCopy::getFile(String path, size_t filesize) {
     setBusy(false);
 }
 
-
 void XCopy::startFunction(XCopyState state, String param) {
     if (state == getSdFiles) {
         setBusy(true);
@@ -541,7 +541,7 @@ void XCopy::startFunction(XCopyState state, String param) {
     _xcopyState = state;
     _drawnOnce = false;
     _audio.playSelect(false);
-    _graphics.clearScreen();    
+    _graphics.clearScreen();
 }
 
 void XCopy::startCopyADFtoDisk(String path) {
