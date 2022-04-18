@@ -12,6 +12,13 @@ Project Resumption:
       ☐ Don't reset webui state when files loaded for select modal dialog
       ☐ File upload not reliable - sometimes too short.
       ☐ Add uploaded filesize does not match saved filesize error
+    ☐ Update mode / status table th's to 30/70% width in css
+    ☐ MD5
+      ✔ Add MD5 to disk to adf and log file @done(22-04-18 00:41)
+      ✔ Add MD5 <filename> command @done(22-04-18 00:41)
+      ☐ Add MD5 to verify data of write adf to disk
+      ✔ Add MD5 to test disk and output MD5 to cmdline and @done(22-04-18 12:20)
+      ✔ Add testdisk to cmdline @done(22-04-18 12:05)
     ☐ Update mode, status and diskname for all disk activities
       ✔ Update UI @done(22-04-15 14:53)
       ☐ Set text in app
@@ -19,6 +26,7 @@ Project Resumption:
     ☐ Add read / write color key for disk operations
     ☐ Figure out Giants packet loss / flux drawing issue
       ✔ Increase websocket ping / pong health check timeout from 1000ms to 3000ms @done(22-04-15 23:09)
+      ☐ If busy then reject web server requests as they may be blocking the websocket??
     ☐ Move diskname / ADF filename to under Source and Target
     ☐ Compiler warnings
       ☐ Clean up compiler warnings for esp8266
