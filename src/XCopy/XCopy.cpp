@@ -135,7 +135,7 @@ void XCopy::begin()
 
     // Init Command Line
     // -------------------------------------------------------------------------------------------
-    _command = new XCopyCommandLine(XCOPYVERSION, _esp, _config);
+    _command = new XCopyCommandLine(XCOPYVERSION, _esp, _config, &_disk);
 
     // Init Menu
     // -------------------------------------------------------------------------------------------
@@ -554,7 +554,6 @@ void XCopy::startCopyADFtoDisk(String path) {
         _directory.getDirectory("/", &_disk, ".adf");
         _xcopyState = copyADFToDisk;
         _audio.playSelect(false);
-        _graphics.clearScreen();
         // _config = new XCopyConfig();
         _disk.adfToDisk(path, _config->getVerify(), _config->getRetryCount(), _sdCard);
         // delete _config;

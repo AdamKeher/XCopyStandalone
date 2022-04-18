@@ -2,11 +2,12 @@
 #include <Streaming.h>
 #include <SerialFlash.h>
 
-XCopyCommandLine::XCopyCommandLine(String version, XCopyESP8266 *esp, XCopyConfig *config)
+XCopyCommandLine::XCopyCommandLine(String version, XCopyESP8266 *esp, XCopyConfig *config, XCopyDisk* disk)
 {
     _version = version;
     _esp = esp;
     _config = config;
+    _disk = disk;
 }
 
 void XCopyCommandLine::doCommand(String command)
@@ -54,6 +55,8 @@ void XCopyCommandLine::doCommand(String command)
         Log << F("| cat <filename>       | writes contents of file to terminal                  |\r\n");
         Log << F("| md5 <filename>       | md5 has of file from sdcard                          |\r\n");
         Log << F("| rm <filename>        | delete file from sdcard                              |\r\n");
+        Log << F("|--------------------- +------------------------------------------------------|\r\n");
+        Log << F("| writeadf <filename>  | write adf file to floppy disk                        |\r\n");
         Log << F("|--------------------- +------------------------------------------------------|\r\n");
         Log << F("| time                 | show current date & time                             |\r\n");
         Log << F("| settime              | set date & time via NTP server                       |\r\n");
@@ -415,18 +418,18 @@ void XCopyCommandLine::doCommand(String command)
             return;
         }
         
-        XCopySDCard *_sdCard = new XCopySDCard();
-        _sdCard->begin();
+        XCopySDCard *_sdcard = new XCopySDCard();
+        _sdcard->begin();
         
-        if (!_sdCard->cardDetect()) {
-            Log << _sdCard->getError() + "\r\n";
-            delete _sdCard;
+        if (!_sdcard->cardDetect()) {
+            Log << _sdcard->getError() + "\r\n";
+            delete _sdcard;
             return;
         }
 
-        if (!_sdCard->begin()) {
-            Log <<  _sdCard->getError() + "\r\n";
-            delete _sdCard;
+        if (!_sdcard->begin()) {
+            Log <<  _sdcard->getError() + "\r\n";
+            delete _sdcard;
             return;
         }
 
@@ -434,7 +437,7 @@ void XCopyCommandLine::doCommand(String command)
         bool fresult = file.open(param.c_str());
         if (!fresult) {
             Log << F("unable to open: '") + param + F("'\r\n");
-            delete _sdCard;
+            delete _sdcard;
             return;
         }
 
@@ -448,7 +451,7 @@ void XCopyCommandLine::doCommand(String command)
         } while (readsize > 0);
 
         file.close();
-        delete _sdCard;
+        delete _sdcard;
 
         Log << F("[-- eof]\r\n");
 
@@ -461,28 +464,28 @@ void XCopyCommandLine::doCommand(String command)
             return;
         }
         
-        XCopySDCard *_sdCard = new XCopySDCard();
-        _sdCard->begin();
+        XCopySDCard *_sdcard = new XCopySDCard();
+        _sdcard->begin();
         
-        if (!_sdCard->cardDetect()) {
-            Log << _sdCard->getError() + "\r\n";
-            delete _sdCard;
+        if (!_sdcard->cardDetect()) {
+            Log << _sdcard->getError() + "\r\n";
+            delete _sdcard;
             return;
         }
 
-        if (!_sdCard->begin()) {
-            Log <<  _sdCard->getError() + "\r\n";
-            delete _sdCard;
+        if (!_sdcard->begin()) {
+            Log <<  _sdcard->getError() + "\r\n";
+            delete _sdcard;
             return;
         }
 
-        if (_sdCard->deleteFile(param)) {
+        if (_sdcard->deleteFile(param)) {
             Log << "'" + param + F("' deleted\r\n");
         } else {
             Log << F("unable to delete: '") + param + F("'\r\n");
         }
 
-        delete _sdCard;
+        delete _sdcard;
 
         return;
     }
@@ -493,18 +496,18 @@ void XCopyCommandLine::doCommand(String command)
             return;
         }
         
-        XCopySDCard *_sdCard = new XCopySDCard();
-        _sdCard->begin();
+        XCopySDCard *_sdcard = new XCopySDCard();
+        _sdcard->begin();
         
-        if (!_sdCard->cardDetect()) {
-            Log << _sdCard->getError() + "\r\n";
-            delete _sdCard;
+        if (!_sdcard->cardDetect()) {
+            Log << _sdcard->getError() + "\r\n";
+            delete _sdcard;
             return;
         }
 
-        if (!_sdCard->begin()) {
-            Log <<  _sdCard->getError() + "\r\n";
-            delete _sdCard;
+        if (!_sdcard->begin()) {
+            Log <<  _sdcard->getError() + "\r\n";
+            delete _sdcard;
             return;
         }
 
@@ -512,7 +515,7 @@ void XCopyCommandLine::doCommand(String command)
         bool fresult = file.open(param.c_str());
         if (!fresult) {
             Log << F("unable to open: '") + param + F("'\r\n");
-            delete _sdCard;
+            delete _sdcard;
             return;
         }
 
@@ -530,7 +533,7 @@ void XCopyCommandLine::doCommand(String command)
         MD5::MD5Final(result, &ctx);
 
         file.close();
-        delete _sdCard;
+        delete _sdcard;
 
         for (size_t i = 0; i < 16; i++) {
             Serial.printf("%02X", result[i]);
@@ -538,6 +541,45 @@ void XCopyCommandLine::doCommand(String command)
         Serial << "\r\n";
 
         return;
+    }
+
+    if (cmd == F("writeadf")) {
+        if (param == "") {
+            Log << F("missing file paramater\r\n");
+            return;
+        }
+        
+        XCopySDCard *_sdcard = new XCopySDCard();
+        _sdcard->begin();
+        
+        if (!_sdcard->cardDetect()) {
+            Log << _sdcard->getError() + "\r\n";
+            delete _sdcard;
+            return;
+        }
+
+        if (!_sdcard->begin()) {
+            Log <<  _sdcard->getError() + "\r\n";
+            delete _sdcard;
+            return;
+        }
+
+        if (!_sdcard->fileExists(param)) {
+            Log <<  "file does not exist\r\n";
+            delete _sdcard;
+            return;
+        }
+
+        delete _sdcard;
+
+        if (!param.toLowerCase().endsWith(".adf")) {
+            Log << "The file must be an ADF file\r\n";
+            return;
+        }
+
+        _disk->adfToDisk(param, _config->getVerify(), _config->getRetryCount(), _sdCard);
+
+        return;        
     }
 
     if (cmd != "")

@@ -138,7 +138,6 @@ void XCopy::navigateSelect()
         {
             _xcopyState = copyADFToDisk;
             _audio.playSelect(false);
-            _graphics.clearScreen();
             String itemname = (item->source == _sdCard ? _directory.getCurrentPath() + item->longName : item->longName.toUpperCase());
             _disk.adfToDisk(itemname, _config->getVerify(), _config->getRetryCount(), item->source);
         }

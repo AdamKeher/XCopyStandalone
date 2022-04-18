@@ -627,6 +627,7 @@ void XCopyDisk::adfToDisk(String ADFFileName, bool verify, uint8_t retryCount, A
 
     if (ADFFileName == "") { return; }
 
+    _graphics->clearScreen();
     _graphics->bmpDraw("XCPYLOGO.BMP", 0, 87);
     _graphics->drawDiskName(ADFFileName.substring(ADFFileName.lastIndexOf("/") + 1));
     _graphics->drawDisk();
@@ -811,7 +812,6 @@ void XCopyDisk::diskToDisk(bool verify, uint8_t retryCount) {
 
     if (_cancelOperation) { return; }
 
-    _graphics->clearScreen();
     adfToDisk("DISKCOPY.TMP", verify, retryCount, _flashMemory);
 }
 
