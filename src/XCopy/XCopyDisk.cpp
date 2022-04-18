@@ -601,7 +601,7 @@ bool XCopyDisk::diskToADF(String ADFFileName, bool verify, uint8_t retryCount, A
     ADFFlashFile.close();
     _audio->playBoing(false);
 
-    statusText = String("Completed copying floppy disk to ").append(destination == _sdCard ? "'<a href=\"/sdcard" + fullPath + "\">" + fullPath + "</a>' on SD card. <a target=\"_blank\" href=\"/sdcard" + logfileName  + "\">Log File</a> MD5: " + sMD5 : "Flash memory");
+    statusText = String("Completed copying floppy disk to ").append(destination == _sdCard ? "'<a href=\"/sdcard" + fullPath + "\">" + fullPath + "</a>' on SD card. <a target=\"_blank\" href=\"/sdcard" + logfileName  + "\">Log File</a> <i class=\"fa-solid fa-hashtag\"></i> MD5: " + sMD5 : "Flash memory");
     _esp->setStatus(statusText);
 
     delete _sdcard;
@@ -883,6 +883,10 @@ void XCopyDisk::testDiskette(uint8_t retryCount) {
     _graphics->getTFT()->drawFastHLine(0, 85, _graphics->getTFT()->width(), ST7735_GREEN);
     _esp->setDiskName(diskName);
 
+    // MD5 setup
+    MD5_CTX ctx;
+    MD5::MD5Init(&ctx);
+
     for (int trackNum = 0; trackNum < 160; trackNum++) {
         if (_cancelOperation) {
             OperationCancelled(trackNum);
@@ -892,12 +896,29 @@ void XCopyDisk::testDiskette(uint8_t retryCount) {
         // read track
         readDiskTrack(trackNum, false, retryCount);
 
+        // calculate MD5
+        for (int sec = 0; sec < 11; sec++) {
+            struct Sector *aSec = (Sector *)&getTrack()[sec].sector;
+            // calculate MD5
+            MD5::MD5Update(&ctx, aSec->data, 512);
+        }
+
         // draw flux
         analyseHist(true);
         drawFlux(trackNum, 6, 85);
     }
 
+    String sMD5 = "";
+    unsigned char result[20];
+    MD5::MD5Final(result, &ctx);
+    char bMD5[3];
+    for (size_t i = 0; i < 16; i++) {
+        sprintf(bMD5, "%02X", result[i]);
+        sMD5.append(String(bMD5));
+    }
+    Serial << "\r\nFloppy disk test MD5:\r\n" << sMD5 << "\r\n";
+
     _audio->playBoing(false);
 
-    _esp->setStatus("Test Complete");
+    _esp->setStatus("Test Complete. <i class=\"fa-solid fa-hashtag\"></i> MD5: " + sMD5);
 }
