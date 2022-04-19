@@ -615,12 +615,12 @@ void XCopyDisk::adfToDisk(String ADFFileName, bool verify, uint8_t retryCount, A
     if (source == _flashMemory) {
         // flash memory
         _esp->setState(copyFlashToDisk);
-        _esp->setStatus("Copying ADF from Flash to Disk");
+        _esp->setStatus("Copying disk from flash memory to floppy disk");
     }
     else {
         // sdcard
         _esp->setState(copyADFToDisk);
-        _esp->setStatus("Copying ADF from SDCard to Disk");
+        _esp->setStatus("Copying ADF '" + ADFFileName + "' from SD card to floppy disk");
     }
     
     _cancelOperation = false;
@@ -702,6 +702,10 @@ void XCopyDisk::adfToDisk(String ADFFileName, bool verify, uint8_t retryCount, A
     seek0();
     delay(100);
 
+    // MD5 setup
+    MD5_CTX ctx;
+    MD5::MD5Init(&ctx);
+
     // write ADF file
     for (int trackNum = 0; trackNum < 160; trackNum++) {
         if (_cancelOperation) {
@@ -755,6 +759,9 @@ void XCopyDisk::adfToDisk(String ADFFileName, bool verify, uint8_t retryCount, A
 
                 if (memcmp(aSec->data, buffer, 512))
                     compareError = true;
+
+                // calculate MD5
+                MD5::MD5Update(&ctx, aSec->data, 512);
             }
 
             if (compareError) {
@@ -777,13 +784,30 @@ void XCopyDisk::adfToDisk(String ADFFileName, bool verify, uint8_t retryCount, A
         }
     }
 
+    String status = "'" + ADFFileName + "' file written to disk";
+
+    if (verify) {
+        // output MD5
+        String sMD5 = "";
+        unsigned char result[20];
+        MD5::MD5Final(result, &ctx);
+        char bMD5[3];
+        for (size_t i = 0; i < 16; i++) {
+            sprintf(bMD5, "%02X", result[i]);
+            // ADFLogFile.printf("%02X", result[i]);
+            sMD5.append(String(bMD5));
+        }
+        Serial << "Verify data MD5: " << sMD5 << "\r\n";
+        status.append(". Verify data <i class=\"fa-solid fa-hashtag\"></i> MD5: ").append(sMD5);
+    }
+
     ADFFile.close();
     ADFFlashFile.close();
     _audio->playBoing(false);
 
     delete _sdcard;
 
-    _esp->setStatus("ADF to Disk Complete");
+    _esp->setStatus(status);
 }
 
 void XCopyDisk::diskToDisk(bool verify, uint8_t retryCount) {
