@@ -1,23 +1,15 @@
 /* Headings
 -------------------------------------------------- */
 
-@mixin diskcopyInfo {
-    padding-left: 10px;
-    padding-right: 10px;
-    text-align: center;
-}
-
-.diskcopyInfoHeader {
-    background-color: white;
-    color: $textColorDark;
-    @include diskcopyInfo();
-}
-
-.diskcopyInfoText {
+.diskcopyInfo {
     background-color:darkblue;
     color: $textColor;
-    @include diskcopyInfo();
+
+    .mode {
+        width: 25%;
+    }
 }
+
 
 /* Icons
 -------------------------------------------------- */

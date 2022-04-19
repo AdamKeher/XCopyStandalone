@@ -33,20 +33,13 @@ body {
 
 /* Headings
 -------------------------------------------------- */
-.diskcopyInfoHeader {
-  background-color: white;
-  color: black;
-  padding-left: 10px;
-  padding-right: 10px;
-  text-align: center;
-}
-
-.diskcopyInfoText {
+.diskcopyInfo {
   background-color: darkblue;
   color: white;
-  padding-left: 10px;
-  padding-right: 10px;
-  text-align: center;
+}
+
+.diskcopyInfo .mode {
+  width: 25%;
 }
 
 /* Icons
