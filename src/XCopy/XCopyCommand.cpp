@@ -578,7 +578,7 @@ void XCopyCommandLine::doCommand(String command)
             return;
         }
 
-        _disk->adfToDisk(param, _config->getVerify(), _config->getRetryCount(), _sdCard);
+        _callback(_caller, "writeADFFile," + param);
 
         return;        
     }
