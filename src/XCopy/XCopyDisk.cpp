@@ -338,7 +338,7 @@ bool XCopyDisk::diskToADF(String ADFFileName, bool verify, uint8_t retryCount, A
     String logfileName = fullPath.substring(0, fullPath.length() - 4).append(".log");
 
     // set status on WebUI
-    statusText = String("Copying floppy disk to ").append(destination == _sdCard ? "'"+ fullPath +"' on SD card" : "Flash memory");   
+    statusText = String("Copying floppy disk to ").append(destination == _sdCard ? "'"+ fullPath +"' on SD card" : "flash memory");   
     _esp->setStatus(statusText);
 
     // Open SD File or SerialFile
@@ -520,19 +520,15 @@ bool XCopyDisk::diskToADF(String ADFFileName, bool verify, uint8_t retryCount, A
         // write track (11 sectors per track)
         for (int i = 0; i < 11; i++) {
             const struct Sector *aSec = (Sector *)&getTrack()[i].sector;
-            if (destination == _sdCard)
-            {
+            // calculate MD5
+            MD5::MD5Update(&ctx, aSec->data, 512);
+            if (destination == _sdCard) {
                 ADFFile.write(aSec->data, 512);
-                // calculate MD5
-                MD5::MD5Update(&ctx, aSec->data, 512);
             }
-            else if (destination == _flashMemory)
-            {
+            else if (destination == _flashMemory) {
                 ADFFlashFile.write(aSec->data, 512);
                 ADFFlashFile.flush();
-                while (!SerialFlash.ready())
-                {
-                }
+                while (!SerialFlash.ready()) { }
             }
         }
 
@@ -575,7 +571,7 @@ bool XCopyDisk::diskToADF(String ADFFileName, bool verify, uint8_t retryCount, A
         }
     }
 
-    String sMD5 = "";
+    String sMD5 = ctxToMD5(&ctx);
 
     if (destination == _sdCard) {
         ADFLogFile.println("\t],");
@@ -584,7 +580,6 @@ bool XCopyDisk::diskToADF(String ADFFileName, bool verify, uint8_t retryCount, A
         ADFLogFile.print("\t\"crc32\": \"0x");
         ADFLogFile.print(disk_crc32, HEX);
         ADFLogFile.println("\",");
-        sMD5 = ctxToMD5(&ctx);
         ADFLogFile.println("\t\"MD5\": \"" + sMD5 + "\"");
         ADFLogFile.println("}");
     }
@@ -594,7 +589,7 @@ bool XCopyDisk::diskToADF(String ADFFileName, bool verify, uint8_t retryCount, A
     ADFFlashFile.close();
     _audio->playBoing(false);
 
-    statusText = String("Completed copying floppy disk to ").append(destination == _sdCard ? "'<a href=\"/sdcard" + fullPath + "\">" + fullPath + "</a>' on SD card. <a target=\"_blank\" href=\"/sdcard" + logfileName  + "\">Log File</a> <i class=\"fa-solid fa-hashtag\"></i> MD5: " + sMD5 : "Flash memory");
+    statusText = String("Completed copying floppy disk to ").append(destination == _sdCard ? "'<a href=\"/sdcard" + fullPath + "\">" + fullPath + "</a>' on SD card. <a target=\"_blank\" href=\"/sdcard" + logfileName  + "\">Log File</a> <i class=\"fa-solid fa-hashtag\"></i> MD5: " + sMD5 : "flash memory. <i class=\"fa-solid fa-hashtag\"></i> MD5: " + sMD5);
     _esp->setStatus(statusText);
 
     delete _sdcard;
