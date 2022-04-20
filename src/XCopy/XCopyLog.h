@@ -14,7 +14,8 @@ class XCopyLog
         Serial << text;
         text = text.replace("\r", "\033[^M");
         text = text.replace("\n", "\033[^J");
-        _esp->log(text);
+        _esp->print("broadcast log," + text + "\r\n");
+        delay(6);
         return *this;
     }
 
