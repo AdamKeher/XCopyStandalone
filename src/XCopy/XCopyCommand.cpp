@@ -42,6 +42,13 @@ void XCopyCommandLine::doCommand(String command)
         Log << F("| clear | cls          | clear screen                                         |\r\n");
         Log << F("|--------------------- +------------------------------------------------------|\r\n");
         Log << F("| dir | ls <directory> | list files on SDCard                                 |\r\n");
+        Log << F("| cat <filename>       | writes contents of file to terminal                  |\r\n");
+        Log << F("| rm <filename>        | delete file from sdcard                              |\r\n");
+        Log << F("| md5 <filename|flash> | md5 has of file from sdcard or flash                 |\r\n");
+        Log << F("|--------------------- +------------------------------------------------------|\r\n");
+        Log << F("| writeadf <filename>  | write adf file to floppy disk                        |\r\n");
+        Log << F("| testdisk             | test floppy disk                                     |\r\n");
+        Log << F("|--------------------- +------------------------------------------------------|\r\n");
         Log << F("| boot                 | print boot block from disk                           |\r\n");
         Log << F("| bootf                | print boot block from flash                          |\r\n");
         Log << F("| flux                 | returns histogram of track in binary                 |\r\n");
@@ -52,12 +59,6 @@ void XCopyCommandLine::doCommand(String command)
         Log << F("| readf <n>            | read logical track #n from flash                     |\r\n");
         Log << F("| dump <filename>      | dump ADF file system information                     |\r\n");
         Log << F("| weak                 | returns retry number for last read in binary format  |\r\n");
-        Log << F("| cat <filename>       | writes contents of file to terminal                  |\r\n");
-        Log << F("| md5 <filename|flash> | md5 has of file from sdcard or flash                 |\r\n");
-        Log << F("| rm <filename>        | delete file from sdcard                              |\r\n");
-        Log << F("|--------------------- +------------------------------------------------------|\r\n");
-        Log << F("| writeadf <filename>  | write adf file to floppy disk                        |\r\n");
-        Log << F("| testdisk             | test floppy disk                                     |\r\n");
         Log << F("|--------------------- +------------------------------------------------------|\r\n");
         Log << F("| time                 | show current date & time                             |\r\n");
         Log << F("| settime              | set date & time via NTP server                       |\r\n");
