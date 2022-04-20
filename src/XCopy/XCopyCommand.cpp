@@ -47,6 +47,7 @@ void XCopyCommandLine::doCommand(String command)
         Log << F("| md5 <filename|flash> | md5 has of file from sdcard or flash                 |\r\n");
         Log << F("|--------------------- +------------------------------------------------------|\r\n");
         Log << F("| writeadf <filename>  | write adf file to floppy disk                        |\r\n");
+        Log << F("| writeflash           | write flash memory to floppy disk                    |\r\n");
         Log << F("| testdisk             | test floppy disk                                     |\r\n");
         Log << F("|--------------------- +------------------------------------------------------|\r\n");
         Log << F("| boot                 | print boot block from disk                           |\r\n");
@@ -568,6 +569,12 @@ void XCopyCommandLine::doCommand(String command)
         _callback(_caller, "writeADFFile," + param);
 
         return;        
+    }
+
+    if (cmd == F("writeflash")) {
+        _callback(_caller, "copyDisktoFlash");
+
+        return;
     }
 
     if (cmd == F("testdisk")) {
