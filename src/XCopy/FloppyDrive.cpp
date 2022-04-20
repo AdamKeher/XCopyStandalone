@@ -229,59 +229,58 @@ void setSectorCnt(byte count)
 void printBootSector()
 {
     struct Sector *aSec = (Sector *)&track[0].sector;
-    Serial << "Format Type: " << aSec->format_type << " Track: " << aSec->track
-           << " Sector: " << aSec->sector << " NumSec2Gap: " << aSec->toGap
-           << " Data Chk: ";
-    Serial.print(aSec->data_chksum, HEX);
-    Serial << " Header Chk: ";
-    Serial.println(aSec->header_chksum, HEX);
-
-    Serial << ".-------------------------------------------------------------------------.\r\n";
-    Serial << "| Boot Sector                                                             |\r\n";
-    Serial << "|-------------------------------------------------------------------------|\r\n";
+    Log << "Format Type: " + String(aSec->format_type) + " Track: " + String(aSec->track);
+    Log << " Sector: " + String(aSec->sector) + " NumSec2Gap: " + String(aSec->toGap);
+    Log << " Data Chk: ";
+    Log << String(aSec->data_chksum, HEX);
+    Log << " Header Chk: ";
+    Log << String(aSec->header_chksum, HEX);
+    Log << "\r\n";
+    Log << ".-------------------------------------------------------------------------.\r\n";
+    Log << "| Boot Sector                                                             |\r\n";
+    Log << "|-------------------------------------------------------------------------|\r\n";
 
     for (int s = 0; s < 2; s++)
     {
         aSec = (Sector *)&track[s].sector;
         for (int i = 0; i < 8; i++)
         {
-            Serial << "| 0x";
+            String line = "| 0x";
             String hex = String((s * 512) + (i * 64), HEX);
-            Serial << (hex.length() < 3 ? String("0000000").substring(0, 3 - hex.length()) + hex : hex);
-            Serial << ": ";
+            line.append(hex.length() < 3 ? String("0000000").substring(0, 3 - hex.length()) + hex : hex);
+            line.append(": ");
             for (int j = 0; j < 64; j++)
             {
-                Serial.print(byte2char(aSec->data[(i * 64) + j]));
+                line.append(byte2char(aSec->data[(i * 64) + j]));
             }
-            Serial << " |\r\n";
+            line.append(" |\r\n");
+            Log << line;
         }
     }
 
-    Serial << "|-------------------------------------------------------------------------'------------------------------.\r\n";
+    Log << "|-------------------------------------------------------------------------'------------------------------.\r\n";
     for (int s = 0; s < 2; s++)
     {
         aSec = (Sector *)&track[s].sector;
         for (int i = 0; i < 16; i++)
         {
-            Serial << "| 0x";
+            String line = "| 0x";
             String hex = String((s * 512) + (i * 32), HEX);
-            Serial << (hex.length() < 3 ? String("0000000").substring(0, 3 - hex.length()) + hex : hex);
-            Serial << ": ";
+            line.append(hex.length() < 3 ? String("0000000").substring(0, 3 - hex.length()) + hex : hex).append(": ");
             for (int j = 0; j < 32; j++)
             {
                 if (aSec->data[(i * 32) + j] < 16)
                 {
-                    Serial.print("0");
+                    line.append("0");
                 }
-                Serial.print(aSec->data[(i * 32) + j], HEX);
-                Serial.print(" ");
+                line.append(String(aSec->data[(i * 32) + j], HEX)).append(" ");
             }
-            Serial << "|\r\n";
+            line.append("|\r\n");
+            Log << line;
         }
     }
-    Serial << "`--------------------------------------------------------------------------------------------------------'\r\n";
-
-    Serial << "\r\n";
+    Log << "`--------------------------------------------------------------------------------------------------------'\r\n";
+    Log << "\r\n";
 }
 
 int *getHist()
