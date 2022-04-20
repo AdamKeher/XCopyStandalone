@@ -156,9 +156,9 @@ function setupWebsocket() {
       }
     }
   
+    // don't write res[1] as it may contain commas itself and have been split
     if (res[0] == "log") {
-      term.write(res[1]);
-      // log(res[1]);
+      term.write(message.substring(4));
     }
   
     if (res[0] == "clearSdFiles") {
