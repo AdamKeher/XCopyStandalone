@@ -580,7 +580,7 @@ bool XCopyDisk::diskToADF(String ADFFileName, bool verify, uint8_t retryCount, A
         ADFLogFile.print("\t\"crc32\": \"0x");
         ADFLogFile.print(disk_crc32, HEX);
         ADFLogFile.println("\",");
-        ADFLogFile.println("\t\"MD5\": \"" + sMD5 + "\"");
+        ADFLogFile.println("\t\"md5\": \"" + sMD5 + "\"");
         ADFLogFile.println("}");
     }
 
