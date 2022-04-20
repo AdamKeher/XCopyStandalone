@@ -925,6 +925,8 @@ void XCopyDisk::testDiskette(uint8_t retryCount) {
     _esp->setStatus("Test Complete. <i class=\"fa-solid fa-hashtag\"></i> MD5: " + sMD5);
 }
 
+//
+
 String XCopyDisk::ctxToMD5(MD5_CTX *ctx) {
     String sMD5 = "";
     unsigned char result[20];
@@ -957,4 +959,44 @@ String XCopyDisk::adfToMD5(String ADFFileName) {
         } while (readsize > 0);
         
         return ctxToMD5(&ctx);
+}
+
+String XCopyDisk::flashToMD5() {
+    SerialFlashFile ADFFlashFile;
+
+   if (!SerialFlash.begin(PIN_FLASHCS)) {
+        _graphics->drawText(0, 10, ST7735_RED, "Serial Flash Init Failed");
+        _esp->setStatus("Serial Flash Init Failed");
+        _audio->playBong(false);
+        return "";
+    }
+
+    ADFFlashFile = SerialFlash.open("DISKCOPY.TMP");
+    if (!ADFFlashFile) {
+        _graphics->drawText(0, 10, ST7735_RED, "Serial Flash File Open Failed");
+        _esp->setStatus("Serial Flash File Open Failed");
+        _audio->playBong(false);
+        ADFFlashFile.close();
+        return "";
+    }
+
+    ADFFlashFile.seek(0);
+
+    // MD5 setup
+    MD5_CTX ctx;
+    MD5::MD5Init(&ctx);
+
+    // write ADF file
+    for (int trackNum = 0; trackNum < 160; trackNum++) {
+        // read track from ADF file into track buffer
+        for (int i = 0; i < 11; i++) {
+            byte buffer[512];
+            ADFFlashFile.read(buffer, sizeof(buffer));
+            // calculate MD5
+            MD5::MD5Update(&ctx, buffer, 512);
+
+        }
+    }
+
+    return ctxToMD5(&ctx);
 }

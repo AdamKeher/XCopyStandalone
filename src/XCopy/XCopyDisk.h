@@ -51,6 +51,7 @@ class XCopyDisk
 
     String ctxToMD5(MD5_CTX *ctx);
     String adfToMD5(String ADFFileName);
+    String flashToMD5();
 
     void cancelOperation();
     void OperationCancelled(uint8_t trackNum = -1);

@@ -53,7 +53,7 @@ void XCopyCommandLine::doCommand(String command)
         Log << F("| dump <filename>      | dump ADF file system information                     |\r\n");
         Log << F("| weak                 | returns retry number for last read in binary format  |\r\n");
         Log << F("| cat <filename>       | writes contents of file to terminal                  |\r\n");
-        Log << F("| md5 <filename>       | md5 has of file from sdcard                          |\r\n");
+        Log << F("| md5 <filename|flash> | md5 has of file from sdcard or flash                 |\r\n");
         Log << F("| rm <filename>        | delete file from sdcard                              |\r\n");
         Log << F("|--------------------- +------------------------------------------------------|\r\n");
         Log << F("| writeadf <filename>  | write adf file to floppy disk                        |\r\n");
@@ -497,6 +497,11 @@ void XCopyCommandLine::doCommand(String command)
             return;
         }
         
+        if (param == "flash") {
+            Log << _disk->flashToMD5() + "\r\n";
+            return;
+        }
+
         XCopySDCard *_sdcard = new XCopySDCard();
         _sdcard->begin();
         
