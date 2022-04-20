@@ -444,13 +444,18 @@ void XCopyCommandLine::doCommand(String command)
             return;
         }
 
-        size_t bufferSize = 2048;
+        size_t bufferSize = 512;
         char buffer[bufferSize];
         int readsize = 0;
 
         do {
+            String line = "";
             readsize = file.read(buffer, bufferSize);            
-            Serial.write(buffer, readsize);
+            for(int i = 0; i < readsize; i++) {
+                line.append(buffer[i]);
+            }
+            Log << line;
+            // Serial.write(buffer, readsize);
         } while (readsize > 0);
 
         file.close();
