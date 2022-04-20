@@ -584,14 +584,7 @@ bool XCopyDisk::diskToADF(String ADFFileName, bool verify, uint8_t retryCount, A
         ADFLogFile.print("\t\"crc32\": \"0x");
         ADFLogFile.print(disk_crc32, HEX);
         ADFLogFile.println("\",");
-        unsigned char result[20];
-        MD5::MD5Final(result, &ctx);
-        char bMD5[3];
-        for (size_t i = 0; i < 16; i++) {
-            sprintf(bMD5, "%02X", result[i]);
-            // ADFLogFile.printf("%02X", result[i]);
-            sMD5.append(String(bMD5));
-        }
+        sMD5 = ctxToMD5(&ctx);
         ADFLogFile.println("\t\"MD5\": \"" + sMD5 + "\"");
         ADFLogFile.println("}");
     }
@@ -788,15 +781,7 @@ void XCopyDisk::adfToDisk(String ADFFileName, bool verify, uint8_t retryCount, A
 
     if (verify) {
         // output MD5
-        String sMD5 = "";
-        unsigned char result[20];
-        MD5::MD5Final(result, &ctx);
-        char bMD5[3];
-        for (size_t i = 0; i < 16; i++) {
-            sprintf(bMD5, "%02X", result[i]);
-            // ADFLogFile.printf("%02X", result[i]);
-            sMD5.append(String(bMD5));
-        }
+        String sMD5 = ctxToMD5(&ctx);
         Serial << "Verify data MD5: " << sMD5 << "\r\n";
         status.append(". Verify data <i class=\"fa-solid fa-hashtag\"></i> MD5: ").append(sMD5);
     }
@@ -932,17 +917,22 @@ void XCopyDisk::testDiskette(uint8_t retryCount) {
         drawFlux(trackNum, 6, 85);
     }
 
-    String sMD5 = "";
-    unsigned char result[20];
-    MD5::MD5Final(result, &ctx);
-    char bMD5[3];
-    for (size_t i = 0; i < 16; i++) {
-        sprintf(bMD5, "%02X", result[i]);
-        sMD5.append(String(bMD5));
-    }
+    String sMD5 = ctxToMD5(&ctx);
     Serial << "\r\nFloppy disk test MD5:\r\n" << sMD5 << "\r\n";
 
     _audio->playBoing(false);
 
     _esp->setStatus("Test Complete. <i class=\"fa-solid fa-hashtag\"></i> MD5: " + sMD5);
+}
+
+String XCopyDisk::ctxToMD5(MD5_CTX *ctx) {
+    String sMD5 = "";
+    unsigned char result[20];
+    MD5::MD5Final(result, ctx);
+    char bMD5[3];
+    for (size_t i = 0; i < 16; i++) {
+        sprintf(bMD5, "%02X", result[i]);
+        sMD5.append(String(bMD5));
+    }
+    return sMD5;
 }
