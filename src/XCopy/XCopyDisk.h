@@ -50,6 +50,7 @@ class XCopyDisk
     void testDiskette(uint8_t retryCount);
 
     String ctxToMD5(MD5_CTX *ctx);
+    String adfToMD5(String ADFFileName);
 
     void cancelOperation();
     void OperationCancelled(uint8_t trackNum = -1);

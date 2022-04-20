@@ -936,3 +936,25 @@ String XCopyDisk::ctxToMD5(MD5_CTX *ctx) {
     }
     return sMD5;
 }
+
+String XCopyDisk::adfToMD5(String ADFFileName) {
+        FatFile file;
+        bool fresult = file.open(ADFFileName.c_str());
+        if (!fresult) {
+            Serial << F("unable to open: '") + ADFFileName + F("'\r\n");
+            return "";
+        }
+
+        size_t bufferSize = 2048;
+        char buffer[bufferSize];
+        size_t readsize = 0;
+
+        MD5_CTX ctx;
+        MD5::MD5Init(&ctx);
+        do {
+            readsize = file.read(buffer, bufferSize);            
+            MD5::MD5Update(&ctx, buffer, readsize);
+        } while (readsize > 0);
+        
+        return ctxToMD5(&ctx);
+}

@@ -512,34 +512,15 @@ void XCopyCommandLine::doCommand(String command)
             return;
         }
 
-        FatFile file;
-        bool fresult = file.open(param.c_str());
-        if (!fresult) {
-            Log << F("unable to open: '") + param + F("'\r\n");
+        if (!_sdcard->fileExists(param)) {
+            Log <<  "File not found: '" + param + "'\r\n";
             delete _sdcard;
             return;
         }
 
-        size_t bufferSize = 2048;
-        char buffer[bufferSize];
-        size_t readsize = 0;
-
-        MD5_CTX ctx;
-        MD5::MD5Init(&ctx);
-        do {
-            readsize = file.read(buffer, bufferSize);            
-            MD5::MD5Update(&ctx, buffer, readsize);
-        } while (readsize > 0);
-        unsigned char result[255];
-        MD5::MD5Final(result, &ctx);
-
-        file.close();
         delete _sdcard;
 
-        for (size_t i = 0; i < 16; i++) {
-            Serial.printf("%02X", result[i]);
-        }
-        Serial << "\r\n";
+        Serial << _disk->adfToMD5(param) << "\r\n";
 
         return;
     }
