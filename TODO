@@ -1,5 +1,9 @@
 Project Resumption:
-  v708.2022:    
+  v710.2022:    
+    ☐ xterm.js web log
+      ☐ Investigate direct web sockets functionality
+      ☐ Implement input for full web terminal
+  v709.2022:    
     ☐ File Upload
       ✔ When SD Card refresh is hit in WebUI, you can no longer upload files!? @done(22-04-14 10:09)
       ✔ Failed uploads (file exists, sd card error etc) need to cancel the xhr transfer @done(22-04-14 11:15)
@@ -12,22 +16,23 @@ Project Resumption:
       ☐ Don't reset webui state when files loaded for select modal dialog
       ☐ File upload not reliable - sometimes too short.
       ☐ Add uploaded filesize does not match saved filesize error
-    ☐ Update mode / status table th's to 30/70% width in css
-    ☐ MD5
+    ✔ MD5 @done(22-04-20 13:34)
       ✔ Add MD5 to disk to adf and log file @done(22-04-18 00:41)
       ✔ Add MD5 <filename> command @done(22-04-18 00:41)
-      ☐ Add MD5 to verify data of write adf to disk
+      ✔ Add MD5 to verify data of write adf to disk @done(22-04-20 11:30)
+      ✔ Add MD5 to read to flash @done(22-04-20 13:34)
       ✔ Add MD5 to test disk and output MD5 to cmdline and @done(22-04-18 12:20)
       ✔ Add testdisk to cmdline @done(22-04-18 12:05)
-    ☐ Update mode, status and diskname for all disk activities
-      ✔ Update UI @done(22-04-15 14:53)
+    ✔ Update UI @done(22-04-15 14:53)
       ☐ Set text in app
+    ☐ Fix esp command output
     ☐ Add wifi strength output
-    ☐ Add read / write color key for disk operations
-    ☐ Figure out Giants packet loss / flux drawing issue
+    ✔ Update mode / status table th's to 30/70% width in css @done(22-04-20 13:34)
+    ☐ Update mode, status and diskname for all disk activities
+    ✔ Add read / write color key for disk operations @done(22-04-20 13:34)
+    ✔ Figure out Giants packet loss / flux drawing issue @done(22-04-20 13:34)
       ✔ Increase websocket ping / pong health check timeout from 1000ms to 3000ms @done(22-04-15 23:09)
-      ☐ If busy then reject web server requests as they may be blocking the websocket??
-    ☐ Move diskname / ADF filename to under Source and Target
+      ✔ write flux commands directly to serial with not wait for repsonse @done(22-04-15 23:09)
     ☐ Compiler warnings
       ☐ Clean up compiler warnings for esp8266
       ☐ Clean up compiler warnings for teensy
@@ -72,7 +77,6 @@ Project Resumption:
     ✔ Added streaming log function that writes to both serial and web log @done(22-04-06 15:50)
       ☐ Investigate bugs with multiple << and printf
     ✔ Added xterm.js web log with ANSI terminal features @done(22-04-06 15:50)
-      ☐ Implement input for full web terminal
     ✔ Added SD Card file browser to web ui @done(22-04-06 15:51)
       ✔ Implement sub directories @done(22-04-06 17:56)
       ✔ Implement file download @started(22-04-07 12:02) @done(22-04-07 20:45) @lasted(8h43m57s)
@@ -134,7 +138,7 @@ Project Resumption:
   PCB:
     ✔ Reroute SDCS away from LDO @done(22-03-30 23:50)
     ☐ Modify SPI flash ram footprint to expand legs for easier soldering
-    ☐ Consider taking all spare pins to a header for future development if space permits
+    ☐ Consider taking all spare pin/s to a header for future development if space permits
     ☐ SD Card 
       ✔ Change SD card to micro sd reader to make room for ESP module @done(22-03-28 00:09)
       ☐ Hookup SD card detect
