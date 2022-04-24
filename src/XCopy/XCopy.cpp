@@ -312,6 +312,10 @@ void XCopy::cancelOperation()
     }
 }
 
+void XCopy::processKeys(String keys) {
+    _command->processKeys(keys);
+}
+
 void XCopy::onWebCommand(void* obj, const String command)
 {
     // Log << "DEBUG::ESPCALLBACK::(" << command << ")\r\n";
@@ -364,7 +368,11 @@ void XCopy::onWebCommand(void* obj, const String command)
         String path = command.substring(command.indexOf(",")+1);
         xcopy->startCopyADFtoDisk(path);
     }
+    else if (command.startsWith("k,")) {
+        xcopy->processKeys(command.substring(2));
+    }
 }
+
 
 void XCopy::sendFile(String path) {
    setBusy(true);
