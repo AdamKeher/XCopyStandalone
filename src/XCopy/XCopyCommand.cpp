@@ -682,6 +682,7 @@ void XCopyCommandLine::processKey(char key) {
 void XCopyCommandLine::processKeys(String keys) {
     keys.replace("\033[^M", "\r");
     keys.replace("\033[^J", "\n");
+    keys.replace("\033[^H", char(0x08));
     for(size_t i = 0; i < keys.length(); i++) {
         processKey(keys[i]);
     }

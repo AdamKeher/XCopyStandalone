@@ -15,8 +15,14 @@ function onLoad() {
   });
   term.open(document.getElementById('terminal'));
   term.write('\x1B[1;3;32mXCopy Standalone\x1B[0m Logging Console\r\n');
-  term.onKey(key => {
-    sendKey(key.key);
+  term.onKey(e => {
+    const { key, domEvent } = e;
+    const { keyCode, altKey, altGraphKey, ctrlKey, metaKey } = domEvent;
+
+    if (keyCode == 0x08) 
+      sendKey('\033[^H');
+    else
+      sendKey(key);
   })
   
   $('#diskcopy_cancel').prop('disabled', true);
