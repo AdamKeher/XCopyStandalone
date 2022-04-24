@@ -654,37 +654,45 @@ void XCopyCommandLine::setCallBack(void* caller, OnWebCommand function)
     _callback = function;
 }
 
+void XCopyCommandLine::processKey(char key) {
+    // backspace
+    if (key == 0x08)  {
+        if (_command.length() == 0)
+            return;
+
+        _command = _command.substring(0, _command.length() - 1);
+        Log << XCopyConsole::backspace();
+        return;
+    }
+    // linefeed
+    else if (key == 0x0d || key == 0x0a) {
+        Log << "\r\n";
+        if (_command != String(0x0d)) {
+            doCommand(_command);
+            printPrompt();
+        }
+        _command = "";
+    }
+    else {
+        _command += key;
+        Log << key;
+    }
+}
+
+void XCopyCommandLine::processKeys(String keys) {
+    keys.replace("\033[^M", "\r");
+    keys.replace("\033[^J", "\n");
+    for(size_t i = 0; i < keys.length(); i++) {
+        processKey(keys[i]);
+    }
+}
+
 void XCopyCommandLine::Update()
 {
     while (Serial.available())
     {
         char inChar = (char)Serial.read();
-
-        if (inChar == 0x08) // backspace
-        {
-            if (_command.length() == 0)
-                return;
-
-            _command = _command.substring(0, _command.length() - 1);
-            Log << XCopyConsole::backspace();
-            return;
-        }
-
-        if (inChar == 0x0d || inChar == 0x0a)
-        {
-            Log << "\r\n";
-            if (_command != String(0x0d))
-            {
-                doCommand(_command);
-                printPrompt();
-            }
-            _command = "";
-        }
-        else
-        {
-            _command += inChar;
-            Log << inChar;
-        }
+        processKey(inChar);
     }
 }
 

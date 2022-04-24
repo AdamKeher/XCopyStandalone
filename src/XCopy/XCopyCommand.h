@@ -27,6 +27,8 @@ public:
   String getCommand() { return _command; }
   void printPrompt();
   bool printDirectory(String directory, bool color = true);
+  void processKey(char key);
+  void processKeys(String keys);
   void Update();
 
   void setCallBack(void* caller, OnWebCommand function);
