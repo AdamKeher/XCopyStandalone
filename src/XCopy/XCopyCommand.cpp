@@ -532,7 +532,7 @@ void XCopyCommandLine::doCommand(String command)
 
         delete _sdcard;
 
-        Serial << _disk->adfToMD5(param) << "\r\n";
+        Log << _disk->adfToMD5(param) + "\r\n";
 
         return;
     }
