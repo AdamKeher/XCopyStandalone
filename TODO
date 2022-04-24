@@ -2,9 +2,78 @@ Project Resumption:
   v710.2022:    
     ☐ xterm.js web log
       ☐ Investigate direct web sockets functionality
-      ☐ Implement input for full web terminal
-  v709.2022:    
-    ☐ File Upload
+      ☐ Investigate bugs with multiple << and printf
+    ☐ File transfer
+      ☐ Figure out why the download function occasionly resends the file. Probably something to do with contentlength, as thats when it was noticed
+      ☐ Try to spead it up, it's sloooooooooooow
+      ☐ File upload not reliable - sometimes too short.
+      ☐ Add uploaded filesize does not match saved filesize error
+    ☐ File browser
+      ☐ Implement file delete
+    ☐ Add wifi strength output
+v709.2022:    
+  ☐ Fix esp command output
+  ☐ Update mode, status and diskname for all disk activities
+  ☐ Compiler warnings
+    ☐ Clean up compiler warnings for esp8266
+    ☐ Clean up compiler warnings for teensy
+  ☐ Implement disk delay. Currently in setup but not in code
+  ☐ Change javascript states from lowercase 'to' to capitalised 'To' i.e copyFlashtoDisk -> copyFlashToDisk to match teensy states
+  ✔ xterm.js web log @done(22-04-24 16:26)
+    ✔ Accept terminal input in the webbrowser @done(22-04-24 16:26)
+    ✔ Add backsapce @done(22-04-24 17:32)
+    ✔ Block cursor keys @done(22-04-24 17:32)
+  ✔ MD5 @done(22-04-20 13:34)
+    ✔ Add MD5 to disk to adf and log file @done(22-04-18 00:41)
+    ✔ Add MD5 <filename> command @done(22-04-18 00:41)
+    ✔ Add MD5 to verify data of write adf to disk @done(22-04-20 11:30)
+    ✔ Add MD5 to read to flash @done(22-04-20 13:34)
+    ✔ Add MD5 to test disk and output MD5 to cmdline and @done(22-04-18 12:20)
+  ✔ Work on terminal log @done(22-04-24 12:58)
+    ✔ Write terminal log directly to serial esp serial port and do not wait for acknowledgement @done(22-04-24 12:58)
+  ✔ Crashes when directory too large in ADF write - WebUI OK @done(22-04-24 12:59)
+    ✔ Memory footprint decreased but this is still an issue @done(22-04-24 12:59)
+  ☐ Check _config. See if it is properly destroyed and created throughout the project
+  WebUI
+    ✔ Update UI @done(22-04-15 14:53)
+      ✔ Update mode / status table th's to 30/70% width in css @done(22-04-20 13:34)
+      ✔ Add read / write color key for disk operations @done(22-04-20 13:34)
+      ✔ Figure out Giants packet loss / flux drawing issue @done(22-04-20 13:34)
+        ✔ Increase websocket ping / pong health check timeout from 1000ms to 3000ms @done(22-04-15 23:09)
+        ✔ write flux commands directly to serial with not wait for repsonse @done(22-04-15 23:09)
+    ✔ Move CSS to Saas @done(22-04-14 17:44)
+      ☐ Exclude Saas files from LitteFS
+    ✔ Switch web ui to correct tab when starting function from teensy menu @done(22-04-14 16:30)
+    ✔ Improve websocket server / client disconnection code @done(22-04-14 13:35)
+    ✔ Flux disk does not clear the WebUI @done(22-04-13 23:36)
+    ✔ Detect websocket server / client disconnect quickly @done(22-04-13 23:26)
+    ✔ Dim & disable tabs in WebUI when device is busy @done(22-04-13 17:40)
+    ✔ Display flux when dump floppy @done(22-04-13 16:51)
+    ✔ Add AK74 link to the footer @done(22-04-13 17:12)
+    ✔ WebUI not calling copyDiskToFlash @done(22-04-10 22:56)
+    ✔ Fixed WebUI status icons for Flash to Disk. Was showing flash to flash @done(22-04-10 22:39)
+    ✔ Add font awesome icons @done(22-04-10 21:50)
+    ✔ Set url anchor when tab is selected @done(22-04-10 14:01)
+    ✔ refresh the child directories @done(22-04-10 14:01)
+    ✔ Force vertical scrollbar so screen is always aligned regardless of tab @done(22-04-10 14:01)
+    ✔ Select tab from url anchor via javscript on page load @done(22-04-10 14:02)
+    ✔ Fix url encoded file names @done(22-04-10 12:54)
+    ✔ Fix width of flux canvas in webui as it's not wide enough @done(22-04-09 22:35)
+    ✔ Added bootcamp to the web ui @done(22-04-06 15:50)
+    ✔ Added jquery to the web ui @done(22-04-06 15:50)
+    ✔ Updated web ui look and feel @done(22-04-06 15:50)
+    ✔ Added xterm.js web log with ANSI terminal features @done(22-04-06 15:50)
+    File Browser
+      ✔ Added SD Card file browser to web ui @done(22-04-06 15:51)
+      ✔ Implement sub directories @done(22-04-06 17:56)
+      ✔ Implement file download @started(22-04-07 12:02) @done(22-04-07 20:45) @lasted(8h43m57s)
+        ✔ Finished sendSize command so we can set the http header for content length for the file being sent @done(22-04-10 12:01)
+      ✔ Implement file upload @done(22-04-12 00:17)
+        ✔ Skin upload with bootstrap @done(22-04-13 18:05)
+        ✔ Implement percentage bar & related info @done(22-04-13 18:05)
+      ✔ Change to less memory intesive process as it currently limmits how files are returned in terminal ls and web ui due to ram constraints @done(22-04-10 12:02)
+      ✔ Add refresh button to select modal dialog @done(22-04-10 21:53)
+    File Upload
       ✔ When SD Card refresh is hit in WebUI, you can no longer upload files!? @done(22-04-14 10:09)
       ✔ Failed uploads (file exists, sd card error etc) need to cancel the xhr transfer @done(22-04-14 11:15)
       ✔ Report back failed upload reason to user @done(22-04-14 11:15)
@@ -13,81 +82,19 @@ Project Resumption:
       ✔ Websocket cannot repsond while downloading causing false websocket disconnect failure @done(22-04-14 15:22)
       ✔ Add connect button to websocket error modal @done(22-04-14 14:05)
       ✔ Indicate on the TFT when files are being sent and received @done(22-04-14 13:53)
-      ☐ Don't reset webui state when files loaded for select modal dialog
-      ☐ File upload not reliable - sometimes too short.
-      ☐ Add uploaded filesize does not match saved filesize error
-    ✔ MD5 @done(22-04-20 13:34)
-      ✔ Add MD5 to disk to adf and log file @done(22-04-18 00:41)
-      ✔ Add MD5 <filename> command @done(22-04-18 00:41)
-      ✔ Add MD5 to verify data of write adf to disk @done(22-04-20 11:30)
-      ✔ Add MD5 to read to flash @done(22-04-20 13:34)
-      ✔ Add MD5 to test disk and output MD5 to cmdline and @done(22-04-18 12:20)
-      ✔ Add testdisk to cmdline @done(22-04-18 12:05)
-    ✔ Update UI @done(22-04-15 14:53)
-      ☐ Set text in app
-    ☐ Fix esp command output
-    ☐ Add wifi strength output
-    ✔ Update mode / status table th's to 30/70% width in css @done(22-04-20 13:34)
-    ☐ Update mode, status and diskname for all disk activities
-    ✔ Add read / write color key for disk operations @done(22-04-20 13:34)
-    ✔ Figure out Giants packet loss / flux drawing issue @done(22-04-20 13:34)
-      ✔ Increase websocket ping / pong health check timeout from 1000ms to 3000ms @done(22-04-15 23:09)
-      ✔ write flux commands directly to serial with not wait for repsonse @done(22-04-15 23:09)
-    ☐ Compiler warnings
-      ☐ Clean up compiler warnings for esp8266
-      ☐ Clean up compiler warnings for teensy
-    ☐ Implement disk delay. Currently in setup but not in code
-    ☐ Work on terminal log
-      ☐ Connect termial emulator to ESP via websocket, should speed it up a little
-      ☐ Accept terminal input in the webbrowser
-    ☐ Change javascript states from lowercase 'to' to capitalised 'To' i.e copyFlashtoDisk -> copyFlashToDisk to match teensy states
-    ☐ Crashes when directory too large in ADF write - WebUI OK
-    ☐ Check _config. See if it is properly destroyed and created throughout the project
-    ✔ Move CSS to Saas @done(22-04-14 17:44)
-      ☐ Exclude Saas files from LitteFS
-    ✔ Switch web ui to correct tab when starting function from teensy menu @done(22-04-14 16:30)
-    ✔ Refactors ESP8266 SPIFFS code to LittleFS @done(22-04-14 15:39)
-    ✔ Improve websocket server / client disconnection code @done(22-04-14 13:35)
-    ✔ Flux disk does not clear the WebUI @done(22-04-13 23:36)
-    ✔ Detect websocket server / client disconnect quickly @done(22-04-13 23:26)
-    ✔ Dim & disable tabs in WebUI when device is busy @done(22-04-13 17:40)
-    ✔ Display flux when dump floppy @done(22-04-13 16:51)
-    ✔ Add AK74 link to the footer @done(22-04-13 17:12)
+  ESP
+    ✔ Flash esp led when web request being processed @done(22-04-11 14:57)
+    ✔ Refactor ESP8266 SPIFFS code to LittleFS @done(22-04-14 15:39)
+  Command Line
     ✔ Added cat command to print files to terminal @done(22-04-11 17:42)
     ✔ Added rm command to delete files from terminal @done(22-04-11 17:42)
-    ✔ Flash esp led when web request being processed @done(22-04-11 14:57)
     ✔ Removed debug output from ADFlib to clean up results from dump command @done(22-04-10 23:15)
-    ✔ WebUI not calling copyDiskToFlash @done(22-04-10 22:56)
-    ✔ Fixed WebUI status icons for Flash to Disk. Was showing flash to flash @done(22-04-10 22:39)
-    ✔ Add font awesome icons @done(22-04-10 21:50)
-    ✔ Add refresh button to select modal dialog @done(22-04-10 21:53)
-    ✔ Move writeADFFile to specific copyADFtoDisk state and code so we can cancel the function etc @done(22-04-10 22:39)
-      ✔ Currently neeeds to clear screen at start of function @done(22-04-10 22:39)
-    ✔ Set url anchor when tab is selected @done(22-04-10 14:01)
-    ✔ refresh the current directory when refresh hit instead of root @done(22-04-10 14:01)
-    ✔ Force vertical scrollbar so screen is always aligned regardless of tab @done(22-04-10 14:01)
-    ✔ Select tab from url anchor via javscript on page load @done(22-04-10 14:02)
-    ✔ Fix url encoded file names @done(22-04-10 12:54)
+    ✔ Currently neeeds to clear screen at start of function @done(22-04-10 22:39)
     ✔ Flushed serial port before sending command from esp to teensy. Patched bug where every second command was missed
     ✔ Add fixed footer to bottom of webui @done(22-04-10 12:02)
-    ✔ Fix width of flux canvas in webui as it's not wide enough @done(22-04-09 22:35)
-    ✔ Added bootcamp to the web ui @done(22-04-06 15:50)
-    ✔ Added jquery to the web ui @done(22-04-06 15:50)
-    ✔ Updated web ui look and feel @done(22-04-06 15:50)
     ✔ Added streaming log function that writes to both serial and web log @done(22-04-06 15:50)
-      ☐ Investigate bugs with multiple << and printf
-    ✔ Added xterm.js web log with ANSI terminal features @done(22-04-06 15:50)
-    ✔ Added SD Card file browser to web ui @done(22-04-06 15:51)
-      ✔ Implement sub directories @done(22-04-06 17:56)
-      ✔ Implement file download @started(22-04-07 12:02) @done(22-04-07 20:45) @lasted(8h43m57s)
-        ☐ Figure out why the download function occasionly resends the file. Probably something to do with contentlength, as thats when it was noticed
-        ☐ Try to spead it up, it's sloooooooooooow
-        ✔ Finished sendSize command so we can set the http header for content length for the file being sent @done(22-04-10 12:01)
-      ✔ Implement file upload @done(22-04-12 00:17)
-        ✔ Skin upload with bootstrap @done(22-04-13 18:05)
-        ✔ Implement percentage bar & related info @done(22-04-13 18:05)
-      ☐ Implement file delete
-      ✔ Change to less memory intesive process as it currently limmits how files are returned in terminal ls and web ui due to ram constraints @done(22-04-10 12:02)
+    ✔ Move writeADFFile to specific copyADFtoDisk state and code so we can cancel the function etc @done(22-04-10 22:39)
+    ✔ Add testdisk to cmdline @done(22-04-18 12:05)
   v708.2022:
     ✔ Hook up commands other than ADF to Disk from web interface - ignore incorrect status text @done(22-04-02 18:00)
     ✔ Add MAC address function @started(22-03-31 12:01) @done(22-03-31 12:13) @lasted(12m42s)
