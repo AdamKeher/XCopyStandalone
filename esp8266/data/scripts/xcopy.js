@@ -1,4 +1,5 @@
 var term
+let termBuffer = [];
 
 // Startup
 // --------------------------------------------------------
@@ -14,6 +15,10 @@ function onLoad() {
   });
   term.open(document.getElementById('terminal'));
   term.write('\x1B[1;3;32mXCopy Standalone\x1B[0m Logging Console\r\n');
+  term.onKey(key => {
+    sendKey(key.key);
+  })
+  
   $('#diskcopy_cancel').prop('disabled', true);
   $('#uploadFile').change(fileUploadChange);
   $('#uploadSelect').click(function() { uploadFile.click(); });

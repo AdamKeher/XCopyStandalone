@@ -16,6 +16,14 @@ function ping() {
   }
 }
 
+function sendKey(key) {
+  if (!fileTransferInProgress && connectionState) {
+    key = key.replaceAll('\r', '\033[^M');
+    key = key.replaceAll('\n', '\033[^J');
+    connection.send('k,' + key);
+  }
+}
+
 function setHardwareStatus(status) {  
   element = document.getElementById('hardwareStatus');
   if (status == 0) {
