@@ -29,6 +29,7 @@ public:
   bool printDirectory(String directory, bool color = true);
   void processKey(char key);
   void processKeys(String keys);
+  void setBusy(bool state);
   void Update();
 
   void setCallBack(void* caller, OnWebCommand function);

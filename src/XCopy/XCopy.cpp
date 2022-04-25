@@ -371,8 +371,9 @@ void XCopy::onWebCommand(void* obj, const String command)
     else if (command.startsWith("k,")) {
         xcopy->processKeys(command.substring(2));
     }
+    else if (command == "setBusy,true") { xcopy->setBusy(true); }
+    else if (command == "setBusy,false") { xcopy->setBusy(false); }
 }
-
 
 void XCopy::sendFile(String path) {
    setBusy(true);

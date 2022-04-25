@@ -52,7 +52,6 @@ void XCopyCommandLine::doCommand(String command)
         Log << F("|--------------------- +------------------------------------------------------|\r\n");
         Log << F("| boot                 | print boot block from disk                           |\r\n");
         Log << F("| bootf                | print boot block from flash                          |\r\n");
-        Log << F("| flux                 | returns histogram of track in binary                 |\r\n");
         Log << F("| hist                 | prints histogram of track in ascii                   |\r\n");
         Log << F("| name                 | reads track 80 an returns disklabel in ascii         |\r\n");
         Log << F("| print                | prints amiga track with header                       |\r\n");
@@ -175,12 +174,12 @@ void XCopyCommandLine::doCommand(String command)
         return;
     }
 
-    if (cmd == F("flux"))
-    {
-        analyseHist(true);
-        printFlux();
-        return;
-    }
+    // if (cmd == F("flux"))
+    // {
+    //     analyseHist(true);
+    //     printFlux();
+    //     return;
+    // }
 
     if (cmd == F("weak"))
     {
@@ -374,9 +373,11 @@ void XCopyCommandLine::doCommand(String command)
     }
 
     if (cmd == F("scan")) {
+        _callback(_caller, "setBusy,true");
         Log << F("Scanning: \r\n");
         String status = _esp->sendCommand(F("scan\r"), true, 5000);
         Log << status << F("\r\n");
+        _callback(_caller, "setBusy,false");
         return;
     }
 
@@ -693,6 +694,11 @@ void XCopyCommandLine::processKeys(String keys) {
     for(size_t i = 0; i < keys.length(); i++) {
         processKey(keys[i]);
     }
+}
+
+void XCopyCommandLine::setBusy(bool state) {
+    String sstate = state ? "true" : "false";
+    _callback(_caller, "setBusy," + sstate);
 }
 
 void XCopyCommandLine::Update()
