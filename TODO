@@ -13,9 +13,10 @@ Project Resumption:
     ☐ Add wifi strength output
 v709.2022:    
   ☐ Fix esp command output
+  ☐ Fix time commands
   ☐ Update mode, status and diskname for all disk activities
   ☐ Compiler warnings
-    ☐ Clean up compiler warnings for esp8266
+    ✔ Clean up compiler warnings for esp8266 @done(22-04-25 12:56)
     ☐ Clean up compiler warnings for teensy
   ☐ Implement disk delay. Currently in setup but not in code
   ☐ Change javascript states from lowercase 'to' to capitalised 'To' i.e copyFlashtoDisk -> copyFlashToDisk to match teensy states
@@ -35,6 +36,7 @@ v709.2022:
     ✔ Memory footprint decreased but this is still an issue @done(22-04-24 12:59)
   ☐ Check _config. See if it is properly destroyed and created throughout the project
   WebUI
+    ✔ Don't send ping command while device is busy @done(22-04-25 12:55)
     ✔ Update UI @done(22-04-15 14:53)
       ✔ Update mode / status table th's to 30/70% width in css @done(22-04-20 13:34)
       ✔ Add read / write color key for disk operations @done(22-04-20 13:34)
@@ -86,6 +88,17 @@ v709.2022:
     ✔ Flash esp led when web request being processed @done(22-04-11 14:57)
     ✔ Refactor ESP8266 SPIFFS code to LittleFS @done(22-04-14 15:39)
   Command Line
+    ☐ Test WebUI output for console commands
+      ✔ Fixed MD5 @done(22-04-24 17:44)
+      ✔ Removed flux command @done(22-04-24 17:44)
+      ☐ Fixed Hist
+      ☐ Print
+      ☐ Read / ReadF
+      ☐ Dump
+      ✔ Scan -> set busy @done(22-04-24 18:02)
+      ☐ 
+      ☐ 
+      ☐ 
     ✔ Added cat command to print files to terminal @done(22-04-11 17:42)
     ✔ Added rm command to delete files from terminal @done(22-04-11 17:42)
     ✔ Removed debug output from ADFlib to clean up results from dump command @done(22-04-10 23:15)
