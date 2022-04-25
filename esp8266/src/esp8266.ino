@@ -22,7 +22,7 @@ volatile int busyState = 0;
 void IRAM_ATTR busyISR()
 {
   busyState = digitalRead(busyPin);  
-  String command = "pinStatus," + busyState;
+  String command = "pinStatus," + String(busyState);
   webSocket.broadcastTXT(command);
 }
 
