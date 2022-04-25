@@ -2,11 +2,12 @@
 // --------------------------------------------------------
 var connection = new ReconnectingWebSocket('ws://' + location.hostname + ':81/', ['arduino'], {debug: true, reconnectInterval: 3000, timeoutInterval: 5000, automaticOpen: true });
 var connectionState = false; 
+var hardwareStatus = true;
 
 setupWebsocket();
 
 function ping() {
-  if (!fileTransferInProgress && connectionState) {
+  if (!fileTransferInProgress && connectionState && hardwareStatus) {
     connection.send('ping');
     tm = setTimeout(function () {
       console.log('WebSocket Timeout');
@@ -24,8 +25,8 @@ function sendKey(key) {
   }
 }
 
-function setHardwareStatus(status) {  
-  element = document.getElementById('hardwareStatus');
+function setHardwareStatus(status) {
+  hardwareStatus = status == 0 ? true : false;
   if (status == 0) {
     $('#hardwareStatus').removeClass('alert-danger').addClass('alert-success').html('Device Idle');
     disableInterface(false);
