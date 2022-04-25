@@ -226,7 +226,7 @@ void ESPCommandLine::doCommand(String command)
     if (cmd == "scan")
     {
         Serial << "Starting Wifi Scan\r\n";
-        int scanResult = WiFi.scanNetworks(/*async=*/false, /*hidden=*/true);
+        int8_t scanResult = WiFi.scanNetworks(/*async=*/false, /*hidden=*/true);
         if (scanResult == 0) {
             Serial << "No networks found\r\n";
             return;
@@ -234,7 +234,7 @@ void ESPCommandLine::doCommand(String command)
             Serial.printf(PSTR("%d networks found:\r\n"), scanResult);
         }
 
-        for (size_t i = 0; i < scanResult; i++) {
+        for (int8_t i = 0; i < scanResult; i++) {
             String ssid;
             int32_t rssi;
             uint8_t encryptionType;
