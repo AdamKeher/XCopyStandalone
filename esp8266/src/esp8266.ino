@@ -19,11 +19,11 @@ const String _marker = "espCommand";
 ESPCommandLine command;
 
 volatile int busyState = 0;
-void ICACHE_RAM_ATTR busyISR()
+void IRAM_ATTR busyISR()
 {
   busyState = digitalRead(busyPin);  
-  String tmp = "pinStatus," + String(busyState);
-  webSocket.broadcastTXT(tmp);
+  String command = "pinStatus," + busyState;
+  webSocket.broadcastTXT(command);
 }
 
 String getContentType(String filename)
@@ -92,7 +92,7 @@ bool handleFileRead(String path)
   if (LittleFS.exists(path))
   {
     File file = LittleFS.open(path, "r");
-    size_t sent = server.streamFile(file, contentType);
+    server.streamFile(file, contentType);
     file.close();
     return true;
   }
@@ -100,7 +100,6 @@ bool handleFileRead(String path)
   if (path.startsWith("/sdcard/")) {   
     int bufferSize = 2048;
     char buffer[bufferSize];
-    size_t readSize = 0;
     size_t totalsize = 0;
     unsigned long lastDataTime = millis();
     size_t filesize = 0;
@@ -210,36 +209,29 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t lenght)
 { // When a WebSocket message is received
   switch (type)
   {
-  case WStype_DISCONNECTED: // if the websocket is disconnected
-    Serial.print("\r\n");
-    Serial.printf("xcopyCommand,disconnect,%u\r\n", num);
-    break;
-  case WStype_CONNECTED:
-  { // if a new websocket connection is established
-    IPAddress ip = webSocket.remoteIP(num);
-    Serial.print("\r\n");
-    Serial.printf("xcopyCommand,connected,%u,%d.%d.%d.%d,%s\r\n", num, ip[0], ip[1], ip[2], ip[3], payload);
-  }
-  break;
-  case WStype_TEXT: // if new text data is received
-  {
-    String cmd = (char *)payload;
-    if (cmd == "ping") {
-      webSocket.sendTXT(num, "pong");
-    }
-    if (cmd.startsWith(_marker))
-    {
-      cmd = cmd.substring(_marker.length()+1);
-      if (cmd == "busyPin")
-        busyISR();
-    }
-    else
-    {
+    // if the websocket is disconnected
+    case WStype_DISCONNECTED: {
       Serial.print("\r\n");
-      Serial.printf("xcopyCommand,%s\r\n", cmd.c_str());
+      Serial.printf("xcopyCommand,disconnect,%u\r\n", num);    
+      break;
     }
-    break;
-  }
+    // if a new websocket connection is established
+    case WStype_CONNECTED: {
+      IPAddress ip = webSocket.remoteIP(num);
+      Serial.print("\r\n");
+      Serial.printf("xcopyCommand,connected,%u,%d.%d.%d.%d,%s\r\n", num, ip[0], ip[1], ip[2], ip[3], payload);
+      break;
+    }
+    // if new text data is received 
+    case WStype_TEXT: {
+      String cmd = (char *)payload;
+      if (cmd == "ping") { webSocket.sendTXT(num, "pong"); }
+      if (cmd.startsWith(_marker)) { if (cmd = cmd.substring(_marker.length()+1) == "busyPin") busyISR(); }
+      else { Serial.printf("\r\nxcopyCommand,%s\r\n", cmd.c_str()); }
+      break;
+    }
+    default:
+      break;
   }
 }
 
