@@ -88,17 +88,15 @@ v709.2022:
     ✔ Flash esp led when web request being processed @done(22-04-11 14:57)
     ✔ Refactor ESP8266 SPIFFS code to LittleFS @done(22-04-14 15:39)
   Command Line
-    ☐ Test WebUI output for console commands
+    ✔ Test WebUI output for console commands @done(22-04-26 17:17)
       ✔ Fixed MD5 @done(22-04-24 17:44)
       ✔ Removed flux command @done(22-04-24 17:44)
-      ☐ Fixed Hist
-      ☐ Print
-      ☐ Read / ReadF
-      ☐ Dump
-      ✔ Scan -> set busy @done(22-04-24 18:02)
-      ☐ 
-      ☐ 
-      ☐ 
+      ✔ Fixed Hist @done(22-04-26 13:59)
+      ✔ Fixed Print @done(22-04-26 14:09)
+      ✔ Read / ReadF @done(22-04-26 13:43)
+      ✔ Fixed Dump @done(22-04-26 17:17)
+      ✔ Fixed Scan -> set busy @done(22-04-24 18:02)
+      ✔ Fixed Config @done(22-04-26 13:27)
     ✔ Added cat command to print files to terminal @done(22-04-11 17:42)
     ✔ Added rm command to delete files from terminal @done(22-04-11 17:42)
     ✔ Removed debug output from ADFlib to clean up results from dump command @done(22-04-10 23:15)
