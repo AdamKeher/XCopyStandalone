@@ -234,10 +234,10 @@ void XCopyCommandLine::doCommand(String command)
         return;
     }
 
-    if (cmd == F("dump"))
-    {
-        char name[128];
-        param.toCharArray(name, 128);
+    if (cmd == F("dump")) {
+        // char name[128];
+        // param.toCharArray(name, 128);
+        const char *name = param.c_str();
 
         XCopyADFLib *_adfLib = new XCopyADFLib();
         _adfLib->begin(PIN_SDCS);
@@ -245,12 +245,12 @@ void XCopyCommandLine::doCommand(String command)
 
         if (_adfLib->getDevice())
         {
-            _adfLib->printDevice(_adfLib->getDevice());
-
+            // _adfLib->printDevice(_adfLib->getDevice());
+            Log << _adfLib->printDevice(_adfLib->getDevice());
             _adfLib->openVolume(_adfLib->getDevice());
-            if (_adfLib->getVolume())
-            {
-                _adfLib->printVolume(_adfLib->getVolume());
+            if (_adfLib->getVolume()) {
+                Log << _adfLib->printVolume(_adfLib->getVolume());
+                Log << _adfLib->printDirectory(_adfLib->getVolume());
             }
             else
                 Log << F("Error: Failed to open volume '") << name << F("'\r\n");
