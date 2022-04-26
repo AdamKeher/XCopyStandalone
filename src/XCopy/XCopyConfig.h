@@ -6,6 +6,7 @@
 #include <SerialFlash.h>
 #include <ArduinoJson.h>
 #include <Streaming.h>
+#include "XCopyLog.h"
 
 class XCopyConfig
 {
@@ -16,7 +17,7 @@ public:
   bool writeConfig();
   void parseConfig();
   String getConfig() { return _config; }
-  void dumpConfig() { Serial << "Config: '" << _config << "'\r\n"; }
+  void dumpConfig() { Log << "Config: '" + _config + "'\r\n"; }
 
   bool getVerify() { return _verify; }
   uint8_t getRetryCount() { return _retryCount; }
