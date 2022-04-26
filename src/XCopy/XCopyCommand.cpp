@@ -218,18 +218,18 @@ void XCopyCommandLine::doCommand(String command)
 
     if (cmd == F("read"))
     {
-        Log.printf("Reading Track %d\t", param.toInt());
+        Log.printf("Reading Track %2d:\r\n", param.toInt());
         gotoLogicTrack(param.toInt());
         uint8_t errors = readTrack(false);
         if (errors != -1)
         {
             Log << F("Sectors found: ") << getSectorCnt() << F(" Errors found: ");
-            Serial.print(errors, BIN);
-            Log << F(" Track expected: ") << param.toInt() << F(" Track found: ") << getTrackInfo() << F(" bitCount: ") << getBitCount() << F(" (Read OK)\r\n");
+            Log << String(errors, BIN);
+            Log << F(" Track expected: ") + String(param.toInt()) + F(" Track found: ") + String(getTrackInfo()) + F(" bitCount: ") + String(getBitCount()) + F(" (Read OK)\r\n");
         }
         else
         {
-            Log << F("bitCount: ") << getBitCount() << F(" (Read failed!)\r\n");
+            Log << F("bitCount: ") + String(getBitCount()) + F(" (Read failed!)\r\n");
         }
         return;
     }

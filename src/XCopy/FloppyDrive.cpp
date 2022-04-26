@@ -503,7 +503,7 @@ int readTrack(boolean silent)
             {
                 if (!silent)
                 {
-                    Serial << "Timeout reached\r\n";
+                    Log << "Timeout reached\r\n";
                 }
                 stopFTM0();
                 errors = -1;
@@ -515,7 +515,7 @@ int readTrack(boolean silent)
         tZeit = micros() - tZeit;
         if (!silent)
         {
-            Serial << "Decode took " << tZeit << "\r\n";
+            Log << "Decode took " + String(tZeit) + "\r\n";
         }
         if (getTrackInfo() != logTrack)
         {
@@ -529,8 +529,7 @@ int readTrack(boolean silent)
         }
         if (!silent)
         {
-            Serial << "Read Error, retries left: " << retries - j << " CurrentTrack: " << logTrack << " error:";
-            Serial.println(errors, BIN);
+            Log << "Read Error, retries left: " + String(retries - j) + " CurrentTrack: " + String(logTrack) + " error: " + String(errors, BIN) + "\r\n";
         }
         // the following code tries to move the stepper / seek 0 before retrying to read the track
         // but i found out that about 6 retries are sufficient to determine if a track is bad
@@ -1205,29 +1204,15 @@ unsigned long calcChkSum(long secPtr, int pos, int b)
 */
 void decodeTrack(boolean silent)
 {
-    if (!silent)
-    {
-        Serial << "Sectors start at: ";
-    }
-    for (int i = 0; i < sectorCnt; i++)
-    {
-        if (!silent)
-        {
-            Serial << sectorTable[i].bytePos;
-        }
-        if (i != sectorCnt - 1)
-        {
-            if (!silent)
-            {
-                Serial << ", ";
-            }
+    if (!silent) { Log << "Sectors start at: "; }
+    for (int i = 0; i < sectorCnt; i++) {
+        if (!silent) { 
+            Log << sectorTable[i].bytePos; 
+            if (i != sectorCnt - 1) { Log << ", "; }
         }
         decodeSector(sectorTable[i].bytePos, i);
     }
-    if (!silent)
-    {
-        Serial.println();
-    }
+    if (!silent) { Log << "\r\n"; }
 }
 
 /*
