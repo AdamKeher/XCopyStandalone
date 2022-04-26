@@ -1225,32 +1225,26 @@ int getTrackInfo()
    dumps the sector <index> from the buffer in human readable acsii to the serial port
    mainly for debugging
 */
-void printAmigaSector(int index)
-{
+void printAmigaSector(int index) {
     struct Sector *aSec = (Sector *)&track[index].sector;
-    Serial << "Format Type: " << aSec->format_type << " Track: " << aSec->track
-           << " Sector: " << aSec->sector << " NumSec2Gap: " << aSec->toGap
-           << " Data Chk: ";
-    Serial.print(aSec->data_chksum, HEX);
-    Serial << " Header Chk: ";
-    Serial.println(aSec->header_chksum, HEX);
+    String line = "Format Type: " + String(aSec->format_type) + " Track: " + String(aSec->track) + " Sector: " + String(aSec->sector) + " NumSec2Gap: " + String(aSec->toGap) + " Data Chk: ";
+    line.append(String(aSec->data_chksum, HEX));
+    line.append(" Header Chk: ");
+    line.append(String(aSec->header_chksum, HEX));
+    Log << line + "\r\n";
 
-    for (int i = 0; i < 16; i++)
-    {
-        for (int j = 0; j < 32; j++)
-        {
-            if (aSec->data[(i * 32) + j] < 16)
-            {
-                Serial.print("0");
+    for (int i = 0; i < 16; i++) {
+        line = "";
+        for (int j = 0; j < 32; j++) {
+            if (aSec->data[(i * 32) + j] < 16) {
+                line.append("0");
             }
-            Serial.print(aSec->data[(i * 32) + j], HEX);
-            Serial.print(" ");
+            line.append(String(aSec->data[(i * 32) + j], HEX) + " ");
         }
-        for (int j = 0; j < 32; j++)
-        {
-            Serial.print(byte2char(aSec->data[(i * 32) + j]));
+        for (int j = 0; j < 32; j++) {
+            line.append(byte2char(aSec->data[(i * 32) + j]));
         }
-        Serial.println();
+        Log << line + "\r\n";
     }
 }
 
@@ -1258,10 +1252,8 @@ void printAmigaSector(int index)
    dumps the whole track in ascii
    mainly for debugging
 */
-void printTrack()
-{
-    for (int i = 0; i < sectorCnt; i++)
-    {
+void printTrack() {
+    for (int i = 0; i < sectorCnt; i++) {
         printAmigaSector(i);
     }
 }
