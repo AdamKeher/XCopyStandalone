@@ -992,28 +992,21 @@ void adjustTimings()
    prints histogram of last read track in ascii
    mainly for debugging purposes
 */
-void printHist()
-{
+void printHist() {
     float zeit;
-    for (int i = 0; i < 256; i++)
-    {
-        if (hist[i] > 0)
-        {
+    for (int i = 0; i < 256; i++) {
+        if (hist[i] > 0) {
             zeit = (float(i) * 0.04166667) + 0.25;
-            Serial.print(zeit);
-            Serial.print(":");
-            Serial.print(i);
-            Serial.print("-");
-            Serial.print(hist[i]);
-            for (int j = 0; j < (hist[i] / 128); j++)
-            {
-                Serial.print("+");
+            String line = String(zeit).append(":").append(i).append("-").append(hist[i]);
+            for (int j = 0; j < (hist[i] / 128); j++) {
+                line.append("+");
             }
-            Serial.println();
+            line.append("\r\n");
+            Log << line;
         }
-    }
-    Serial << "1. Minima: " << findMinima(high2) << " high2:" << high2 << "\r\n";
-    Serial << "2. Minima: " << findMinima(high3) << " high3:" << high3 << "\r\n";
+    }    
+    Log << "1. Minima: " + String(findMinima(high2)) + " high2:" + String(high2) + "\r\n";
+    Log << "2. Minima: " + String(findMinima(high3)) + " high3:" + String(high3) + "\r\n";
 }
 
 /*
