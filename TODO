@@ -1,25 +1,36 @@
 Project Resumption:
-  v710.2022:    
-    ☐ xterm.js web log
-      ☐ Investigate direct web sockets functionality
-      ☐ Investigate bugs with multiple << and printf
-    ☐ File transfer
-      ☐ Figure out why the download function occasionly resends the file. Probably something to do with contentlength, as thats when it was noticed
-      ☐ Try to spead it up, it's sloooooooooooow
-      ☐ File upload not reliable - sometimes too short.
-      ☐ Add uploaded filesize does not match saved filesize error
-    ☐ File browser
-      ☐ Implement file delete
-    ☐ Add wifi strength output
+v711.2022:    
+  ☐ xterm.js web log
+    ☐ Investigate direct web sockets functionality
+    ☐ Investigate bugs with multiple << and printf
+  ☐ File transfer
+    ☐ Figure out why the download function occasionly resends the file. Probably something to do with contentlength, as thats when it was noticed
+    ☐ Try to spead it up, it's sloooooooooooow
+    ☐ File upload not reliable - sometimes too short.
+    ☐ Add uploaded filesize does not match saved filesize error
+  ☐ File browser
+    ☐ Implement file delete
+  ☐ Add wifi strength output
+  ☐ Add disk sector viewer
+    ☐ Add adf support
+    ☐ Add sector edit / save support
+  ☐ Implement disk delay. Currently in setup but not in code
+v711.2022:
+  ☐ Rewrite floppy routines
+    ✔ Rewrite drive seek routines @done(22-03-26 16:03)
+    ☐ Configurable Delays
+      ☐ Move timing options to a common struct
+      ✔ Create settings options for most common item @started(20-03-26 21:39) @done(22-03-28 13:33) @lasted(2y1d15h54m53s)
+    ☐ Rewrite track write routines
+    ☐ Rewrite track read routines
+    ☐ Rewrite MFM decode / encode routines
+    ☐ Migrate XCopyDisk to XCopyFloppy routines
 v709.2022:    
-  ☐ Fix esp command output
-  ☐ Fix time commands
-  ☐ Update mode, status and diskname for all disk activities
   ☐ Compiler warnings
     ✔ Clean up compiler warnings for esp8266 @done(22-04-25 12:56)
     ☐ Clean up compiler warnings for teensy
-  ☐ Implement disk delay. Currently in setup but not in code
   ☐ Change javascript states from lowercase 'to' to capitalised 'To' i.e copyFlashtoDisk -> copyFlashToDisk to match teensy states
+  ☐ Check _config. See if it is properly destroyed and created throughout the project
   ✔ xterm.js web log @done(22-04-24 16:26)
     ✔ Accept terminal input in the webbrowser @done(22-04-24 16:26)
     ✔ Add backsapce @done(22-04-24 17:32)
@@ -34,8 +45,8 @@ v709.2022:
     ✔ Write terminal log directly to serial esp serial port and do not wait for acknowledgement @done(22-04-24 12:58)
   ✔ Crashes when directory too large in ADF write - WebUI OK @done(22-04-24 12:59)
     ✔ Memory footprint decreased but this is still an issue @done(22-04-24 12:59)
-  ☐ Check _config. See if it is properly destroyed and created throughout the project
   WebUI
+    ☐ Update mode, status and diskname for all disk activities
     ✔ Don't send ping command while device is busy @done(22-04-25 12:55)
     ✔ Update UI @done(22-04-15 14:53)
       ✔ Update mode / status table th's to 30/70% width in css @done(22-04-20 13:34)
@@ -88,6 +99,9 @@ v709.2022:
     ✔ Flash esp led when web request being processed @done(22-04-11 14:57)
     ✔ Refactor ESP8266 SPIFFS code to LittleFS @done(22-04-14 15:39)
   Command Line
+    ☐ Fix time commands
+    ✔ Fix esp command output @done(22-04-27 14:00)
+    ✔ Added busy state to ls command @done(22-04-27 14:03)
     ✔ Test WebUI output for console commands @done(22-04-26 17:17)
       ✔ Fixed MD5 @done(22-04-24 17:44)
       ✔ Removed flux command @done(22-04-24 17:44)
@@ -133,18 +147,9 @@ v709.2022:
   v706.2022:
     ✔ Fix wifi connection at startup. Failed to connect after flashing a new ESP8266 @done(25-03-26 13:14)
     ✔ Floppy cable orientation test @done(22-03-28 13:33)
-        ✔ Add detectCableOrientation() to XCopyFloppy @done(22-03-28 13:33)
-        ✔ Test orientation on startup and display error message @done(22-03-28 13:33)
-      ☐ Rewrite floppy routines
-        ✔ Rewrite drive seek routines @done(22-03-26 16:03)
-        ☐ Configurable Delays
-          ☐ Move timing options to a common struct
-          ✔ Create settings options for most common item @started(20-03-26 21:39) @done(22-03-28 13:33) @lasted(2y1d15h54m53s)
-        ☐ Rewrite drive read routines
-        ☐ Rewrite MFM decode / encode routines
-        ☐ Rewrite drive write routines
-        ☐ Migrate XCopyDisk to XCopyFloppy routines
-      ✔ Add dump config command to cli
+      ✔ Add detectCableOrientation() to XCopyFloppy @done(22-03-28 13:33)
+      ✔ Test orientation on startup and display error message @done(22-03-28 13:33)
+    ✔ Add dump config command to cli
   v705.2022:
     ✔ Move XCopyStandalone to PlatformIO and include libraries @done(21-03-26 16:00)
     Projects:
