@@ -14,6 +14,7 @@ ESP8266WebServer server(80);
 WebSocketsServer webSocket(81);
 const int led = 2;
 const int busyPin = 4;
+const int cancelPin = 13;
 const String _marker = "espCommand";
 
 ESPCommandLine command;
@@ -226,7 +227,14 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t lenght)
     case WStype_TEXT: {
       String cmd = (char *)payload;
       if (cmd == "ping") { webSocket.sendTXT(num, "pong"); }
-      if (cmd.startsWith(_marker)) { if (cmd = cmd.substring(_marker.length()+1) == "busyPin") busyISR(); }
+      if (cmd.startsWith(_marker)) { 
+        if (cmd = cmd.substring(_marker.length()+1) == "busyPin") busyISR(); 
+        if (cmd = cmd.substring(_marker.length()+1) == "cancelPin") {
+          digitalWrite(cancelPin, LOW);
+          delay(50);
+          digitalWrite(cancelPin, HIGH);
+        }; 
+      }      
       else { Serial.printf("\r\nxcopyCommand,%s\r\n", cmd.c_str()); }
       break;
     }
@@ -240,6 +248,7 @@ void setup(void)
   pinMode(led, OUTPUT);
   digitalWrite(led, 1);
   pinMode(busyPin, INPUT);
+  pinMode(cancelPin, OUTPUT);
   attachInterrupt(busyPin, busyISR, CHANGE);
 
   Serial.begin(ESPBaudRate);

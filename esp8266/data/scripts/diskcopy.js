@@ -74,7 +74,8 @@ function diskcopy(state) {
 
 // TODO: handle cancellation / send back to xcopydevice
 function diskcopyCancel() {
-    disableInterface(false);
+    connection.send("espCommand,cancelPin");
+    // disableInterface(false);
 }
 
 function writeADFFile(path) {
