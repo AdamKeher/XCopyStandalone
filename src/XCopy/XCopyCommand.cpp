@@ -106,28 +106,28 @@ void XCopyCommandLine::doCommand(String command)
 
     if (cmd == F("status"))
     {
-        String status = _esp->sendCommand(F("status\r"), true);
+        String status = _esp->sendCommand(F("status"), true);
         Log << status << F("\r\n");
         return;
     }
 
     if (cmd == F("ssid"))
     {
-        String ssid = _esp->sendCommand(F("ssid\r"), true);
+        String ssid = _esp->sendCommand(F("ssid"), true);
         Log << ssid << F("\r\n");
         return;
     }
 
     if (cmd == F("ip"))
     {
-        String ipaddress = _esp->sendCommand(F("ip\r"), true);
+        String ipaddress = _esp->sendCommand(F("ip"), true);
         Log << ipaddress << F("\r\n");
         return;
     }
 
     if (cmd == F("mac"))
     {
-        String ipaddress = _esp->sendCommand(F("mac\r"), true);
+        String ipaddress = _esp->sendCommand(F("mac"), true);
         Log << ipaddress << F("\r\n");
         return;
     }
@@ -144,6 +144,8 @@ void XCopyCommandLine::doCommand(String command)
             return;
         }
 
+        setBusy(true);
+
         String ssid = param.substring(0, param.indexOf(" "));
         String password = param.substring(param.indexOf(" ") + 1);
 
@@ -155,6 +157,8 @@ void XCopyCommandLine::doCommand(String command)
             Log << F("Connected to '") << ssid << F("'\r\n");
         else
             Log << F("Error: Connection to '") << ssid << F("' failed\r\n");
+
+        setBusy(false);
         return;
     }
 
@@ -373,16 +377,16 @@ void XCopyCommandLine::doCommand(String command)
     }
 
     if (cmd == F("scan")) {
-        _callback(_caller, "setBusy,true");
+        setBusy(true);
         Log << F("Scanning: \r\n");
-        String status = _esp->sendCommand(F("scan\r"), true, 5000);
+        String status = _esp->sendCommand(F("scan"), true, 5000);
         Log << status << F("\r\n");
-        _callback(_caller, "setBusy,false");
+        setBusy(false);
         return;
     }
 
     if (cmd == F("ping")) {
-        String status = _esp->sendCommand(F("ping\r"), true, 5000);
+        String status = _esp->sendCommand(F("ping"), true, 5000);
         Log << status << F("\r\n");
         return;
     }

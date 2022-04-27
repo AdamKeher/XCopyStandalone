@@ -32,7 +32,7 @@ String XCopyESP8266::sendCommand(String command, bool strip, int timeout)
 {
     Serial1.flush();
     Serial1.clear();
-    Serial1.print(command);
+    Serial1.print(command + "\r\n");
 
     if (timeout == -1)
         return "";
@@ -63,6 +63,7 @@ String XCopyESP8266::sendCommand(String command, bool strip, int timeout)
 
     if (strip)
     {
+        if (response.startsWith(command + "\r\n")) { response = response.substring(command.length() + 2); }
         response.replace("\r\nOK\r\n", "");
         response.replace("\r\nER\r\n", "");
     }
