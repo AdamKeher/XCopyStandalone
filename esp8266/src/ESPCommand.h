@@ -26,6 +26,7 @@ private:
   String _command;
   bool _localecho = true;
   WebSocketsServer *_webSocket;
+  const int cancelPin = 13;
 
   char OK_EOC[5] = "OK\r\n";
   char ER_EOC[5] = "ER\r\n";

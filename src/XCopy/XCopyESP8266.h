@@ -18,7 +18,6 @@ public:
   void sendWebSocket(String command);
   void print(String text) { Serial1.print(text); };
 
-
   void setMode(String text) { sendWebSocket("setMode," + text); }
   void setStatus(String text) { sendWebSocket("setStatus," + text); }
   void setDiskName(String name) { sendWebSocket("setDiskname," + name); }

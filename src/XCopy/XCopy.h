@@ -50,6 +50,7 @@ public:
   void processState();
   void intro();
   void cancelOperation();
+  bool detectCancelPin();
   void setBusy(bool busy);
   bool getBusy() { return digitalRead(PIN_BUSYPIN); }
   void refreshTimeNtp();

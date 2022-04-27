@@ -311,6 +311,13 @@ void ESPCommandLine::doCommand(String command)
         return;
     }
 
+    if (cmd == "detectpin") {
+        digitalWrite(cancelPin, LOW);
+        delay(50);
+        digitalWrite(cancelPin, HIGH);
+        return;
+    }
+
     if (cmd != "")
         Serial << "Unknown command: '" << cmd << "'\r\n";
 }

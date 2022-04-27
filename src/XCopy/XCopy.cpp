@@ -106,10 +106,21 @@ void XCopy::begin()
     if (_esp->begin())
     {
         Log << XCopyConsole::success("OK\r\n");
+
+        // detect cancelPin
+        _graphics.drawText(0, 115, ST7735_WHITE, F("     Detecting Cancel Pin"), true);
+        Log << F("Detecting cancel pin: ");
+        if (detectCancelPin()) {
+            Log << XCopyConsole::success("OK\r\n");
+        }
+        else {
+            Log << XCopyConsole::error("Error\r\n");
+        }
+
+        // connect to wifi
         _graphics.drawText(0, 115, ST7735_WHITE, F("       Connecting to WiFi"), true);
 
         _esp->setCallBack(this, onWebCommand);
-
 
         Log << F("Connecting to wireless network (") + _config->getSSID() + "): ";
 
@@ -310,6 +321,18 @@ void XCopy::cancelOperation()
     default:
         break;
     }
+}
+
+bool XCopy::detectCancelPin() {
+    // wait for nav_left to toggle
+    bool detected = false;
+    uint32_t time = millis();
+    while (!detected && millis() - time < 1000) { 
+        _esp->print("detectpin\r\n");
+        detected = digitalRead(PIN_NAVIGATION_LEFT_PIN);
+        detected = !detected;
+    }
+    return detected;
 }
 
 void XCopy::processKeys(String keys) {

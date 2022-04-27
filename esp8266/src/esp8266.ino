@@ -249,6 +249,7 @@ void setup(void)
   digitalWrite(led, 1);
   pinMode(busyPin, INPUT);
   pinMode(cancelPin, OUTPUT);
+  digitalWrite(cancelPin, HIGH);
   attachInterrupt(busyPin, busyISR, CHANGE);
 
   Serial.begin(ESPBaudRate);
