@@ -371,7 +371,9 @@ void XCopyCommandLine::doCommand(String command)
     }
 
     if (cmd == F("dir") || cmd == F("ls")) {
+        setBusy(true);
         printDirectory(param);
+        setBusy(false);
 
         return;
     }
