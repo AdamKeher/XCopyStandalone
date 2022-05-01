@@ -198,5 +198,9 @@ function setupWebsocket() {
     if (res[0] == "setTab") {
       setTab(res[1]);
     }
+
+    if (res[0] == "sendBlock") {
+      drawSector(res[1], res[2], res[3]);
+    }
   };
 }

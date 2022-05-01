@@ -59,6 +59,7 @@ public:
   void sendFile(String path);
   void getFile(String path, size_t size);
   void processKeys(String keys);
+  void sendBlock(int block);
   static void onWebCommand(void* obj, const String command);
   XCopyState _xcopyState = menus;
   #ifdef XCOPY_DEBUG

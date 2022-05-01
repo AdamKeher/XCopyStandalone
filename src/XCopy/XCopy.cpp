@@ -396,6 +396,14 @@ void XCopy::onWebCommand(void* obj, const String command)
     }
     else if (command == "setBusy,true") { xcopy->setBusy(true); }
     else if (command == "setBusy,false") { xcopy->setBusy(false); }
+    else if (command.startsWith("getBlock")) {
+        int _sector = 0;
+        if (command.indexOf(",") > 0) {
+            String _param = command.substring(command.indexOf(",") + 1);
+            _sector = _param.toInt();
+        }        
+        xcopy->sendBlock(_sector);
+    }
 }
 
 void XCopy::sendFile(String path) {
@@ -556,6 +564,39 @@ void XCopy::getFile(String path, size_t filesize) {
 
     _menu.redraw();
 
+    setBusy(false);
+}
+
+void XCopy::sendBlock(int block) {
+    setBusy(true);
+
+    int track = floor(block / 11.0f);
+    int sector = block % 11;
+
+    gotoLogicTrack(track);
+    uint8_t errors = readTrack(true);
+    if (errors != -1) {
+        // Log << F("Sectors found: ") << getSectorCnt() << F(" Errors found: ");
+        // Log << String(errors, BIN);
+        // Log << F(" Track expected: ") + String(sector) + F(" Track found: ") + String(getTrackInfo()) + F(" bitCount: ") + String(getBitCount()) + F(" (Read OK)\r\n");
+        Track *track = getTrack();
+        struct Sector *aSec = (Sector *)&track[sector].sector;
+        for (int i = 0; i < 16; i++) {
+            String webLine = "";
+            for (int j = 0; j < 32; j++) {
+                if (aSec->data[(i * 32) + j] < 16) {
+                    webLine.append("0");
+                }
+                webLine.append(String(aSec->data[(i * 32) + j], HEX) + "|");
+            }
+            _esp->print("broadcast sendBlock," + String(block) + "," + String(i) +"," + webLine + "\r\n");
+            delay(20);
+        }
+
+    }
+    else {
+        Log << F("bitCount: ") + String(getBitCount()) + F(" (Read failed!)\r\n");
+    }
     setBusy(false);
 }
 

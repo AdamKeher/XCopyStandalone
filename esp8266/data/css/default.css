@@ -193,6 +193,45 @@ body {
   color: limegreen;
 }
 
+/* SD Table
+-------------------------------------------------- */
+.sectorTable pre {
+  margin: 0px;
+  margin-top: 1px;
+}
+
+.sectorTable pre .range {
+  margin: 0px;
+  margin-right: 10px;
+  background-color: white;
+  color: black;
+  padding: 3px;
+}
+
+.sectorTable pre .hex {
+  background-color: gray;
+  color: black;
+  padding: 3px;
+  margin: 0px;
+  margin-right: 2px;
+}
+
+.sectorTable pre .hex:hover {
+  background-color: white;
+  color: black;
+  cursor: text;
+}
+
+.sectorTable pre .ascii {
+  background-color: #303030;
+  border-left: 4px solid gray;
+  color: white;
+  margin-left: 10px;
+  padding-left: 10px;
+  padding-right: 10px;
+  padding: 3px;
+}
+
 /* Footer
 -------------------------------------------------- */
 .footer {
