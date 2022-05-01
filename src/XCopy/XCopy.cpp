@@ -587,17 +587,6 @@ void XCopy::sendBlock(int block) {
             + String(aSec->toGap) + "," + String(aSec->data_chksum) + "," + String(aSec->header_chksum) + "\r\n";
         _esp->print(webLine);
 
-        Serial << webLine;
-        Serial << "DC: " << String(aSec->data_chksum, HEX) << " HC: " << String(aSec->header_chksum, HEX) << "\r\n";
-
-        // struct Sector *aSec = (Sector *)&track[index].sector;
-        // String line = "Format Type: " + String(aSec->format_type) + " Track: " + String(aSec->track) + " Sector: " + String(aSec->sector) + " NumSec2Gap: " + String(aSec->toGap) + " Data Chk: ";
-        // line.append(String(aSec->data_chksum, HEX));
-        // line.append(" Header Chk: ");
-        // line.append(String(aSec->header_chksum, HEX));
-        // Log << line + "\r\n";
-
-
         for (int i = 0; i < 16; i++) {
             webLine = "";
             for (int j = 0; j < 32; j++) {
@@ -609,7 +598,6 @@ void XCopy::sendBlock(int block) {
             _esp->print("broadcast sendBlock," + String(block) + "," + String(i) +"," + webLine + "\r\n");
             delay(20);
         }
-
     }
     else {
         Log << F("bitCount: ") + String(getBitCount()) + F(" (Read failed!)\r\n");
