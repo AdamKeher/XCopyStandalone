@@ -74,6 +74,7 @@ void XCopyCommandLine::doCommand(String command)
         Log << F("| ssid                 | show wifi ssid                                       |\r\n");
         Log << F("| websocket <msg>      | broadcast message to webclients                      |\r\n");
         Log << F("| scan                 | scan wireless networks                               |\r\n");
+        Log << F("| pass                 | enter ESP passthrough mode                           |\r\n");
         Log << F("|--------------------- +------------------------------------------------------|\r\n");
         Log << F("| config               | show config settings                                 |\r\n");
         Log << F("| mem                  | show memory stats                                    |\r\n");
@@ -598,6 +599,10 @@ void XCopyCommandLine::doCommand(String command)
         _callback(_caller, "testDisk");
 
         return;        
+    }
+
+    if (cmd == F("pass")) {
+        _callback(_caller, "debuggingSerialPassThrough");
     }
 
     if (cmd != "")

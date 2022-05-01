@@ -213,7 +213,7 @@ void XCopy::navigateSelect()
             _xcopyState = debuggingSerialPassThrough;
             _audio.playSelect(false);
             _graphics.clearScreen();
-            _graphics.drawText(0, 0, ST7735_GREEN, "ESP Passtrhough Mode", true);
+            _graphics.drawText(0, 0, ST7735_GREEN, "ESP Passthrough Mode", true);
         }
 
         if (item->command == debuggingSerialPassThroughProg)

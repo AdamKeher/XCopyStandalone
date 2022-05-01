@@ -404,6 +404,9 @@ void XCopy::onWebCommand(void* obj, const String command)
         }        
         xcopy->sendBlock(_sector);
     }
+    else if (command == "debuggingSerialPassThrough") {
+            xcopy->startFunction(debuggingSerialPassThrough);
+    }
 }
 
 void XCopy::sendFile(String path) {
@@ -608,6 +611,11 @@ void XCopy::startFunction(XCopyState state, String param) {
         return;
     }
 
+    if (state == debuggingSerialPassThrough) {
+        _menu.setCurrentItem(state);
+        navigateSelect();
+        return;
+    }
     setBusy(true);
     _esp->setState(state);
     _menu.setCurrentItem(state);
