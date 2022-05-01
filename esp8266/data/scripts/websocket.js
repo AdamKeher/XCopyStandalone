@@ -107,7 +107,7 @@ function setupWebsocket() {
     console.log('Server: ', message);
   
     // split message
-    var res = message.split(",", 5);
+    var res = message.split(",", 10);
   
     if (res[0] == "pinStatus") {
       setHardwareStatus(res[1]);
@@ -201,6 +201,10 @@ function setupWebsocket() {
 
     if (res[0] == "sendBlock") {
       drawSector(res[1], res[2], res[3]);
+    }
+
+    if (res[0] == "sendBlockDetails") {
+      drawSectorStats(res[1], res[2], res[3], res[4], res[5]);
     }
   };
 }

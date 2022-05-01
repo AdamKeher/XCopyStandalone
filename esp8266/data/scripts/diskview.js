@@ -63,6 +63,13 @@ function drawSectorDetails(block) {
   $('#dvSide').text(side);
 }
 
+function drawSectorStats(block, track, errors, sectors, bits) {
+  $('#dvTrackFound').text(String(track).padStart(2, '0'));
+  $('#dvErrors').text(String(errors).padStart(3, '0'));
+  $('#dvSectorCount').text(String(sectors).padStart(2, '0'));
+  $('#dvBitCount').text(String(bits).padStart(5, '0'));
+}
+
 function drawSector(block, row, sector) {
   let sectors = sector.split("|").filter(e => e);
   let line = "<pre><span class=\"range\">";

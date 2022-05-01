@@ -582,10 +582,14 @@ void XCopy::sendBlock(int block) {
         // Log << F("Sectors found: ") << getSectorCnt() << F(" Errors found: ");
         // Log << String(errors, BIN);
         // Log << F(" Track expected: ") + String(sector) + F(" Track found: ") + String(getTrackInfo()) + F(" bitCount: ") + String(getBitCount()) + F(" (Read OK)\r\n");
+
+        String webLine = "broadcast sendBlockDetails," + String(block) + "," + String(getTrackInfo()) + "," + String(errors) +  "," + String(getSectorCnt()) + "," + String(getBitCount()) + "\r\n";        
+        _esp->print(webLine);
+
         Track *track = getTrack();
         struct Sector *aSec = (Sector *)&track[sector].sector;
         for (int i = 0; i < 16; i++) {
-            String webLine = "";
+            webLine = "";
             for (int j = 0; j < 32; j++) {
                 if (aSec->data[(i * 32) + j] < 16) {
                     webLine.append("0");
