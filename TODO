@@ -11,7 +11,7 @@ v711.2022:
   ☐ File browser
     ☐ Implement file delete
   ☐ Add wifi strength output
-  ☐ Add disk sector viewer
+  ☐ DiskView feature
     ☐ Add adf support
     ☐ Add sector edit / save support
   ☐ Implement disk delay. Currently in setup but not in code
@@ -26,17 +26,13 @@ v711.2022:
     ☐ Rewrite MFM decode / encode routines
     ☐ Migrate XCopyDisk to XCopyFloppy routines
 v709.2022:    
-  ☐ Add cancel button to WebUI
-    ✔ Wire Teensy IO32 / JOY_LEFT to Esp8266 GPIO13 @done(22-04-27 14:51)
-    ✔ Set pullup @done(22-04-27 15:04)
-    ✔ Add cancel web co?mmand @done(22-04-27 15:04)
-    ✔ Detect presence of cancel wire @done(22-04-27 15:48)
-    ☐ Notify WebUI that cancel wire is present
-    ☐ Updated PCB layout to reflect hardware change
+  ☐ Add new device image form Giants
+  ☐ Add manual from Giants
+    ☐ Convert to HTML and host on aksevenfour
+    ☐ Link manual into WebUI
   ☐ Compiler warnings
     ✔ Clean up compiler warnings for esp8266 @done(22-04-25 12:56)
     ☐ Clean up compiler warnings for teensy
-  ☐ Change javascript states from lowercase 'to' to capitalised 'To' i.e copyFlashtoDisk -> copyFlashToDisk to match teensy states
   ☐ Check _config. See if it is properly destroyed and created throughout the project
   ✔ xterm.js web log @done(22-04-24 16:26)
     ✔ Accept terminal input in the webbrowser @done(22-04-24 16:26)
@@ -53,7 +49,15 @@ v709.2022:
   ✔ Crashes when directory too large in ADF write - WebUI OK @done(22-04-24 12:59)
     ✔ Memory footprint decreased but this is still an issue @done(22-04-24 12:59)
   WebUI
+    ☐ Add cancel button to WebUI
+      ✔ Wire Teensy IO32 / JOY_LEFT to Esp8266 GPIO13 @done(22-04-27 14:51)
+      ✔ Set pullup @done(22-04-27 15:04)
+      ✔ Add cancel web co?mmand @done(22-04-27 15:04)
+      ✔ Detect presence of cancel wire @done(22-04-27 15:48)
+      ☐ Notify WebUI that cancel wire is present
+      ☐ Updated PCB layout to reflect hardware change
     ☐ Update mode, status and diskname for all disk activities
+    ☐ Change javascript states from lowercase 'to' to capitalised 'To' i.e copyFlashtoDisk -> copyFlashToDisk to match teensy states
     ☐ Add DiskView feature
       ✔ sendBlock command from WebUI @done(22-05-01 16:39)
       ✔ Display hex dump of track @done(22-05-01 16:39)
