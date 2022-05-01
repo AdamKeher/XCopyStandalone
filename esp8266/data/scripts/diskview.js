@@ -47,10 +47,9 @@ function hexToAscii(hex) {
   return str;
 }
 
-function decimalToHex(dec) {
-  let hex = dec.toString(16);
-  while (hex.length < 4) { hex = '0' + hex; }
-  return "$" + hex;  
+function decimalToHex(dec, len = 4) {
+  let hex = parseInt(dec).toString(16).padStart(len, '0');
+  return "0x" + hex;  
 }
 
 function drawSectorDetails(block) {
@@ -63,11 +62,15 @@ function drawSectorDetails(block) {
   $('#dvSide').text(side);
 }
 
-function drawSectorStats(block, track, errors, sectors, bits) {
+function drawSectorStats(block, track, errors, sectors, bits, format, gap, datachk, headerchk) {
   $('#dvTrackFound').text(String(track).padStart(2, '0'));
   $('#dvErrors').text(String(errors).padStart(3, '0'));
   $('#dvSectorCount').text(String(sectors).padStart(2, '0'));
   $('#dvBitCount').text(String(bits).padStart(5, '0'));
+  $('#dvFormatType').text(String(format).padStart(3, '0'));
+  $('#dvGap').text(String(gap).padStart(2, '0'));
+  $('#dvDataChk').text(decimalToHex(datachk, 8));
+  $('#dvheaderChk').text(decimalToHex(headerchk, 8));
 }
 
 function drawSector(block, row, sector) {
