@@ -32,6 +32,7 @@ v709.2022:
     ✔ Add cancel web co?mmand @done(22-04-27 15:04)
     ✔ Detect presence of cancel wire @done(22-04-27 15:48)
     ☐ Notify WebUI that cancel wire is present
+    ☐ Updated PCB layout to reflect hardware change
   ☐ Compiler warnings
     ✔ Clean up compiler warnings for esp8266 @done(22-04-25 12:56)
     ☐ Clean up compiler warnings for teensy
@@ -53,6 +54,15 @@ v709.2022:
     ✔ Memory footprint decreased but this is still an issue @done(22-04-24 12:59)
   WebUI
     ☐ Update mode, status and diskname for all disk activities
+    ☐ Add DiskView feature
+      ✔ sendBlock command from WebUI @done(22-05-01 16:39)
+      ✔ Display hex dump of track @done(22-05-01 16:39)
+      ✔ Display ascii dump of track @done(22-05-01 16:39)
+      ✔ Update block / track / sector / side details @done(22-05-01 16:39)
+      ☐ Highlight ascii value on hover over hex value and vice versa
+      ☐ Update type / gap / chksums
+      ☐ Direct input of block / track / sector / side
+      ☐ Show histogram
     ✔ Don't send ping command while device is busy @done(22-04-25 12:55)
     ✔ Update UI @done(22-04-15 14:53)
       ✔ Update mode / status table th's to 30/70% width in css @done(22-04-20 13:34)
@@ -106,6 +116,7 @@ v709.2022:
     ✔ Refactor ESP8266 SPIFFS code to LittleFS @done(22-04-14 15:39)
   Command Line
     ☐ Fix time commands
+    ✔ Add 'pass' command to enter passthrough mode @done(22-05-01 16:31)
     ✔ Fix esp command output @done(22-04-27 14:00)
     ✔ Added busy state to ls command @done(22-04-27 14:03)
     ✔ Test WebUI output for console commands @done(22-04-26 17:17)
