@@ -38,7 +38,7 @@
         }
     }
 
-    .ascii {
+    .asciiBlock {
         background-color: #303030;
         border-left: 4px solid gray;
         color: white;
@@ -46,5 +46,15 @@
         padding-left: 10px;
         padding-right: 10px;
         padding: 3px;
+    }
+
+    .asciiChar {
+        margin-right: 2px;
+        padding: 1.25px;
+    }
+
+    .asciiHighlight {
+        color: black;
+        background-color: white;
     }
 }
