@@ -104,13 +104,9 @@ function drawSectorDetails(block) {
   track = Math.floor(block / 22);
   sector = block % 22;
   side = sector < 11 ? 0 : 1;
-  $('#dvTrack').text(String(track).padStart(2, '0'));
-  $('#dvSector').text(String(sector % 11).padStart(2, '0'));
-  $('#dvSide').text(side);
-
-  $('#dvEditSide').val(side);
   $('#dvEditTrack').val(String(track).padStart(2, '0'));
   $('#dvEditSector').val(String(sector % 11).padStart(2, '0'));
+  $('#dvEditSide').val(side);
   
   updateSideIcon();
 }
