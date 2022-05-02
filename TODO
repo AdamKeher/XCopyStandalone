@@ -26,7 +26,8 @@ v711.2022:
     ☐ Rewrite MFM decode / encode routines
     ☐ Migrate XCopyDisk to XCopyFloppy routines
 v709.2022:    
-  ☐ Add new device image form Giants
+  ✔ Add new device image from Giants @done(22-05-03 01:19)
+  ☐ Add auto copy feature for Giants
   ☐ Add manual from Giants
     ☐ Convert to HTML and host on aksevenfour
     ☐ Link manual into WebUI
