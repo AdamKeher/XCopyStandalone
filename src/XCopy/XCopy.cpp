@@ -598,6 +598,19 @@ void XCopy::sendBlock(int block) {
             _esp->print("broadcast sendBlock," + String(block) + "," + String(i) +"," + webLine + "\r\n");
             delay(20);
         }
+
+        analyseHist(true);
+        float time = .0f;
+        String line = "broadcast sendBlockHist,";
+        int *hist = getHist();
+        for (int i = 0; i < 256; i++) {
+            if (hist[i] > 0) {
+                time = (float(i) * 0.04166667) + 0.25;
+                line += String(time) + "|" + String(hist[i]) + "&";
+            }
+        }
+        line += "\r\n";
+        _esp->print(line);
     }
     else {
         Log << F("bitCount: ") + String(getBitCount()) + F(" (Read failed!)\r\n");

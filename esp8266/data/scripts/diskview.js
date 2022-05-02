@@ -36,6 +36,7 @@ function getBlock(block) {
   connection.send("getBlock," + block);
   $('#sectorTable').empty();
   $('#asciiTable').empty();
+  clearSectorHist();
   drawSectorDetails(block);
 }
 
@@ -184,4 +185,34 @@ function drawAsciiBlock() {
   })
   output += "</p></div>";
   $('#asciiTable').append(output);
+}
+
+function clearSectorHist() {
+  canvas = document.getElementById('histCanvas');
+  ctx = canvas.getContext("2d");  
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle =  "#0000FF";
+  ctx.fillRect(100, 0, 1, canvas.height);
+  ctx.fillRect(200, 0, 1, canvas.height);
+  ctx.fillRect(300, 0, 1, canvas.height);
+  ctx.fillRect(400, 0, 1, canvas.height);
+  ctx.fillStyle =  "#00FF00";
+  ctx.font = 'bold 10pt Calibri';
+  ctx.fillText('2μs', 105, 10);
+  ctx.fillText('4μs', 205, 10);
+  ctx.fillText('6μs', 305, 10);
+  ctx.fillText('8μs', 405, 10);
+}
+
+function drawSectorHist(line) {
+  element = document.getElementById('histCanvas');
+  ctx = element.getContext("2d");  
+  ctx.fillStyle =  "#FFFFFF";
+  let items = line.split('&');
+  items.forEach(item => {
+    values = item.split('|');
+    height = Math.max(values[1] / 128.0, 1);
+    ctx.fillRect(values[0] * 50, element.height - height, 1, height);
+    console.log(values[0] + " | " + values[1] + "|" + height);
+  });
 }
