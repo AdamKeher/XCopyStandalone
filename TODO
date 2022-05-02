@@ -63,9 +63,9 @@ v709.2022:
       ✔ Display hex dump of track @done(22-05-01 16:39)
       ✔ Display ascii dump of track @done(22-05-01 16:39)
       ✔ Update block / track / sector / side details @done(22-05-01 16:39)
+      ✔ Update type / gap / chksums @done(22-05-02 14:44)
+      ✔ Direct input of block / track / sector / side @done(22-05-02 14:43)
       ☐ Highlight ascii value on hover over hex value and vice versa
-      ☐ Update type / gap / chksums
-      ☐ Direct input of block / track / sector / side
       ☐ Show histogram
     ✔ Don't send ping command while device is busy @done(22-04-25 12:55)
     ✔ Update UI @done(22-04-15 14:53)
