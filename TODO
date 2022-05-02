@@ -180,33 +180,42 @@ v709.2022:
 ---------------------------------------------------------------------------------------------------
 
   PCB:
-    ✔ Reroute SDCS away from LDO @done(22-03-30 23:50)
-    ☐ Modify SPI flash ram footprint to expand legs for easier soldering
-    ☐ Consider taking all spare pin/s to a header for future development if space permits
-    ☐ SD Card 
+    Todo:
+      ☐ Modify SPI flash ram footprint to expand legs for easier soldering
+      ☐ Consider taking all spare pin/s to a header for future development if space permits
+    TFT:
+      ☐ Test new cheaper Chinese TFT
+      ☐ Create alternate footprint for TFT
+      ☐ Place and route new TFT
+    SD Card:
+      ✔ Reroute SDCS away from LDO @done(22-03-30 23:50)
       ✔ Change SD card to micro sd reader to make room for ESP module @done(22-03-28 00:09)
       ☐ Hookup SD card detect
       ☐ Fix schematic
       ☐ Reroute to make neater
-    ✔ Add ESP8266 ESP-12S module and 47uf decoupling cap @done(22-03-28 00:09)
-    ✔ Ground all odd pins on IDC @done(22-03-28 00:09)
-    ✔ Add LDO reulator for second 3.3v source for LCD & ESP8266 @done(22-03-28 00:12)
-    ✔ Reroute all traces @done(22-03-28 00:09)
-    ✔ Look for different speaker that JLCPCB can place @done(22-03-28 17:05)
-    ✔ Clean up labels @done(22-03-30 17:31)
-    ✔ Reset buttons @done(22-03-30 17:31)
-      ✔ Can I cram reset and programming buttons in for ESP8266 - side mount button an option? @done(22-03-30 17:31)
-      ✔ Do I want to use an extra teensy pin and tie it to a jumper wire across to the poorly placed reset pad on the bottom of the teensy? @done(22-03-30 17:31)
-        ✔ disconnect pin 40 / tft_cardcs / teensy pin 29 for use as reset? @done(22-03-30 17:31)
-    ✔ Move all status LED's to single location @done(22-03-28 00:56)
-      ✔ Use same footprint for all LED's @done(22-03-28 00:56)
-    ✔ Change to 4 layer board to make routing easier. @done(22-03-28 00:08)
-      ✔ Keep board under 10x10cm to keep cost low @done(22-03-28 00:08)
-      ✔ Use inner two layers for GND and Power planes @done(22-03-28 00:08)
-      ✔ Make seperate copper pours for 3.3v, 3.3v2 & vbus @done(22-03-28 00:08)
-    ✔ Remove serial TTL header as this serial port is now used by ESP module @done(22-03-28 00:56)
-    ✔ Add electrolytic cap for VBUS power decoupling @done(22-03-30 17:31)
-    ✔ Add new logos @done(22-03-30 17:31)
+    ESP:
+      ✔ Add ESP8266 ESP-12S module and 47uf decoupling cap @done(22-03-28 00:09)
+      ✔ Cutout board around WiFi aerial @done(22-05-02 16:58)
+      ✔ Connect JOY_LEFT and ESP GPIO13 @done(22-05-02 16:59)
+    General:
+      ✔ Ground all odd pins on IDC @done(22-03-28 00:09)
+      ✔ Add LDO reulator for second 3.3v source for LCD & ESP8266 @done(22-03-28 00:12)
+      ✔ Reroute all traces @done(22-03-28 00:09)
+      ✔ Look for different speaker that JLCPCB can place @done(22-03-28 17:05)
+      ✔ Clean up labels @done(22-03-30 17:31)
+      ✔ Reset buttons @done(22-03-30 17:31)
+        ✔ Can I cram reset and programming buttons in for ESP8266 - side mount button an option? @done(22-03-30 17:31)
+        ✔ Do I want to use an extra teensy pin and tie it to a jumper wire across to the poorly placed reset pad on the bottom of the teensy? @done(22-03-30 17:31)
+          ✔ disconnect pin 40 / tft_cardcs / teensy pin 29 for use as reset? @done(22-03-30 17:31)
+      ✔ Move all status LED's to single location @done(22-03-28 00:56)
+        ✔ Use same footprint for all LED's @done(22-03-28 00:56)
+      ✔ Change to 4 layer board to make routing easier. @done(22-03-28 00:08)
+        ✔ Keep board under 10x10cm to keep cost low @done(22-03-28 00:08)
+        ✔ Use inner two layers for GND and Power planes @done(22-03-28 00:08)
+        ✔ Make seperate copper pours for 3.3v, 3.3v2 & vbus @done(22-03-28 00:08)
+      ✔ Remove serial TTL header as this serial port is now used by ESP module @done(22-03-28 00:56)
+      ✔ Add electrolytic cap for VBUS power decoupling @done(22-03-30 17:31)
+      ✔ Add new logos @done(22-03-30 17:31)
 
 ---------------------------------------------------------------------------------------------------
 
