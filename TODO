@@ -49,6 +49,7 @@ v709.2022:
   ✔ Crashes when directory too large in ADF write - WebUI OK @done(22-04-24 12:59)
     ✔ Memory footprint decreased but this is still an issue @done(22-04-24 12:59)
   WebUI
+    ☐ Fix source and destination icons when function initiated from WebUI
     ☐ Add cancel button to WebUI
       ✔ Wire Teensy IO32 / JOY_LEFT to Esp8266 GPIO13 @done(22-04-27 14:51)
       ✔ Set pullup @done(22-04-27 15:04)
