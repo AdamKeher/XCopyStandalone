@@ -29,6 +29,8 @@ function onLoad() {
   $('#uploadFile').change(fileUploadChange);
   $('#uploadSelect').click(function() { uploadFile.click(); });
   $("#uploadStart").click(fileUploadSelect);
+
+  onLoad_DiskView();
 }
 
 function setTab(tabName) {

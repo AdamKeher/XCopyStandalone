@@ -1,6 +1,18 @@
 /* SD Table
 -------------------------------------------------- */
 
+.dvEdit {
+    background-color: lightblue;
+    width: 50px;
+    text-align:center;
+    border:2px solid white;
+    &:focus {
+        outline: none !important;
+        background-color: white;
+        border:2px solid green;
+    }
+}
+
 .sectorTable pre {
     margin: 0px;
     margin-top: 1px;

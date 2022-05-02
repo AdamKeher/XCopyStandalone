@@ -497,11 +497,17 @@
                             </div>
                             <div class="btn-group me-1" role="group" aria-label="Tracks">
                                 <button type="button" class="btn btn-primary" onclick="prevTrack();"><i class="fa-solid fa-angles-left"></i> Prev Track</button>
+                                <input id="dvEditTrack" type="text" class="dvEdit numbers" value="00"/>
                                 <button type="button" class="btn btn-primary" onclick="nextTrack();">Next Track <i class="fa-solid fa-angles-right"></i></button>
                             </div>
                             <div class="btn-group me-1" role="group" aria-label="Tracks">
                                 <button type="button" class="btn btn-primary" onclick="prevBlock();"><i class="fa-solid fa-angles-left"></i> Prev Sector</button>
+                                <input id="dvEditSector" type="text" class="dvEdit numbers" value="00"/>
                                 <button type="button" class="btn btn-primary" onclick="nextBlock();">Next Sector <i class="fa-solid fa-angles-right"></i></button>
+                            </div>
+                            <div class="btn-group me-1" role="group" aria-label="Side">
+                                <button type="button" class="btn btn-primary" onclick="toggleSide();"><i id="dvSideIcon" class="fa-solid fa-toggle-off"></i> Side</button>
+                                <input id="dvEditSide" type="text" class="dvEdit numbers" value="0"/>
                             </div>
                         </div>
                     </p>
