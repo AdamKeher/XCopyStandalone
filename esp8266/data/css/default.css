@@ -246,9 +246,17 @@ body {
   padding: 3px;
 }
 
+.sectorTable pre .asciiDumpBlock {
+  margin-right: 20px;
+}
+
 .sectorTable pre .asciiChar {
   margin-right: 2px;
   padding: 1.25px;
+}
+
+.sectorTable pre .asciiDumpChar {
+  margin-right: 1px;
 }
 
 .sectorTable pre .asciiHighlight {
