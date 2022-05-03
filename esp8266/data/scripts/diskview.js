@@ -38,7 +38,7 @@ function onLoad_DiskView() {
       id = id.replace('ascii', "ascii2");
       $(id).removeClass('asciiHighlight');
   });    
-  
+
   clearSectorHist();
 }
 
@@ -51,7 +51,6 @@ function setBlock() {
 
 function getBlock(block) {
   connection.send("getBlock," + block);
-  clearSectorHist();
   drawSectorDetails(block);
 }
 
@@ -173,6 +172,8 @@ function clearSectorHist() {
 }
 
 function drawSectorHist(line) {
+  clearSectorHist();
+
   element = document.getElementById('histCanvas');
   ctx = element.getContext("2d");  
   ctx.fillStyle =  "#FFFFFF";
