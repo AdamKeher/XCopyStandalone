@@ -23,6 +23,23 @@ function onLoad_DiskView() {
     setBlock();
     getBlock(currentBlock);
   });
+
+  // hook hover event on all hex chars for highlighting
+  $('.hex').hover(
+    function () {
+      id = '#' + this.id.replace('hex', "ascii");
+      $(id).addClass('asciiHighlight');
+      id = id.replace('ascii', "ascii2");
+      $(id).addClass('asciiHighlight');
+    }, 
+    function () {
+      id = '#' + this.id.replace('hex', "ascii");
+      $(id).removeClass('asciiHighlight');
+      id = id.replace('ascii', "ascii2");
+      $(id).removeClass('asciiHighlight');
+  });    
+  
+  clearSectorHist();
 }
 
 function setBlock() {
@@ -34,8 +51,6 @@ function setBlock() {
 
 function getBlock(block) {
   connection.send("getBlock," + block);
-  $('#sectorTable').empty();
-  $('#asciiTable').empty();
   clearSectorHist();
   drawSectorDetails(block);
 }
@@ -124,63 +139,20 @@ function drawSectorStats(block, track, errors, sectors, bits, format, gap, datac
 
 function drawSector(block, row, sector) {
   let sectors = sector.split("|").filter(e => e);
-  let line = "<pre><span class=\"range\">";
-  let range = row * 32;
-  line += decimalToHex(range);
-  line += "..";
-  line += decimalToHex(range + 31);
-  line += "</span>";
   let count = 0;
   sectors.forEach(value => {
-    line += "<span class=\"hex\" id=\"hex_" + row + "_" + count++ + "\">" + value + "</span>";
+    $('#hex_' + row + '_' + count++).html(value);
   });
 
-  line += "<span class=\"asciiBlock\">";
   let ascii = hexToAscii(sectors.join(""));
   for (var i=0; i < ascii.length; i++) {
-    line += "<span class=\"asciiChar\" id=\"ascii_" + row + "_" + i + "\">" + htmlEncode(ascii.charAt(i)) + "</span>";
+    $('#ascii_' + row + '_' + i).html(htmlEncode(ascii.charAt(i)));
+    $('#ascii2_' + row + '_' + i).html(htmlEncode(ascii.charAt(i)));
   }
-  line += "</span>";
-
-  line += "</pre>";
-  $('#sectorTable').append(line);
 
   if (row == 15) {
     currentBlock = parseInt(block);
-
-    drawAsciiBlock();
-
-    // hook hover event on all hex chars for highlighting
-    $('.hex').hover(
-      function () {
-        id = '#' + this.id.replace('hex', "ascii");
-        $(id).addClass('asciiHighlight');
-        id = id.replace('ascii', "ascii2");
-        $(id).addClass('asciiHighlight');
-      }, 
-      function () {
-        id = '#' + this.id.replace('hex', "ascii");
-        $(id).removeClass('asciiHighlight');
-        id = id.replace('ascii', "ascii2");
-        $(id).removeClass('asciiHighlight');
-    });    
   }
-}
-
-function drawAsciiBlock() {
-  let test = 0;
-  let output = "<div><p>";
-  let line = "";
-  $('#sectorTable > pre').children('.asciiBlock').each(function() {
-    line += this.innerHTML.replaceAll("ascii_", "ascii2_");    
-    if (test++ % 2 == 1) {
-      line = "<pre>; <span class=\"range\">" + decimalToHex((test-2) * 32) + ".." + decimalToHex(((test-2) * 32) + 63) + "</span><span class=\"ascii\">" + line + "</span></pre>";
-      output += line;
-      line = "";
-    }
-  })
-  output += "</p></div>";
-  $('#asciiTable').append(output);
 }
 
 function clearSectorHist() {
