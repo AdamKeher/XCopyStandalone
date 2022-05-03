@@ -60,7 +60,7 @@ v709.2022:
       ☐ Updated PCB layout to reflect hardware change
     ☐ Update mode, status and diskname for all disk activities
     ☐ Change javascript states from lowercase 'to' to capitalised 'To' i.e copyFlashtoDisk -> copyFlashToDisk to match teensy states
-    ☐ Add DiskView feature
+    ✔ Add DiskView feature @done(22-05-03 13:23)
       ✔ sendBlock command from WebUI @done(22-05-01 16:39)
       ✔ Display hex dump of track @done(22-05-01 16:39)
       ✔ Display ascii dump of track @done(22-05-01 16:39)
@@ -70,7 +70,7 @@ v709.2022:
       ✔ Highlight ascii value on hover over hex value and vice versa @done(22-05-02 16:23)
       ✔ Show histogram @done(22-05-03 00:41)
       ✔ Add labels to vertical tick lines @done(22-05-03 00:52)
-      ☐ Add dummy data to hex dump and ascii dump to make screen static / not bounce on update
+      ✔ Add dummy data to hex dump and ascii dump to make screen static / not bounce on update @done(22-05-03 13:13)
     ✔ Don't send ping command while device is busy @done(22-04-25 12:55)
     ✔ Update UI @done(22-04-15 14:53)
       ✔ Update mode / status table th's to 30/70% width in css @done(22-04-20 13:34)
