@@ -446,6 +446,10 @@
                                 <div id="uploadProgress" class="progress-bar" role="progressbar" style="width: 15%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
                             </div>
                             <br>
+                            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                                <h4><strong><i class="fa-solid fa-triangle-exclamation"></i> Upload Issues</strong></h4>The upload function is not reliable and you should check the MD5 hash of files uploaded. This will be addressed in a future version.
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
                             <button type="button" id="uploadStart" class="btn btn-success"><i class="fa-solid fa-play"></i> Start</button>
                             <button type="button" id="uploadCancel" class="btn btn-danger" onclick="fileUploadCancelClick();"><i class="fa-solid fa-ban"></i> Cancel</button>
                         </p>
