@@ -211,6 +211,7 @@ body {
 .sectorTable pre {
   margin: 0px;
   margin-top: 1px;
+  height: 22px;
 }
 
 .sectorTable pre .range {
