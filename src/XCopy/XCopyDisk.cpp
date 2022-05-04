@@ -316,9 +316,10 @@ bool XCopyDisk::diskToADF(String ADFFileName, bool verify, uint8_t retryCount, A
     _graphics->drawDiskName("");
     _graphics->drawDisk();
 
-    _esp->setTab("diskcopy");
-    _esp->resetDisk();
+    _esp->setMode(destination == _sdCard ? "Copy Disk to ADF" : "Copy Disk to Flash");
     _esp->setState(destination == _sdCard ? copyDiskToADF : copyDiskToFlash);
+    _esp->resetDisk();
+    _esp->setTab("diskcopy");
 
     // check if disk is present in floppy
     if (!diskChange()) {
@@ -598,18 +599,19 @@ bool XCopyDisk::diskToADF(String ADFFileName, bool verify, uint8_t retryCount, A
 }
 
 void XCopyDisk::adfToDisk(String ADFFileName, bool verify, uint8_t retryCount, ADFFileSource source) {
-    _esp->setTab("diskcopy");
-
     if (source == _flashMemory) {
         // flash memory
+        _esp->setMode(ADFFileName == "BLANK.TMP" ? "Format Disk" : "Copy Flash to Disk");
         _esp->setState(copyFlashToDisk);
         _esp->setStatus("Copying disk from flash memory to floppy disk");
     }
     else {
         // sdcard
+        _esp->setMode("Copy ADF to Disk");
         _esp->setState(copyADFToDisk);
         _esp->setStatus("Copying ADF '" + ADFFileName + "' from SD card to floppy disk");
     }
+    _esp->setTab("diskcopy");
     
     _cancelOperation = false;
 
@@ -792,6 +794,7 @@ void XCopyDisk::adfToDisk(String ADFFileName, bool verify, uint8_t retryCount, A
 
 void XCopyDisk::diskToDisk(bool verify, uint8_t retryCount) {
     _esp->setTab("diskcopy");
+    _esp->setMode("Copy Disk to Disk");
     _esp->setStatus("Copying Disk to Disk");
     _esp->setState(copyDiskToDisk);
 
@@ -821,7 +824,8 @@ void XCopyDisk::diskToDisk(bool verify, uint8_t retryCount) {
 
 void XCopyDisk::diskFlux() {
     _esp->setTab("diskcopy");
-    _esp->setStatus("Disk Flux");
+    _esp->setMode("Disk Flux");
+    _esp->setStatus("Drawing Disk Flux");
     _esp->setState(fluxDisk);
     _esp->resetDisk();
 
@@ -864,10 +868,11 @@ void XCopyDisk::diskFlux() {
 }
 
 void XCopyDisk::testDiskette(uint8_t retryCount) {
-    _esp->setTab("diskcopy");
+    _esp->setMode("Test Disk");
     _esp->setStatus("Testing Disk");  
     _esp->setState(testDisk);
     _esp->resetDisk();
+    _esp->setTab("diskcopy");
 
     _cancelOperation = false;
 

@@ -72,6 +72,133 @@ function setWebsocketStatus(status) {
   }
 }
 
+function onWebSocketMessage(msg) {
+  message = msg.data;
+
+  // if pong reset counters
+  if (message == 'pong') {
+    clearTimeout(tm);
+    return;
+  }
+
+  // replace escaped characters
+  message = message.replaceAll('\033[^M', '\r');
+  message = message.replaceAll('\033[^J', '\n');
+
+  // debug log
+  console.log('Server: ', message);
+
+  // split message
+  var res = message.split(",", 12);
+
+  if (res[0] == "pinStatus") {
+    setHardwareStatus(res[1]);
+  }
+
+  if (res[0] == "setTrack") {
+    setTrack(res[1], res[2], res[3]);
+  }
+
+  if (res[0] == "resetTracks") {
+    resetTracks(res[1], res[2]);
+  }
+
+  if (res[0] == "resetDisk") {
+    resetTracks("track", 0);
+    clearFlux();
+  }
+
+  if (res[0] == "setDiskname") {
+    setDiskname(res[1]);
+  }
+
+  if (res[0] == "setStatus") {
+    setStatus(res[1]);
+  }
+
+  if (res[0] == "setMode") {
+    $('#mode').html(res[1]);
+  }
+
+  if (res[0] == "flux") {
+    drawFlux(res[1], res[2]);
+  }
+
+  if (res[0] == "setState") {
+    switch (res[1]) {
+      case '3':
+        setState('copyDiskToADF');
+        break;
+      case '5':
+        setState('copyADFToDisk');
+        break;
+      case '13':
+        setState('copyDiskToDisk');
+        break;
+      case '24':
+        setState('fluxDisk');
+        break;
+      case '25':
+        setState('formatDisk');
+        break;
+      case '4':
+        setState('testDisk');
+        break;
+      case '18':
+        setState('copyDiskToFlash');
+        break;
+      case '19':
+        setState('copyFlashToDisk');
+    }
+  }
+
+  // don't write res[1] as it may contain commas itself and have been split
+  if (res[0] == "log") {
+    term.write(message.substring(4));
+  }
+
+  if (res[0] == "clearSdFiles") {
+    clearSdFiles();
+  }
+
+  if (res[0] == "addSdFile") {
+    addSdFile(res[1]);
+  }
+
+  if (res[0] == "drawSdFiles") {
+    drawSdFiles();
+  }
+
+  if (res[0] == "cancelUpload") {
+    fileUploadCancel(res[1]);
+  }
+
+  if (res[0] == "download") {
+    if (res[1] == "start") {
+      fileTransferInProgress = true
+    }
+    if (res[1] == "end") {
+      fileTransferInProgress = false;
+    }
+  }
+
+  if (res[0] == "setTab") {
+    setTab(res[1]);
+  }
+
+  if (res[0] == "sendBlock") {
+    drawSector(res[1], res[2], res[3]);
+  }
+
+  if (res[0] == "sendBlockDetails") {
+    drawSectorStats(res[1], res[2], res[3], res[4], res[5], res[6], res[7], res[8], res[9]);
+  }
+
+  if (res[0] == "sendBlockHist") {
+    drawSectorHist(res[1]);
+  }
+}
+
 function setupWebsocket() {
   connection.onopen = function () {
     setWebsocketStatus("open");
@@ -90,125 +217,5 @@ function setupWebsocket() {
     console.log('WebSocket Error ', error);
   };
   
-  connection.onmessage = function (e) {
-    message = e.data;
-  
-    // if pong reset counters
-    if (message == 'pong') {
-      clearTimeout(tm);
-      return;
-    }
-  
-    // replace escaped characters
-    message = message.replaceAll('\033[^M', '\r');
-    message = message.replaceAll('\033[^J', '\n');
-  
-    // debug log
-    console.log('Server: ', message);
-  
-    // split message
-    var res = message.split(",", 12);
-  
-    if (res[0] == "pinStatus") {
-      setHardwareStatus(res[1]);
-    }
-  
-    if (res[0] == "setTrack") {
-      setTrack(res[1], res[2], res[3]);
-    }
-  
-    if (res[0] == "resetTracks") {
-      resetTracks(res[1], res[2]);
-    }
-  
-    if (res[0] == "resetDisk") {
-      resetTracks("track", 0);
-      clearFlux();
-    }
-  
-    if (res[0] == "setDiskname") {
-      setDiskname(res[1]);
-    }
-  
-    if (res[0] == "setStatus") {
-      setStatus(res[1]);
-    }
-  
-    if (res[0] == "setMode") {
-      setMode(res[1]);
-    }
-  
-    if (res[0] == "flux") {
-      drawFlux(res[1], res[2]);
-    }
-  
-    if (res[0] == "setState") {
-      switch (res[1]) {
-        case '3':
-          setState('copyDiskToADF');
-          break;
-        case '5':
-          setState('copyADFToDisk');
-          break;
-        case '13':
-          setState('copyDiskToDisk');
-          break;
-        case '24':
-          setState('fluxDisk');
-          break;
-        case '25':
-          setState('formatDisk');
-          break;
-        case '4':
-          setState('testDisk');
-          break;
-      }
-    }
-  
-    // don't write res[1] as it may contain commas itself and have been split
-    if (res[0] == "log") {
-      term.write(message.substring(4));
-    }
-  
-    if (res[0] == "clearSdFiles") {
-      clearSdFiles();
-    }
-  
-    if (res[0] == "addSdFile") {
-      addSdFile(res[1]);
-    }
-  
-    if (res[0] == "drawSdFiles") {
-      drawSdFiles();
-    }
-
-    if (res[0] == "cancelUpload") {
-      fileUploadCancel(res[1]);
-    }
-
-    if (res[0] == "download") {
-      if (res[1] == "start") {
-        fileTransferInProgress = true
-      }
-      if (res[1] == "end") {
-        fileTransferInProgress = false;
-      }
-    }
-
-    if (res[0] == "setTab") {
-      setTab(res[1]);
-    }
-
-    if (res[0] == "sendBlock") {
-      drawSector(res[1], res[2], res[3]);
-    }
-
-    if (res[0] == "sendBlockDetails") {
-      drawSectorStats(res[1], res[2], res[3], res[4], res[5], res[6], res[7], res[8], res[9]);
-    }
-
-    if (res[0] == "sendBlockHist") {
-      drawSectorHist(res[1]);
-    }
-  };
+  connection.onmessage = onWebSocketMessage;
 }

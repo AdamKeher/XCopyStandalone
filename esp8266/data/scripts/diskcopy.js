@@ -2,11 +2,11 @@
 // --------------------------------------------------------
  
 function resetButtons() {
-    $('#copyADFtoDisk').removeClass('btn-light').addClass('btn-primary');
-    $('#copyDisktoADF').removeClass('btn-light').addClass('btn-primary');
-    $('#copyDisktoDisk').removeClass('btn-light').addClass('btn-primary');
-    $('#copyDisktoFlash').removeClass('btn-light').addClass('btn-primary');
-    $('#copyFlashtoDisk').removeClass('btn-light').addClass('btn-primary');
+    $('#copyADFToDisk').removeClass('btn-light').addClass('btn-primary');
+    $('#copyDiskToADF').removeClass('btn-light').addClass('btn-primary');
+    $('#copyDiskToDisk').removeClass('btn-light').addClass('btn-primary');
+    $('#copyDiskToFlash').removeClass('btn-light').addClass('btn-primary');
+    $('#copyFlashToDisk').removeClass('btn-light').addClass('btn-primary');
 }
 
 function setState(state) {
@@ -14,49 +14,41 @@ function setState(state) {
     $('#diskname').html('[Unknown]');
     $('#disknameUI').hide();
 
-    if (state == 'copyADFtoDisk') {
-        setMode('Copy ADF to Disk');
+    if (state == 'copyADFToDisk') {
         $('#' + state).removeClass('btn-primary').addClass('btn-light');
         setIconsSrc(false, true, false);
         setIconsDest(true, false, false);
     }
-    else if (state == 'copyDisktoADF') {
-        setMode('Copy Disk to ADF');
+    else if (state == 'copyDiskToADF') {
         $('#' + state).removeClass('btn-primary').addClass('btn-light');
         setIconsSrc(true, false, false);
         setIconsDest(false, true, false);
     }
-    else if (state == 'copyDisktoDisk') {
-        setMode('Copy Disk to Disk');
+    else if (state == 'copyDiskToDisk') {
         $('#' + state).removeClass('btn-primary').addClass('btn-light');
         setIconsSrc(true, false, false);
         setIconsDest(true, false, false);
     }
-    else if (state == 'copyDisktoFlash') {
-        setMode('Copy Disk to Flash');
+    else if (state == 'copyDiskToFlash') {
         $('#' + state).removeClass('btn-primary').addClass('btn-light');
         setIconsSrc(true, false, false);
         setIconsDest(false, false, true);
     }
-    else if (state == 'copyFlashtoDisk') {
-        setMode('Copy Flash to Disk');
+    else if (state == 'copyFlashToDisk') {
         $('#' + state).removeClass('btn-primary').addClass('btn-light');
         setIconsSrc(false, false, true);
         setIconsDest(true, false, false);
     }
     else if (state == 'testDisk') {
-        setMode('Test Disk');
         setIconsSrc(true, false, false);
         setIconsDest(false, false, false);
     }
     else if (state == 'formatDisk') {
-        setMode('Format Disk');
         $('#' + state).removeClass('btn-primary').addClass('btn-light');
         setIconsSrc(true, false, false);
         setIconsDest(false, false, false);
     }
     else if (state == 'fluxDisk') {
-        setMode('Disk Flux');
         setIconsSrc(true, false, false);
         setIconsDest(false, false, false);
     }        
@@ -65,7 +57,7 @@ function setState(state) {
 function diskcopy(state) {
     resetButtons();
     setState(state);
-    if (state == 'copyADFtoDisk') {
+    if (state == 'copyADFToDisk') {
         if (sdFiles.length == 0) getSdFiles(sdPath);
     } else {
         connection.send(state);
@@ -83,12 +75,8 @@ function writeADFFile(path) {
     connection.send("writeADFFile," + path);
 }
 
-// Mode / Status / Diskname
+// Status / Diskname
 // --------------------------------------------------------
-
-function setMode(mode) {
-    $('#mode').html(mode);
-}
 
 function setStatus(status) {
     $('#status').html(status);

@@ -54,11 +54,11 @@ function disableInterface(isBusy) {
     $('#websocketReconnectButton').prop('disabled', false);
     $('#websocketReconnectButton').removeClass('disabled');
   } else {
-    $('#copyADFtoDisk').removeClass('btn-light').addClass('btn-primary');
-    $('#copyDisktoADF').removeClass('btn-light').addClass('btn-primary');
-    $('#copyDisktoDisk').removeClass('btn-light').addClass('btn-primary');
-    $('#copyDisktoFlash').removeClass('btn-light').addClass('btn-primary');
-    $('#copyFlashtoDisk').removeClass('btn-light').addClass('btn-primary');
+    $('#copyADFToDisk').removeClass('btn-light').addClass('btn-primary');
+    $('#copyDiskToADF').removeClass('btn-light').addClass('btn-primary');
+    $('#copyDiskToDisk').removeClass('btn-light').addClass('btn-primary');
+    $('#copyDiskToFlash').removeClass('btn-light').addClass('btn-primary');
+    $('#copyFlashToDisk').removeClass('btn-light').addClass('btn-primary');
     $('button').prop('disabled', false);
     $('button').removeClass('disabled');
     $('#diskcopy_cancel').prop('disabled', true);

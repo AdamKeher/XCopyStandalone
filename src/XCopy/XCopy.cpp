@@ -344,16 +344,16 @@ void XCopy::onWebCommand(void* obj, const String command)
     // Log << "DEBUG::ESPCALLBACK::(" << command << ")\r\n";
     XCopy* xcopy = (XCopy*)obj;
     
-    if (command == "copyDisktoADF") {
+    if (command == "copyDiskToADF") {
         xcopy->startFunction(copyDiskToADF);
     }
-    else if (command == "copyDisktoDisk") {
+    else if (command == "copyDiskToDisk") {
         xcopy->startFunction(copyDiskToDisk);
     }
-    else if (command == "copyDisktoFlash") {
+    else if (command == "copyDiskToFlash") {
         xcopy->startFunction(copyDiskToFlash);
     }
-    else if (command == "copyFlashtoDisk") {
+    else if (command == "copyFlashToDisk") {
         xcopy->startFunction(copyFlashToDisk);
     }
     else if (command == "testDisk") {
