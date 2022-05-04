@@ -1,5 +1,5 @@
 Project Resumption:
-v711.2022:    
+v712.2022:    
   ☐ xterm.js web log
     ☐ Investigate direct web sockets functionality
     ☐ Investigate bugs with multiple << and printf
@@ -15,6 +15,9 @@ v711.2022:
     ☐ Add adf support
     ☐ Add sector edit / save support
   ☐ Implement disk delay. Currently in setup but not in code
+  ☐ Add manual from Giants
+    ☐ Convert to HTML and host on aksevenfour
+    ☐ Link manual into WebUI
 v711.2022:
   ☐ Rewrite floppy routines
     ✔ Rewrite drive seek routines @done(22-03-26 16:03)
@@ -25,12 +28,10 @@ v711.2022:
     ☐ Rewrite track read routines
     ☐ Rewrite MFM decode / encode routines
     ☐ Migrate XCopyDisk to XCopyFloppy routines
+v711.2022:
+  ☐ Add auto copy feature for Giants
 v709.2022:    
   ✔ Add new device image from Giants @done(22-05-03 01:19)
-  ☐ Add auto copy feature for Giants
-  ☐ Add manual from Giants
-    ☐ Convert to HTML and host on aksevenfour
-    ☐ Link manual into WebUI
   ☐ Compiler warnings
     ✔ Clean up compiler warnings for esp8266 @done(22-04-25 12:56)
     ☐ Clean up compiler warnings for teensy
@@ -50,7 +51,31 @@ v709.2022:
   ✔ Crashes when directory too large in ADF write - WebUI OK @done(22-04-24 12:59)
     ✔ Memory footprint decreased but this is still an issue @done(22-04-24 12:59)
   WebUI
-    ☐ Fix source and destination icons when function initiated from WebUI
+    ✔ Fix source and destination icons, mode status text @done(22-05-04 14:24)
+      ✔ Test Disk @done(22-05-04 13:42)
+        ✔ Web UI @done(22-05-04 13:42)
+        ✔ TFT @done(22-05-04 13:42)
+      ✔ ADF to Disk @done(22-05-04 13:43)
+        ✔ Web UI @done(22-05-04 13:43)
+        ✔ TFT @done(22-05-04 13:43)
+      ✔ Disk to ADF @done(22-05-04 13:44)
+        ✔ Web UI @done(22-05-04 13:44)
+        ✔ TFT @done(22-05-04 13:44)
+      ✔ Disk to Flash @done(22-05-04 14:06)
+        ✔ Web UI @done(22-05-04 13:46)
+        ✔ TFT @done(22-05-04 14:06)
+      ✔ Flash to Disk @done(22-05-04 14:06)
+        ✔ Web UI @done(22-05-04 13:47)
+        ✔ TFT @done(22-05-04 14:06)
+      ✔ Disk to Disk @done(22-05-04 14:23)
+        ✔ Web UI @done(22-05-04 14:23)
+        ✔ TFT @done(22-05-04 14:23)
+      ✔ Flux @done(22-05-04 13:42)
+        ✔ Web UI @done(22-05-04 13:42)
+        ✔ TFT @done(22-05-04 13:42)
+      ✔ Format Disk @done(22-05-04 13:43)
+        ✔ Web UI @done(22-05-04 13:43)
+        ✔ TFT @done(22-05-04 13:43)
     ☐ Add cancel button to WebUI
       ✔ Wire Teensy IO32 / JOY_LEFT to Esp8266 GPIO13 @done(22-04-27 14:51)
       ✔ Set pullup @done(22-04-27 15:04)
@@ -58,9 +83,9 @@ v709.2022:
       ✔ Detect presence of cancel wire @done(22-04-27 15:48)
       ☐ Notify WebUI that cancel wire is present
       ☐ Updated PCB layout to reflect hardware change
-    ☐ Update mode, status and diskname for all disk activities
-    ☐ Change javascript states from lowercase 'to' to capitalised 'To' i.e copyFlashtoDisk -> copyFlashToDisk to match teensy states
-    ✔ Add DiskView feature @done(22-05-03 13:23)
+    ✔ Update mode, status and diskname for all disk activities @done(22-05-04 14:24)
+    ✔ Change javascript states from lowercase 'to' to capitalised 'To' i.e copyFlashtoDisk -> copyFlashToDisk to match teensy states @done(22-05-04 13:39)
+    ☐ Add DiskView feature
       ✔ sendBlock command from WebUI @done(22-05-01 16:39)
       ✔ Display hex dump of track @done(22-05-01 16:39)
       ✔ Display ascii dump of track @done(22-05-01 16:39)
@@ -71,6 +96,7 @@ v709.2022:
       ✔ Show histogram @done(22-05-03 00:41)
       ✔ Add labels to vertical tick lines @done(22-05-03 00:52)
       ✔ Add dummy data to hex dump and ascii dump to make screen static / not bounce on update @done(22-05-03 13:13)
+      ☐ Test for disk present
     ✔ Don't send ping command while device is busy @done(22-04-25 12:55)
     ✔ Update UI @done(22-04-15 14:53)
       ✔ Update mode / status table th's to 30/70% width in css @done(22-04-20 13:34)
