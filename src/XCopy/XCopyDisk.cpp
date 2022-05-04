@@ -293,7 +293,7 @@ String XCopyDisk::generateADFFileName(String diskname) {
 }
 
 // TODO: Create XCopyLogFile object? Move CRC code into function. 
-bool XCopyDisk::diskToADF(String ADFFileName, bool verify, uint8_t retryCount, ADFFileSource destination) {
+bool XCopyDisk::diskToADF(String ADFFileName, bool verify, uint8_t retryCount, ADFFileSource destination, bool setEsp) {
     FastCRC32 CRC32;
     FastCRC16 CRC16;
     uint32_t disk_crc32 = 0;
@@ -316,8 +316,11 @@ bool XCopyDisk::diskToADF(String ADFFileName, bool verify, uint8_t retryCount, A
     _graphics->drawDiskName("");
     _graphics->drawDisk();
 
-    _esp->setMode(destination == _sdCard ? "Copy Disk to ADF" : "Copy Disk to Flash");
-    _esp->setState(destination == _sdCard ? copyDiskToADF : copyDiskToFlash);
+    // dont update the mode and state for functions such as Disk to Disk
+    if (setEsp) {
+        _esp->setMode(destination == _sdCard ? "Copy Disk to ADF" : "Copy Disk to Flash");
+        _esp->setState(destination == _sdCard ? copyDiskToADF : copyDiskToFlash);
+    }
     _esp->resetDisk();
     _esp->setTab("diskcopy");
 
@@ -598,17 +601,21 @@ bool XCopyDisk::diskToADF(String ADFFileName, bool verify, uint8_t retryCount, A
     return true;
 }
 
-void XCopyDisk::adfToDisk(String ADFFileName, bool verify, uint8_t retryCount, ADFFileSource source) {
+void XCopyDisk::adfToDisk(String ADFFileName, bool verify, uint8_t retryCount, ADFFileSource source, bool setEsp) {
     if (source == _flashMemory) {
         // flash memory
-        _esp->setMode(ADFFileName == "BLANK.TMP" ? "Format Disk" : "Copy Flash to Disk");
-        _esp->setState(copyFlashToDisk);
+        if (setEsp) {
+            _esp->setMode(ADFFileName == "BLANK.TMP" ? "Format Disk" : "Copy Flash to Disk");
+            _esp->setState(copyFlashToDisk);
+        }
         _esp->setStatus("Copying disk from flash memory to floppy disk");
     }
     else {
         // sdcard
-        _esp->setMode("Copy ADF to Disk");
-        _esp->setState(copyADFToDisk);
+        if (setEsp) {
+            _esp->setMode("Copy ADF to Disk");
+            _esp->setState(copyADFToDisk);
+        }
         _esp->setStatus("Copying ADF '" + ADFFileName + "' from SD card to floppy disk");
     }
     _esp->setTab("diskcopy");
@@ -811,7 +818,7 @@ void XCopyDisk::diskToDisk(bool verify, uint8_t retryCount) {
         return;
     }
 
-    bool completed = diskToADF("DISKCOPY.TMP", verify, retryCount, _flashMemory);
+    bool completed = diskToADF("DISKCOPY.TMP", verify, retryCount, _flashMemory, false);
 
     if (_cancelOperation || !completed) { return; }
 
@@ -819,7 +826,7 @@ void XCopyDisk::diskToDisk(bool verify, uint8_t retryCount) {
 
     if (_cancelOperation) { return; }
 
-    adfToDisk("DISKCOPY.TMP", verify, retryCount, _flashMemory);
+    adfToDisk("DISKCOPY.TMP", verify, retryCount, _flashMemory, false);
 }
 
 void XCopyDisk::diskFlux() {

@@ -41,8 +41,8 @@ class XCopyDisk
     int readDiskTrack(uint8_t trackNum, bool verify, uint8_t retryCount, bool silent = false);
     int writeDiskTrack(uint8_t trackNum, uint8_t retryCount);
 
-    bool diskToADF(String ADFFileName, bool verify, uint8_t retryCount, ADFFileSource destination);
-    void adfToDisk(String ADFFileName, bool verify, uint8_t retryCount, ADFFileSource source);
+    bool diskToADF(String ADFFileName, bool verify, uint8_t retryCount, ADFFileSource destination, bool setEsp = true);
+    void adfToDisk(String ADFFileName, bool verify, uint8_t retryCount, ADFFileSource source, bool setEsp = true);
     void diskToDisk(bool verify, uint8_t retryCount);
     void diskFlux();
     void drawFlux(uint8_t trackNum, uint8_t scale = 2, uint8_t yoffset = 0);
