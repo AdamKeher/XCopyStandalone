@@ -1,5 +1,9 @@
 /* SD Table
 -------------------------------------------------- */
+@font-face {
+    font-family: 'TopazPlus a500a1000a2000';
+    src: url('../fonts/topaz.ttf');
+}
 
 .dvEdit {
     background-color: lightblue;
@@ -49,22 +53,45 @@
         padding: 3px;
     }
 
-    .asciiDumpBlock {
-        margin-right: 20px;
-    }
-
     .asciiChar {
         margin-right: 2px;
         padding: 1.25px;
-    }
-    
-    .asciiDumpChar {
-        margin-right: 1px;
     }
 
     .asciiHighlight {
         color: black;
         background-color: white;
+    }
+
+    .asciiDumpBlock {
+        margin-right: 20px;
+        height: 140px;
+    }  
+}
+
+.asciiTable  {
+    overflow: hidden;
+    
+    pre:not(:first-of-type) {
+        margin-top: -6.75px;
+    }
+
+    pre {
+        font-family: 'TopazPlus a500a1000a2000';
+        margin: 0px;
+        padding: 0px;
+
+        // .range {
+        //     margin: 0px;
+        //     margin-right: 10px;
+        //     background-color: white;
+        //     color: black;
+        //     padding: 3px;
+        // }
+    
+        .asciiDumpChar {
+            font-family: 'TopazPlus a500a1000a2000';
+        }
     }
 }
 

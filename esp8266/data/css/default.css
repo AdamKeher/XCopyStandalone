@@ -195,6 +195,11 @@ body {
 
 /* SD Table
 -------------------------------------------------- */
+@font-face {
+  font-family: 'TopazPlus a500a1000a2000';
+  src: url("../fonts/topaz.ttf");
+}
+
 .dvEdit {
   background-color: lightblue;
   width: 50px;
@@ -246,22 +251,37 @@ body {
   padding: 3px;
 }
 
-.sectorTable pre .asciiDumpBlock {
-  margin-right: 20px;
-}
-
 .sectorTable pre .asciiChar {
   margin-right: 2px;
   padding: 1.25px;
 }
 
-.sectorTable pre .asciiDumpChar {
-  margin-right: 1px;
-}
-
 .sectorTable pre .asciiHighlight {
   color: black;
   background-color: white;
+}
+
+.sectorTable pre .asciiDumpBlock {
+  margin-right: 20px;
+  height: 140px;
+}
+
+.asciiTable {
+  overflow: hidden;
+}
+
+.asciiTable pre:not(:first-of-type) {
+  margin-top: -6.75px;
+}
+
+.asciiTable pre {
+  font-family: 'TopazPlus a500a1000a2000';
+  margin: 0px;
+  padding: 0px;
+}
+
+.asciiTable pre .asciiDumpChar {
+  font-family: 'TopazPlus a500a1000a2000';
 }
 
 /* Histogram
