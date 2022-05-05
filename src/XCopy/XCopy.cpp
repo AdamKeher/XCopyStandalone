@@ -411,6 +411,10 @@ void XCopy::onWebCommand(void* obj, const String command)
         }        
         xcopy->sendBlock(_sector);
     }
+    else if (command.startsWith("copyEmptyBlocks")) {
+        String _params = command.substring(command.indexOf(",") + 1);
+        Serial << "copyEmptyBlocks: " + _params + "\r\n";
+    }
     else if (command == "debuggingSerialPassThrough") {
             xcopy->startFunction(debuggingSerialPassThrough);
     }

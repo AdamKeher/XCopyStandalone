@@ -339,6 +339,10 @@ body {
   background-color: red;
 }
 
+.emptyTable .copy {
+  background-color: purple;
+}
+
 /* Histogram
 -------------------------------------------------- */
 .histCanvas {

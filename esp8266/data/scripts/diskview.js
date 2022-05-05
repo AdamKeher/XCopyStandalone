@@ -1,5 +1,6 @@
 var currentBlock = 0;
 var maxBlocks = (80 * 11 * 2) - 1;
+var startBlock = -1;
 
 function onLoad_DiskView() {
   // filter disk view input
@@ -38,6 +39,57 @@ function onLoad_DiskView() {
       id = '#' + this.id.replace('hex', "ascii2");
       $(id).removeClass('asciiHighlight');
   });    
+
+  // ignore scroll and context menu for right & middle mouse buttons
+  addEventListener("mousedown", function(e){ if(e.button == 1 ){ e.preventDefault(); } });
+  $('.block').contextmenu(function() {
+    return false;
+  });
+
+  // onclick event for empty blocks
+  $('.block').each(function (index) {
+    $('#' + this.id).click(function() {
+      getBlock(index);
+    });
+  });
+
+
+  $('.block').bind('mouseup', function(e) {
+    switch(e.which) {
+      case 2:
+        if (startBlock == -1) {
+          startBlock = blockIdToBlock(this.id);
+        } else {
+          endBlock = blockIdToBlock(this.id);
+          if (endBlock < startBlock) {
+            [startBlock, endBlock] = [endBlock, startBlock];
+          }
+          for (let index = startBlock; index <= endBlock; index++) {
+            if ($('#' + blockToBlockId(index)).hasClass('copy'))
+              $('#' + blockToBlockId(index)).removeClass('copy');
+            else
+              $('#' + blockToBlockId(index)).addClass('copy');
+          }
+          startBlock = -1;
+          return false;
+        }
+        break;
+      case 3:
+        event.preventDefault();
+        if ($('#' + this.id).hasClass('copy'))
+          $('#' + this.id).removeClass('copy');
+        else
+          $('#' + this.id).addClass('copy');
+        break;
+      default:
+        break;
+    };
+    return true;
+  });
+
+  $(function () {
+    $('[data-toggle="tooltip"]').tooltip()
+  })
 
   clearSectorHist();
 }
@@ -115,13 +167,10 @@ function decimalToHex(dec, len = 4) {
 
 function drawSectorDetails(block) {
   $('#dvBlock').text(String(block).padStart(4, '0'));
-  track = Math.floor(block / 22);
-  sector = block % 22;
-  side = sector < 11 ? 0 : 1;
-  $('#dvEditTrack').val(String(track).padStart(2, '0'));
-  $('#dvEditSector').val(String(sector % 11).padStart(2, '0'));
-  $('#dvEditSide').val(side);
-  
+  result = blockToTrackSideSector(block);
+  $('#dvEditTrack').val(String(result[0]).padStart(2, '0'));
+  $('#dvEditSide').val(result[1]);
+  $('#dvEditSector').val(String(result[2]).padStart(2, '0'));
   updateSideIcon();
 }
 
@@ -198,6 +247,46 @@ function resetEmptyBlocks() {
 function setEmptyBlock(track, side, sector, empty) {
   $('#empty_' + track + '_' + side + '_' + sector).removeClass('empty').removeClass('full');
   $('#empty_' + track + '_' + side + '_' + sector).addClass(empty ? 'empty' : 'full');
+}
+
+function blockToTrackSideSector(block) {
+  track = Math.floor(block / 22);
+  sector = block % 22;
+  side = sector < 11 ? 0 : 1;
+  sector = sector % 11;
+  return [track, side, sector];
+}
+
+function blockToBlockId(block) {
+  result = blockToTrackSideSector(block);
+  return 'empty_' + result[0] + '_' + result[1] + '_' + result[2];
+}
+
+function blockIdToBlock(blockid) {
+  blockid = blockid.replace('empty_', '');
+  args = blockid.split('_');
+  block = trackToBlock(args[0], args[1], args[2]);
+  return block;
+}
+
+function trackToBlock(track, side, sector) {
+  track = parseInt(args[0]);
+  side = parseInt(args[1]);
+  sector = parseInt(args[2]);
+  return (track * 22) + (side * 11) + sector;
+}
+
+function copyEmptyBlocks() {
+  line = "";
+  $('.copy').each(function(index) {
+    block = blockIdToBlock(this.id);
+    if (line.length > 0) line += "|";
+    line += block;
+  });
+
+  if (line != "") {
+    connection.send("copyEmptyBlocks," + line);
+  }
 }
 
 // function generateBlocks() {

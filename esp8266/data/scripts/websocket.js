@@ -204,7 +204,7 @@ function onWebSocketMessage(msg) {
 
   if (res[0] == "setEmptyBlock") {
     setEmptyBlock(res[1], res[2], res[3], res[4] == 'true' ? true : false);
-  }
+  } 
 }
 
 function setupWebsocket() {
