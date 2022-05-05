@@ -29,13 +29,13 @@ function onLoad_DiskView() {
     function () {
       id = '#' + this.id.replace('hex', "ascii");
       $(id).addClass('asciiHighlight');
-      id = id.replace('ascii', "ascii2");
+      id = '#' + this.id.replace('hex', "ascii2");
       $(id).addClass('asciiHighlight');
     }, 
     function () {
       id = '#' + this.id.replace('hex', "ascii");
       $(id).removeClass('asciiHighlight');
-      id = id.replace('ascii', "ascii2");
+      id = '#' + this.id.replace('hex', "ascii2");
       $(id).removeClass('asciiHighlight');
   });    
 

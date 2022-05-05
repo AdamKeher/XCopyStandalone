@@ -215,16 +215,14 @@ body {
 
 .sectorTable pre {
   margin: 0px;
+  padding: 0px;
   margin-top: 1px;
-  height: 22px;
 }
 
-.sectorTable pre .range {
-  margin: 0px;
-  margin-right: 10px;
-  background-color: white;
-  color: black;
-  padding: 3px;
+.sectorTable pre .asciiChar {
+  background-color: #303030;
+  margin-right: 2px;
+  padding: 1.25px;
 }
 
 .sectorTable pre .hex {
@@ -242,7 +240,6 @@ body {
 }
 
 .sectorTable pre .asciiBlock {
-  background-color: #303030;
   border-left: 4px solid gray;
   color: white;
   margin-left: 10px;
@@ -251,9 +248,12 @@ body {
   padding: 3px;
 }
 
-.sectorTable pre .asciiChar {
-  margin-right: 2px;
-  padding: 1.25px;
+.sectorTable pre .range {
+  margin: 0px;
+  margin-right: 10px;
+  background-color: white;
+  color: black;
+  padding: 3px;
 }
 
 .sectorTable pre .asciiHighlight {
@@ -261,28 +261,38 @@ body {
   background-color: white;
 }
 
-.sectorTable pre .asciiDumpBlock {
-  margin-right: 20px;
-  height: 140px;
-}
-
 .asciiTable {
   overflow: hidden;
 }
 
 .asciiTable pre:not(:first-of-type) {
-  margin-top: -6.75px;
+  margin-top: -9px;
 }
 
 .asciiTable pre {
-  font-family: 'TopazPlus a500a1000a2000';
   margin: 0px;
   padding: 0px;
+  overflow: hidden;
 }
 
-.asciiTable pre .asciiDumpChar {
+.asciiTable pre .asciiBlock {
+  margin-right: 20px;
   font-family: 'TopazPlus a500a1000a2000';
-  font-size: medium;
+  font-style: normal;
+  font-size: large;
+}
+
+.asciiTable pre .range {
+  margin: 0px;
+  margin-right: 10px;
+  background-color: white;
+  color: black;
+  padding: 3px;
+}
+
+.asciiTable pre .asciiHighlight {
+  color: black;
+  background-color: white;
 }
 
 /* Histogram
