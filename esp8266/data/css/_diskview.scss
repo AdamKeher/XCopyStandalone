@@ -37,6 +37,8 @@
 
 .sectorTable {
     pre {
+        overflow: hidden;
+
         .asciiChar {
             background-color: #303030;
             margin-right: 2px;

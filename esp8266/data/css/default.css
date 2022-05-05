@@ -214,6 +214,7 @@ body {
 }
 
 .sectorTable pre {
+  overflow: hidden;
   margin: 0px;
   padding: 0px;
   margin-top: 1px;
