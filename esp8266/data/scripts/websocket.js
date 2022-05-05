@@ -197,6 +197,14 @@ function onWebSocketMessage(msg) {
   if (res[0] == "sendBlockHist") {
     drawSectorHist(res[1]);
   }
+
+  if (res[0] == "resetEmptyBlocks") {
+    resetEmptyBlocks();
+  }
+
+  if (res[0] == "setEmptyBlock") {
+    setEmptyBlock(res[1], res[2], res[3], res[4]);
+  }
 }
 
 function setupWebsocket() {
