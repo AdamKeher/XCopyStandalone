@@ -977,8 +977,16 @@ void XCopyDisk::scanEmptyBlocks(uint8_t retryCount) {
 
         for (int sec = 0; sec < 11; sec++) {
             struct Sector *aSec = (Sector *)&getTrack()[sec].sector;
-            Log << String(sec) + ":" + (aSec->data_chksum == 0 ? "E" : "F") + " ";
-            _esp->print("broadcast setEmptyBlock," + String(trackNum / 2) + "," + String(trackNum % 2) + "," + String(sec) + "," + (aSec->data_chksum == 0 ? "true" : "false") + "\r\n");
+
+            // MD5 setup
+            MD5_CTX ctx;
+            MD5::MD5Init(&ctx);
+            MD5::MD5Update(&ctx, aSec->data, 512);
+            String sMD5 = ctxToMD5(&ctx);
+            
+            bool empty = sMD5 == "BF619EAC0CDF3F68D496EA9344137E8B";
+            Log << String(sec) + ":" + (empty ? "E" : "F") + " ";
+            _esp->print("broadcast setEmptyBlock," + String(trackNum / 2) + "," + String(trackNum % 2) + "," + String(sec) + "," + (empty ? "true" : "false") + "\r\n");
             delay(5);
         }
 

@@ -199,3 +199,31 @@ function setEmptyBlock(track, side, sector, empty) {
   $('#empty_' + track + '_' + side + '_' + sector).removeClass('empty').removeClass('full');
   $('#empty_' + track + '_' + side + '_' + sector).addClass(empty ? 'empty' : 'full');
 }
+
+// function generateBlocks() {
+//   $('#emptyTable').empty();
+//   for (let track = 0; track < 80; track++) {
+//     //<span class="emptyTrack" id="empty_0">Track 00</span><span class="side">Side 0</span><span class="blocks"><span class="block" id="empty_0_0_0">00</span><span class="block" id="empty_0_0_1">01</span><span class="block" id="empty_0_0_2">02</span><span class="block" id="empty_0_0_3">03</span><span class="block" id="empty_0_0_4">04</span><span class="block" id="empty_0_0_5">05</span><span class="block" id="empty_0_0_6">06</span><span class="block" id="empty_0_0_7">07</span><span class="block" id="empty_0_0_8">08</span><span class="block" id="empty_0_0_9">09</span><span class="block" id="empty_0_0_10">10</span></span><span class="side">Side 1</span><span class="blocks"><span class="block" id="empty_0_1_0">00</span><span class="block" id="empty_0_1_1">01</span><span class="block" id="empty_0_1_2">02</span><span class="block" id="empty_0_1_3">03</span><span class="block" id="empty_0_1_4">04</span><span class="block" id="empty_0_1_5">05</span><span class="block" id="empty_0_1_6">06</span><span class="block" id="empty_0_1_7">07</span><span class="block" id="empty_0_1_8">08</span><span class="block" id="empty_0_1_9">09</span><span class="block" id="empty_0_1_10">10</span></span><br>
+//     line = '<span class=\"emptyTrack\" id=\"empty_0\">Track ' + String(track).padStart(2, '0') + '</span>';
+
+//     side = 0;
+//     line += '<span class=\"side\">Side ' + side + '</span>';
+//     line += '<span class=\"blocks\">';
+//     for (let sector = 0; sector < 11; sector++) {
+//       block = (track * 22) + (side * 11) + sector;
+//       line += '<span class=\"block\" id=\"empty_' + track + '_' + side + '_' + sector + '\" onclick=\"getBlock(' + block + ')\">' + String(sector).padStart(2, '0') + '</span>';
+//     }
+//     line += '</span>';
+
+//     side = 1;
+//     line += '<span class=\"side\">Side ' + side + '</span>';
+//     line += '<span class=\"blocks\">';
+//     for (let sector = 0; sector < 11; sector++) {
+//       block = (track * 22) + (side * 11) + sector;
+//       line += '<span class=\"block\" id=\"empty_' + track + '_' + side + '_' + sector + '\" onclick=\"getBlock(' + block + ')\">' + String(sector).padStart(2, '0') + '</span>';
+//     }
+//     line += '</span><br>\r';
+
+//     $('#emptyTable').append(line);
+//   }
+// }
