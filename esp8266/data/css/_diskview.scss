@@ -93,6 +93,53 @@
     }
 }
 
+.emptyTable {
+    font-family: monospace;
+    font-size: smaller;
+
+    .emptyTrack {
+        background-color: white;
+        color: black;
+        
+        padding-left: 3px;
+        padding-right: 3px;
+    }
+
+    .side {
+        background-color: gray;
+        color: black;
+        
+        margin-left: 10px;
+        margin-right: 10px;
+
+        padding-left: 3px;
+        padding-right: 3px;
+    }
+
+    // .blocks {
+    // }
+
+    .block {
+        padding-left: 15px;
+        padding-right: 15px;
+        background-color: #303030;
+        margin-right: 1px;
+        &:hover {
+            background-color: white;
+            color: black;
+            cursor: zoom-in;
+        }
+    }
+
+    .empty {
+        background-color: green;
+    }
+
+    .full {
+        background-color: red;
+    }    
+}
+
 /* Histogram
 -------------------------------------------------- */
 

@@ -296,6 +296,49 @@ body {
   background-color: white;
 }
 
+.emptyTable {
+  font-family: monospace;
+  font-size: smaller;
+}
+
+.emptyTable .emptyTrack {
+  background-color: white;
+  color: black;
+  padding-left: 3px;
+  padding-right: 3px;
+}
+
+.emptyTable .side {
+  background-color: gray;
+  color: black;
+  margin-left: 10px;
+  margin-right: 10px;
+  padding-left: 3px;
+  padding-right: 3px;
+}
+
+.emptyTable .block {
+  padding-left: 15px;
+  padding-right: 15px;
+  background-color: #303030;
+  margin-right: 1px;
+}
+
+.emptyTable .block:hover {
+  background-color: white;
+  color: black;
+  cursor: -webkit-zoom-in;
+  cursor: zoom-in;
+}
+
+.emptyTable .empty {
+  background-color: green;
+}
+
+.emptyTable .full {
+  background-color: red;
+}
+
 /* Histogram
 -------------------------------------------------- */
 .histCanvas {
