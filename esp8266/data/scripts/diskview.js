@@ -185,3 +185,18 @@ function drawSectorHist(line) {
     console.log(values[0] + " | " + values[1] + "|" + height);
   });
 }
+
+function resetEmptyBlocks() {
+  for (let track = 0; track < 80; track++) {
+    for (let sector = 0; sector < 11; sector++) {
+      $('#empty_' + track + '_0_' + sector).removeClass('empty').removeClass('full');
+      $('#empty_' + track + '_1_' + sector).removeClass('empty').removeClass('full');
+    }    
+  }
+}
+
+function setEmptyBlock(track, side, sector, empty) {
+  console.log('#empty_' + track + '_' + side + '_' + sector);
+  $('#empty_' + track + '_' + side + '_' + sector).removeClass('empty').removeClass('full');
+  $('#empty_' + track + '_' + side + '_' + sector).addClass(empty ? 'empty' : 'full');
+}
