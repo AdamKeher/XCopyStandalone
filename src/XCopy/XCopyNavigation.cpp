@@ -289,7 +289,11 @@ void XCopy::navigateSelect()
         if (item->command == testDisk)
         {
             startFunction(testDisk);
-        }        
+        }
+
+        if (item->command == scanBlocks) {
+            startFunction(scanBlocks);
+        }
 
         if (item->command == formatDisk)
         {
@@ -438,7 +442,7 @@ void XCopy::navigateSelect()
             pinMode(28, OUTPUT);
             pinMode(28, OUTPUT_OPENDRAIN);
             Serial << " Looks like pin 28 has not been jumpered to the RST pad on your Teensy 3.2\r\n";
-        }
+        }   
     }
 }
 
@@ -615,6 +619,16 @@ void XCopy::processState()
         if (_drawnOnce == false)
         {
             _disk.testDiskette(_config->getRetryCount());
+            setBusy(false);
+            _drawnOnce = true;
+        }
+    }
+
+    if (_xcopyState == scanBlocks)
+    {
+        if (_drawnOnce == false)
+        {
+            _disk.scanEmptyBlocks(_config->getRetryCount());
             setBusy(false);
             _drawnOnce = true;
         }

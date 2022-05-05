@@ -958,6 +958,8 @@ void XCopyDisk::scanEmptyBlocks(uint8_t retryCount) {
     _esp->setDiskName(diskName);
     _esp->print("broadcast resetEmptyBlocks\r\n");
 
+    Serial << "\r\nScan blocks:\r\n";
+
     for (int trackNum = 0; trackNum < 160; trackNum++) {
         if (_cancelOperation) {
             OperationCancelled(trackNum);

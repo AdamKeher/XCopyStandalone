@@ -612,7 +612,7 @@ void XCopyCommandLine::doCommand(String command)
             return;
         }
 
-        _disk->scanEmptyBlocks(_config->getRetryCount());
+        _callback(_caller, "scanBlocks");
 
         return;        
     }

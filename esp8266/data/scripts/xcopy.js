@@ -26,6 +26,7 @@ function onLoad() {
   })
   
   $('#diskcopy_cancel').prop('disabled', true);
+  $('#diskview_cancel').prop('disabled', true);
   $('#uploadFile').change(fileUploadChange);
   $('#uploadSelect').click(function() { uploadFile.click(); });
   $("#uploadStart").click(fileUploadSelect);
@@ -49,6 +50,8 @@ function disableInterface(isBusy) {
     $('button').addClass('disabled');
     $('#diskcopy_cancel').prop('disabled', false);
     $('#diskcopy_cancel').removeClass('disabled');
+    $('#diskview_cancel').prop('disabled', false);
+    $('#diskview_cancel').removeClass('disabled');
     $('#uploadCancel').prop('disabled', false);
     $('#uploadCancel').removeClass('disabled');
     $('#websocketReconnectButton').prop('disabled', false);
@@ -63,6 +66,8 @@ function disableInterface(isBusy) {
     $('button').removeClass('disabled');
     $('#diskcopy_cancel').prop('disabled', true);
     $('#diskcopy_cancel').addClass('disabled');
+    $('#diskview_cancel').prop('disabled', true);
+    $('#diskview_cancel').addClass('disabled');
     disableGlobes();
   }
 }

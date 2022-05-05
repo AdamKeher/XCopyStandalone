@@ -515,7 +515,7 @@
                             </div>
                         </div>
                     </p>
-                    <p><hr/></p>
+                   <p><hr/></p>
                     <p>
                         <strong>Block:</strong> <span id="dvBlock">----</span> <strong>Logical Track Found:</strong> <span id="dvTrackFound">--</span> <strong>Errors:</strong> <span id="dvErrors">---</span> <strong>Sector Count:</strong> <span id="dvSectorCount">--</span> <strong>Bit Count:</strong> <span id="dvBitCount">-----</span>
                         <br>
@@ -570,7 +570,6 @@
                         </tbody>
                     </table>
 
-
                     <table class="table table-dark">
                         <thead>
                             <tr>
@@ -581,9 +580,13 @@
                             <tr>
                                 <td>
                                     <p>
-                                        <button type="button" class="btn btn-success" onclick="getBlock(currentBlock);"><i class="fa-solid fa-rotate-right"></i> Scan</button>
+                                        <div class="btn-toolbar" role="toolbar" aria-label="Toolbar with button groups">
+                                            <div class="btn-group me-1" role="group" aria-label="General">
+                                                <button type="button" class="btn btn-success" onclick="diskcopy('scanBlocks');"><i class="fa-solid fa-rotate-right"></i> Scan</button>
+                                                <button type="button" class="btn btn-danger" id="diskview_cancel" onclick="diskcopyCancel();">Cancel</button>
+                                            </div>
+                                        </div>
                                     </p>
-
                                     <div id="emptyTable" class="emptyTable">
                                         <span class="emptyTrack" id="empty_0">Track 00</span><span class="side">Side 0</span><span class="blocks"><span class="block" id="empty_0_0_0">00</span><span class="block" id="empty_0_0_1">01</span><span class="block" id="empty_0_0_2">02</span><span class="block" id="empty_0_0_3">03</span><span class="block" id="empty_0_0_4">04</span><span class="block" id="empty_0_0_5">05</span><span class="block" id="empty_0_0_6">06</span><span class="block" id="empty_0_0_7">07</span><span class="block" id="empty_0_0_8">08</span><span class="block" id="empty_0_0_9">09</span><span class="block" id="empty_0_0_10">10</span></span><span class="side">Side 1</span><span class="blocks"><span class="block" id="empty_0_1_0">00</span><span class="block" id="empty_0_1_1">01</span><span class="block" id="empty_0_1_2">02</span><span class="block" id="empty_0_1_3">03</span><span class="block" id="empty_0_1_4">04</span><span class="block" id="empty_0_1_5">05</span><span class="block" id="empty_0_1_6">06</span><span class="block" id="empty_0_1_7">07</span><span class="block" id="empty_0_1_8">08</span><span class="block" id="empty_0_1_9">09</span><span class="block" id="empty_0_1_10">10</span></span><br>
                                         <span class="emptyTrack" id="empty_1">Track 01</span><span class="side">Side 0</span><span class="blocks"><span class="block" id="empty_1_0_0">00</span><span class="block" id="empty_1_0_1">01</span><span class="block" id="empty_1_0_2">02</span><span class="block" id="empty_1_0_3">03</span><span class="block" id="empty_1_0_4">04</span><span class="block" id="empty_1_0_5">05</span><span class="block" id="empty_1_0_6">06</span><span class="block" id="empty_1_0_7">07</span><span class="block" id="empty_1_0_8">08</span><span class="block" id="empty_1_0_9">09</span><span class="block" id="empty_1_0_10">10</span></span><span class="side">Side 1</span><span class="blocks"><span class="block" id="empty_1_1_0">00</span><span class="block" id="empty_1_1_1">01</span><span class="block" id="empty_1_1_2">02</span><span class="block" id="empty_1_1_3">03</span><span class="block" id="empty_1_1_4">04</span><span class="block" id="empty_1_1_5">05</span><span class="block" id="empty_1_1_6">06</span><span class="block" id="empty_1_1_7">07</span><span class="block" id="empty_1_1_8">08</span><span class="block" id="empty_1_1_9">09</span><span class="block" id="empty_1_1_10">10</span></span><br>

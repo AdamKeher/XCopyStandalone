@@ -167,6 +167,7 @@ void XCopy::begin()
     _menu.addChild("Test Disk", testDisk, parentItem);
     _menu.addChild("Format Disk", formatDisk, parentItem);
     _menu.addChild("Disk Flux", fluxDisk, parentItem);
+    _menu.addChild("Scan Free Blocks", scanBlocks, parentItem);
     _menu.addChild("Compare Disk to ADF", undefined, parentItem);
     _menu.addChild("Test Drive", testDrive, parentItem);
 
@@ -318,6 +319,9 @@ void XCopy::cancelOperation()
     case formatDisk:
         _disk.cancelOperation();
         break;
+    case scanBlocks:
+        _disk.cancelOperation();
+        break;
     default:
         break;
     }
@@ -358,6 +362,9 @@ void XCopy::onWebCommand(void* obj, const String command)
     }
     else if (command == "testDisk") {
         xcopy->startFunction(testDisk);
+    }
+    else if (command == "scanBlocks") {
+        xcopy->startFunction(scanBlocks);
     }
     else if (command == "formatDisk") {
         xcopy->startFunction(formatDisk);
