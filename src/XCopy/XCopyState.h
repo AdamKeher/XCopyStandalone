@@ -36,7 +36,8 @@ enum XCopyState {
   resetDevice = 35,
   getSdFiles = 36,
   setTimeZone = 37,
-  sendBlock = 38
+  sendBlock = 38,
+  scanBlocks = 39
 };
 
 #endif // XCOPYSTATE_H

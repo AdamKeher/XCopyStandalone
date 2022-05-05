@@ -196,7 +196,6 @@ function resetEmptyBlocks() {
 }
 
 function setEmptyBlock(track, side, sector, empty) {
-  console.log('#empty_' + track + '_' + side + '_' + sector);
   $('#empty_' + track + '_' + side + '_' + sector).removeClass('empty').removeClass('full');
   $('#empty_' + track + '_' + side + '_' + sector).addClass(empty ? 'empty' : 'full');
 }

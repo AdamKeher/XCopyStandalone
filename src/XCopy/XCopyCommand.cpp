@@ -49,6 +49,7 @@ void XCopyCommandLine::doCommand(String command)
         Log << F("| writeadf <filename>  | write adf file to floppy disk                        |\r\n");
         Log << F("| writeflash           | write flash memory to floppy disk                    |\r\n");
         Log << F("| testdisk             | test floppy disk                                     |\r\n");
+        Log << F("| scanblocks           | scan floppy disk for free blocks                     |\r\n");
         Log << F("|--------------------- +------------------------------------------------------|\r\n");
         Log << F("| boot                 | print boot block from disk                           |\r\n");
         Log << F("| bootf                | print boot block from flash                          |\r\n");
@@ -603,6 +604,17 @@ void XCopyCommandLine::doCommand(String command)
 
     if (cmd == F("pass")) {
         _callback(_caller, "debuggingSerialPassThrough");
+    }
+
+    if (cmd == F("scanblocks")) {
+        if (!diskChange()) {
+            Log << "Disk not inserted into floppy\r\n";
+            return;
+        }
+
+        _disk->scanEmptyBlocks(_config->getRetryCount());
+
+        return;        
     }
 
     if (cmd != "")

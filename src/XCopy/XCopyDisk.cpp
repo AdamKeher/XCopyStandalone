@@ -61,7 +61,7 @@ void XCopyDisk::dateTime(uint16_t *date, uint16_t *time)
 
 //
 
-void XCopyDisk::drawFlux(uint8_t trackNum, uint8_t scale, uint8_t yoffset)
+void XCopyDisk::drawFlux(uint8_t trackNum, uint8_t scale, uint8_t yoffset, bool updateWebUI)
 {
     // web interface
     String data = "";
@@ -69,7 +69,7 @@ void XCopyDisk::drawFlux(uint8_t trackNum, uint8_t scale, uint8_t yoffset)
         data = data + String(getHist()[i]);
         data = data + "|";
     }
-    _esp->print("broadcast flux," + String(trackNum) + "," + data + "\r\n");
+    if (updateWebUI) _esp->print("broadcast flux," + String(trackNum) + "," + data + "\r\n");
 
     // tft screen
     int scaled = 0;
@@ -932,6 +932,63 @@ void XCopyDisk::testDiskette(uint8_t retryCount) {
     _esp->setStatus("Test Complete. <i class=\"fa-solid fa-hashtag\"></i> MD5: " + sMD5);
 }
 
+void XCopyDisk::scanEmptyBlocks(uint8_t retryCount) {
+    _esp->setMode("Scan Empty Blocks");
+    _esp->setStatus("Scanning Disk");  
+    _esp->setState(scanBlocks);
+    _esp->resetDisk();
+    _esp->setTab("diskview");
+
+    _cancelOperation = false;
+
+    _graphics->drawDiskName("");
+    _graphics->drawDisk();
+
+    if (!diskChange()) {
+        _graphics->drawText(0, 10, ST7735_RED, "No Disk Inserted");
+        _esp->setStatus("No Disk Inserted");
+
+        _audio->playBong(false);
+        return;
+    }
+
+    String diskName = getName();
+    _graphics->drawDiskName(diskName);
+    _graphics->getTFT()->drawFastHLine(0, 85, _graphics->getTFT()->width(), ST7735_GREEN);
+    _esp->setDiskName(diskName);
+    _esp->print("broadcast resetEmptyBlocks\r\n");
+
+    for (int trackNum = 0; trackNum < 160; trackNum++) {
+        if (_cancelOperation) {
+            OperationCancelled(trackNum);
+            return;
+        }
+
+        // read track
+        readDiskTrack(trackNum, false, retryCount);
+        
+        char track[3] = "";
+        sprintf(track, "%02d", trackNum / 2);
+        if (trackNum % 2 == 0) Log << "Track " + String(track) + " | ";
+
+        Serial << "Side: " << trackNum % 2 << " | ";
+
+        for (int sec = 0; sec < 11; sec++) {
+            struct Sector *aSec = (Sector *)&getTrack()[sec].sector;
+            Log << String(sec) + ":" + (aSec->data_chksum == 0 ? "E" : "F") + " ";
+            _esp->print("broadcast setEmptyBlock," + String(trackNum / 2) + "," + String(trackNum % 2) + "," + String(sec) + "," + (aSec->data_chksum == 0 ? "true" : "false") + "\r\n");
+            delay(5);
+        }
+
+        if (trackNum % 2) Log << "\r\n";
+
+        // draw flux
+        analyseHist(true);
+        drawFlux(trackNum, 6, 85, false);
+    }
+
+    _audio->playBoing(false);
+}
 //
 
 String XCopyDisk::ctxToMD5(MD5_CTX *ctx) {

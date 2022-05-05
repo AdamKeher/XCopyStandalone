@@ -45,9 +45,10 @@ class XCopyDisk
     void adfToDisk(String ADFFileName, bool verify, uint8_t retryCount, ADFFileSource source, bool setEsp = true);
     void diskToDisk(bool verify, uint8_t retryCount);
     void diskFlux();
-    void drawFlux(uint8_t trackNum, uint8_t scale = 2, uint8_t yoffset = 0);
+    void drawFlux(uint8_t trackNum, uint8_t scale = 2, uint8_t yoffset = 0, bool updateWebUI = true);
 
     void testDiskette(uint8_t retryCount);
+    void scanEmptyBlocks(uint8_t retryCount);
 
     String ctxToMD5(MD5_CTX *ctx);
     String adfToMD5(String ADFFileName);
