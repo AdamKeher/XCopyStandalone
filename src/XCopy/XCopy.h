@@ -60,6 +60,8 @@ public:
   void getFile(String path, size_t size);
   void processKeys(String keys);
   void sendBlock(int block);
+  XCopyDisk* getDisk() { return &_disk; }
+  XCopyConfig* getConfig() { return _config; }
   static void onWebCommand(void* obj, const String command);
   XCopyState _xcopyState = menus;
   #ifdef XCOPY_DEBUG

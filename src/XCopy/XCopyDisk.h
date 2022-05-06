@@ -27,6 +27,24 @@ enum ADFFileSource
   _sdCard = 1
 };
 
+class DiskLocation {
+public:
+  int block = 0;
+  int track = 0;
+  int logicalTrack = 0;
+  int side = 0;
+  int sector = 0;
+
+  void setBlock(int value) {
+    block = value;
+    logicalTrack = block / 11;
+    track = block / 22;
+    sector = block % 22;
+    side = sector < 11 ? 0 : 1;
+    sector = sector % 11;
+  }
+};
+
 class XCopyDisk
 {
   public:
@@ -49,6 +67,7 @@ class XCopyDisk
 
     void testDiskette(uint8_t retryCount);
     void scanEmptyBlocks(uint8_t retryCount);
+    bool writeBlocksToFile(byte blocks[], uint8_t retryCount);
 
     String ctxToMD5(MD5_CTX *ctx);
     String adfToMD5(String ADFFileName);

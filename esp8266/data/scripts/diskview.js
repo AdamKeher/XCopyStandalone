@@ -289,6 +289,26 @@ function copyEmptyBlocks() {
   }
 }
 
+function copyEmptyBlocks() {
+  val = 0;
+  line = "";
+
+  for (let index = 0; index < 1760  ; index++) {
+    if ($('#' + blockToBlockId(index)).hasClass('copy')) {;
+      val |= 1 << index % 8;
+    }
+ 
+    if ((index+1) % 8 == 0) {
+      line += (line.length > 0 ? ',' : '') + val;
+      val = 0;
+    }
+  }
+
+  if (line != "") {
+    connection.send("copyEmptyBlocks," + line);
+  }
+}
+
 // function generateBlocks() {
 //   $('#emptyTable').empty();
 //   for (let track = 0; track < 80; track++) {

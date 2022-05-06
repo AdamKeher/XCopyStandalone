@@ -999,6 +999,108 @@ void XCopyDisk::scanEmptyBlocks(uint8_t retryCount) {
 
     _audio->playBoing(false);
 }
+
+bool XCopyDisk::writeBlocksToFile(byte blocks[], uint8_t retryCount) {
+    _cancelOperation = false;
+    String statusText = "";
+    String diskName = "";
+
+    int totalReadErrors = 0;
+    
+    File ADFFile;
+    File ADFLogFile;
+    SerialFlashFile ADFFlashFile;
+
+    // check if disk is present in floppy
+    if (!diskChange()) {
+        Serial << "No disk inserted" << "\r\n";
+        _audio->playBong(false);
+        return false;
+    }
+
+    // get and set diskname
+    diskName = getName();
+    Serial << "Diskname: " << diskName << "\r\n";
+
+    // get filesnames
+    String fullPath = generateADFFileName(diskName).replace(".adf", ".bin");
+    Serial << "Filename: " << fullPath << "\r\n";
+
+    // Open SD File
+    XCopySDCard *_sdcard = new XCopySDCard();
+
+    // card detect
+    if (!_sdcard->cardDetect()) {
+        Serial << "No SDCard detected" << "\r\n";
+        _audio->playBong(false);
+        delete _sdcard;
+        return false;
+    }
+
+    // init
+    if (!_sdcard->begin()) {
+        Serial << "SD Init Failed" << "\r\n";
+        _audio->playBong(false);
+        delete _sdcard;
+        return false;
+    }
+
+    // make ADF path
+    if (!_sdcard->fileExists(SD_ADF_PATH)) _sdcard->makeDirectory(SD_ADF_PATH);
+
+    // remove sdcard adf & log files if they exist
+    if (_sdcard->fileExists(fullPath)) _sdcard->deleteFile(fullPath.c_str());
+
+    // open sdcard files
+    SdFile::dateTimeCallback(dateTime);
+    ADFFile = _sdcard->getSdFat().open(fullPath.c_str(), FILE_WRITE);
+    SdFile::dateTimeCallbackCancel();
+
+    // if adf file failed top open
+    if (!ADFFile) {
+        ADFFile.close();
+        Serial << "File '" + fullPath + "' failed to open on the SD card" << "\r\n";
+        _audio->playBong(false);
+        delete _sdcard;
+        return false;
+    }
+
+    DiskLocation dl;
+    int currentTrack = -1;
+    for(size_t index = 0; index < 220; index++) {
+        for (size_t bit = 0; bit < 8; bit++) {
+            int mask = 1 << bit;
+
+            // if write block
+            if ((blocks[index] & mask) > 0) {
+                int block = (index * 8) + bit;
+                dl.setBlock(block);
+
+                if (dl.logicalTrack != currentTrack) {
+                    int readResult = readDiskTrack(dl.logicalTrack, false, retryCount, true);
+                    if (readResult != 0) {
+                        // if there has been error on either side, set error for whole cylinder else increment retry count
+                        Serial << "Read Errors: " << ++totalReadErrors << "\r\n";
+                    }
+                }
+
+                const struct Sector *aSec = (Sector *)&getTrack()[dl.sector].sector;
+                ADFFile.write(aSec->data, 512);
+                currentTrack = dl.logicalTrack;
+
+                // Serial << block << " | logtrack: " << dl.logicalTrack << " | track: " << dl.track << " | side: " << dl.side << " | sector: " << dl.sector << "\r\n";
+            }
+        }
+    }
+
+    ADFFile.close();
+    _audio->playBoing(false);
+
+    delete _sdcard;
+
+    return true;
+}
+
 //
 
 String XCopyDisk::ctxToMD5(MD5_CTX *ctx) {
