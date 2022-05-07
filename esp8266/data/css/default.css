@@ -343,6 +343,10 @@ body {
   background-color: purple;
 }
 
+.emptyTable .current {
+  border: 2px solid white;
+}
+
 /* Histogram
 -------------------------------------------------- */
 .histCanvas {

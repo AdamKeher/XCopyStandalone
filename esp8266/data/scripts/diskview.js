@@ -53,7 +53,6 @@ function onLoad_DiskView() {
     });
   });
 
-
   $('.block').bind('mouseup', function(e) {
     switch(e.which) {
       case 2:
@@ -166,6 +165,12 @@ function decimalToHex(dec, len = 4) {
 }
 
 function drawSectorDetails(block) {
+  $('.block').each(function (index) {   
+    $('#' + this.id).removeClass('current');
+  });
+  $('#' + blockToBlockId(block)).addClass('current');
+
+
   $('#dvBlock').text(String(block).padStart(4, '0'));
   result = blockToTrackSideSector(block);
   $('#dvEditTrack').val(String(result[0]).padStart(2, '0'));
@@ -277,19 +282,6 @@ function trackToBlock(track, side, sector) {
 }
 
 function copyEmptyBlocks() {
-  line = "";
-  $('.copy').each(function(index) {
-    block = blockIdToBlock(this.id);
-    if (line.length > 0) line += "|";
-    line += block;
-  });
-
-  if (line != "") {
-    connection.send("copyEmptyBlocks," + line);
-  }
-}
-
-function copyEmptyBlocks() {
   val = 0;
   line = "";
 
@@ -307,6 +299,12 @@ function copyEmptyBlocks() {
   if (line != "") {
     connection.send("copyEmptyBlocks," + line);
   }
+}
+
+function clearEmptyBlocks() {
+  $('.copy').each(function(index) {
+    $('#' + this.id).removeClass('copy');
+  });
 }
 
 // function generateBlocks() {
