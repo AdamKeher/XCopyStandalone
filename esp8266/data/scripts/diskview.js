@@ -307,6 +307,12 @@ function clearEmptyBlocks() {
   });
 }
 
+function asciiSearch() {
+  if ($('#dvAsciiSearch').val() != '') {
+    connection.send('asciiSearch,' + $('#dvAsciiSearch').val());
+  }
+}
+
 // function generateBlocks() {
 //   $('#emptyTable').empty();
 //   for (let track = 0; track < 80; track++) {

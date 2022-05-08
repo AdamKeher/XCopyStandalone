@@ -213,6 +213,11 @@ body {
   border: 2px solid green;
 }
 
+.dvEdit.wide {
+  width: 150px;
+  text-align: start;
+}
+
 .sectorTable pre {
   overflow: hidden;
   margin: 0px;

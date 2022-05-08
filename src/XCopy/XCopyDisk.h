@@ -35,6 +35,14 @@ public:
   int side = 0;
   int sector = 0;
 
+  void setBlock(int logicalTrack, int side, int sector) {
+    this->logicalTrack = logicalTrack;
+    this->track = logicalTrack / 2;
+    this->side = side;
+    this->sector = sector;
+    block = (this->track * 22) + (this->side * 11) + this->sector;
+  }
+
   void setBlock(int value) {
     block = value;
     logicalTrack = block / 11;
@@ -68,6 +76,8 @@ class XCopyDisk
     void testDiskette(uint8_t retryCount);
     void scanEmptyBlocks(uint8_t retryCount);
     bool writeBlocksToFile(byte blocks[], uint8_t retryCount);
+    bool search(String needle, byte* haystack, size_t size);
+    bool asciiSearch(String text, uint8_t retryCount);
 
     String ctxToMD5(MD5_CTX *ctx);
     String adfToMD5(String ADFFileName);

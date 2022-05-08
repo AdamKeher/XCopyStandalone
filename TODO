@@ -51,6 +51,7 @@ v709.2022:
   ✔ Crashes when directory too large in ADF write - WebUI OK @done(22-04-24 12:59)
     ✔ Memory footprint decreased but this is still an issue @done(22-04-24 12:59)
   WebUI
+    ☐ Fix cancel button
     ✔ Fix source and destination icons, mode status text @done(22-05-04 14:24)
       ✔ Test Disk @done(22-05-04 13:42)
         ✔ Web UI @done(22-05-04 13:42)

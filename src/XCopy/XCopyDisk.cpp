@@ -1101,6 +1101,73 @@ bool XCopyDisk::writeBlocksToFile(byte blocks[], uint8_t retryCount) {
     return true;
 }
 
+bool XCopyDisk::search(String needle, byte* haystack, size_t size) { 
+    size_t nsize = needle.length();
+    size_t nindex = 0;
+    needle = needle.toLowerCase();
+
+    for(size_t i = 0; i < size; i++) {
+        byte h1 = haystack[i];
+        byte h2 = (h1 >= 65 && h1 <= 90) ? h1 + 32 : h1;
+
+        if (h1 == needle[nindex] || h2 == needle[nindex]) {
+            // Serial << "\r\nF: " << nindex << " | " << needle[nindex] << "\r\n";
+            nindex++;
+            if (nindex == nsize) return true;
+        } 
+        else { nindex = 0; }
+    }
+
+    return false;
+}
+
+bool XCopyDisk::asciiSearch(String text, uint8_t retryCount) {
+    // check if disk is present in floppy
+    if (!diskChange()) {
+        Serial << "No disk inserted" << "\r\n";
+        _audio->playBong(false);
+        return false;
+    }
+
+    Serial << "\r\nSearch blocks:\r\nSearching ...\r\n";
+
+    for (int trackNum = 0; trackNum < 160; trackNum++) {
+        if (_cancelOperation) {
+            OperationCancelled(trackNum);
+            return false;
+        }
+
+        // read track
+        readDiskTrack(trackNum, false, retryCount);
+        
+        char track[3] = "";
+        sprintf(track, "%02d", trackNum / 2);
+        // if (trackNum % 2 == 0) Log << "Track " + String(track) + " | ";
+        // Serial << "Side: " << trackNum % 2 << " | ";
+
+        for (int sec = 0; sec < 11; sec++) {
+            struct Sector *aSec = (Sector *)&getTrack()[sec].sector;
+
+            if (search(text, aSec->data, 512)) {
+                DiskLocation dl;
+                dl.setBlock(trackNum, trackNum % 2, sec);
+                Serial << "Found: '" + text + "' | " << "Block: " << dl.block << " Track: " << dl.track << " Side: " << dl.side << " Sector: "<< dl.sector << "\r\n";
+                printAmigaSector(sec);
+                Serial << "Searching ...\r\n";
+            };
+        }
+
+        // if (trackNum % 2) Log << "\r\n";
+
+        // draw flux
+        analyseHist(true);
+        drawFlux(trackNum, 6, 85, false);
+    }
+
+    Serial << "Done.\r\n";
+    _audio->playBoing(false);
+    return true;
+}
 //
 
 String XCopyDisk::ctxToMD5(MD5_CTX *ctx) {

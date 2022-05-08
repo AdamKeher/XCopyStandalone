@@ -445,6 +445,11 @@ void XCopy::onWebCommand(void* obj, const String command)
         //     if (index == -1) _params = "";
         // }
     }
+    else if (command.startsWith("asciiSearch")) {
+        String _param = command.substring(command.indexOf(",") + 1);
+        Serial << "Ascii Search: " << _param << "\r\n";
+        xcopy->getDisk()->asciiSearch(_param, xcopy->getConfig()->getRetryCount());
+    }
     else if (command == "debuggingSerialPassThrough") {
             xcopy->startFunction(debuggingSerialPassThrough);
     }

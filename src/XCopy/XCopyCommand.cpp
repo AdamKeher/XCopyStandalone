@@ -50,6 +50,7 @@ void XCopyCommandLine::doCommand(String command)
         Log << F("| writeflash           | write flash memory to floppy disk                    |\r\n");
         Log << F("| testdisk             | test floppy disk                                     |\r\n");
         Log << F("| scanblocks           | scan floppy disk for free blocks                     |\r\n");
+        Log << F("| search <searchtext>  | search disk for case sensative ascii text            |\r\n");
         Log << F("|--------------------- +------------------------------------------------------|\r\n");
         Log << F("| boot                 | print boot block from disk                           |\r\n");
         Log << F("| bootf                | print boot block from flash                          |\r\n");
@@ -613,6 +614,17 @@ void XCopyCommandLine::doCommand(String command)
         }
 
         _callback(_caller, "scanBlocks");
+
+        return;        
+    }
+
+    if (cmd == F("search")) {
+        if (!diskChange()) {
+            Log << "Disk not inserted into floppy\r\n";
+            return;
+        }
+
+        _callback(_caller, "asciiSearch," + param);
 
         return;        
     }
