@@ -958,7 +958,7 @@ void XCopyDisk::scanEmptyBlocks(uint8_t retryCount) {
     _esp->setDiskName(diskName);
     _esp->print("broadcast resetEmptyBlocks\r\n");
 
-    Serial << "\r\nScan blocks:\r\n";
+    Log << "\r\nScan blocks:\r\n";
 
     for (int trackNum = 0; trackNum < 160; trackNum++) {
         if (_cancelOperation) {
@@ -971,9 +971,9 @@ void XCopyDisk::scanEmptyBlocks(uint8_t retryCount) {
         
         char track[3] = "";
         sprintf(track, "%02d", trackNum / 2);
-        if (trackNum % 2 == 0) Log << "Track " + String(track) + " | ";
+        if (trackNum % 2 == 0) Log << "Track " + String(track) + " |";
 
-        Serial << "Side: " << trackNum % 2 << " | ";
+        Log << " Side: " << trackNum % 2 << " | ";
 
         for (int sec = 0; sec < 11; sec++) {
             struct Sector *aSec = (Sector *)&getTrack()[sec].sector;
@@ -985,7 +985,7 @@ void XCopyDisk::scanEmptyBlocks(uint8_t retryCount) {
             String sMD5 = ctxToMD5(&ctx);
             
             bool empty = sMD5 == "BF619EAC0CDF3F68D496EA9344137E8B";
-            Log << String(sec) + ":" + (empty ? "E" : "F") + " ";
+            Log << (empty ? XCopyConsole::background_green() + " " + String(sec) + " " + XCopyConsole::reset() : XCopyConsole::background_red() + " " + String(sec) + " " + XCopyConsole::reset());
             _esp->print("broadcast setEmptyBlock," + String(trackNum / 2) + "," + String(trackNum % 2) + "," + String(sec) + "," + (empty ? "true" : "false") + "\r\n");
             delay(5);
         }
