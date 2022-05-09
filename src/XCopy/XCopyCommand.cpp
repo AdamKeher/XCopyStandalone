@@ -701,7 +701,7 @@ bool XCopyCommandLine::printDirectory(String directory, bool color) {
                 filename = XCopyConsole::high_green()+ filename + XCopyConsole::reset();
         }
 
-        Log << _count << ": " << _sdcard->getfile().date + " " + _sdcard->getfile().time + " " + String(filesize) + " " + filename + "\r\n";
+        Log << _sdcard->getfile().date + " " + _sdcard->getfile().time + " " + String(filesize) + " " + filename + "\r\n";
     }
 
     Log << "file count: " + String(_count) + "\r\n";
