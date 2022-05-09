@@ -1101,21 +1101,19 @@ bool XCopyDisk::writeBlocksToFile(byte blocks[], uint8_t retryCount) {
     return true;
 }
 
-bool XCopyDisk::search(String needle, byte* haystack, size_t size) { 
-    size_t nsize = needle.length();
-    size_t nindex = 0;
-    needle = needle.toLowerCase();
+bool XCopyDisk::searchMemory(String searchText, byte* memory, size_t memorySize) { 
+    size_t sSize = searchText.length();
+    size_t sIndex = 0;
+    searchText = searchText.toLowerCase();
 
-    for(size_t i = 0; i < size; i++) {
-        byte h1 = haystack[i];
-        byte h2 = (h1 >= 65 && h1 <= 90) ? h1 + 32 : h1;
+    for(size_t mIndex = 0; mIndex < memorySize; mIndex++) {
+        byte m1 = memory[mIndex];
+        byte m2 = (m1 >= 65 && m1 <= 90) ? m1 + 32 : m1;
 
-        if (h1 == needle[nindex] || h2 == needle[nindex]) {
-            // Serial << "\r\nF: " << nindex << " | " << needle[nindex] << "\r\n";
-            nindex++;
-            if (nindex == nsize) return true;
+        if (m1 == searchText[sIndex] || m2 == searchText[sIndex]) {
+            if (++sIndex == sSize) return true;
         } 
-        else { nindex = 0; }
+        else { sIndex = 0; }
     }
 
     return false;
@@ -1148,7 +1146,7 @@ bool XCopyDisk::asciiSearch(String text, uint8_t retryCount) {
         for (int sec = 0; sec < 11; sec++) {
             struct Sector *aSec = (Sector *)&getTrack()[sec].sector;
 
-            if (search(text, aSec->data, 512)) {
+            if (searchMemory(text, aSec->data, 512)) {
                 DiskLocation dl;
                 dl.setBlock(trackNum, trackNum % 2, sec);
                 Serial << "Found: '" + text + "' | " << "Block: " << dl.block << " Track: " << dl.track << " Side: " << dl.side << " Sector: "<< dl.sector << "\r\n";

@@ -76,7 +76,7 @@ class XCopyDisk
     void testDiskette(uint8_t retryCount);
     void scanEmptyBlocks(uint8_t retryCount);
     bool writeBlocksToFile(byte blocks[], uint8_t retryCount);
-    bool search(String needle, byte* haystack, size_t size);
+    bool searchMemory(String searchText, byte* memory, size_t memorySize);
     bool asciiSearch(String text, uint8_t retryCount);
 
     String ctxToMD5(MD5_CTX *ctx);
