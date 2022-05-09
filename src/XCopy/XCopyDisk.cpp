@@ -1142,6 +1142,7 @@ bool XCopyDisk::asciiSearch(String text, uint8_t retryCount) {
     for (int trackNum = 0; trackNum < 160; trackNum++) {
         if (_cancelOperation) {
             OperationCancelled(trackNum);
+            Log << "Canceled.\r\n";
             return false;
         }
 
