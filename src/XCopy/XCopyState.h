@@ -37,7 +37,8 @@ enum XCopyState {
   getSdFiles = 36,
   setTimeZone = 37,
   sendBlock = 38,
-  scanBlocks = 39
+  scanBlocks = 39,
+  asciiSearch = 40
 };
 
 #endif // XCOPYSTATE_H
