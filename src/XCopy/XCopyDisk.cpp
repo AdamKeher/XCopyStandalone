@@ -1132,6 +1132,7 @@ bool XCopyDisk::asciiSearch(String text, uint8_t retryCount) {
 
     _esp->resetDisk();
     _esp->setTab("diskview");
+    _esp->clearHighlightedBlocks();
     _graphics->drawDisk();
     _graphics->drawText(0, 0, ST7735_WHITE, "ASCII Search", true);
     _graphics->getTFT()->drawFastHLine(0, 85, _graphics->getTFT()->width(), ST7735_GREEN);
@@ -1158,6 +1159,7 @@ bool XCopyDisk::asciiSearch(String text, uint8_t retryCount) {
             if (searchMemory(text, aSec->data, 512)) {
                 DiskLocation dl;
                 dl.setBlock(trackNum, trackNum % 2, sec);
+                _esp->highlightBlock(dl.track, dl.side, dl.sector, true);
                 Serial << "Found: '" + text + "' | " << "Block: " << dl.block << " Track: " << dl.track << " Side: " << dl.side << " Sector: "<< dl.sector << "\r\n";
                 printAmigaSector(sec);
                 Serial << "Searching ...\r\n";

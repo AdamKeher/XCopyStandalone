@@ -254,6 +254,13 @@ function setEmptyBlock(track, side, sector, empty) {
   $('#empty_' + track + '_' + side + '_' + sector).addClass(empty ? 'empty' : 'full');
 }
 
+function highlightEmptyBlock(track, side, sector, highlight) {
+  $('#empty_' + track + '_' + side + '_' + sector).removeClass('copy');
+  if (highlight) {
+    $('#empty_' + track + '_' + side + '_' + sector).addClass('copy');
+  }
+}
+
 function blockToTrackSideSector(block) {
   track = Math.floor(block / 22);
   sector = block % 22;
@@ -301,7 +308,7 @@ function copyEmptyBlocks() {
   }
 }
 
-function clearEmptyBlocks() {
+function clearHighlightedBlocks() {
   $('.copy').each(function(index) {
     $('#' + this.id).removeClass('copy');
   });
