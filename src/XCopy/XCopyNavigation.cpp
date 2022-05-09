@@ -683,6 +683,15 @@ void XCopy::processState()
         }        
     }
 
+    if (_xcopyState == asciiSearch) {
+        if (_drawnOnce == false) {
+            _disk.asciiSearch(_searchText, _config->getRetryCount());
+            _searchText = "";
+            setBusy(false);
+            _drawnOnce = true;
+        }
+    }
+
     if (_xcopyState == about)
     {
         if (_drawnOnce == false)

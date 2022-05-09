@@ -322,6 +322,9 @@ void XCopy::cancelOperation()
     case scanBlocks:
         _disk.cancelOperation();
         break;
+    case asciiSearch:
+        _disk.cancelOperation();
+        break;
     default:
         break;
     }
@@ -446,9 +449,8 @@ void XCopy::onWebCommand(void* obj, const String command)
         // }
     }
     else if (command.startsWith("asciiSearch")) {
-        String _param = command.substring(command.indexOf(",") + 1);
-        Serial << "Ascii Search: " << _param << "\r\n";
-        xcopy->getDisk()->asciiSearch(_param, xcopy->getConfig()->getRetryCount());
+        xcopy->_searchText = command.substring(command.indexOf(",") + 1);
+        xcopy->startFunction(asciiSearch);
     }
     else if (command == "debuggingSerialPassThrough") {
             xcopy->startFunction(debuggingSerialPassThrough);

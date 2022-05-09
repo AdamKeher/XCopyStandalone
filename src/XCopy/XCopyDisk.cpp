@@ -1121,6 +1121,7 @@ bool XCopyDisk::searchMemory(String searchText, byte* memory, size_t memorySize)
 
 bool XCopyDisk::asciiSearch(String text, uint8_t retryCount) {
     Log << "Ascii Search: " + text + "\r\n";
+    _cancelOperation = false;
 
     // check if disk is present in floppy
     if (!diskChange()) {
@@ -1128,6 +1129,12 @@ bool XCopyDisk::asciiSearch(String text, uint8_t retryCount) {
         _audio->playBong(false);
         return false;
     }
+
+    _esp->resetDisk();
+    _esp->setTab("diskview");
+    _graphics->drawDisk();
+    _graphics->drawText(0, 0, ST7735_WHITE, "ASCII Search", true);
+    _graphics->getTFT()->drawFastHLine(0, 85, _graphics->getTFT()->width(), ST7735_GREEN);
 
     Serial << "\r\nSearch blocks:\r\nSearching ...\r\n";
 

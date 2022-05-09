@@ -67,6 +67,7 @@ public:
   #ifdef XCOPY_DEBUG
   void ramReport();
   #endif
+  String _searchText;
 
 private:
   TFT_ST7735 *_tft;
