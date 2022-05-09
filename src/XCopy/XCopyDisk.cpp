@@ -1120,6 +1120,8 @@ bool XCopyDisk::searchMemory(String searchText, byte* memory, size_t memorySize)
 }
 
 bool XCopyDisk::asciiSearch(String text, uint8_t retryCount) {
+    Log << "Ascii Search: " + text + "\r\n";
+
     // check if disk is present in floppy
     if (!diskChange()) {
         Serial << "No disk inserted" << "\r\n";
