@@ -1149,6 +1149,15 @@ bool XCopyDisk::writeFileToBlocks(String BinFileName, int startBlock, uint8_t re
         return false;
     }
 
+    _esp->setMode("Write File to Disk");
+    _esp->setStatus("Writing File");  
+    _esp->resetDisk();
+    _esp->setTab("diskcopy");
+    _graphics->clearScreen();
+    _graphics->drawDisk();
+    _graphics->drawText(0, 0, ST7735_WHITE, "Write File", true);
+    _graphics->getTFT()->drawFastHLine(0, 85, _graphics->getTFT()->width(), ST7735_GREEN);
+
     setAutoDensity(false);
     setMode(DD); // DD
     delay(5);

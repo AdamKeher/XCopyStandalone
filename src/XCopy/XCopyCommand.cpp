@@ -649,7 +649,9 @@ void XCopyCommandLine::doCommand(String command)
         String filename = param.substring(0, param.indexOf(" "));
         int startBlock = param.substring(param.indexOf(" ") + 1).toInt();
         
+        setBusy(true);
         _disk->writeFileToBlocks(filename, startBlock, _config->getRetryCount());
+        setBusy(false);
 
         return;        
     }
