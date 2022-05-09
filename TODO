@@ -31,7 +31,9 @@ v711.2022:
 v711.2022:
   ☐ Add auto copy feature for Giants
 v709.2022:    
-  ✔ Add new device image from Giants @done(22-05-03 01:19)
+  ✔ Add new device pin out image from Giants @done(22-05-03 01:19)
+  ✔ Add writebin / write binary file to disk command @done(22-05-09 14:25)
+    ☐ Add write verification
   ☐ Compiler warnings
     ✔ Clean up compiler warnings for esp8266 @done(22-04-25 12:56)
     ☐ Clean up compiler warnings for teensy
@@ -87,6 +89,8 @@ v709.2022:
     ✔ Update mode, status and diskname for all disk activities @done(22-05-04 14:24)
     ✔ Change javascript states from lowercase 'to' to capitalised 'To' i.e copyFlashtoDisk -> copyFlashToDisk to match teensy states @done(22-05-04 13:39)
     ☐ Add DiskView feature
+      ✔ Add ASCII search feature @done(22-05-09 14:24)
+      ✔ Add write to copy blocks to SD card feature @done(22-05-09 14:24)
       ✔ sendBlock command from WebUI @done(22-05-01 16:39)
       ✔ Display hex dump of track @done(22-05-01 16:39)
       ✔ Display ascii dump of track @done(22-05-01 16:39)
