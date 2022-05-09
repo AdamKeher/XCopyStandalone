@@ -35,10 +35,10 @@ public:
   int side = 0;
   int sector = 0;
 
-  void setBlock(int logicalTrack, int side, int sector) {
+  void setBlock(int logicalTrack, int sector) {
     this->logicalTrack = logicalTrack;
     this->track = logicalTrack / 2;
-    this->side = side;
+    this->side = logicalTrack % 2;
     this->sector = sector;
     block = (this->track * 22) + (this->side * 11) + this->sector;
   }
@@ -76,6 +76,7 @@ class XCopyDisk
     void testDiskette(uint8_t retryCount);
     void scanEmptyBlocks(uint8_t retryCount);
     bool writeBlocksToFile(byte blocks[], uint8_t retryCount);
+    bool writeFileToBlocks(String BinFileName, int startBlock, uint8_t retryCount);
     bool searchMemory(String searchText, byte* memory, size_t memorySize);
     bool asciiSearch(String text, uint8_t retryCount);
 

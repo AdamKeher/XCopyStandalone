@@ -32,71 +32,72 @@ void XCopyCommandLine::doCommand(String command)
 
     if (cmd == F("help") || cmd == F("?"))
     {
-        Log << F(".-----------------------------------------------------------------------------.\r\n");
-        Log << F("| X-Copy Standalone                                                           |\r\n");
-        Log << F("|-----------------------------------------------------------------------------|\r\n");
-        Log << F("| Command              | Description                                          |\r\n");
-        Log << F("|----------------------+------------------------------------------------------|\r\n");
-        Log << F("| help | ?             | this help                                            |\r\n");
-        Log << F("| version | ver        | XCopy version number                                 |\r\n");
-        Log << F("| clear | cls          | clear screen                                         |\r\n");
-        Log << F("|--------------------- +------------------------------------------------------|\r\n");
-        Log << F("| dir | ls <directory> | list files on SDCard                                 |\r\n");
-        Log << F("| cat <filename>       | writes contents of file to terminal                  |\r\n");
-        Log << F("| rm <filename>        | delete file from sdcard                              |\r\n");
-        Log << F("| md5 <filename|flash> | md5 has of file from sdcard or flash                 |\r\n");
-        Log << F("|--------------------- +------------------------------------------------------|\r\n");
-        Log << F("| writeadf <filename>  | write adf file to floppy disk                        |\r\n");
-        Log << F("| writeflash           | write flash memory to floppy disk                    |\r\n");
-        Log << F("| testdisk             | test floppy disk                                     |\r\n");
-        Log << F("| scanblocks           | scan floppy disk for free blocks                     |\r\n");
-        Log << F("| search <searchtext>  | search disk for case sensative ascii text            |\r\n");
-        Log << F("|--------------------- +------------------------------------------------------|\r\n");
-        Log << F("| boot                 | print boot block from disk                           |\r\n");
-        Log << F("| bootf                | print boot block from flash                          |\r\n");
-        Log << F("| hist                 | prints histogram of track in ascii                   |\r\n");
-        Log << F("| name                 | reads track 80 an returns disklabel in ascii         |\r\n");
-        Log << F("| print                | prints amiga track with header                       |\r\n");
-        Log << F("| read <n>             | read logical track #n from disk                      |\r\n");
-        Log << F("| readf <n>            | read logical track #n from flash                     |\r\n");
-        Log << F("| dump <filename>      | dump ADF file system information                     |\r\n");
-        Log << F("| weak                 | returns retry number for last read in binary format  |\r\n");
-        Log << F("|--------------------- +------------------------------------------------------|\r\n");
-        Log << F("| time                 | show current date & time                             |\r\n");
-        Log << F("| settime              | set date & time via NTP server                       |\r\n");
-        Log << F("| settime <epoch>      | set date & time with epoch value                     |\r\n");
-        Log << F("| timezone             | show current timezone                                |\r\n");
-        Log << F("| timezone <-12..12>   | set current time zone                                |\r\n");
-        Log << F("|--------------------- +------------------------------------------------------|\r\n");
-        Log << F("| connect <ssid> <pwd> | connect to wifi network                              |\r\n");
-        Log << F("| clearwifi            | clears wifi settings from configuration              |\r\n");        
-        Log << F("| status               | show wifi status                                     |\r\n");
-        Log << F("| ip                   | show wifi ip address                                 |\r\n");
-        Log << F("| mac                  | show wifi mac address                                |\r\n");
-        Log << F("| ssid                 | show wifi ssid                                       |\r\n");
-        Log << F("| websocket <msg>      | broadcast message to webclients                      |\r\n");
-        Log << F("| scan                 | scan wireless networks                               |\r\n");
-        Log << F("| pass                 | enter ESP passthrough mode                           |\r\n");
-        Log << F("|--------------------- +------------------------------------------------------|\r\n");
-        Log << F("| config               | show config settings                                 |\r\n");
-        Log << F("| mem                  | show memory stats                                    |\r\n");
-        Log << F("`----------------------'------------------------------------------------------'\r\n");
+        Log << F(".-----------------------------------------------------------------------------------.\r\n");
+        Log << F("| X-Copy Standalone                                                                 |\r\n");
+        Log << F("|-----------------------------------------------------------------------------------|\r\n");
+        Log << F("| Command                     | Description                                         |\r\n");
+        Log << F("|-----------------------------+-----------------------------------------------------|\r\n");
+        Log << F("| help | ?                    | this help                                           |\r\n");
+        Log << F("| version | ver               | XCopy version number                                |\r\n");
+        Log << F("| clear | cls                 | clear screen                                        |\r\n");
+        Log << F("|-----------------------------+-----------------------------------------------------|\r\n");
+        Log << F("| dir | ls <directory>        | list files on SDCard                                |\r\n");
+        Log << F("| cat <filename>              | writes contents of file to terminal                 |\r\n");
+        Log << F("| rm <filename>               | delete file from sdcard                             |\r\n");
+        Log << F("| md5 <filename|flash>        | md5 has of file from sdcard or flash                |\r\n");
+        Log << F("|-----------------------------+-----------------------------------------------------|\r\n");
+        Log << F("| writeadf <filename>         | write adf file to floppy disk                       |\r\n");
+        Log << F("| writeflash                  | write flash memory to floppy disk                   |\r\n");
+        Log << F("| writebin <filename> <block> | write binary file to disk starting at block         |\r\n");
+        Log << F("| testdisk                    | test floppy disk                                    |\r\n");
+        Log << F("| scanblocks                  | scan floppy disk for free blocks                    |\r\n");
+        Log << F("| search <searchtext>         | search disk for case sensative ascii text           |\r\n");
+        Log << F("|-----------------------------+-----------------------------------------------------|\r\n");
+        Log << F("| boot                        | print boot block from disk                          |\r\n");
+        Log << F("| bootf                       | print boot block from flash                         |\r\n");
+        Log << F("| hist                        | prints histogram of track in ascii                  |\r\n");
+        Log << F("| name                        | reads track 80 an returns disklabel in ascii        |\r\n");
+        Log << F("| print                       | prints amiga track with header                      |\r\n");
+        Log << F("| read <n>                    | read logical track #n from disk                     |\r\n");
+        Log << F("| readf <n>                   | read logical track #n from flash                    |\r\n");
+        Log << F("| dump <filename>             | dump ADF file system information                    |\r\n");
+        Log << F("| weak                        | returns retry number for last read in binary format |\r\n");
+        Log << F("|-----------------------------+-----------------------------------------------------|\r\n");
+        Log << F("| time                        | show current date & time                            |\r\n");
+        Log << F("| settime                     | set date & time via NTP server                      |\r\n");
+        Log << F("| settime <epoch>             | set date & time with epoch value                    |\r\n");
+        Log << F("| timezone                    | show current timezone                               |\r\n");
+        Log << F("| timezone <-12..12>          | set current time zone                               |\r\n");
+        Log << F("|-----------------------------+-----------------------------------------------------|\r\n");
+        Log << F("| connect <ssid> <pwd>        | connect to wifi network                             |\r\n");
+        Log << F("| clearwifi                   | clears wifi settings from configuration             |\r\n");        
+        Log << F("| status                      | show wifi status                                    |\r\n");
+        Log << F("| ip                          | show wifi ip address                                |\r\n");
+        Log << F("| mac                         | show wifi mac address                               |\r\n");
+        Log << F("| ssid                        | show wifi ssid                                      |\r\n");
+        Log << F("| websocket <msg>             | broadcast message to webclients                     |\r\n");
+        Log << F("| scan                        | scan wireless networks                              |\r\n");
+        Log << F("| pass                        | enter ESP passthrough mode                          |\r\n");
+        Log << F("|-----------------------------+-----------------------------------------------------|\r\n");
+        Log << F("| config                      | show config settings                                |\r\n");
+        Log << F("| mem                         | show memory stats                                   |\r\n");
+        Log << F("`-----------------------------'-----------------------------------------------------'\r\n");
         /*
-        Log << "| write <n>       | write logical track #n                                    |\r\n";
-        Log << "| testwrite <n>   | write logical track #n filled with 0-255                  |\r\n";
-        Log << "| get <n>         | reads track #n silent                                     |\r\n";
-        Log << "| put <n>         | writes track #n silent                                    |\r\n";
-        Log << "| init            | goto track 0                                              |\r\n";
-        Log << "| hist            | prints histogram of track in ascii                        |\r\n";
-        Log << "| index           | prints index signal timing in ascii                       |\r\n";
-        Log << "| dskcng          | returns disk change signal in binary                      |\r\n";
-        Log << "| dens            | returns density type of inserted disk in ascii            |\r\n";
-        Log << "| info            | prints state of various floppy signals in ascii           |\r\n";
-        Log << "| enc             | encodes data track into mfm                               |\r\n";
-        Log << "| dec             | decodes raw mfm into data track                           |\r\n";
-        Log << "| log             | prints logical track / tracknumber extracted from sectors |\r\n";
-        Log << "| dskcng          | returns disk change signal in binary                      |\r\n";
-        Log << "`-----------------'-----------------------------------------------------------'\r\n";
+        Log << F("| write <n>       | write logical track #n                                    |\r\n");
+        Log << F("| testwrite <n>   | write logical track #n filled with 0-255                  |\r\n");
+        Log << F("| get <n>         | reads track #n silent                                     |\r\n");
+        Log << F("| put <n>         | writes track #n silent                                    |\r\n");
+        Log << F("| init            | goto track 0                                              |\r\n");
+        Log << F("| hist            | prints histogram of track in ascii                        |\r\n");
+        Log << F("| index           | prints index signal timing in ascii                       |\r\n");
+        Log << F("| dskcng          | returns disk change signal in binary                      |\r\n");
+        Log << F("| dens            | returns density type of inserted disk in ascii            |\r\n");
+        Log << F("| info            | prints state of various floppy signals in ascii           |\r\n");
+        Log << F("| enc             | encodes data track into mfm                               |\r\n");
+        Log << F("| dec             | decodes raw mfm into data track                           |\r\n");
+        Log << F("| log             | prints logical track / tracknumber extracted from sectors |\r\n");
+        Log << F("| dskcng          | returns disk change signal in binary                      |\r\n");
+        Log << F("`-----------------'-----------------------------------------------------------'\r\n");
         */
         return;
     }
@@ -625,6 +626,30 @@ void XCopyCommandLine::doCommand(String command)
         }
 
         _callback(_caller, "asciiSearch," + param);
+
+        return;        
+    }
+
+    if (cmd == F("writebin")) {
+        if (!diskChange()) {
+            Log << "Disk not inserted into floppy\r\n";
+            return;
+        }
+
+        if (param == "") {
+            Log << F("missing file paramater\r\n");
+            return;
+        }
+
+        if (param.indexOf(" ") == -1) {
+            Log << F("missing block paramater\r\n");
+            return;
+        }
+
+        String filename = param.substring(0, param.indexOf(" "));
+        int startBlock = param.substring(param.indexOf(" ") + 1).toInt();
+        
+        _disk->writeFileToBlocks(filename, startBlock, _config->getRetryCount());
 
         return;        
     }

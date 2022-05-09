@@ -1101,6 +1101,136 @@ bool XCopyDisk::writeBlocksToFile(byte blocks[], uint8_t retryCount) {
     return true;
 }
 
+// TODO: write verify routine
+bool XCopyDisk::writeFileToBlocks(String BinFileName, int startBlock, uint8_t retryCount) {
+    if (!diskChange()) {
+        Log << "No Disk Inserted\r\n";
+        _audio->playBong(false);
+        return false;
+    }
+
+    if (getWriteProtect()) {
+        _graphics->drawText(0, 10, ST7735_RED, "Disk Write Protected");
+        Log << "Disk Write Protected";
+        _audio->playBong(false);
+        return false;
+    }
+
+    if (startBlock < 0 || startBlock > 1759) {
+        Log << "Invalid block number: " + String(startBlock) + "\r\n";
+        _audio->playBong(false);
+        return false;
+    }
+
+    XCopySDCard *_sdcard = new XCopySDCard();
+
+    if (!_sdcard->begin()) {
+        Log << "SD Init Failed\r\n";
+        _audio->playBong(false);
+        delete _sdcard;
+        return false;
+    }
+
+    if (!_sdcard->fileExists(BinFileName)) {
+        Log << "File: '" + BinFileName + "' does not exist.\r\n";
+        _audio->playBong(false);
+        delete _sdcard;
+        return false;
+    }
+
+    File BinFile;
+    BinFile = _sdcard->getSdFat().open(BinFileName.c_str(), FILE_READ);
+
+    if (!BinFile) {
+        Log << "SD File Open Failed\r\n";
+        _audio->playBong(false);
+        BinFile.close();
+        delete _sdcard;
+        return false;
+    }
+
+    setAutoDensity(false);
+    setMode(DD); // DD
+    delay(5);
+    setCurrentTrack(-1);
+
+    motorOn();
+    seek0();
+    delay(100);
+
+    DiskLocation startdl;
+    startdl.setBlock(startBlock);   
+    int blockCount = ceil(BinFile.size() / 512.0f);
+    DiskLocation enddl;
+    enddl.setBlock(startBlock + blockCount);
+
+    Log << "File Size: " + String(BinFile.size()) + "\r\nWriting " + String(blockCount) + " blocks\r\n";
+    Log << "----------------------------------------------------------\r\n";
+    Log << "Start | Block: " + String(startdl.block) + " Track: " + String(startdl.track) + " Side: " + String(startdl.side) + " Sector: " + String(startdl.sector) + "\r\n";
+    Log << "  End | Block: " + String(enddl.block) + " Track: " + String(enddl.track) + " Side: " + String(enddl.side) + " Sector: " + String(enddl.sector) + "\r\n";
+    Log << "----------------------------------------------------------\r\n";
+
+    for (int logicalTrack = startdl.logicalTrack; logicalTrack <= enddl.logicalTrack; logicalTrack++) {
+        int startSector = logicalTrack == startdl.logicalTrack ? startdl.sector : 0;
+        int endSector = logicalTrack == enddl.logicalTrack ? enddl.sector : 11;
+
+        // if writing a partial track, read existing track into track buffer
+        if (startSector != 0 || endSector || 11) {
+            int readResult = readDiskTrack(logicalTrack, false, retryCount);
+
+            // read error
+            if (readResult != 0) {
+                Log << "Read error reading existing track for partial write. Aborted.\r\n";
+                return false;
+            }
+        }
+
+        // console output
+        DiskLocation tempdl;
+        tempdl.setBlock(logicalTrack, startSector);
+        Log << "Write | Track: " + String(tempdl.track) + " Side: " + String(tempdl.side) + " Sectors: ";
+
+        // replace blocks in track buffer with blocks from binary file
+        for (int i = startSector; i < endSector; i++) {
+            Log << String(i) + (i != endSector - 1 ? "," : "" );
+            byte buffer[512];
+            memset(buffer, 0, 512);
+            int read = BinFile.read(buffer, sizeof(buffer));
+            if (read == 0) {
+                Log << "Error: 0 Bytes read\r\n";
+            }
+            struct Sector *aSec = (Sector *)&getTrack()[i].sector[0];
+            memcpy(aSec->data, buffer, 512);
+        }
+        Log << "\r\n";
+
+        // encode track
+        floppyTrackMfmEncode(logicalTrack, (byte *)getTrack(), getStream());
+
+        // write track
+        int result = writeDiskTrack(logicalTrack, retryCount);
+        // read error
+        if (result == -1) {
+            Log << "Error writing track. Aborted.\r\n";
+            return false;
+        }
+        if (result > 0) {
+            Log << "Writing track required " + String(result) + " retries.\r\n";
+            return false;
+        }
+
+        delay(100);
+    }
+
+
+    BinFile.close();
+    _audio->playBoing(false);
+
+    delete _sdcard;
+
+    return true;
+}
+
 bool XCopyDisk::searchMemory(String searchText, byte* memory, size_t memorySize) { 
     size_t sSize = searchText.length();
     size_t sIndex = 0;
@@ -1159,7 +1289,7 @@ bool XCopyDisk::asciiSearch(String text, uint8_t retryCount) {
 
             if (searchMemory(text, aSec->data, 512)) {
                 DiskLocation dl;
-                dl.setBlock(trackNum, trackNum % 2, sec);
+                dl.setBlock(trackNum, sec);
                 _esp->highlightBlock(dl.track, dl.side, dl.sector, true);
                 Serial << "Found: '" + text + "' | " << "Block: " << dl.block << " Track: " << dl.track << " Side: " << dl.side << " Sector: "<< dl.sector << "\r\n";
                 printAmigaSector(sec);
