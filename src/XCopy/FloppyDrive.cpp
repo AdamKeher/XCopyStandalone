@@ -1227,7 +1227,7 @@ int getTrackInfo()
 */
 void printAmigaSector(int index) {
     struct Sector *aSec = (Sector *)&track[index].sector;
-    String line = "Format Type: " + String(aSec->format_type) + " Track: " + String(aSec->track) + " Sector: " + String(aSec->sector) + " NumSec2Gap: " + String(aSec->toGap) + " Data Chk: ";
+    String line = "Format Type: " + String(aSec->format_type) + " Logical Track: " + String(aSec->track) + " Sector: " + String(aSec->sector) + " NumSec2Gap: " + String(aSec->toGap) + " Data Chk: ";
     line.append(String(aSec->data_chksum, HEX));
     line.append(" Header Chk: ");
     line.append(String(aSec->header_chksum, HEX));
