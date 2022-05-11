@@ -1240,7 +1240,7 @@ bool XCopyDisk::writeFileToBlocks(String BinFileName, int startBlock, uint8_t re
     return true;
 }
 
-bool XCopyDisk::searchMemory(String searchText, byte* memory, size_t memorySize) { 
+int XCopyDisk::searchMemory(String searchText, byte* memory, size_t memorySize) { 
     size_t sSize = searchText.length();
     size_t sIndex = 0;
     searchText = searchText.toLowerCase();
@@ -1250,12 +1250,62 @@ bool XCopyDisk::searchMemory(String searchText, byte* memory, size_t memorySize)
         byte m2 = (m1 >= 65 && m1 <= 90) ? m1 + 32 : m1;
 
         if (m1 == searchText[sIndex] || m2 == searchText[sIndex]) {
-            if (++sIndex == sSize) return true;
+            if (++sIndex == sSize) return (mIndex - sSize) + 1;
         } 
         else { sIndex = 0; }
     }
 
-    return false;
+    return -1;
+}
+
+void XCopyDisk::moduleInfo(int logicalTrack, int sec, int offset, uint8_t retryCount) {
+    DiskLocation dl;
+    dl.setBlock(logicalTrack, sec);
+    size_t header_size = 1080 + 4;
+    size_t size = 0;
+    byte modheader[header_size];
+    memset(&modheader, 0, header_size);
+
+    readDiskTrack(dl.logicalTrack, false, retryCount);
+    struct Sector *aSec = (Sector *)&getTrack()[dl.sector].sector;    
+    memcpy(&modheader[0], &aSec->data[offset], 512 - offset);
+    size += 512 - offset;
+
+    dl.setBlock(dl.block + 1);
+    if (dl.logicalTrack != logicalTrack) readDiskTrack(dl.logicalTrack, false, retryCount);
+    aSec = (Sector *)&getTrack()[dl.sector].sector;
+    memcpy(&modheader[size], &aSec->data[0], 512);
+    size += 512;
+
+    if (size < 1084) {
+        dl.setBlock(dl.block + 1);
+        if (dl.logicalTrack != logicalTrack) readDiskTrack(dl.logicalTrack, false, retryCount);
+        aSec = (Sector *)&getTrack()[dl.sector].sector;
+        memcpy(&modheader[size], &aSec->data[0], 1084 - size);
+    }
+
+    Serial << "Header Dump:\r\n";
+
+    for (int i=0; i<1084; i++) {
+        Serial << byte2char(modheader[i]);
+        if (i % 64 == 0 && i > 0) Serial << "\r\n";
+    }
+
+    char* modname = &modheader[0];
+    Serial << "\r\nMod Name: '" << modname << "'\r\n";
+
+    Serial << "Sample Names:\r\n";
+
+    offset = 20;
+    for (int i=0; i<31; i++) {
+        char* samplename = &modheader[offset];
+        uint16_t sample_size = 0;
+        byte *bss = (byte*)&sample_size;
+        bss[0] = modheader[offset + 23];
+        bss[1] = modheader[offset + 22];
+        Serial << "Sample #" << i + 1 << ": '" << samplename << "' Size: " << sample_size * 2 << "\r\n";
+        offset += 30;
+    }
 }
 
 bool XCopyDisk::asciiSearch(String text, uint8_t retryCount) {
@@ -1290,23 +1340,32 @@ bool XCopyDisk::asciiSearch(String text, uint8_t retryCount) {
         
         char track[3] = "";
         sprintf(track, "%02d", trackNum / 2);
-        // if (trackNum % 2 == 0) Log << "Track " + String(track) + " | ";
-        // Serial << "Side: " << trackNum % 2 << " | ";
 
         for (int sec = 0; sec < 11; sec++) {
             struct Sector *aSec = (Sector *)&getTrack()[sec].sector;
 
-            if (searchMemory(text, aSec->data, 512)) {
+            int offset = searchMemory(text, aSec->data, 512);
+            if (offset != -1) {
                 DiskLocation dl;
                 dl.setBlock(trackNum, sec);
                 _esp->highlightBlock(dl.track, dl.side, dl.sector, true);
-                Serial << "Found: '" + text + "' | " << "Block: " << dl.block << " Track: " << dl.track << " Side: " << dl.side << " Sector: "<< dl.sector << "\r\n";
+                Serial << "Found: '" + text + "' | " << "Block: " << dl.block << " Track: " << dl.track << " Side: " << dl.side << " Sector: "<< dl.sector << " Offset: 0x";                
+                Serial.print(offset, HEX);
+                Serial << "\r\n";
+
                 printAmigaSector(sec);
+
+                int mod_start = 1080 - offset;                                  // bytes before 0th bytes of track containing M.K.
+                int mod_startblock = dl.block - ceil(mod_start / 512.0f);       // block that MOD starts on
+                int offset = 512 - (mod_start % 512);                           // byte offset of block that MOD starts on
+                dl.setBlock(mod_startblock);
+                Serial << "Mod Location: | " << "Block: " << dl.block << " Logical Track: " << dl.logicalTrack <<  " Track: " << dl.track << " Side: " << dl.side << " Sector: "<< dl.sector << " Offset: 0x";                
+                Serial.print(offset, HEX);
+                Serial << "\r\n";
+                moduleInfo(dl.logicalTrack, dl.sector, offset, retryCount);
                 Serial << "Searching ...\r\n";
             };
         }
-
-        // if (trackNum % 2) Log << "\r\n";
 
         // draw flux
         analyseHist(true);

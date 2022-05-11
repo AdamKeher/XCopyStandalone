@@ -77,7 +77,9 @@ class XCopyDisk
     void scanEmptyBlocks(uint8_t retryCount);
     bool writeBlocksToFile(byte blocks[], uint8_t retryCount);
     bool writeFileToBlocks(String BinFileName, int startBlock, uint8_t retryCount);
-    bool searchMemory(String searchText, byte* memory, size_t memorySize);
+    
+    int searchMemory(String searchText, byte* memory, size_t memorySize);
+    void moduleInfo(int logicalTrack, int sec, int offset, uint8_t retryCount);
     bool asciiSearch(String text, uint8_t retryCount);
 
     String ctxToMD5(MD5_CTX *ctx);
