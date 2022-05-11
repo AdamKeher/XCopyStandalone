@@ -38,7 +38,8 @@ enum XCopyState {
   setTimeZone = 37,
   sendBlock = 38,
   scanBlocks = 39,
-  asciiSearch = 40
+  diskSearch = 40,
+  modSearch = 41
 };
 
 #endif // XCOPYSTATE_H

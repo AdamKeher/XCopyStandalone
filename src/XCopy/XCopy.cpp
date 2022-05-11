@@ -322,7 +322,10 @@ void XCopy::cancelOperation()
     case scanBlocks:
         _disk.cancelOperation();
         break;
-    case asciiSearch:
+    case diskSearch:
+        _disk.cancelOperation();
+        break;
+    case modSearch:
         _disk.cancelOperation();
         break;
     default:
@@ -450,7 +453,11 @@ void XCopy::onWebCommand(void* obj, const String command)
     }
     else if (command.startsWith("asciiSearch")) {
         xcopy->_searchText = command.substring(command.indexOf(",") + 1);
-        xcopy->startFunction(asciiSearch);
+        xcopy->startFunction(diskSearch);
+    }
+    else if (command.startsWith("modSearch")) {
+        xcopy->_searchText = command.substring(command.indexOf(",") + 1);
+        xcopy->startFunction(modSearch);
     }
     else if (command == "debuggingSerialPassThrough") {
             xcopy->startFunction(debuggingSerialPassThrough);

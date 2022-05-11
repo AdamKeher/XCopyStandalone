@@ -53,9 +53,13 @@ public:
   }
 };
 
+// typedef void (*SearchProcessor)(void* obj, DiskLocation dl, int offset, uint8_t retryCount);
+
 class XCopyDisk
 {
   public:
+    typedef void (*SearchProcessor)(String text, DiskLocation dl, int offset, uint8_t retryCount);
+
     XCopyDisk();
     void begin(XCopyGraphics *graphics, XCopyAudio *audio, XCopyESP8266 *esp);
   
@@ -79,8 +83,12 @@ class XCopyDisk
     bool writeFileToBlocks(String BinFileName, int startBlock, uint8_t retryCount);
     
     int searchMemory(String searchText, byte* memory, size_t memorySize);
+    static void processModule(String text, DiskLocation dl, int offset, uint8_t retryCount);
+    static void processAscii(String text, DiskLocation dl, int offset, uint8_t retryCount);
     void moduleInfo(int logicalTrack, int sec, int offset, uint8_t retryCount);
-    bool asciiSearch(String text, uint8_t retryCount);
+    bool search(String text, uint8_t retryCount, SearchProcessor processor);
+    bool asciiSearch(String text, uint8_t retryCount) { return search(text, retryCount, processAscii); }
+    bool modSearch(uint8_t retryCount) { return search("M.K.", retryCount, processModule); }
 
     String ctxToMD5(MD5_CTX *ctx);
     String adfToMD5(String ADFFileName);

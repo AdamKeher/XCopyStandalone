@@ -630,6 +630,17 @@ void XCopyCommandLine::doCommand(String command)
         return;        
     }
 
+    if (cmd == F("modsearch")) {
+        if (!diskChange()) {
+            Log << "Disk not inserted into floppy\r\n";
+            return;
+        }
+
+        _callback(_caller, "modSearch");
+
+        return;        
+    }
+
     if (cmd == F("writebin")) {
         if (!diskChange()) {
             Log << "Disk not inserted into floppy\r\n";
