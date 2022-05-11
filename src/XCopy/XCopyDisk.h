@@ -58,7 +58,7 @@ public:
 class XCopyDisk
 {
   public:
-    typedef void (*SearchProcessor)(XCopyDisk* obj, String text, DiskLocation dl, int offset, uint8_t retryCount);
+    typedef int (*SearchProcessor)(XCopyDisk* obj, String text, DiskLocation dl, int offset, uint8_t retryCount);
 
     XCopyDisk();
     void begin(XCopyGraphics *graphics, XCopyAudio *audio, XCopyESP8266 *esp);
@@ -83,12 +83,18 @@ class XCopyDisk
     bool writeFileToBlocks(String BinFileName, int startBlock, uint8_t retryCount);
     
     int searchMemory(String searchText, byte* memory, size_t memorySize);
-    static void processModule(XCopyDisk* obj, String text, DiskLocation dl, int offset, uint8_t retryCount);
-    static void processAscii(XCopyDisk* obj, String text, DiskLocation dl, int offset, uint8_t retryCount);
+    static int processModule(XCopyDisk* obj, String text, DiskLocation dl, int offset, uint8_t retryCount);
+    static int processAscii(XCopyDisk* obj, String text, DiskLocation dl, int offset, uint8_t retryCount);
     void moduleInfo(int logicalTrack, int sec, int offset, uint8_t retryCount);
     bool search(XCopyDisk* obj, String text, uint8_t retryCount, SearchProcessor processor);
-    bool asciiSearch(String text, uint8_t retryCount) { return search(this, text, retryCount, processAscii); }
-    bool modSearch(uint8_t retryCount) { return search(this, "M.K.", retryCount, processModule); }
+    bool asciiSearch(String text, uint8_t retryCount) { 
+      Log << "Ascii Search: '" + text + "'\r\n";
+      return search(this, text, retryCount, processAscii);
+    }
+    bool modSearch(uint8_t retryCount) { 
+      Log << "SoundTracker Module Search\r\n";
+      return search(this, "M.K.", retryCount, processModule); 
+    }
 
     String ctxToMD5(MD5_CTX *ctx);
     String adfToMD5(String ADFFileName);
@@ -98,9 +104,9 @@ class XCopyDisk
     void OperationCancelled(uint8_t trackNum = -1);
 
   private:
+    XCopyESP8266 *_esp;
     XCopyAudio *_audio;
     XCopyGraphics *_graphics;
-    XCopyESP8266 *_esp;
     volatile bool _cancelOperation = false;
 };
 

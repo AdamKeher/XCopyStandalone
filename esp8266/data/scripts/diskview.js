@@ -320,6 +320,10 @@ function asciiSearch() {
   }
 }
 
+function modSearch() {
+  connection.send('modSearch');
+}
+
 // function generateBlocks() {
 //   $('#emptyTable').empty();
 //   for (let track = 0; track < 80; track++) {

@@ -1258,7 +1258,7 @@ int XCopyDisk::searchMemory(String searchText, byte* memory, size_t memorySize) 
     return -1;
 }
 
-void XCopyDisk::processModule(XCopyDisk* obj, String text, DiskLocation dl, int offset, uint8_t retryCount) {
+int XCopyDisk::processModule(XCopyDisk* obj, String text, DiskLocation dl, int offset, uint8_t retryCount) {
     int mod_start = 1080 - offset;                                  // bytes before 0th bytes of track containing M.K.
     int mod_startblock = dl.block - ceil(mod_start / 512.0f);       // block that MOD starts on
     offset = 512 - (mod_start % 512);                           // byte offset of block that MOD starts on
@@ -1319,13 +1319,16 @@ void XCopyDisk::processModule(XCopyDisk* obj, String text, DiskLocation dl, int 
         Serial << "Sample #" << i + 1 << ": '" << samplename << "' Size: " << sample_size * 2 << "\r\n";
         offset += 30;
     }
+
+    return mod_startblock;
 }
 
-void XCopyDisk::processAscii(XCopyDisk* obj, String text, DiskLocation dl, int offset, uint8_t retryCount) {
+int XCopyDisk::processAscii(XCopyDisk* obj, String text, DiskLocation dl, int offset, uint8_t retryCount) {
     Serial << "Found: '" + text + "' | " << "Block: " << dl.block << " Track: " << dl.track << " Side: " << dl.side << " Sector: "<< dl.sector << " Offset: 0x";                
     Serial.print(offset, HEX);
     Serial << "\r\n";
     printAmigaSector(dl.sector);
+    return dl.block;
 }
 
 void XCopyDisk::moduleInfo(int logicalTrack, int sec, int offset, uint8_t retryCount) {
@@ -1379,7 +1382,6 @@ void XCopyDisk::moduleInfo(int logicalTrack, int sec, int offset, uint8_t retryC
 }
 
 bool XCopyDisk::search(XCopyDisk* obj, String text, uint8_t retryCount, SearchProcessor processor) {
-    Log << "Ascii Search: " + text + "\r\n";
     _cancelOperation = false;
 
     // check if disk is present in floppy
@@ -1418,19 +1420,9 @@ bool XCopyDisk::search(XCopyDisk* obj, String text, uint8_t retryCount, SearchPr
             if (offset != -1) {
                 DiskLocation dl;
                 dl.setBlock(trackNum, sec);
+                int block = processor(this, text, dl, offset, retryCount);
+                dl.setBlock(block);
                 _esp->highlightBlock(dl.track, dl.side, dl.sector, true);
-                
-                processor(this, text, dl, offset, retryCount);
-
-                // int mod_start = 1080 - offset;                                  // bytes before 0th bytes of track containing M.K.
-                // int mod_startblock = dl.block - ceil(mod_start / 512.0f);       // block that MOD starts on
-                // int offset = 512 - (mod_start % 512);                           // byte offset of block that MOD starts on
-                // dl.setBlock(mod_startblock);
-                // Serial << "Mod Location: | " << "Block: " << dl.block << " Logical Track: " << dl.logicalTrack <<  " Track: " << dl.track << " Side: " << dl.side << " Sector: "<< dl.sector << " Offset: 0x";                
-                // Serial.print(offset, HEX);
-                // Serial << "\r\n";
-                // moduleInfo(dl.logicalTrack, dl.sector, offset, retryCount);
-
                 Serial << "Searching ...\r\n";
             };
         }
