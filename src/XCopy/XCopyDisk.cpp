@@ -1258,7 +1258,7 @@ int XCopyDisk::searchMemory(String searchText, byte* memory, size_t memorySize) 
     return -1;
 }
 
-void XCopyDisk::processModule(String text, DiskLocation dl, int offset, uint8_t retryCount) {
+void XCopyDisk::processModule(XCopyDisk* obj, String text, DiskLocation dl, int offset, uint8_t retryCount) {
     int mod_start = 1080 - offset;                                  // bytes before 0th bytes of track containing M.K.
     int mod_startblock = dl.block - ceil(mod_start / 512.0f);       // block that MOD starts on
     offset = 512 - (mod_start % 512);                           // byte offset of block that MOD starts on
@@ -1272,9 +1272,7 @@ void XCopyDisk::processModule(String text, DiskLocation dl, int offset, uint8_t 
     byte modheader[header_size];
     memset(&modheader, 0, header_size);
 
-    gotoLogicTrack(dl.logicalTrack);
-    readTrack(true);
-    // readDiskTrack(dl.logicalTrack, false, retryCount);
+    obj->readDiskTrack(dl.logicalTrack, false, retryCount);
     struct Sector *aSec = (Sector *)&getTrack()[dl.sector].sector;    
     memcpy(&modheader[0], &aSec->data[offset], 512 - offset);
     size += 512 - offset;
@@ -1282,9 +1280,7 @@ void XCopyDisk::processModule(String text, DiskLocation dl, int offset, uint8_t 
     int currentTrack = dl.logicalTrack;
     dl.setBlock(dl.block + 1);
     if (dl.logicalTrack != currentTrack) {
-        gotoLogicTrack(dl.logicalTrack);
-        readTrack(true);
-        // readDiskTrack(dl.logicalTrack, false, retryCount);
+        obj->readDiskTrack(dl.logicalTrack, false, retryCount);
     }
     aSec = (Sector *)&getTrack()[dl.sector].sector;
     memcpy(&modheader[size], &aSec->data[0], 512);
@@ -1295,9 +1291,7 @@ void XCopyDisk::processModule(String text, DiskLocation dl, int offset, uint8_t 
         currentTrack = dl.logicalTrack;
         dl.setBlock(dl.block + 1);
         if (dl.logicalTrack != currentTrack) {
-            gotoLogicTrack(dl.logicalTrack);
-            readTrack(true);
-            // readDiskTrack(dl.logicalTrack, false, retryCount);
+            obj->readDiskTrack(dl.logicalTrack, false, retryCount);
         } 
         aSec = (Sector *)&getTrack()[dl.sector].sector;
         memcpy(&modheader[size], &aSec->data[0], 1084 - size);
@@ -1327,7 +1321,7 @@ void XCopyDisk::processModule(String text, DiskLocation dl, int offset, uint8_t 
     }
 }
 
-void XCopyDisk::processAscii(String text, DiskLocation dl, int offset, uint8_t retryCount) {
+void XCopyDisk::processAscii(XCopyDisk* obj, String text, DiskLocation dl, int offset, uint8_t retryCount) {
     Serial << "Found: '" + text + "' | " << "Block: " << dl.block << " Track: " << dl.track << " Side: " << dl.side << " Sector: "<< dl.sector << " Offset: 0x";                
     Serial.print(offset, HEX);
     Serial << "\r\n";
@@ -1384,7 +1378,7 @@ void XCopyDisk::moduleInfo(int logicalTrack, int sec, int offset, uint8_t retryC
     }
 }
 
-bool XCopyDisk::search(String text, uint8_t retryCount, SearchProcessor processor) {
+bool XCopyDisk::search(XCopyDisk* obj, String text, uint8_t retryCount, SearchProcessor processor) {
     Log << "Ascii Search: " + text + "\r\n";
     _cancelOperation = false;
 
@@ -1426,7 +1420,7 @@ bool XCopyDisk::search(String text, uint8_t retryCount, SearchProcessor processo
                 dl.setBlock(trackNum, sec);
                 _esp->highlightBlock(dl.track, dl.side, dl.sector, true);
                 
-                processor(text, dl, offset, retryCount);
+                processor(this, text, dl, offset, retryCount);
 
                 // int mod_start = 1080 - offset;                                  // bytes before 0th bytes of track containing M.K.
                 // int mod_startblock = dl.block - ceil(mod_start / 512.0f);       // block that MOD starts on
