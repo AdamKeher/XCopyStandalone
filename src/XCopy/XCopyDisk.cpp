@@ -1263,9 +1263,9 @@ int XCopyDisk::processModule(XCopyDisk* obj, String text, DiskLocation dl, int o
     int mod_startblock = dl.block - ceil(mod_start / 512.0f);       // block that MOD starts on
     offset = 512 - (mod_start % 512);                           // byte offset of block that MOD starts on
     dl.setBlock(mod_startblock);
-    Serial << "Mod Location: | " << "Block: " << dl.block << " Logical Track: " << dl.logicalTrack <<  " Track: " << dl.track << " Side: " << dl.side << " Sector: "<< dl.sector << " Offset: 0x";                
+    Log << "Mod Location: | Block: " + String(dl.block) + " Logical Track: " + String(dl.logicalTrack) +  " Track: " + String(dl.track) + " Side: " + String(dl.side) + " Sector: " + String(dl.sector) + " Offset: 0x";
     Serial.print(offset, HEX);
-    Serial << "\r\n";
+    Log << "\r\n";
 
     size_t header_size = 1080 + 4;
     size_t size = 0;
@@ -1297,7 +1297,7 @@ int XCopyDisk::processModule(XCopyDisk* obj, String text, DiskLocation dl, int o
         memcpy(&modheader[size], &aSec->data[0], 1084 - size);
     }
 
-    Serial << "Header Dump:\r\n";
+    Log << "Header Dump:\r\n";
 
     for (int i=0; i<1084; i++) {
         Serial << byte2char(modheader[i]);
@@ -1305,7 +1305,7 @@ int XCopyDisk::processModule(XCopyDisk* obj, String text, DiskLocation dl, int o
     }
 
     char* modname = &modheader[0];
-    Serial << "\r\nMod Name: '" << modname << "'\r\n";
+    Serial << "\r\nMod Name: '" + String(modname) + "'\r\n";
 
     Serial << "Sample Names:\r\n";
 
@@ -1316,7 +1316,7 @@ int XCopyDisk::processModule(XCopyDisk* obj, String text, DiskLocation dl, int o
         byte *bss = (byte*)&sample_size;
         bss[0] = modheader[offset + 23];
         bss[1] = modheader[offset + 22];
-        Serial << "Sample #" << i + 1 << ": '" << samplename << "' Size: " << sample_size * 2 << "\r\n";
+        Log << "Sample #" + String(i + 1) + ": '" + String(samplename) + "' Size: " + String(sample_size * 2) + "\r\n";
         offset += 30;
     }
 
@@ -1324,9 +1324,9 @@ int XCopyDisk::processModule(XCopyDisk* obj, String text, DiskLocation dl, int o
 }
 
 int XCopyDisk::processAscii(XCopyDisk* obj, String text, DiskLocation dl, int offset, uint8_t retryCount) {
-    Serial << "Found: '" + text + "' | " << "Block: " << dl.block << " Track: " << dl.track << " Side: " << dl.side << " Sector: "<< dl.sector << " Offset: 0x";                
+    Log << "Found: '" + text + "' | Block: " + String(dl.block) + " Logical Track: " + String(dl.logicalTrack) +  " Track: " + String(dl.track) + " Side: " + String(dl.side) + " Sector: " + String(dl.sector) + " Offset: 0x";
     Serial.print(offset, HEX);
-    Serial << "\r\n";
+    Log << "\r\n";
     printAmigaSector(dl.sector);
     return dl.block;
 }
