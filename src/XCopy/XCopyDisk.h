@@ -27,6 +27,12 @@ enum ADFFileSource
   _sdCard = 1
 };
 
+struct SearchResult {
+  int block;
+  int offset;
+  int size;
+};
+
 class DiskLocation {
 public:
   int block = 0;
@@ -58,7 +64,7 @@ public:
 class XCopyDisk
 {
   public:
-    typedef int (*SearchProcessor)(XCopyDisk* obj, String text, DiskLocation dl, int offset, uint8_t retryCount);
+    typedef SearchResult (*SearchProcessor)(XCopyDisk* obj, String text, DiskLocation dl, int offset, uint8_t retryCount);
 
     XCopyDisk();
     void begin(XCopyGraphics *graphics, XCopyAudio *audio, XCopyESP8266 *esp);
@@ -83,8 +89,8 @@ class XCopyDisk
     bool writeFileToBlocks(String BinFileName, int startBlock, uint8_t retryCount);
     
     int searchMemory(String searchText, byte* memory, size_t memorySize);
-    static int processModule(XCopyDisk* obj, String text, DiskLocation dl, int offset, uint8_t retryCount);
-    static int processAscii(XCopyDisk* obj, String text, DiskLocation dl, int offset, uint8_t retryCount);
+    static SearchResult processModule(XCopyDisk* obj, String text, DiskLocation dl, int offset, uint8_t retryCount);
+    static SearchResult processAscii(XCopyDisk* obj, String text, DiskLocation dl, int offset, uint8_t retryCount);
     void moduleInfo(int logicalTrack, int sec, int offset, uint8_t retryCount);
     bool search(XCopyDisk* obj, String text, uint8_t retryCount, SearchProcessor processor);
     bool asciiSearch(String text, uint8_t retryCount) { 

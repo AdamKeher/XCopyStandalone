@@ -31,7 +31,7 @@ public:
   void log(String text) { sendWebSocket("log," + text); };
   bool updateWebSdCardFiles(String directory);
   void setTab(String tab) { sendWebSocket("setTab," + tab); }
-  void highlightBlock(int track, int side, int sector, boolean highlight) { sendWebSocket("highlightEmptyBlock," + String(track) + "," + String (side) + "," + String(sector) + "," + (highlight ? "true" : "false")); }
+  void highlightBlock(int track, int side, int sector, int count, boolean highlight) { sendWebSocket("highlightEmptyBlock," + String(track) + "," + String (side) + "," + String(sector) + "," + count + "," + (highlight ? "true" : "false")); }
   void clearHighlightedBlocks() { sendWebSocket("clearHighlightedBlocks"); }
 
   String Version();

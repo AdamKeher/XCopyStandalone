@@ -1258,10 +1258,15 @@ int XCopyDisk::searchMemory(String searchText, byte* memory, size_t memorySize) 
     return -1;
 }
 
-int XCopyDisk::processModule(XCopyDisk* obj, String text, DiskLocation dl, int offset, uint8_t retryCount) {
+SearchResult XCopyDisk::processModule(XCopyDisk* obj, String text, DiskLocation dl, int offset, uint8_t retryCount) {
     int mod_start = 1080 - offset;                                  // bytes before 0th bytes of track containing M.K.
     int mod_startblock = dl.block - ceil(mod_start / 512.0f);       // block that MOD starts on
     offset = 512 - (mod_start % 512);                           // byte offset of block that MOD starts on
+
+    SearchResult sr;
+    sr.block = mod_startblock;
+    sr.offset = offset;
+
     dl.setBlock(mod_startblock);
     Log << "Mod Location: | Block: " + String(dl.block) + " Logical Track: " + String(dl.logicalTrack) +  " Track: " + String(dl.track) + " Side: " + String(dl.side) + " Sector: " + String(dl.sector) + " Offset: 0x";
     Serial.print(offset, HEX);
@@ -1390,15 +1395,19 @@ int XCopyDisk::processModule(XCopyDisk* obj, String text, DiskLocation dl, int o
     Log << "| File Size: " + String(f_filesize) + "                                                           |\r\n";
     Log << "+-----------------------------------------------------------------------------+\r\n\r\n";
 
-    return mod_startblock;
+    sr.size = modFileSize;
+    return sr;
 }
 
-int XCopyDisk::processAscii(XCopyDisk* obj, String text, DiskLocation dl, int offset, uint8_t retryCount) {
+SearchResult XCopyDisk::processAscii(XCopyDisk* obj, String text, DiskLocation dl, int offset, uint8_t retryCount) {
     Log << "Found: '" + text + "' | Block: " + String(dl.block) + " Logical Track: " + String(dl.logicalTrack) +  " Track: " + String(dl.track) + " Side: " + String(dl.side) + " Sector: " + String(dl.sector) + " Offset: 0x";
     Serial.print(offset, HEX);
     Log << "\r\n";
     printAmigaSector(dl.sector);
-    return dl.block;
+    SearchResult sr;
+    sr.block = dl.block;
+    sr.offset = offset;
+    return sr;
 }
 
 void XCopyDisk::moduleInfo(int logicalTrack, int sec, int offset, uint8_t retryCount) {
@@ -1490,9 +1499,10 @@ bool XCopyDisk::search(XCopyDisk* obj, String text, uint8_t retryCount, SearchPr
             if (offset != -1) {
                 DiskLocation dl;
                 dl.setBlock(trackNum, sec);
-                int block = processor(this, text, dl, offset, retryCount);
-                dl.setBlock(block);
-                _esp->highlightBlock(dl.track, dl.side, dl.sector, true);
+                SearchResult sr = processor(this, text, dl, offset, retryCount);                
+                dl.setBlock(sr.block);
+                _esp->highlightBlock(dl.track, dl.side, dl.sector, sr.size == 0 ? 1 : ceil(sr.size / 512.0f), true);
+                // Serial << "Block: " << sr.block << " Size: " << sr.size << " Offset: " << sr.offset << "\r\n";
                 Serial << "Searching ...\r\n";
             };
         }

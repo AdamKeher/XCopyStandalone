@@ -254,10 +254,18 @@ function setEmptyBlock(track, side, sector, empty) {
   $('#empty_' + track + '_' + side + '_' + sector).addClass(empty ? 'empty' : 'full');
 }
 
-function highlightEmptyBlock(track, side, sector, highlight) {
-  $('#empty_' + track + '_' + side + '_' + sector).removeClass('copy');
-  if (highlight) {
-    $('#empty_' + track + '_' + side + '_' + sector).addClass('copy');
+function highlightEmptyBlock(track, side, sector, count, highlight) {
+  block = trackToBlock(track, side, sector);
+  for (let index = 0; index < count; index++) {
+    result = blockToTrackSideSector(block);
+    track = result[0];
+    side = result[1];
+    sector = result[2];
+    $('#empty_' + track + '_' + side + '_' + sector).removeClass('copy');
+    if (highlight) {
+      $('#empty_' + track + '_' + side + '_' + sector).addClass('copy');
+    }
+    block++;
   }
 }
 
@@ -282,9 +290,9 @@ function blockIdToBlock(blockid) {
 }
 
 function trackToBlock(track, side, sector) {
-  track = parseInt(args[0]);
-  side = parseInt(args[1]);
-  sector = parseInt(args[2]);
+  track = parseInt(track);
+  side = parseInt(side);
+  sector = parseInt(sector);
   return (track * 22) + (side * 11) + sector;
 }
 
