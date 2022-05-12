@@ -146,7 +146,7 @@ public:
         else
             pattern_line.append("  .  ");
     }
-    Log << "                                                 |\r\n";
+    Log << pattern_line.append("                                                 |\r\n");
 
     Log << "+-----------------------------------------------------------------------------+\r\n";
     Log << "| Signature: '" + signature + "'                                                           |\r\n";
