@@ -19,6 +19,7 @@
 #include "XCopyState.h"
 #include "XCopyESP8266.h"
 #include "XCopySDCard.h"
+#include "XCopyModFile.h"
 #include "MD5.h"
 
 enum ADFFileSource
@@ -59,8 +60,6 @@ public:
   }
 };
 
-// typedef void (*SearchProcessor)(void* obj, DiskLocation dl, int offset, uint8_t retryCount);
-
 class XCopyDisk
 {
   public:
@@ -89,18 +88,20 @@ class XCopyDisk
     bool writeFileToBlocks(String BinFileName, int startBlock, uint8_t retryCount);
     
     int searchMemory(String searchText, byte* memory, size_t memorySize);
-    static SearchResult processModule(XCopyDisk* obj, String text, DiskLocation dl, int offset, uint8_t retryCount);
+    void loadModuleHeader(DiskLocation dl, ModInfo* modinfo, int offset, uint8_t retryCount);
+    static SearchResult processModule(XCopyDisk* obj, String text, DiskLocation dl, int offset, uint8_t retryCount);    
     static SearchResult processAscii(XCopyDisk* obj, String text, DiskLocation dl, int offset, uint8_t retryCount);
-    void moduleInfo(int logicalTrack, int sec, int offset, uint8_t retryCount);
     bool search(XCopyDisk* obj, String text, uint8_t retryCount, SearchProcessor processor);
     bool asciiSearch(String text, uint8_t retryCount) { 
       Log << "Ascii Search: '" + text + "'\r\n";
       return search(this, text, retryCount, processAscii);
     }
     bool modSearch(uint8_t retryCount) { 
-      Log << "SoundTracker Module Search\r\n";
+      Log << "Tracker Module Search\r\n";
+      // TODO: Add more magic strings for different trackers
       return search(this, "M.K.", retryCount, processModule); 
     }
+    bool modRip(int block, int offset);
 
     String ctxToMD5(MD5_CTX *ctx);
     String adfToMD5(String ADFFileName);

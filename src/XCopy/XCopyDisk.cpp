@@ -1258,37 +1258,20 @@ int XCopyDisk::searchMemory(String searchText, byte* memory, size_t memorySize) 
     return -1;
 }
 
-SearchResult XCopyDisk::processModule(XCopyDisk* obj, String text, DiskLocation dl, int offset, uint8_t retryCount) {
-    int mod_start = 1080 - offset;                                  // bytes before 0th bytes of track containing M.K.
-    int mod_startblock = dl.block - ceil(mod_start / 512.0f);       // block that MOD starts on
-    offset = 512 - (mod_start % 512);                           // byte offset of block that MOD starts on
-
-    SearchResult sr;
-    sr.block = mod_startblock;
-    sr.offset = offset;
-
-    dl.setBlock(mod_startblock);
-    Log << "Mod Location: | Block: " + String(dl.block) + " Logical Track: " + String(dl.logicalTrack) +  " Track: " + String(dl.track) + " Side: " + String(dl.side) + " Sector: " + String(dl.sector) + " Offset: 0x";
-    Serial.print(offset, HEX);
-    Log << "\r\n";
-
-    size_t header_size = 1080 + 4;
-    size_t size = 0;
-    byte modheader[header_size];
-    memset(&modheader, 0, header_size);
-
-    obj->readDiskTrack(dl.logicalTrack, false, retryCount);
+void XCopyDisk::loadModuleHeader(DiskLocation dl, ModInfo* modinfo, int offset, uint8_t retryCount) {
+    readDiskTrack(dl.logicalTrack, false, retryCount);
     struct Sector *aSec = (Sector *)&getTrack()[dl.sector].sector;    
-    memcpy(&modheader[0], &aSec->data[offset], 512 - offset);
-    size += 512 - offset;
+    memcpy(&modinfo->header[0], &aSec->data[offset], 512 - offset);
+    size_t size = 512 - offset;
 
     int currentTrack = dl.logicalTrack;
     dl.setBlock(dl.block + 1);
     if (dl.logicalTrack != currentTrack) {
-        obj->readDiskTrack(dl.logicalTrack, false, retryCount);
+        readDiskTrack(dl.logicalTrack, false, retryCount);
     }
     aSec = (Sector *)&getTrack()[dl.sector].sector;
-    memcpy(&modheader[size], &aSec->data[0], 512);
+    memcpy(&modinfo->header[size], &aSec->data[0], 512);
+
     size += 512;
     currentTrack = dl.logicalTrack;
 
@@ -1296,168 +1279,60 @@ SearchResult XCopyDisk::processModule(XCopyDisk* obj, String text, DiskLocation 
         currentTrack = dl.logicalTrack;
         dl.setBlock(dl.block + 1);
         if (dl.logicalTrack != currentTrack) {
-            obj->readDiskTrack(dl.logicalTrack, false, retryCount);
+            readDiskTrack(dl.logicalTrack, false, retryCount);
         } 
         aSec = (Sector *)&getTrack()[dl.sector].sector;
-        memcpy(&modheader[size], &aSec->data[0], 1084 - size);
+        memcpy(&modinfo->header[size], &aSec->data[0], 1084 - size);
     }
+}
 
-    char* modname = &modheader[0];
-    char f_modname[21];
-    sprintf(f_modname, "%-20s", modname);
+SearchResult XCopyDisk::processModule(XCopyDisk* obj, String text, DiskLocation dl, int offset, uint8_t retryCount) {
+    // the MOD file is found by searching for some magic bytes such as M.K
+    // these bytes are at an offset of 1080 bytes in the header.
+    // this means the module actually starts a few blocks before the block
+    // the magic bytes were found on.
+    // https://www.eblong.com/zarf/blorb/mod-spec.txt
 
-    Log << "\r\n";
-    Log << ".-----------------------------------------------------------------------------.\r\n";
-    Log << "| Mod Name: " + String(f_modname) + "                                              |\r\n";
-    Log << "+-----------------------------------------------------------------------------+\r\n";   
-    Log << "| Header Dump                                                                 |\r\n";
-    Log << "+-----------------------------------------------------------------------------+\r\n";
-    for (int i=0; i<1084; i++) {
-        if (i % 64 == 0) Serial << "| ";
-        Serial << byte2char(modheader[i]);
-        if ((i + 1) % 64 == 0) Serial << "            |\r\n";
-    }
-    Log << "                |\r\n";
+    int remainingBytes = 1080 - offset;                                  // remaining bytes of header on other blocks / bytes before 0th bytes of track containing M.K.
+    int modStartBlock = dl.block - ceil(remainingBytes / 512.0f);        // block that MOD starts on
+    int modStartBlockOffset = 512 - (remainingBytes % 512);              // byte offset of block that MOD starts on
 
-    Log << "+-----------------------------------------------------------------------------+\r\n";
-    Log << "| Samples:                                                                    |\r\n";
-    offset = 20;
-    int modFileSize = 1084;
-    String sample_line;
+    // display disk location of module
 
-    for (int i=0; i<31; i++) {
-        char* samplename = &modheader[offset];
-    
-        uint16_t sample_size = 0;
-        byte *bss = (byte*)&sample_size;
-        bss[0] = modheader[offset + 23];
-        bss[1] = modheader[offset + 22];
+    dl.setBlock(modStartBlock);
+    Log << "Mod Location: | Block: " + String(dl.block) + " Logical Track: " + String(dl.logicalTrack) +  " Track: " + String(dl.track) + " Side: " + String(dl.side) + " Sector: " + String(dl.sector) + " Offset: 0x";
+    char f_offset[5];
+    sprintf(f_offset, "%04x", modStartBlockOffset);
+    Log << String(f_offset) + "\r\n";
 
-        char f_samplename[23];
-        sprintf(f_samplename, "%-22s", samplename);
-        char f_samplenumber[3];
-        sprintf(f_samplenumber, "%02d", i + 1);
-        char f_temp[7];
-        char f_samplesize[7];
-        sprintf(f_temp, "%d", sample_size * 2);
-        sprintf(f_samplesize, "%6s", f_temp);
+    // load mod header from disk into modinfo header
 
-        if (i % 2 == 0)
-            Log << "| #" + String(f_samplenumber) + " '" + String(f_samplename) + "' " + String(f_samplesize);
-        else
-            Log << "     #" + String(f_samplenumber) + " '" + String(f_samplename) + "' " + String(f_samplesize) + " |\r\n";
+    ModInfo modinfo;
+    obj->loadModuleHeader(dl, &modinfo, modStartBlockOffset, retryCount);
 
-        modFileSize += sample_size * 2;
-        offset += 30;
-    }
-    Log << "     #-- '                      '      - |\r\n";
-    Log << "+-----------------------------------------------------------------------------+\r\n";
+    // process and print module info
 
-    char f_songlength[4];
-    int songlength = modheader[offset];
-    sprintf(f_songlength, "%-3d", songlength);
-    Log << "| Song Length: " + String(f_songlength) + "                                                            |\r\n";
-    
-    Log << "| Song Patterns:                                                              |\r\n";   
-    offset += 2;
+    modinfo.Process();
+    modinfo.Print();    
 
-    int highestPattern = 0;
-    for (int i=0; i<128; i++) {
-        if (i % 6 == 0) Log << "|  ";
-        char pattern[10];
-        if (modheader[offset] > highestPattern) highestPattern = modheader[offset];
-        if (i + 1 <= songlength)
-            sprintf(pattern, "%3d: %03d", i + 1, modheader[offset]);
-        else
-            sprintf(pattern, "%3d: ---", i + 1);
-        offset++;
-        Log << String(pattern);
-        if ((i + 1) % 6 == 0) 
-            Log << "  |\r\n";
-        else
-            Log << "  .  ";
-    }
-    Log << "                                                 |\r\n";
-    modFileSize += ((highestPattern + 1) * 1024);
-
-    Log << "+-----------------------------------------------------------------------------+\r\n";
-    Log << "| Signature: '";
-    Log << byte2char(modheader[offset++]);
-    Log << byte2char(modheader[offset++]);
-    Log << byte2char(modheader[offset++]); 
-    Log << byte2char(modheader[offset++]);
-    Log << "'                                                           |\r\n";
-
-    char temp[8];
-    char f_filesize[8];
-    sprintf(temp, "%d", modFileSize);
-    sprintf(f_filesize, "%6s", temp);
-    Log << "| File Size: " + String(f_filesize) + "                                                           |\r\n";
-    Log << "+-----------------------------------------------------------------------------+\r\n\r\n";
-
-    sr.size = modFileSize;
+    SearchResult sr;
+    sr.block = modStartBlock;
+    sr.offset = modStartBlockOffset;
+    sr.size = modinfo.filesize;
     return sr;
 }
 
 SearchResult XCopyDisk::processAscii(XCopyDisk* obj, String text, DiskLocation dl, int offset, uint8_t retryCount) {
     Log << "Found: '" + text + "' | Block: " + String(dl.block) + " Logical Track: " + String(dl.logicalTrack) +  " Track: " + String(dl.track) + " Side: " + String(dl.side) + " Sector: " + String(dl.sector) + " Offset: 0x";
-    Serial.print(offset, HEX);
+    char f_offset[5];
+    sprintf(f_offset, "%04x", offset);
+    Log << String(f_offset) + "\r\n";
     Log << "\r\n";
     printAmigaSector(dl.sector);
     SearchResult sr;
     sr.block = dl.block;
     sr.offset = offset;
     return sr;
-}
-
-void XCopyDisk::moduleInfo(int logicalTrack, int sec, int offset, uint8_t retryCount) {
-    DiskLocation dl;
-    dl.setBlock(logicalTrack, sec);
-    size_t header_size = 1080 + 4;
-    size_t size = 0;
-    byte modheader[header_size];
-    memset(&modheader, 0, header_size);
-
-    readDiskTrack(dl.logicalTrack, false, retryCount);
-    struct Sector *aSec = (Sector *)&getTrack()[dl.sector].sector;    
-    memcpy(&modheader[0], &aSec->data[offset], 512 - offset);
-    size += 512 - offset;
-
-    dl.setBlock(dl.block + 1);
-    if (dl.logicalTrack != logicalTrack) readDiskTrack(dl.logicalTrack, false, retryCount);
-    aSec = (Sector *)&getTrack()[dl.sector].sector;
-    memcpy(&modheader[size], &aSec->data[0], 512);
-    size += 512;
-
-    if (size < 1084) {
-        dl.setBlock(dl.block + 1);
-        if (dl.logicalTrack != logicalTrack) readDiskTrack(dl.logicalTrack, false, retryCount);
-        aSec = (Sector *)&getTrack()[dl.sector].sector;
-        memcpy(&modheader[size], &aSec->data[0], 1084 - size);
-    }
-
-    Serial << "Header Dump:\r\n";
-
-    for (int i=0; i<1084; i++) {
-        Serial << byte2char(modheader[i]);
-        if (i % 64 == 0 && i > 0) Serial << "\r\n";
-    }
-
-    char* modname = &modheader[0];
-    Serial << "\r\nMod Name: '" << modname << "'\r\n";
-
-    Serial << "Sample Names:\r\n";
-
-    offset = 20;
-    for (int i=0; i<31; i++) {
-        char* samplename = &modheader[offset];
-        uint16_t sample_size = 0;
-        byte *bss = (byte*)&sample_size;
-        bss[0] = modheader[offset + 23];
-        bss[1] = modheader[offset + 22];
-        Serial << "Sample #" << i + 1 << ": '" << samplename << "' Size: " << sample_size * 2 << "\r\n";
-        offset += 30;
-    }
 }
 
 bool XCopyDisk::search(XCopyDisk* obj, String text, uint8_t retryCount, SearchProcessor processor) {
@@ -1517,6 +1392,10 @@ bool XCopyDisk::search(XCopyDisk* obj, String text, uint8_t retryCount, SearchPr
     return true;
 }
 //
+
+bool modRip(int block, int offset) {
+
+}
 
 String XCopyDisk::ctxToMD5(MD5_CTX *ctx) {
     String sMD5 = "";
