@@ -119,7 +119,7 @@ void dumpSector(int index);
 int loadSector(int index);
 void downloadTrack();
 void uploadTrack();
-char byte2char(byte c);
+char byte2char(byte c, char delim = '.');
 void print_binary(int v, int num_places);
 void fillSector(int sect);
 unsigned long oddLong(unsigned long odd);
