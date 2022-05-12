@@ -1297,28 +1297,98 @@ int XCopyDisk::processModule(XCopyDisk* obj, String text, DiskLocation dl, int o
         memcpy(&modheader[size], &aSec->data[0], 1084 - size);
     }
 
-    Log << "Header Dump:\r\n";
-
-    for (int i=0; i<1084; i++) {
-        Serial << byte2char(modheader[i]);
-        if (i % 64 == 0 && i > 0) Serial << "\r\n";
-    }
-
     char* modname = &modheader[0];
-    Serial << "\r\nMod Name: '" + String(modname) + "'\r\n";
+    char f_modname[21];
+    sprintf(f_modname, "%-20s", modname);
 
-    Serial << "Sample Names:\r\n";
+    Log << "\r\n";
+    Log << ".-----------------------------------------------------------------------------.\r\n";
+    Log << "| Mod Name: " + String(f_modname) + "                                              |\r\n";
+    Log << "+-----------------------------------------------------------------------------+\r\n";   
+    Log << "| Header Dump                                                                 |\r\n";
+    Log << "+-----------------------------------------------------------------------------+\r\n";
+    for (int i=0; i<1084; i++) {
+        if (i % 64 == 0) Serial << "| ";
+        Serial << byte2char(modheader[i]);
+        if ((i + 1) % 64 == 0) Serial << "            |\r\n";
+    }
+    Log << "                |\r\n";
 
+    Log << "+-----------------------------------------------------------------------------+\r\n";
+    Log << "| Samples:                                                                    |\r\n";
     offset = 20;
+    int modFileSize = 1084;
+    String sample_line;
+
     for (int i=0; i<31; i++) {
         char* samplename = &modheader[offset];
+    
         uint16_t sample_size = 0;
         byte *bss = (byte*)&sample_size;
         bss[0] = modheader[offset + 23];
         bss[1] = modheader[offset + 22];
-        Log << "Sample #" + String(i + 1) + ": '" + String(samplename) + "' Size: " + String(sample_size * 2) + "\r\n";
+
+        char f_samplename[23];
+        sprintf(f_samplename, "%-22s", samplename);
+        char f_samplenumber[3];
+        sprintf(f_samplenumber, "%02d", i + 1);
+        char f_temp[7];
+        char f_samplesize[7];
+        sprintf(f_temp, "%d", sample_size * 2);
+        sprintf(f_samplesize, "%6s", f_temp);
+
+        if (i % 2 == 0)
+            Log << "| #" + String(f_samplenumber) + " '" + String(f_samplename) + "' " + String(f_samplesize);
+        else
+            Log << "     #" + String(f_samplenumber) + " '" + String(f_samplename) + "' " + String(f_samplesize) + " |\r\n";
+
+        modFileSize += sample_size * 2;
         offset += 30;
     }
+    Log << "     #-- '                      '      - |\r\n";
+    Log << "+-----------------------------------------------------------------------------+\r\n";
+
+    char f_songlength[4];
+    int songlength = modheader[offset];
+    sprintf(f_songlength, "%-3d", songlength);
+    Log << "| Song Length: " + String(f_songlength) + "                                                            |\r\n";
+    
+    Log << "| Song Patterns:                                                              |\r\n";   
+    offset += 2;
+
+    int highestPattern = 0;
+    for (int i=0; i<128; i++) {
+        if (i % 6 == 0) Log << "|  ";
+        char pattern[10];
+        if (modheader[offset] > highestPattern) highestPattern = modheader[offset];
+        if (i + 1 <= songlength)
+            sprintf(pattern, "%3d: %03d", i + 1, modheader[offset]);
+        else
+            sprintf(pattern, "%3d: ---", i + 1);
+        offset++;
+        Log << String(pattern);
+        if ((i + 1) % 6 == 0) 
+            Log << "  |\r\n";
+        else
+            Log << "  .  ";
+    }
+    Log << "                                                 |\r\n";
+    modFileSize += ((highestPattern + 1) * 1024);
+
+    Log << "+-----------------------------------------------------------------------------+\r\n";
+    Log << "| Signature: '";
+    Log << byte2char(modheader[offset++]);
+    Log << byte2char(modheader[offset++]);
+    Log << byte2char(modheader[offset++]); 
+    Log << byte2char(modheader[offset++]);
+    Log << "'                                                           |\r\n";
+
+    char temp[8];
+    char f_filesize[8];
+    sprintf(temp, "%d", modFileSize);
+    sprintf(f_filesize, "%6s", temp);
+    Log << "| File Size: " + String(f_filesize) + "                                                           |\r\n";
+    Log << "+-----------------------------------------------------------------------------+\r\n\r\n";
 
     return mod_startblock;
 }
