@@ -59,8 +59,6 @@ void XCopyDisk::dateTime(uint16_t *date, uint16_t *time)
     *time = FAT_TIME(hour(), minute(), second());
 }
 
-//
-
 void XCopyDisk::drawFlux(uint8_t trackNum, uint8_t scale, uint8_t yoffset, bool updateWebUI)
 {
     // web interface
@@ -184,8 +182,6 @@ void XCopyDisk::OperationCancelled(uint8_t trackNum) {
     _audio->playBong(false);
 }
 
-//
-
 int XCopyDisk::readDiskTrack(uint8_t trackNum, bool verify, uint8_t retryCount, bool silent) {
     // white = seek
     // green = OK - no retries
@@ -281,8 +277,6 @@ int XCopyDisk::writeDiskTrack(uint8_t trackNum, uint8_t retryCount)
 
     return writeResult == -1 ? writeResult : retries;
 }
-
-//
 
 String XCopyDisk::generateADFFileName(String diskname) {
     String path = String(SD_ADF_PATH);
@@ -1000,8 +994,24 @@ void XCopyDisk::scanEmptyBlocks(uint8_t retryCount) {
     _audio->playBoing(false);
 }
 
-// TODO: write verify routine. Support offset
-bool XCopyDisk::writeBlocksToFile(byte blocks[], int offset, uint8_t retryCount) {
+/**
+ * @brief Used to write a series of non contiguous blocks to a binary file
+ * 
+ * @param blocks[] is a an array of 220 bytes. Each byte is equal to 8 sectors
+ *                 and each bit is set as 1 if you wish to write that block
+ *                 this allows non contiguous blocks to be written out to a bin file
+ *
+ * @param offset offset into first block to start writing
+ * 
+ * @param size total size in bytes of file to be written
+ * 
+ * @param retryCount number of retries when reading disk
+ * 
+ * @result true if successful and false if failed when writing file
+ * 
+ * @todo TODO: write verify routine.
+ */
+bool XCopyDisk::writeBlocksToFile(byte blocks[], int offset, int size, String fileextension, uint8_t retryCount) {
     _cancelOperation = false;
     String statusText = "";
     String diskName = "";
@@ -1022,7 +1032,7 @@ bool XCopyDisk::writeBlocksToFile(byte blocks[], int offset, uint8_t retryCount)
     Serial << "Diskname: " << diskName << "\r\n";
 
     // get filesnames
-    String fullPath = generateADFFileName(diskName).replace(".adf", ".bin");
+    String fullPath = generateADFFileName(diskName).replace(".adf", fileextension);
     Serial << "Filename: " << fullPath << "\r\n";
 
     // Open SD File
@@ -1066,6 +1076,17 @@ bool XCopyDisk::writeBlocksToFile(byte blocks[], int offset, uint8_t retryCount)
 
     DiskLocation dl;
     int currentTrack = -1;
+    int filesize = 0;
+    int lastblock = 0;    
+    for (size_t index = 0; index < 220; index++) {
+        for (size_t bit = 0; bit < 8; bit++) {
+            int mask = 1 << bit;
+            if ((blocks[index] & mask) > 0) {
+                lastblock = (index * 8) + bit;
+            }
+        }
+    }
+
     for(size_t index = 0; index < 220; index++) {
         for (size_t bit = 0; bit < 8; bit++) {
             int mask = 1 << bit;
@@ -1084,13 +1105,28 @@ bool XCopyDisk::writeBlocksToFile(byte blocks[], int offset, uint8_t retryCount)
                 }
 
                 const struct Sector *aSec = (Sector *)&getTrack()[dl.sector].sector;
-                ADFFile.write(aSec->data, 512);
+                // set offset for first and last sectors
+                int sectorsize = filesize == 0 ? 512 - offset : 512;
+                int sectoroffset = filesize == 0 ? offset : 0;
+                if (dl.block == lastblock)  { 
+                    sectorsize = size - filesize;
+                }
+                // modrip 385 50 61710
+                
+                int byteswritten = ADFFile.write(aSec->data + sectoroffset, sectorsize);
+                if (byteswritten <= 0) { 
+                    Log << "Write error.";
+                    return false;
+                }
+                filesize += byteswritten;
                 currentTrack = dl.logicalTrack;
 
                 // Serial << block << " | logtrack: " << dl.logicalTrack << " | track: " << dl.track << " | side: " << dl.side << " | sector: " << dl.sector << "\r\n";
             }
         }
     }
+
+    Log << "File Size: " + String(filesize) + "\r\n";
 
     ADFFile.close();
     _audio->playBoing(false);
@@ -1314,6 +1350,8 @@ SearchResult XCopyDisk::processModule(XCopyDisk* obj, String text, DiskLocation 
     modinfo.Process();
     modinfo.Print();    
 
+    Log << "Example Command for this module: modrip " + String(dl.block) + " " + String(modStartBlockOffset) + " " + String(modinfo.filesize) + "\r\n";
+
     SearchResult sr;
     sr.block = modStartBlock;
     sr.offset = modStartBlockOffset;
@@ -1390,119 +1428,14 @@ bool XCopyDisk::search(XCopyDisk* obj, String text, uint8_t retryCount, SearchPr
     _audio->playBoing(false);
     return true;
 }
-//
 
-// TODO: merge with writeBlocksToFile?
 bool XCopyDisk::modRip(int block, int offset, int size, uint8_t retryCount) {
-    _cancelOperation = false;
-    String statusText = "";
-    String diskName = "";
-
-    int totalReadErrors = 0;
-    
-    File ADFFile;
-
-    // check if disk is present in floppy
-    if (!diskChange()) {
-        Serial << "No disk inserted" << "\r\n";
-        _audio->playBong(false);
-        return false;
-    }
-
-    // get and set diskname
-    diskName = getName();
-    Serial << "Diskname: " << diskName << "\r\n";
-
-    // get filesnames
-    String fullPath = generateADFFileName(diskName).replace(".adf", ".mod");
-    Serial << "Filename: " << fullPath << "\r\n";
-
-    // Open SD File
-    XCopySDCard *_sdcard = new XCopySDCard();
-
-    // card detect
-    if (!_sdcard->cardDetect()) {
-        Serial << "No SDCard detected" << "\r\n";
-        _audio->playBong(false);
-        delete _sdcard;
-        return false;
-    }
-
-    // init
-    if (!_sdcard->begin()) {
-        Serial << "SD Init Failed" << "\r\n";
-        _audio->playBong(false);
-        delete _sdcard;
-        return false;
-    }
-
-    // make ADF path
-    if (!_sdcard->fileExists(SD_ADF_PATH)) _sdcard->makeDirectory(SD_ADF_PATH);
-
-    // remove sdcard adf & log files if they exist
-    if (_sdcard->fileExists(fullPath)) _sdcard->deleteFile(fullPath.c_str());
-
-    // open sdcard files
-    SdFile::dateTimeCallback(dateTime);
-    ADFFile = _sdcard->getSdFat().open(fullPath.c_str(), FILE_WRITE);
-    SdFile::dateTimeCallbackCancel();
-
-    // if adf file failed top open
-    if (!ADFFile) {
-        ADFFile.close();
-        Serial << "File '" + fullPath + "' failed to open on the SD card" << "\r\n";
-        _audio->playBong(false);
-        delete _sdcard;
-        return false;
-    }
-
-    DiskLocation dl;
-    int blocks = ceil((size + offset) / 512.0f);
-    int bytes_written = 0;
-    int filesize = 0;
-    int currentTrack = -1;
-
-    for(size_t index = 0; index < blocks; index++) {
-        dl.setBlock(block);
-
-        if (dl.logicalTrack != currentTrack) {
-            int readResult = readDiskTrack(dl.logicalTrack, false, retryCount, true);
-            if (readResult != 0) {
-                // if there has been error on either side, set error for whole cylinder else increment retry count
-                Serial << "Read Errors: " << ++totalReadErrors << "\r\n";
-                return false;
-            }
-        }
-
-        const struct Sector *aSec = (Sector *)&getTrack()[dl.sector].sector;
-        int sectoroffset = index == 0 ? offset : 0;
-        int datasize = index == 0 ? 512 - offset : index == blocks - 1 ? size - filesize : 512;
-        bytes_written = ADFFile.write(aSec->data + sectoroffset, datasize);
-        if (bytes_written == 0) return false;
-        filesize += bytes_written;
-        
-        Serial << block << " | logtrack: " << dl.logicalTrack << " | track: " << dl.track << " | side: " << dl.side << " | sector: " << dl.sector << " | offset: " << sectoroffset << " | datasize: " << datasize << " | filesize: " << filesize << "\r\n";
-        
-        currentTrack = dl.logicalTrack;
-        block++;
-    }
-
-    ADFFile.close();
-    _audio->playBoing(false);
-
-    delete _sdcard;
-
-    return true;
-}
-
-bool XCopyDisk::modRip2(int block, int offset, int size, uint8_t retryCount) {
     int endblock = (block + ceil((size + offset) / 512.0f)) - 1;
     byte blocks[220];
     int blockindex = 0;
     byte packedblocks = 0;
 
-    // Serial << "Start Block: " << block << " End Block: " << endblock << "\r\n";
-
+    // loop through all blocks and build packed block array
     for(uint16_t index = 0; index < 1760; index++) {
         if (index >= block && index <= endblock) {
             packedblocks |= 1 << (index % 8);
@@ -1514,15 +1447,7 @@ bool XCopyDisk::modRip2(int block, int offset, int size, uint8_t retryCount) {
         }
     }
 
-    writeBlocksToFile(blocks, offset, retryCount);
-
-    // for(int i=0; i<220; i++) {        
-    //     Serial << "index: " << i << " blocks[" << (i*8) << "-" << (i * 8) + 7 << "]  | value: " << blocks[i] << " | ";
-    //     Serial.print(blocks[i], BIN);
-    //     Serial.println();
-    // }
-
-    return true;
+    return writeBlocksToFile(blocks, offset, size, ".mod", retryCount);
 }
 
 String XCopyDisk::ctxToMD5(MD5_CTX *ctx) {

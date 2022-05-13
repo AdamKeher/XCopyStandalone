@@ -427,7 +427,17 @@ void XCopy::onWebCommand(void* obj, const String command)
             _params = _params.substring(index + 1);
             if (index == -1) _params = "";
         }
-        xcopy->getDisk()->writeBlocksToFile(blocks, 0, xcopy->getConfig()->getRetryCount());
+
+        int filesize = 0;
+        for (size_t index = 0; index < 220; index++) {
+            for (size_t bit = 0; bit < 8; bit++) {
+                if ((blocks[index] & (1 << bit)) > 0) {
+                    filesize += 512;
+                }
+            }
+        }
+
+        xcopy->getDisk()->writeBlocksToFile(blocks, 0, filesize, ".bin", xcopy->getConfig()->getRetryCount());
     }
     else if (command.startsWith("asciiSearch")) {
         xcopy->_searchText = command.substring(command.indexOf(",") + 1);

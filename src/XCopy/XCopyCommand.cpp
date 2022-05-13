@@ -672,7 +672,7 @@ void XCopyCommandLine::doCommand(String command)
 
     if (cmd == F("modrip")) {
         if (param == "" || param.indexOf(" ") == -1) {
-            Log << F("Error: ssid and password parameters required to connect to WiFi.\r\n");
+            Log << F("Error: block, offset and size are required.\r\n");
             return;
         }
 
@@ -681,7 +681,11 @@ void XCopyCommandLine::doCommand(String command)
         int block = param.substring(0, param.indexOf(" ")).toInt();
         param = param.substring(param.indexOf(" ") + 1);
         int offset = param.substring(0, param.indexOf(" ")).toInt();
-        param = param.substring(param.indexOf(" ") + 1);
+        if (param.indexOf(" ") == -1) {
+            Log << F("Error: block, offset and size are required.\r\n");
+            return;
+        }
+        param = param.substring(param.indexOf(" ") + 1);        
         int size = param.substring(0, param.indexOf(" ")).toInt();
 
         if (block > 1759) {
@@ -694,12 +698,17 @@ void XCopyCommandLine::doCommand(String command)
             return;
         }
 
-        if (size ==  0) {
+        if (size <= 0) {
             Log << F("Error: size must be greater than 0 bytes.\r\n");
             return;
         }
 
-        _disk->modRip2(block, offset, size, _config->getRetryCount());
+        if (_disk->modRip(block, offset, size, _config->getRetryCount())) {
+            Log << "Mod file written successfully\r\n";
+        }
+        else {
+            Log << "Wrtiing mod file failed\r\n";
+        };
 
         setBusy(false);
 
