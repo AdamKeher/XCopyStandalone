@@ -623,8 +623,8 @@ void XCopyCommandLine::doCommand(String command)
     }
 
     if (cmd == F("search")) {
-        if (!diskChange()) {
-            Log << "Disk not inserted into floppy\r\n";
+        if (param == "") {
+            Log << "search paramater required.\r\n";
             return;
         }
 
