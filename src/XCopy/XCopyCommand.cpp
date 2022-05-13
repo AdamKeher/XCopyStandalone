@@ -684,12 +684,22 @@ void XCopyCommandLine::doCommand(String command)
         param = param.substring(param.indexOf(" ") + 1);
         int size = param.substring(0, param.indexOf(" ")).toInt();
 
+        if (block > 1759) {
+            Log << F("Error: block must be less than 1759 bytes.\r\n");
+            return;
+        }
+
+        if (offset >= 512) {
+            Log << F("Error: offset must be less than 512 bytes.\r\n");
+            return;
+        }
+
         if (size ==  0) {
             Log << F("Error: size must be greater than 0 bytes.\r\n");
             return;
         }
 
-        _disk->modRip(block, offset, size, _config->getRetryCount());
+        _disk->modRip2(block, offset, size, _config->getRetryCount());
 
         setBusy(false);
 

@@ -1001,7 +1001,7 @@ void XCopyDisk::scanEmptyBlocks(uint8_t retryCount) {
 }
 
 // TODO: write verify routine. Support offset
-bool XCopyDisk::writeBlocksToFile(byte blocks[], uint8_t retryCount) {
+bool XCopyDisk::writeBlocksToFile(byte blocks[], int offset, uint8_t retryCount) {
     _cancelOperation = false;
     String statusText = "";
     String diskName = "";
@@ -1491,6 +1491,36 @@ bool XCopyDisk::modRip(int block, int offset, int size, uint8_t retryCount) {
     _audio->playBoing(false);
 
     delete _sdcard;
+
+    return true;
+}
+
+bool XCopyDisk::modRip2(int block, int offset, int size, uint8_t retryCount) {
+    int endblock = (block + ceil((size + offset) / 512.0f)) - 1;
+    byte blocks[220];
+    int blockindex = 0;
+    byte packedblocks = 0;
+
+    // Serial << "Start Block: " << block << " End Block: " << endblock << "\r\n";
+
+    for(uint16_t index = 0; index < 1760; index++) {
+        if (index >= block && index <= endblock) {
+            packedblocks |= 1 << (index % 8);
+        }
+
+        if ((index + 1) % 8 == 0) {
+            blocks[blockindex++] = packedblocks;
+            packedblocks = 0;
+        }
+    }
+
+    writeBlocksToFile(blocks, offset, retryCount);
+
+    // for(int i=0; i<220; i++) {        
+    //     Serial << "index: " << i << " blocks[" << (i*8) << "-" << (i * 8) + 7 << "]  | value: " << blocks[i] << " | ";
+    //     Serial.print(blocks[i], BIN);
+    //     Serial.println();
+    // }
 
     return true;
 }

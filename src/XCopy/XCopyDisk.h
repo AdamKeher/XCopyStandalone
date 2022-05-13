@@ -84,7 +84,7 @@ class XCopyDisk
 
     void testDiskette(uint8_t retryCount);
     void scanEmptyBlocks(uint8_t retryCount);
-    bool writeBlocksToFile(byte blocks[], uint8_t retryCount);
+    bool writeBlocksToFile(byte blocks[], int offset, uint8_t retryCount);
     bool writeFileToBlocks(String BinFileName, int startBlock, uint8_t retryCount);
     
     int searchMemory(String searchText, byte* memory, size_t memorySize);
@@ -102,6 +102,7 @@ class XCopyDisk
       return search(this, "M.K.", retryCount, processModule); 
     }
     bool modRip(int block, int offset, int size, uint8_t retryCount);
+    bool modRip2(int block, int offset, int size, uint8_t retryCount);
 
     String ctxToMD5(MD5_CTX *ctx);
     String adfToMD5(String ADFFileName);

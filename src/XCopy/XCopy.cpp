@@ -427,7 +427,7 @@ void XCopy::onWebCommand(void* obj, const String command)
             _params = _params.substring(index + 1);
             if (index == -1) _params = "";
         }
-        xcopy->getDisk()->writeBlocksToFile(blocks, xcopy->getConfig()->getRetryCount());
+        xcopy->getDisk()->writeBlocksToFile(blocks, 0, xcopy->getConfig()->getRetryCount());
 
         // String _params = command.substring(command.indexOf(",") + 1);
         // Serial << "copyEmptyBlocks: " + _params + "\r\n";
