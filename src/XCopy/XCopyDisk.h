@@ -29,9 +29,9 @@ enum ADFFileSource
 };
 
 struct SearchResult {
-  int block;
-  int offset;
-  int size;
+  int block = 0;
+  int offset = 0;
+  int size = 0;
 };
 
 class DiskLocation {

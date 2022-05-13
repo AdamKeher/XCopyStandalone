@@ -1381,6 +1381,7 @@ SearchResult XCopyDisk::processAscii(XCopyDisk* obj, String text, DiskLocation d
     SearchResult sr;
     sr.block = dl.block;
     sr.offset = offset;
+    sr.size = 0;
     return sr;
 }
 
