@@ -94,13 +94,18 @@ public:
     Log << "+-----------------------------------------------------------------------------+\r\n";   
     Log << "| Header Dump                                                                 |\r\n";
     Log << "+-----------------------------------------------------------------------------+\r\n";
+
     String header_line;
     for (int i=0; i<1084; i++) {
-        if (i % 64 == 0) header_line = "| ";
+        if (i % 64 == 0) {
+          char address[4];
+          sprintf(address, "%03x", i);
+          header_line = "| 0x" + String(address) + ": ";
+        } 
         header_line.append(byte2char(header[i]));
-        if ((i + 1) % 64 == 0) Log << header_line.append("            |\r\n");
+        if ((i + 1) % 64 == 0) Log << header_line.append("     |\r\n");
     }
-    Log << header_line.append("                |\r\n");
+    Log << header_line.append("         |\r\n");
 
     Log << "+-----------------------------------------------------------------------------+\r\n";
     Log << "| Samples:                                                                    |\r\n";
