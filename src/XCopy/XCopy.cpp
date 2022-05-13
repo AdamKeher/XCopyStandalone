@@ -428,28 +428,6 @@ void XCopy::onWebCommand(void* obj, const String command)
             if (index == -1) _params = "";
         }
         xcopy->getDisk()->writeBlocksToFile(blocks, 0, xcopy->getConfig()->getRetryCount());
-
-        // String _params = command.substring(command.indexOf(",") + 1);
-        // Serial << "copyEmptyBlocks: " + _params + "\r\n";
-        // int count = 0;
-        // while (_params.length() > 0) {            
-        //     int index = _params.indexOf(",");
-        //     String value = _params.substring(0, index);
-        //     int blocks = value.toInt();
-
-        //     for (size_t i = 0; i < 8; i++) {
-        //         int mask = 1 << i;
-        //         if ((blocks & mask) > 0) {
-        //             int block = (count * 8) + i;
-
-        //             // here
-        //         }
-        //     }           
-
-        //     count++;
-        //     _params = _params.substring(index + 1);
-        //     if (index == -1) _params = "";
-        // }
     }
     else if (command.startsWith("asciiSearch")) {
         xcopy->_searchText = command.substring(command.indexOf(",") + 1);
