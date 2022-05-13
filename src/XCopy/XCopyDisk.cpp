@@ -1501,7 +1501,7 @@ SearchResult XCopyDisk::processModule(XCopyDisk* obj, String text, DiskLocation 
     modinfo.Process();
     modinfo.Print();    
 
-    Log << "Example Command for this module: modrip " + String(dl.block) + " " + String(modStartBlockOffset) + " " + String(modinfo.filesize) + "\r\n";
+    Log << "Example Command for this module: modrip " + String(dl.block) + " " + String(modStartBlockOffset) + " " + String(modinfo.filesize) + "\r\n\r\n";
 
     SearchResult sr;
     sr.block = modStartBlock;
