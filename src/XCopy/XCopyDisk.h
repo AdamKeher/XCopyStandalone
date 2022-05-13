@@ -65,50 +65,60 @@ class XCopyDisk
   public:
     typedef SearchResult (*SearchProcessor)(XCopyDisk* obj, String text, DiskLocation dl, int offset, uint8_t retryCount);
 
-    XCopyDisk();
     void begin(XCopyGraphics *graphics, XCopyAudio *audio, XCopyESP8266 *esp);
-  
-    static void dateTime(uint16_t *date, uint16_t *time);
+
+    // UI
     void changeDisk();
+    void drawFlux(uint8_t trackNum, uint8_t scale = 2, uint8_t yoffset = 0, bool updateWebUI = true);
+  
+    // File & Volume Names
+    static void dateTime(uint16_t *date, uint16_t *time);
     String getADFVolumeName(String ADFFileName, ADFFileSource = _sdCard);
     String generateADFFileName(String diskname);
 
+    // Cancel
+    void cancelOperation();
+    void OperationCancelled(uint8_t trackNum = -1);
+
+    // Read & Write tracks
     int readDiskTrack(uint8_t trackNum, bool verify, uint8_t retryCount, bool silent = false);
     int writeDiskTrack(uint8_t trackNum, uint8_t retryCount);
 
+    // ADF Disk
     bool diskToADF(String ADFFileName, bool verify, uint8_t retryCount, ADFFileSource destination, bool setEsp = true);
     void adfToDisk(String ADFFileName, bool verify, uint8_t retryCount, ADFFileSource source, bool setEsp = true);
     void diskToDisk(bool verify, uint8_t retryCount);
     void diskFlux();
-    void drawFlux(uint8_t trackNum, uint8_t scale = 2, uint8_t yoffset = 0, bool updateWebUI = true);
-
     void testDiskette(uint8_t retryCount);
     void scanEmptyBlocks(uint8_t retryCount);
+
+    // Block
     bool writeBlocksToFile(byte blocks[], int offset, int size, String fileextension, uint8_t retryCount);
     bool writeFileToBlocks(String BinFileName, int startBlock, uint8_t retryCount);
     
+    // Search
     int searchMemory(String searchText, byte* memory, size_t memorySize);
-    void loadModuleHeader(DiskLocation dl, ModInfo* modinfo, int offset, uint8_t retryCount);
-    static SearchResult processModule(XCopyDisk* obj, String text, DiskLocation dl, int offset, uint8_t retryCount);    
     static SearchResult processAscii(XCopyDisk* obj, String text, DiskLocation dl, int offset, uint8_t retryCount);
     bool search(XCopyDisk* obj, String text, uint8_t retryCount, SearchProcessor processor);
     bool asciiSearch(String text, uint8_t retryCount) { 
       Log << "Ascii Search: '" + text + "'\r\n";
       return search(this, text, retryCount, processAscii);
     }
+
+    // Search - Tracker Module
     bool modSearch(uint8_t retryCount) { 
       Log << "Tracker Module Search\r\n";
       // TODO: Add more magic strings for different trackers
       return search(this, "M.K.", retryCount, processModule); 
     }
+    void loadModuleHeader(DiskLocation dl, ModInfo* modinfo, int offset, uint8_t retryCount);
+    static SearchResult processModule(XCopyDisk* obj, String text, DiskLocation dl, int offset, uint8_t retryCount);    
     bool modRip(int block, int offset, int size, uint8_t retryCount);
 
+    // MD5
     String ctxToMD5(MD5_CTX *ctx);
     String adfToMD5(String ADFFileName);
     String flashToMD5();
-
-    void cancelOperation();
-    void OperationCancelled(uint8_t trackNum = -1);
 
   private:
     XCopyESP8266 *_esp;
