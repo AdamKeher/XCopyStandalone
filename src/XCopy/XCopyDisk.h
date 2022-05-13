@@ -101,7 +101,7 @@ class XCopyDisk
       // TODO: Add more magic strings for different trackers
       return search(this, "M.K.", retryCount, processModule); 
     }
-    bool modRip(int block, int offset);
+    bool modRip(int block, int offset, int size, uint8_t retryCount);
 
     String ctxToMD5(MD5_CTX *ctx);
     String adfToMD5(String ADFFileName);
