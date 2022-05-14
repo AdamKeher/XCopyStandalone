@@ -109,7 +109,7 @@ class XCopyDisk
     bool modSearch(uint8_t retryCount) { 
       Log << "Tracker Module Search\r\n";
       // TODO: Add more magic strings for different trackers
-      return search(this, "M.K.", retryCount, processModule); 
+      return search(this, "\033MOD", retryCount, processModule); 
     }
     void loadModuleHeader(DiskLocation dl, ModInfo* modinfo, int offset, uint8_t retryCount);
     static SearchResult processModule(XCopyDisk* obj, String text, DiskLocation dl, int offset, uint8_t retryCount);    

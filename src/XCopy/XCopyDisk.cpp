@@ -1420,16 +1420,61 @@ bool XCopyDisk::search(XCopyDisk* obj, String text, uint8_t retryCount, SearchPr
         for (int sec = 0; sec < 11; sec++) {
             struct Sector *aSec = (Sector *)&getTrack()[sec].sector;
 
-            int offset = searchMemory(text, aSec->data, 512);
-            if (offset != -1) {
-                DiskLocation dl;
-                dl.setBlock(trackNum, sec);
-                SearchResult sr = processor(this, text, dl, offset, retryCount);                
-                dl.setBlock(sr.block);
-                _esp->highlightBlock(dl.track, dl.side, dl.sector, sr.size == 0 ? 1 : ceil(sr.size / 512.0f), true);
-                // Serial << "Block: " << sr.block << " Size: " << sr.size << " Offset: " << sr.offset << "\r\n";
-                Serial << "Searching ...\r\n";
-            };
+            if (text == "\033MOD") {
+                for (int i=0; i<10; i++) {
+                    switch(i) {
+                        case 0:
+                            text = "M.K.";
+                            break;
+                        case 1:
+                            text = "M!K!";
+                            break;
+                        case 2:
+                            text = "FLT4";
+                            break;
+                        case 3:
+                            text = "FLT8";
+                            break;
+                        case 4:
+                            text = "2CHN";
+                            break;
+                        case 5:
+                            text = "5CHN";
+                            break;
+                        case 6:
+                            text = "6CHN";
+                            break;
+                        case 7:
+                            text = "7CHN";
+                            break;
+                        case 8:
+                            text = "8CHN";
+                            break;
+                        case 9:
+                            text = "OCTA";
+                            break;
+                    }
+                    int offset = searchMemory(text, aSec->data, 512);           
+                    if (offset != -1) {
+                        DiskLocation dl;
+                        dl.setBlock(trackNum, sec);
+                        SearchResult sr = processor(this, text, dl, offset, retryCount);                
+                        dl.setBlock(sr.block);
+                        _esp->highlightBlock(dl.track, dl.side, dl.sector, sr.size == 0 ? 1 : ceil(sr.size / 512.0f), true);
+                        Serial << "Searching ...\r\n";
+                    };
+                }
+            } else {
+                int offset = searchMemory(text, aSec->data, 512);           
+                if (offset != -1) {
+                    DiskLocation dl;
+                    dl.setBlock(trackNum, sec);
+                    SearchResult sr = processor(this, text, dl, offset, retryCount);                
+                    dl.setBlock(sr.block);
+                    _esp->highlightBlock(dl.track, dl.side, dl.sector, sr.size == 0 ? 1 : ceil(sr.size / 512.0f), true);
+                    Serial << "Searching ...\r\n";
+                };
+            }
         }
 
         // draw flux
@@ -1486,7 +1531,7 @@ SearchResult XCopyDisk::processModule(XCopyDisk* obj, String text, DiskLocation 
     // display disk location of module
 
     dl.setBlock(modStartBlock);
-    Log << "Mod Location: | Block: " + String(dl.block) + " Logical Track: " + String(dl.logicalTrack) +  " Track: " + String(dl.track) + " Side: " + String(dl.side) + " Sector: " + String(dl.sector) + " Offset: 0x";
+    Log << "Possible Mod Location: | Block: " + String(dl.block) + " Logical Track: " + String(dl.logicalTrack) +  " Track: " + String(dl.track) + " Side: " + String(dl.side) + " Sector: " + String(dl.sector) + " Offset: 0x";
     char f_offset[5];
     sprintf(f_offset, "%04x", modStartBlockOffset);
     Log << String(f_offset) + "\r\n";
@@ -1499,7 +1544,7 @@ SearchResult XCopyDisk::processModule(XCopyDisk* obj, String text, DiskLocation 
     // process and print module info
 
     modinfo.Process();
-    modinfo.Print();    
+    modinfo.Print();
 
     Log << "Example Command for this module: modrip " + String(dl.block) + " " + String(modStartBlockOffset) + " " + String(modinfo.filesize) + "\r\n\r\n";
 
