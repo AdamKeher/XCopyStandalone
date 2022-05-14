@@ -363,7 +363,18 @@ int XCopyDisk::writeDiskTrack(uint8_t trackNum, uint8_t retryCount)
 
 // ADF Disk
 
-// TODO: Create XCopyLogFile object? Move CRC code into function. 
+/**
+ * @brief Copy floppy disk to ADF file on SDCard or Flash
+ * 
+ * @param verify verify tracks by reading track a second time and compairing it to the data written
+ * @param retryCount number of retries when reading track
+ * @param destination indicates SDCard or Flash Memory destination
+ * @param setEsp set mode and state for WebUI
+ * 
+ * @result success or failure of copy process
+ * 
+ * @todo TODO: Create XCopyLogFile object? Move CRC code into function. 
+ */
 bool XCopyDisk::diskToADF(String ADFFileName, bool verify, uint8_t retryCount, ADFFileSource destination, bool setEsp) {
     FastCRC32 CRC32;
     FastCRC16 CRC16;
@@ -672,6 +683,16 @@ bool XCopyDisk::diskToADF(String ADFFileName, bool verify, uint8_t retryCount, A
     return true;
 }
 
+/**
+ * @brief Write ADF file to floppy disk from ADF file on SDCard or Flash
+ * 
+ * @param verify verify tracks by reading track a second time and compairing it to the data written
+ * @param retryCount number of retries when writing track
+ * @param destination indicates SDCard or Flash Memory source
+ * @param setEsp set mode and state for WebUI
+ * 
+ * @todo TODO: Create XCopyLogFile object? Move CRC code into function. 
+ */
 void XCopyDisk::adfToDisk(String ADFFileName, bool verify, uint8_t retryCount, ADFFileSource source, bool setEsp) {
     if (source == _flashMemory) {
         // flash memory
@@ -870,6 +891,12 @@ void XCopyDisk::adfToDisk(String ADFFileName, bool verify, uint8_t retryCount, A
     _esp->setStatus(status);
 }
 
+/**
+ * @brief Copy Floppy disk to temporay flash and write back to Floppy Disk
+ * 
+ * @param verify verify tracks by reading track a second time and compairing it to the data written
+ * @param retryCount number of retries when writing track
+ */
 void XCopyDisk::diskToDisk(bool verify, uint8_t retryCount) {
     _esp->setTab("diskcopy");
     _esp->setMode("Copy Disk to Disk");
@@ -900,6 +927,9 @@ void XCopyDisk::diskToDisk(bool verify, uint8_t retryCount) {
     adfToDisk("DISKCOPY.TMP", verify, retryCount, _flashMemory, false);
 }
 
+/**
+ * @brief Draw fullscreen TFT flux chart
+ */
 void XCopyDisk::diskFlux() {
     _esp->setTab("diskcopy");
     _esp->setMode("Disk Flux");
@@ -945,6 +975,11 @@ void XCopyDisk::diskFlux() {
     _esp->setStatus("Disk Flux Complete");
 }
 
+/**
+ * @brief Test floppy disk for read errors
+ * 
+ * @param retryCount number of retries when reading track
+ */
 void XCopyDisk::testDiskette(uint8_t retryCount) {
     _esp->setMode("Test Disk");
     _esp->setStatus("Testing Disk");  
@@ -1003,6 +1038,11 @@ void XCopyDisk::testDiskette(uint8_t retryCount) {
     _esp->setStatus("Test Complete. <i class=\"fa-solid fa-hashtag\"></i> MD5: " + sMD5);
 }
 
+/**
+ * @brief Scan floppy disk for full and empty tracks and update console and WebUI
+ * 
+ * @param retryCount number of retries when reading track
+ */
 void XCopyDisk::scanEmptyBlocks(uint8_t retryCount) {
     _esp->setMode("Scan Empty Blocks");
     _esp->setStatus("Scanning Disk");  
@@ -1074,7 +1114,7 @@ void XCopyDisk::scanEmptyBlocks(uint8_t retryCount) {
 // Block
 
 /**
- * @brief Used to write a series of non contiguous blocks to a binary file
+ * @brief Writes a series of non contiguous blocks to a binary file
  * 
  * @param blocks is a an array of 220 bytes. Each byte is equal to 8 sectors
  *               and each bit is set as 1 if you wish to write that block
@@ -1212,7 +1252,17 @@ bool XCopyDisk::writeBlocksToFile(byte blocks[], int offset, int size, String fi
     return true;
 }
 
-// TODO: write verify routine. Support offset
+/**
+ * @brief Writes a binary file to the floppy disk
+ * 
+ * @param BinFileName path to binary file on SDCard that will be written to disk
+ * @param startBlock the starting block for the binary file
+ * @param retryCount number of retries when reading track
+ * 
+ * @result true if successful and false if failed when writing file
+ * 
+ * @todo TODO: write verify routine. Support offset
+ */
 bool XCopyDisk::writeFileToBlocks(String BinFileName, int startBlock, uint8_t retryCount) {
     if (!diskChange()) {
         Log << "No Disk Inserted\r\n";
@@ -1351,8 +1401,91 @@ bool XCopyDisk::writeFileToBlocks(String BinFileName, int startBlock, uint8_t re
     return true;
 }
 
-// Search
+// Search - ASCII & Tracker Module
 
+/**
+ * @brief process ASCII search result. Used as function pointer in search
+ * 
+ * @param obj pointer to XCopyDisk object used in static function
+ * @param text ASCII search text
+ * @param dl location on disk of search result
+ * @param offset offset into block for search result
+ * @param retryCount number of retries when reading track
+ * 
+ * @result return search result block, offset and size in blocks
+ */
+SearchResult XCopyDisk::processAscii(XCopyDisk* obj, String text, DiskLocation dl, int offset, uint8_t retryCount) {
+    Log << "Found: '" + text + "' | Block: " + String(dl.block) + " Logical Track: " + String(dl.logicalTrack) +  " Track: " + String(dl.track) + " Side: " + String(dl.side) + " Sector: " + String(dl.sector) + " Offset: 0x";
+    char f_offset[5];
+    sprintf(f_offset, "%04x", offset);
+    Log << String(f_offset) + "\r\n";
+    Log << "\r\n";
+    printAmigaSector(dl.sector);
+    SearchResult sr;
+    sr.block = dl.block;
+    sr.offset = offset;
+    sr.size = 0;
+    return sr;
+}
+
+/**
+ * @brief process tracker module search result. Used as function pointer in search
+ * 
+ * @param obj pointer to XCopyDisk object used in static function
+ * @param text Module magic bytes search text i.e M.K, M!K!, 8CHN etc
+ * @param dl location on disk of search result
+ * @param offset offset into block for search result
+ * @param retryCount number of retries when reading track
+ * 
+ * @result return search result block, offset and size in blocks
+ */
+SearchResult XCopyDisk::processModule(XCopyDisk* obj, String text, DiskLocation dl, int offset, uint8_t retryCount) {
+    // the MOD file is found by searching for some magic bytes such as M.K
+    // these bytes are at an offset of 1080 bytes in the header.
+    // this means the module actually starts a few blocks before the block
+    // the magic bytes were found on.
+    // https://www.eblong.com/zarf/blorb/mod-spec.txt
+
+    int remainingBytes = 1080 - offset;                                  // remaining bytes of header on other blocks / bytes before 0th bytes of track containing M.K.
+    int modStartBlock = dl.block - ceil(remainingBytes / 512.0f);        // block that MOD starts on
+    int modStartBlockOffset = 512 - (remainingBytes % 512);              // byte offset of block that MOD starts on
+
+    // display disk location of module
+
+    dl.setBlock(modStartBlock);
+    Log << "Possible Mod Location: | Block: " + String(dl.block) + " Logical Track: " + String(dl.logicalTrack) +  " Track: " + String(dl.track) + " Side: " + String(dl.side) + " Sector: " + String(dl.sector) + " Offset: 0x";
+    char f_offset[5];
+    sprintf(f_offset, "%04x", modStartBlockOffset);
+    Log << String(f_offset) + "\r\n";
+
+    // load mod header from disk into modinfo header
+
+    ModInfo modinfo;
+    obj->loadModuleHeader(dl, modStartBlockOffset, &modinfo, retryCount);
+
+    // process and print module info
+
+    modinfo.Process();
+    modinfo.Print();
+
+    Log << "Example Command for this module: modrip " + String(dl.block) + " " + String(modStartBlockOffset) + " " + String(modinfo.filesize) + "\r\n\r\n";
+
+    SearchResult sr;
+    sr.block = modStartBlock;
+    sr.offset = modStartBlockOffset;
+    sr.size = modinfo.filesize;
+    return sr;
+}
+
+/**
+ * @brief search memory for specificed string
+ * 
+ * @param searchText string to search memory for
+ * @param memory pointer to memory to search
+ * @param memorySize total amount of bytes of to search
+ * 
+ * @result index into memory for search result, -1 if not found.
+ */
 int XCopyDisk::searchMemory(String searchText, byte* memory, size_t memorySize) { 
     size_t sSize = searchText.length();
     size_t sIndex = 0;
@@ -1371,21 +1504,16 @@ int XCopyDisk::searchMemory(String searchText, byte* memory, size_t memorySize) 
     return -1;
 }
 
-SearchResult XCopyDisk::processAscii(XCopyDisk* obj, String text, DiskLocation dl, int offset, uint8_t retryCount) {
-    Log << "Found: '" + text + "' | Block: " + String(dl.block) + " Logical Track: " + String(dl.logicalTrack) +  " Track: " + String(dl.track) + " Side: " + String(dl.side) + " Sector: " + String(dl.sector) + " Offset: 0x";
-    char f_offset[5];
-    sprintf(f_offset, "%04x", offset);
-    Log << String(f_offset) + "\r\n";
-    Log << "\r\n";
-    printAmigaSector(dl.sector);
-    SearchResult sr;
-    sr.block = dl.block;
-    sr.offset = offset;
-    sr.size = 0;
-    return sr;
-}
-
-bool XCopyDisk::search(XCopyDisk* obj, String text, uint8_t retryCount, SearchProcessor processor) {
+/**
+ * @brief Search and process content on floppy disk
+ * 
+ * @param text text to search floppy for
+ * @param retryCount number of retries when reading track
+ * @param processor the function used to process successful searches
+ * 
+ * @result returns true if the search process was successful
+ */
+bool XCopyDisk::search(String text, uint8_t retryCount, SearchProcessor processor) {
     _cancelOperation = false;
 
     // check if disk is present in floppy
@@ -1487,9 +1615,15 @@ bool XCopyDisk::search(XCopyDisk* obj, String text, uint8_t retryCount, SearchPr
     return true;
 }
 
-// Search - Tracker Module
-
-void XCopyDisk::loadModuleHeader(DiskLocation dl, ModInfo* modinfo, int offset, uint8_t retryCount) {
+/**
+ * @brief load module header from disk into modinfo class
+ * 
+ * @param dl location on floppy disk of module
+ * @param offset offset into block for module start
+ * @param modinfo modinfo class used to store module details
+ * @param retryCount number of retries when reading track
+ */
+void XCopyDisk::loadModuleHeader(DiskLocation dl, int offset, ModInfo* modinfo, uint8_t retryCount) {
     readDiskTrack(dl.logicalTrack, false, retryCount);
     struct Sector *aSec = (Sector *)&getTrack()[dl.sector].sector;    
     memcpy(&modinfo->header[0], &aSec->data[offset], 512 - offset);
@@ -1517,53 +1651,26 @@ void XCopyDisk::loadModuleHeader(DiskLocation dl, ModInfo* modinfo, int offset, 
     }
 }
 
-SearchResult XCopyDisk::processModule(XCopyDisk* obj, String text, DiskLocation dl, int offset, uint8_t retryCount) {
-    // the MOD file is found by searching for some magic bytes such as M.K
-    // these bytes are at an offset of 1080 bytes in the header.
-    // this means the module actually starts a few blocks before the block
-    // the magic bytes were found on.
-    // https://www.eblong.com/zarf/blorb/mod-spec.txt
-
-    int remainingBytes = 1080 - offset;                                  // remaining bytes of header on other blocks / bytes before 0th bytes of track containing M.K.
-    int modStartBlock = dl.block - ceil(remainingBytes / 512.0f);        // block that MOD starts on
-    int modStartBlockOffset = 512 - (remainingBytes % 512);              // byte offset of block that MOD starts on
-
-    // display disk location of module
-
-    dl.setBlock(modStartBlock);
-    Log << "Possible Mod Location: | Block: " + String(dl.block) + " Logical Track: " + String(dl.logicalTrack) +  " Track: " + String(dl.track) + " Side: " + String(dl.side) + " Sector: " + String(dl.sector) + " Offset: 0x";
-    char f_offset[5];
-    sprintf(f_offset, "%04x", modStartBlockOffset);
-    Log << String(f_offset) + "\r\n";
-
-    // load mod header from disk into modinfo header
-
-    ModInfo modinfo;
-    obj->loadModuleHeader(dl, &modinfo, modStartBlockOffset, retryCount);
-
-    // process and print module info
-
-    modinfo.Process();
-    modinfo.Print();
-
-    Log << "Example Command for this module: modrip " + String(dl.block) + " " + String(modStartBlockOffset) + " " + String(modinfo.filesize) + "\r\n\r\n";
-
-    SearchResult sr;
-    sr.block = modStartBlock;
-    sr.offset = modStartBlockOffset;
-    sr.size = modinfo.filesize;
-    return sr;
-}
-
-bool XCopyDisk::modRip(int block, int offset, int size, uint8_t retryCount) {
-    int endblock = (block + ceil((size + offset) / 512.0f)) - 1;
+/**
+ * @brief Save mod from floppy drive to SDCard
+ * 
+ * @param dl location on floppy disk of module
+ * @param offset offset into block for module start
+ * @param size size of module file in bytes
+ * @param retryCount number of retries when writing track
+ * 
+ * @result returns true if the search process was successful
+ */
+bool XCopyDisk::modRip(DiskLocation dl, int offset, int size, uint8_t retryCount) {
+    int startBlock = dl.block;
+    int endblock = (dl.block + ceil((size + offset) / 512.0f)) - 1;
     byte blocks[220];
     int blockindex = 0;
     byte packedblocks = 0;
 
     // loop through all blocks and build packed block array
     for(uint16_t index = 0; index < 1760; index++) {
-        if (index >= block && index <= endblock) {
+        if (index >= startBlock && index <= endblock) {
             packedblocks |= 1 << (index % 8);
         }
 
@@ -1578,6 +1685,13 @@ bool XCopyDisk::modRip(int block, int offset, int size, uint8_t retryCount) {
 
 // MD5
 
+/**
+ * @brief Construct MD5 string of ctx struct from MD5.h library
+ * 
+ * @param ctx ctx struct defined in MD5.h used to store MD5 hash details
+ * 
+ * @result MD5 string
+ */
 String XCopyDisk::ctxToMD5(MD5_CTX *ctx) {
     String sMD5 = "";
     unsigned char result[20];
@@ -1590,6 +1704,14 @@ String XCopyDisk::ctxToMD5(MD5_CTX *ctx) {
     return sMD5;
 }
 
+/**
+ * @brief Calculate MD5 hash of ADF file on SDCard 
+ * 
+ * @param ADFFileName path to ADF file on SDCard
+ * @param retryCount number of retries when reading track
+ * 
+ * @result MD5 string
+ */
 String XCopyDisk::adfToMD5(String ADFFileName) {
         FatFile file;
         bool fresult = file.open(ADFFileName.c_str());
@@ -1612,6 +1734,11 @@ String XCopyDisk::adfToMD5(String ADFFileName) {
         return ctxToMD5(&ctx);
 }
 
+/**
+ * @brief Calculate MD5 hash of tempory ADF in Flash memory
+ * 
+ * @result MD5 string
+ */
 String XCopyDisk::flashToMD5() {
     SerialFlashFile ADFFlashFile;
 

@@ -97,23 +97,20 @@ class XCopyDisk
     bool writeFileToBlocks(String BinFileName, int startBlock, uint8_t retryCount);
     
     // Search
-    int searchMemory(String searchText, byte* memory, size_t memorySize);
     static SearchResult processAscii(XCopyDisk* obj, String text, DiskLocation dl, int offset, uint8_t retryCount);
-    bool search(XCopyDisk* obj, String text, uint8_t retryCount, SearchProcessor processor);
+    static SearchResult processModule(XCopyDisk* obj, String text, DiskLocation dl, int offset, uint8_t retryCount);    
+    int searchMemory(String searchText, byte* memory, size_t memorySize);
+    bool search(String text, uint8_t retryCount, SearchProcessor processor);
     bool asciiSearch(String text, uint8_t retryCount) { 
       Log << "Ascii Search: '" + text + "'\r\n";
-      return search(this, text, retryCount, processAscii);
+      return search(text, retryCount, processAscii);
     }
-
-    // Search - Tracker Module
     bool modSearch(uint8_t retryCount) { 
       Log << "Tracker Module Search\r\n";
-      // TODO: Add more magic strings for different trackers
-      return search(this, "\033MOD", retryCount, processModule); 
+      return search("\033MOD", retryCount, processModule); 
     }
-    void loadModuleHeader(DiskLocation dl, ModInfo* modinfo, int offset, uint8_t retryCount);
-    static SearchResult processModule(XCopyDisk* obj, String text, DiskLocation dl, int offset, uint8_t retryCount);    
-    bool modRip(int block, int offset, int size, uint8_t retryCount);
+    void loadModuleHeader(DiskLocation dl, int offset, ModInfo* modinfo, uint8_t retryCount);
+    bool modRip(DiskLocation dl, int offset, int size, uint8_t retryCount);
 
     // MD5
     String ctxToMD5(MD5_CTX *ctx);

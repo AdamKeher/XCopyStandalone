@@ -703,7 +703,9 @@ void XCopyCommandLine::doCommand(String command)
             return;
         }
 
-        if (_disk->modRip(block, offset, size, _config->getRetryCount())) {
+        DiskLocation dl;
+        dl.setBlock(block);
+        if (_disk->modRip(dl, offset, size, _config->getRetryCount())) {
             Log << "Mod file written successfully\r\n";
         }
         else {
