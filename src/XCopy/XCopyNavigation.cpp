@@ -567,7 +567,7 @@ void XCopy::processState()
         if (_drawnOnce == false)
         {
             // _config = new XCopyConfig();
-            _disk.diskToADF("Auto Named.ADF", _config->getVerify(), _config->getRetryCount(), _sdCard);
+            _disk.diskToADF("", _config->getVerify(), _config->getRetryCount(), _sdCard);
             // delete _config;
 
             setBusy(false);

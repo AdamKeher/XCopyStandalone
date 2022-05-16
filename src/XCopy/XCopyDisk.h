@@ -34,29 +34,58 @@ struct SearchResult {
   int size = 0;
 };
 
+/**
+ * Stores a disk location set by block or track / sector values.
+ * 
+ * Used to pass disk location information around functions and to translate from blocks to tracks / sectors.
+ */
 class DiskLocation {
+private:
+  int _block = 0;
+  int _track = 0;
+  int _logicalTrack = 0;
+  int _side = 0;
+  int _sector = 0;
 public:
-  int block = 0;
-  int track = 0;
-  int logicalTrack = 0;
-  int side = 0;
-  int sector = 0;
+  int block() { return _block; }                //! current block number
+  int track() { return _track; }                //! current block track
+  int logicalTrack() { return _logicalTrack; }  //! current block logical track
+  int side() { return _side; }                  //! current block side
+  int sector() { return _sector; }              //! current block sector
 
+  /**
+   * @brief set location value by track and sector.
+   *        be careful to use logical track values rather than track / side
+   * 
+   * @param logicalTrack logical track value betweeb 0 and 159. Logical tracks are contiguous without accounting for the side.
+   * @param sector sector within logical track
+  */
   void setBlock(int logicalTrack, int sector) {
-    this->logicalTrack = logicalTrack;
-    this->track = logicalTrack / 2;
-    this->side = logicalTrack % 2;
-    this->sector = sector;
-    block = (this->track * 22) + (this->side * 11) + this->sector;
+    if (logicalTrack < 0) logicalTrack = 0;
+    if (logicalTrack > 159) logicalTrack = 159;
+
+    _logicalTrack = logicalTrack;
+    _track = _logicalTrack / 2;
+    _side = _logicalTrack % 2;
+    _sector = sector;
+    _block = (_track * 22) + (_side * 11) + _sector;
   }
 
+  /**
+   * @brief set location value by block.
+   * 
+   * @param block block value between 0 and 1759
+  */
   void setBlock(int value) {
-    block = value;
-    logicalTrack = block / 11;
-    track = block / 22;
-    sector = block % 22;
-    side = sector < 11 ? 0 : 1;
-    sector = sector % 11;
+    if (value < 0) value = 0;
+    if (value > 1759) value = 1759;
+
+    _block = value;
+    _logicalTrack = _block / 11;
+    _track = _block / 22;
+    _sector = _block % 22;
+    _side = _sector < 11 ? 0 : 1;
+    _sector = _sector % 11;
   }
 };
 
