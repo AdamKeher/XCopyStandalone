@@ -10,7 +10,7 @@ class XCopyADFLib
 {
 public:
   void begin(uint8_t sdCSPin);
-  Device *mount(char *filename);
+  Device *mount(const char *filename);
   Volume *openVolume(Device *device);
   String printDevice(Device *device);
   String printVolume(Volume *volume);

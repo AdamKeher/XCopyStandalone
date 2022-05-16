@@ -8,12 +8,12 @@ void XCopyADFLib::begin(uint8_t sdCSPin)
     adfEnvInitDefault();
 }
 
-Device *XCopyADFLib::mount(char *filename)
+Device *XCopyADFLib::mount(const char *filename)
 {
     _filename = String(filename);
     // Serial << "XCopyADFLib::mount::1\r\n";
 
-    _dev = adfMountDev(filename, true);
+    _dev = adfMountDev((char*)filename, true);
 
     // Serial << "XCopyADFLib::mount::2\r\n";
     return _dev;
