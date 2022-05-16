@@ -111,8 +111,8 @@ void XCopyConfig::parseConfig()
     _verify = root["verify"] == "TRUE" ? true : false;
     _retryCount = root["retryCount"];
     _volume = root["volume"];
-    _ssid = root["ssid"].asString();
-    _password = root["password"].asString();
+    _ssid = root["ssid"].as<char*>();
+    _password = root["password"].as<char*>();
     _diskDelay = root["diskDelay"];
     _timeZone = root["timeZone"];
 }
