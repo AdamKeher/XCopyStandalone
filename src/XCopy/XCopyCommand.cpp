@@ -246,8 +246,6 @@ void XCopyCommandLine::doCommand(String command)
     }
 
     if (cmd == F("dump")) {
-        // char name[128];
-        // param.toCharArray(name, 128);
         const char *name = param.c_str();
 
         XCopyADFLib *_adfLib = new XCopyADFLib();
@@ -751,7 +749,7 @@ bool XCopyCommandLine::printDirectory(String directory, bool color) {
     while (_sdcard->next()) {
         _count++;
         char filesize[12];
-        sprintf(filesize, "%11d", _sdcard->getfile().size);
+        sprintf(filesize, "%11lu", _sdcard->getfile().size);
         String filename = _sdcard->getfile().filename;
         if (_sdcard->getfile().isDirectory) {
             filename.append("/");
