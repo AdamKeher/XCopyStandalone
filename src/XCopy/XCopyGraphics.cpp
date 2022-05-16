@@ -224,15 +224,8 @@ void XCopyGraphics::rawDraw(const char *filename, uint16_t x, uint16_t y)
     SerialFlashFile bmpFile;
     int bmpWidth, bmpHeight; // W+H in pixels
     uint8_t bmpDepth;        // Bit depth (currently must be 24)
-    uint8_t headerSize;
-    uint32_t bmpImageoffset; // Start of image data in file
-    uint32_t rowSize;        // Not always = bmpWidth; may have padding
-    uint32_t fileSize;
     boolean goodBmp = false; // Set to true on valid header parse
-    boolean flip = true;     // BMP is stored bottom-to-top
-    uint16_t w, h, row, col;
-    uint8_t r, g, b;
-    uint32_t pos = 0, startTime;
+    uint16_t w, h;
 
     if ((x >= _tft->width()) || (y >= _tft->height()))
         return;
@@ -247,10 +240,9 @@ void XCopyGraphics::rawDraw(const char *filename, uint16_t x, uint16_t y)
     // Parse BMP header
     if (read16(bmpFile) == 0x4D42)
     { // BMP signature
-        fileSize = read32(bmpFile);
+        read32(bmpFile); // fileSize
         (void)read32(bmpFile);            // Read & ignore creator bytes
-        bmpImageoffset = read32(bmpFile); // Start of image data
-        headerSize = read32(bmpFile);
+        read32(bmpFile); // bmpImageoffset - Start of image data
         bmpWidth = read32(bmpFile);
         bmpHeight = read32(bmpFile);
         if (read16(bmpFile) == 1)
@@ -261,7 +253,6 @@ void XCopyGraphics::rawDraw(const char *filename, uint16_t x, uint16_t y)
                 if (bmpHeight < 0)
                 {
                     bmpHeight = -bmpHeight;
-                    flip = false;
                 }
 
                 // Crop area to be loaded
