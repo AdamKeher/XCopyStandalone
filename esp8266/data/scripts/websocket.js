@@ -9,7 +9,7 @@ setupWebsocket();
 function ping() {
   if (!fileTransferInProgress && connectionState && hardwareStatus) {
     connection.send('ping');
-    tm = setTimeout(function () {
+    timer = setTimeout(function () {
       console.log('WebSocket Timeout');
       if (!fileTransferInProgress) { setWebsocketStatus("closed"); }
       connectionState = false;
@@ -77,7 +77,7 @@ function onWebSocketMessage(msg) {
 
   // if pong reset counters
   if (message == 'pong') {
-    clearTimeout(tm);
+    clearTimeout(timer);
     return;
   }
 
