@@ -28,17 +28,17 @@ v711.2022:
     ☐ Rewrite track read routines
     ☐ Rewrite MFM decode / encode routines
     ☐ Migrate XCopyDisk to XCopyFloppy routines
+  ☐ Writebin / write binary file
+    ☐ Add write verification
 v711.2022:
   ☐ Add auto copy feature for Giants
 v709.2022:   
   ☐ Add cursor to logging console 
   ✔ Add new device pin out image from Giants @done(22-05-03 01:19)
   ✔ Add writebin / write binary file to disk command @done(22-05-09 14:25)
-    ☐ Add write verification
-  ☐ Compiler warnings
+  ✔ Compiler warnings @done(22-05-16 15:49)
     ✔ Clean up compiler warnings for esp8266 @done(22-04-25 12:56)
-    ☐ Clean up compiler warnings for teensy
-  ☐ Check _config. See if it is properly destroyed and created throughout the project
+    ✔ Clean up compiler warnings for teensy @done(22-05-16 15:49)
   ✔ xterm.js web log @done(22-04-24 16:26)
     ✔ Accept terminal input in the webbrowser @done(22-04-24 16:26)
     ✔ Add backsapce @done(22-04-24 17:32)
@@ -54,7 +54,8 @@ v709.2022:
   ✔ Crashes when directory too large in ADF write - WebUI OK @done(22-04-24 12:59)
     ✔ Memory footprint decreased but this is still an issue @done(22-04-24 12:59)
   WebUI
-    ☐ Fix cancel button
+    ☐ Increase ping time out
+    ✔ Fix cancel button @done(22-05-16 15:49)
     ✔ Fix source and destination icons, mode status text @done(22-05-04 14:24)
       ✔ Test Disk @done(22-05-04 13:42)
         ✔ Web UI @done(22-05-04 13:42)
