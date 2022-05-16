@@ -1319,7 +1319,7 @@ void uploadTrack()
 /*
    returns c if printable, else returns a whitespace
 */
-char byte2char(byte c, char delim = '.')
+char byte2char(byte c, char delim)
 {
     if ((c < 32) | (c > 126))
     {
