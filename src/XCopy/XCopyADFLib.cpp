@@ -94,14 +94,7 @@ String XCopyADFLib::printDirectory(Volume *volume) {
     struct List *list, *cell;
     cell = list = adfGetDirEnt(volume, volume->curDirPtr);
     while (cell) {
-        result.append(printEntry(volume, (Entry *)cell->content, "", true, true));
-        // Entry *entry = (Entry *)cell->content;
-        // if (entry->type == ST_DIR) {
-        //     int32_t curDirPtr = volume->curDirPtr;
-        //     volume->curDirPtr = entry->sector;
-        //     printDirectory(volume);
-        //     volume->curDirPtr = curDirPtr;
-        // }
+        result.append(printEntry(volume, (Entry *)cell->content, String("").c_str(), true, true));
         cell = cell->next;        
     }
     adfFreeDirList(list);
@@ -126,7 +119,7 @@ void XCopyADFLib::adfDump()
         Serial << "Error: Unable to mount ADF device\r\n";
 }
 
-String XCopyADFLib::printEntry(struct Volume *vol, struct Entry *entry, char *path, bool sect, bool comment) {
+String XCopyADFLib::printEntry(struct Volume *vol, struct Entry *entry, const char *path, bool sect, bool comment) {
     String result = "";
     char cresult[255] = "";
 

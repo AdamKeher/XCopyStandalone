@@ -24,7 +24,7 @@ public:
   String getFilename() { return _filename; }
 
 private:
-  String printEntry(struct Volume *vol, struct Entry *entry, char *path, bool sect, bool comment);
+  String printEntry(struct Volume *vol, struct Entry *entry, const char *path, bool sect, bool comment);
 
   uint8_t _sdCSPin;
   struct Device *_dev;
