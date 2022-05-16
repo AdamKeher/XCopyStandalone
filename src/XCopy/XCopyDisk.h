@@ -47,11 +47,16 @@ private:
   int _side = 0;
   int _sector = 0;
 public:
-  int block() { return _block; }                //! current block number
-  int track() { return _track; }                //! current block track
-  int logicalTrack() { return _logicalTrack; }  //! current block logical track
-  int side() { return _side; }                  //! current block side
-  int sector() { return _sector; }              //! current block sector
+  //! current block number
+  int block() { return _block; }
+  //! current block track
+  int track() { return _track; }
+  //! current block logical track
+  int logicalTrack() { return _logicalTrack; }
+  //! current block side
+  int side() { return _side; }
+  //! current block sector
+  int sector() { return _sector; }
 
   /**
    * @brief set location value by track and sector.

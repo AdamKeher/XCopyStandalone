@@ -8,10 +8,6 @@
  * @param  graphics pointer to XCopyGraphics object
  * @param  audio pointer to XCopyAudio object
  * @param  esp pointer to XCopyESP object
- * 
- * @result
- * 
- * @todo
  */
 void XCopyDisk::begin(XCopyGraphics *graphics, XCopyAudio *audio, XCopyESP8266 *esp)
 {

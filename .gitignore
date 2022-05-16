@@ -2,3 +2,5 @@
 .piolibdeps
 .pio
 .vscode
+docs/
+/Doxyfile
