@@ -128,14 +128,14 @@ String XCopyADFLib::printEntry(struct Volume *vol, struct Entry *entry, const ch
         return "";
     }
 
-    sprintf(cresult, entry->type == ST_DIR ? "         " : "%7d  ", entry->size);
+    sprintf(cresult, entry->type == ST_DIR ? "         " : "%7lu  ", entry->size);
     result.append(cresult);
 
     sprintf(cresult, "%4d/%02d/%02d  %2d:%02d:%02d ", entry->year, entry->month, entry->days, entry->hour, entry->mins, entry->secs);
     result.append(cresult);
 
     if (sect) {
-        sprintf(cresult, " %06d ", entry->sector);
+        sprintf(cresult, " %06lu ", entry->sector);
         result.append(cresult);
     }
 
