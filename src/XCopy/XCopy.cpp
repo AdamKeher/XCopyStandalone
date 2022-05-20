@@ -149,6 +149,11 @@ void XCopy::begin()
     _command = new XCopyCommandLine(XCOPYVERSION, _esp, _config, &_disk);
     _command->setCallBack(this, onWebCommand);
 
+    // Test Brainfile
+    // -------------------------------------------------------------------------------------------
+    Log << F("Locating BootBlock Library (brainfile.json): ");    
+    Log << (XCopyBrainFile::exists() ? XCopyConsole::success("OK\r\n") : XCopyConsole::error("ERROR\r\n"));
+
     // Init Menu
     // -------------------------------------------------------------------------------------------
     _menu.begin(&_graphics);

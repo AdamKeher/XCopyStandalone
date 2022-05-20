@@ -31,6 +31,7 @@
 #include "XCopyFloppy.h"
 #include "XCopyDriveTest.h"
 #include "XCopyConsole.h"
+#include "XCopyBrainFile.h"
 
 #ifdef XCOPY_DEBUG
 #include "RamMonitor.h"
