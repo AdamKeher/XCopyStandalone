@@ -22253,5 +22253,13 @@
 		"KS": "KS1.3",
 		"Bootable": "True",
 		"Data": "False"
+	}, {
+		"Name": "Perehelion by Crass (Demo)",
+		"Recog": "",
+		"Class": "ds",
+		"KS": "KS1.3",
+		"Bootable": "True",
+		"Data": "False",
+		"CRC": "DB73DD65"
 	}]
 }
