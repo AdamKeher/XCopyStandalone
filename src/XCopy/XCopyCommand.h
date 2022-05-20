@@ -14,6 +14,7 @@
 #include "XCopySDCard.h"
 #include "XCopyConsole.h"
 #include "XCopyDisk.h"
+#include "XCopyBrainFile.h"
 #include <TimeLib.h>
 #include <MD5.h>
 

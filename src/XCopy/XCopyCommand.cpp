@@ -320,6 +320,15 @@ void XCopyCommandLine::doCommand(String command)
         }
 
         printBootSector();
+
+        Log << "Scanning boot block for match ...\r\n";
+        
+        uint32_t crc32 = bootSectorCRC32();
+        Track *track = getTrack();
+        struct Sector *block0 = (Sector *)&track[0].sector;
+        struct Sector *block1 = (Sector *)&track[0].sector;
+        XCopyBrainFile::identifyBootblock(block0->data, block1->data, crc32);
+
         return;
     }
 
