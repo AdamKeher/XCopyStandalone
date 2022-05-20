@@ -10,9 +10,9 @@
             "includePath": [
                 "C:/Development/Arduino/PlatformIO/Projects/XCopyStandalone/include",
                 "C:/Development/Arduino/PlatformIO/Projects/XCopyStandalone/src",
-                "C:/Development/Arduino/PlatformIO/Projects/XCopyStandalone/lib/ArduinoJson/src",
                 "C:/Users/adamk/.platformio/packages/framework-arduinoteensy/libraries/Time",
                 "C:/Development/Arduino/PlatformIO/Projects/XCopyStandalone/lib/ArduinoMD5",
+                "C:/Development/Arduino/PlatformIO/Projects/XCopyStandalone/lib/ArduinoJson/src",
                 "C:/Users/adamk/.platformio/packages/framework-arduinoteensy/libraries/Wire",
                 "C:/Users/adamk/.platformio/packages/framework-arduinoteensy/libraries/Wire/utility",
                 "C:/Development/Arduino/PlatformIO/Projects/XCopyStandalone/lib/SdFat/src",
@@ -124,9 +124,9 @@
                 "path": [
                     "C:/Development/Arduino/PlatformIO/Projects/XCopyStandalone/include",
                     "C:/Development/Arduino/PlatformIO/Projects/XCopyStandalone/src",
-                    "C:/Development/Arduino/PlatformIO/Projects/XCopyStandalone/lib/ArduinoJson/src",
                     "C:/Users/adamk/.platformio/packages/framework-arduinoteensy/libraries/Time",
                     "C:/Development/Arduino/PlatformIO/Projects/XCopyStandalone/lib/ArduinoMD5",
+                    "C:/Development/Arduino/PlatformIO/Projects/XCopyStandalone/lib/ArduinoJson/src",
                     "C:/Users/adamk/.platformio/packages/framework-arduinoteensy/libraries/Wire",
                     "C:/Users/adamk/.platformio/packages/framework-arduinoteensy/libraries/Wire/utility",
                     "C:/Development/Arduino/PlatformIO/Projects/XCopyStandalone/lib/SdFat/src",
@@ -235,7 +235,7 @@
                 ]
             },
             "defines": [
-                "PLATFORMIO=50205",
+                "PLATFORMIO=60000",
                 "__MK20DX256__",
                 "ARDUINO_TEENSY31",
                 "TEENSY_OPT_SMALLEST_CODE",
