@@ -36,7 +36,8 @@
         <script src="./scripts/diskcopy.js" type="text/javascript"></script>
         <script src="./scripts/flux.js" type="text/javascript"></script>
         <script src="./scripts/sdcard.js" type="text/javascript"></script>
-        <script src="./scripts/diskview.js" type="text/javascript"></script>
+        <script src="./scripts/diskmon.js" type="text/javascript"></script>
+        <script src="./scripts/diskinfo.js" type="text/javascript"></script>
         <script src="./scripts/upload.js" type="text/javascript"></script>
 
         <!-- favicon -->
@@ -60,7 +61,10 @@
                     <button class="nav-link" id="log-tab" onclick="history.pushState(null, '', '#log');" data-bs-toggle="tab" data-bs-target="#log" type="button" role="tab" aria-controls="log" aria-selected="false"><i class="fa-solid fa-terminal"></i> Log</button>
                 </li>
                 <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="diskview-tab" onclick="history.pushState(null, '', '#diskview');" data-bs-toggle="tab" data-bs-target="#diskview" type="button" role="tab" aria-controls="diskview" aria-selected="true"><i class="fa-solid fa-floppy-disk"></i> Disk View</button>
+                    <button class="nav-link" id="diskmon-tab" onclick="history.pushState(null, '', '#diskmon');" data-bs-toggle="tab" data-bs-target="#diskmon" type="button" role="tab" aria-controls="diskmon" aria-selected="true"><i class="fa-solid fa-floppy-disk"></i> Disk Monitor</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="diskinfo-tab" onclick="history.pushState(null, '', '#diskinfo');" data-bs-toggle="tab" data-bs-target="#diskinfo" type="button" role="tab" aria-controls="diskinfo" aria-selected="true"><i class="fa-solid fa-floppy-disk"></i> Disk Info</button>
                 </li>
             </ul>
             <div class="tab-content" id="xcopyTabContent">
@@ -493,7 +497,7 @@
                     <br>
                     <div id="terminal"></div>
                 </div>
-                <div class="tab-pane fade" id="diskview" role="tabpanel" aria-labelledby="diskview-tab">
+                <div class="tab-pane fade" id="diskmon" role="tabpanel" aria-labelledby="diskmon-tab">
                     <p>
                         <div class="btn-toolbar" role="toolbar" aria-label="Toolbar with button groups">
                             <div class="btn-group me-1" role="group" aria-label="General">
@@ -583,10 +587,10 @@
                                         <div class="btn-toolbar" role="toolbar" aria-label="Toolbar with button groups">
                                             <div class="btn-group me-1" role="group" aria-label="General">
                                                 <button type="button" class="btn btn-success" onclick="diskcopy('scanBlocks');"><i class="fa-solid fa-rotate-right"></i> Scan</button>
-                                                <button type="button" class="btn btn-danger" id="diskview_cancel" onclick="diskcopyCancel();">Cancel</button>
+                                                <button type="button" class="btn btn-danger" id="diskmon_cancel" onclick="diskcopyCancel();">Cancel</button>
                                             </div>
                                             <div class="btn-group me-1" role="group" aria-label="Cancel">
-                                                <button type="button" class="btn btn-primary" onclick="copyEmptyBlocks();" id="diskview_copyEmptyBlocks" data-toggle="tooltip" data-placement="top" title="Copy all selected blocks to a file on the SD card. Right click block to select, middle click to select range.">Copy Blocks</button>
+                                                <button type="button" class="btn btn-primary" onclick="copyEmptyBlocks();" id="diskmon_copyEmptyBlocks" data-toggle="tooltip" data-placement="top" title="Copy all selected blocks to a file on the SD card. Right click block to select, middle click to select range.">Copy Blocks</button>
                                                 <button type="button" class="btn btn-secondary" onclick="clearHighlightedBlocks();">Clear Blocks</button>
                                             </div>
                                             <div class="btn-group me-1" role="group" aria-label="Cancel">
@@ -688,6 +692,20 @@
                     <br>
                     <br>
 
+                </div>
+                <div class="tab-pane fade" id="diskinfo" role="tabpanel" aria-labelledby="diskinfo-tab">
+                    <p>
+                        <div class="btn-toolbar" role="toolbar" aria-label="Toolbar with button groups">
+                            <div class="btn-group me-1" role="group" aria-label="Disk group">
+                                <button type="button" id="copyADFToDisk" class="btn btn-primary" onclick="diskcopy('copyADFToDisk');" data-bs-toggle="modal" data-bs-target="#staticBackdrop"><i class="fa-solid fa-sd-card"></i> ADF to Disk</button>
+                                <button type="button" id="copyDiskToADF" class="btn btn-primary" onclick="diskcopy('copyDiskToADF');"><i class="fa-solid fa-sd-card"></i> Disk to ADF</button>
+                            </div>
+                         </div>
+                    </p>
+                    <p><hr/></p>
+                    <p>
+                        <canvas class="diskCanvas" id="diskCanvas" width="900" height="450"></canvas>
+                    </p>
                 </div>
             </div>
             

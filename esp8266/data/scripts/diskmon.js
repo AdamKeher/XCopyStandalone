@@ -2,8 +2,8 @@ var currentBlock = 0;
 var maxBlocks = (80 * 11 * 2) - 1;
 var startBlock = -1;
 
-function onLoad_DiskView() {
-  // filter disk view input
+function onLoad_DiskMon() {
+  // filter disk mon input
   $('.numbers').keyup(function () { 
     this.value = this.value.replace(/[^0-9\.]/g,'');
 

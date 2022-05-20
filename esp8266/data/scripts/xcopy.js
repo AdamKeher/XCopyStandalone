@@ -26,12 +26,13 @@ function onLoad() {
   })
   
   $('#diskcopy_cancel').prop('disabled', true);
-  $('#diskview_cancel').prop('disabled', true);
+  $('#diskmon_cancel').prop('disabled', true);
   $('#uploadFile').change(fileUploadChange);
   $('#uploadSelect').click(function() { uploadFile.click(); });
   $("#uploadStart").click(fileUploadSelect);
 
-  onLoad_DiskView();
+  onLoad_DiskMon();
+  onLoad_DiskInfo();
 }
 
 function setTab(tabName) {
@@ -50,8 +51,8 @@ function disableInterface(isBusy) {
     $('button').addClass('disabled');
     $('#diskcopy_cancel').prop('disabled', false);
     $('#diskcopy_cancel').removeClass('disabled');
-    $('#diskview_cancel').prop('disabled', false);
-    $('#diskview_cancel').removeClass('disabled');
+    $('#diskmon_cancel').prop('disabled', false);
+    $('#diskmon_cancel').removeClass('disabled');
     $('#uploadCancel').prop('disabled', false);
     $('#uploadCancel').removeClass('disabled');
     $('#websocketReconnectButton').prop('disabled', false);
@@ -66,8 +67,8 @@ function disableInterface(isBusy) {
     $('button').removeClass('disabled');
     $('#diskcopy_cancel').prop('disabled', true);
     $('#diskcopy_cancel').addClass('disabled');
-    $('#diskview_cancel').prop('disabled', true);
-    $('#diskview_cancel').addClass('disabled');
+    $('#diskmon_cancel').prop('disabled', true);
+    $('#diskmon_cancel').addClass('disabled');
     disableGlobes();
   }
 }
