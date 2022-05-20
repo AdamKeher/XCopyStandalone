@@ -74,6 +74,7 @@ void printBootSector();
 int *getHist();
 byte getWeakTrack();
 byte getRetries();
+uint32_t bootSectorCRC32();
 // ADDED FUNCTIONS
 
 void pinModeFast(uint8_t pin, uint8_t mode);
