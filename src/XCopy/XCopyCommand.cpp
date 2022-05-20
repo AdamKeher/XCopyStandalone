@@ -321,7 +321,7 @@ void XCopyCommandLine::doCommand(String command)
 
         printBootSector();
 
-        Log << "Scanning boot block for match ...\r\n";
+        Log << "\r\nScanning boot block for match ...\r\n";
         
         uint32_t crc32 = bootSectorCRC32();
         Track *track = getTrack();

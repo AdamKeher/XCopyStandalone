@@ -298,7 +298,6 @@ void printBootSector()
     char hexvalue[10];
     sprintf(hexvalue, "%08x", (unsigned int)bootSectorCRC32());
 
-    Log << "\r\n";
     Log << "crc32: 0x" + String(hexvalue) + "\r\n";
 }
 
