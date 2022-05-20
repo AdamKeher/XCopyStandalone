@@ -111,7 +111,7 @@ public:
       bool bootable = doc["Bootable"];
       String ks = doc["KS"].as<const char*>();
 
-      Log << "\r\nBoot Block Identified:\r\nName: " + name + "\r\n";
+      Log << "Name: " + name + "\r\n";
       Log << "Class: " + bootBlockColor(bbclass) + bootBlockClass(bbclass) + XCopyConsole::reset() + "\r\n";
       if (notes != "") Log << "Notes: '" + notes + "'\r\n";
       Log << "Bootable: " + String(bootable ? "True" : "False") + "\r\n";
@@ -170,9 +170,11 @@ public:
               String recog = root["Recog"].as<const char*>();
 
               if (crc32 == bootcrc32) {
+                Log << "\r\nBoot Block Identified:\r\nIdentification Method: CRC32\r\n";
                 displayBootBlock(root);
               }
               else if (recog != "" && checkBootBlock(recog, sector0, sector1)) {
+                Log << "\r\nBoot Block Identified:\r\nIdentification Method: Recognition pattern\r\n";
                 displayBootBlock(root);
               };
             }
