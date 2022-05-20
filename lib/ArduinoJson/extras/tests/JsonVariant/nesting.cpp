@@ -1,0 +1,39 @@
+// ArduinoJson - https://arduinojson.org
+// Copyright © 2014-2022, Benoit BLANCHON
+// MIT License
+
+#include <ArduinoJson.h>
+#include <catch.hpp>
+
+TEST_CASE("JsonVariant::nesting()") {
+  DynamicJsonDocument doc(4096);
+  JsonVariant var = doc.to<JsonVariant>();
+
+  SECTION("return 0 if uninitialized") {
+    JsonVariant unitialized;
+    REQUIRE(unitialized.nesting() == 0);
+  }
+
+  SECTION("returns 0 for string") {
+    var.set("hello");
+    REQUIRE(var.nesting() == 0);
+  }
+
+  SECTION("returns 1 for empty object") {
+    var.to<JsonObject>();
+    REQUIRE(var.nesting() == 1);
+  }
+
+  SECTION("returns 1 for empty array") {
+    var.to<JsonArray>();
+    REQUIRE(var.nesting() == 1);
+  }
+
+  SECTION("returns depth of linked array") {
+    StaticJsonDocument<128> doc2;
+    doc2[0][0] = 42;
+    var.link(doc2);
+
+    CHECK(var.nesting() == 2);
+  }
+}

@@ -1,8 +1,10 @@
-// ArduinoJson - arduinojson.org
-// Copyright Benoit Blanchon 2014-2018
+// ArduinoJson - https://arduinojson.org
+// Copyright © 2014-2022, Benoit BLANCHON
 // MIT License
 //
 // This example shows how to generate a JSON document with ArduinoJson.
+//
+// https://arduinojson.org/v6/example/generator/
 
 #include <ArduinoJson.h>
 
@@ -11,48 +13,42 @@ void setup() {
   Serial.begin(9600);
   while (!Serial) continue;
 
-  // Memory pool for JSON object tree.
+  // Allocate the JSON document
   //
-  // Inside the brackets, 200 is the size of the pool in bytes.
-  // Don't forget to change this value to match your JSON document.
-  // Use arduinojson.org/assistant to compute the capacity.
-  StaticJsonBuffer<200> jsonBuffer;
+  // Inside the brackets, 200 is the RAM allocated to this document.
+  // Don't forget to change this value to match your requirement.
+  // Use https://arduinojson.org/v6/assistant to compute the capacity.
+  StaticJsonDocument<200> doc;
 
-  // StaticJsonBuffer allocates memory on the stack, it can be
-  // replaced by DynamicJsonBuffer which allocates in the heap.
+  // StaticJsonObject allocates memory on the stack, it can be
+  // replaced by DynamicJsonDocument which allocates in the heap.
   //
-  // DynamicJsonBuffer  jsonBuffer(200);
+  // DynamicJsonDocument  doc(200);
 
-  // Create the root of the object tree.
+  // Add values in the document
   //
-  // It's a reference to the JsonObject, the actual bytes are inside the
-  // JsonBuffer with all the other nodes of the object tree.
-  // Memory is freed when jsonBuffer goes out of scope.
-  JsonObject& root = jsonBuffer.createObject();
+  doc["sensor"] = "gps";
+  doc["time"] = 1351824120;
 
-  // Add values in the object
+  // Add an array.
   //
-  // Most of the time, you can rely on the implicit casts.
-  // In other case, you can do root.set<long>("time", 1351824120);
-  root["sensor"] = "gps";
-  root["time"] = 1351824120;
-
-  // Add a nested array.
-  //
-  // It's also possible to create the array separately and add it to the
-  // JsonObject but it's less efficient.
-  JsonArray& data = root.createNestedArray("data");
+  JsonArray data = doc.createNestedArray("data");
   data.add(48.756080);
   data.add(2.302038);
 
-  root.printTo(Serial);
-  // This prints:
+  // Generate the minified JSON and send it to the Serial port.
+  //
+  serializeJson(doc, Serial);
+  // The above line prints:
   // {"sensor":"gps","time":1351824120,"data":[48.756080,2.302038]}
 
+  // Start a new line
   Serial.println();
 
-  root.prettyPrintTo(Serial);
-  // This prints:
+  // Generate the prettified JSON and send it to the Serial port.
+  //
+  serializeJsonPretty(doc, Serial);
+  // The above line prints:
   // {
   //   "sensor": "gps",
   //   "time": 1351824120,
