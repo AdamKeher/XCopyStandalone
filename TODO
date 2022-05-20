@@ -33,6 +33,12 @@ v711.2022:
 v711.2022:
   ☐ Add auto copy feature for Giants
 v709.2022:   
+  ✔ Boot Block @done(22-05-20 17:19)
+    ✔ Add CRC32 to boot block output for 'boot' command @done(22-05-20 13:05)
+    ✔ Add XCopyBrainFile class to identify bootblocks in brainfile.json on SD Card @done(22-05-20 14:48)
+    ✔ Add bootblock identification to 'boot' command @done(22-05-20 14:48)
+    ✘ Compact brainfile @cancelled(22-05-20 17:18)
+    ✔ Move brainfile to Flash memory @done(22-05-20 17:18)
   ☐ Add cursor to logging console 
   ✔ Add new device pin out image from Giants @done(22-05-03 01:19)
   ✔ Add writebin / write binary file to disk command @done(22-05-09 14:25)
