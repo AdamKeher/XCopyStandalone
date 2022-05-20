@@ -1,7 +1,7 @@
 #ifndef XCOPYBRAINFILE_H
 #define XCOPYBRAINFILE_H
 
-#define brainfilename "brainfile.json"
+#define brainfilename "BRAINF~1.JSO"
 
 #include <Arduino.h>
 #include <ArduinoJson.h>
@@ -126,51 +126,89 @@ public:
    * @param crc32 crc32 checksum of boot block data
    */
   static void identifyBootblock(byte sector0[], byte sector1[], uint32_t crc32) {
-    XCopySDCard *_sdcard = new XCopySDCard();   
-    if (!_sdcard->begin()) {
-        Log << "SD Card failed to initialise\r\n";
-        delete _sdcard;
-        return;
+    if (!SerialFlash.begin(PIN_FLASHCS)) {
+      Log << "Serial Flash failed to initialise.\r\n";
+      return; 
     }
 
-    File brainfile = _sdcard->getSdFat().open(brainfilename, FILE_READ);
+    SerialFlashFile brainfile = SerialFlash.open(brainfilename);
     if (!brainfile) {
-        Log << "Brainfile failed to open\r\n";
-        brainfile.close();
-        delete _sdcard;
-        return;
+      Log << "Brainfile failed to open.\r\n";
+      return; 
     }
 
     char hexvalue[10];
-    sprintf(hexvalue, "%08X", crc32);
+    sprintf(hexvalue, "%08X", (unsigned int)crc32);    
     String bootcrc32 = String(hexvalue);
-
+    byte brainBuffer[512];
+    char json[512];
+    memset(json, 0, 512);
+    int jsonIndex = 0;
+    bool copying = false;
     uint32_t bbcount = 0;
-
+    uint32_t bytesread = 0;
     StaticJsonDocument<512> root;
-    brainfile.find("\"Bootblocks\": [");
+
+    // loop through brainfile, find json blocks {...}, ignore anything between blocks
+    //  and process each non empty entry as a brain file entry
     do {
-      deserializeJson(root, brainfile);
-      bbcount++;
+       bytesread = brainfile.read(brainBuffer, sizeof(brainBuffer));
 
-      String crc32 = root["CRC"].as<const char*>();
-      String recog = root["Recog"].as<const char*>();
+      for (uint32_t i=0; i < bytesread; i++) {
+          if (brainBuffer[i] == 123) copying = true; // {
 
-      if (crc32 == bootcrc32) {
-        displayBootBlock(root);
+          if (copying) json[jsonIndex++] = brainBuffer[i];
+
+          if (brainBuffer[i] == 125) { // }
+            // process json block
+            if (String(json) != "") {
+              bbcount++;
+  
+              deserializeJson(root, json);
+
+              String crc32 = root["CRC"].as<const char*>();
+              String recog = root["Recog"].as<const char*>();
+
+              if (crc32 == bootcrc32) {
+                displayBootBlock(root);
+              }
+              else if (recog != "" && checkBootBlock(recog, sector0, sector1)) {
+                displayBootBlock(root);
+              };
+            }
+
+            // reset json block
+            memset(json, 0, 512);
+            jsonIndex = 0;
+            copying = false; // stop copying until next { is found
+          } 
       }
-      else if (recog != "" && checkBootBlock(recog, sector0, sector1)) {
-        displayBootBlock(root);
-      };
-
-    } while (brainfile.findUntil(",","]"));
+    } while (bytesread > 0);
 
     Log << "Scanned: " + String(bbcount) + " boot blocks\r\n";
 
     brainfile.close();
-    delete _sdcard;
   }
 
+  /**
+   * @brief Identify the supplied boot block and display details on the console
+   * 
+   * @param sector0 512 byte array containing bootblock sector 0
+   * @param sector0 512 byte array containing bootblock sector 1
+   * @param crc32 crc32 checksum of boot block data
+   */
+  static bool exists() {
+    if (!SerialFlash.begin(PIN_FLASHCS)) {
+      return false; 
+    }
+
+    bool result = true;
+    SerialFlashFile brainfile = SerialFlash.open(brainfilename);    
+    if (!brainfile ) result = false;
+
+    brainfile.close();
+    return result;
+  }
 private:
 
 };
