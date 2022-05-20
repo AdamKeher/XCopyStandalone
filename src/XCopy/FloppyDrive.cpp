@@ -296,9 +296,9 @@ void printBootSector()
     Log << "`--------------------------------------------------------------------------------------------------------'\r\n";
     Log << "\r\n";
 
-    Log << "crc32: 0x";
-    Serial.print(bootSectorCRC32(), HEX);
-    Log << "\r\n";
+    char hexvalue[10];
+    sprintf(hexvalue, "%08x", (unsigned int)bootSectorCRC32());
+    Log << "crc32: 0x" + String(hexvalue) + "\r\n";
 }
 
 int *getHist()
