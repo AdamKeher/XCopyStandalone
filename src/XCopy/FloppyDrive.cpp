@@ -240,9 +240,15 @@ void printBootSector()
     Log << "| Boot Sector                                                             |\r\n";
     Log << "|-------------------------------------------------------------------------|\r\n";
 
+    FastCRC32 CRC32;
+    uint32_t boot_crc32 = 0;
+
     for (int s = 0; s < 2; s++)
     {
         aSec = (Sector *)&track[s].sector;
+
+        boot_crc32 = s == 0 ? CRC32.crc32(aSec->data, 512) : CRC32.crc32_upd(aSec->data, 512);
+
         for (int i = 0; i < 8; i++)
         {
             String line = "| 0x";
@@ -280,6 +286,10 @@ void printBootSector()
         }
     }
     Log << "`--------------------------------------------------------------------------------------------------------'\r\n";
+    Log << "\r\n";
+
+    Log << "crc32: 0x";
+    Serial.print(boot_crc32, HEX);
     Log << "\r\n";
 }
 

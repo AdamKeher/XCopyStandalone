@@ -4,6 +4,7 @@
 #include <Arduino.h>
 #include <Streaming.h>
 #include "XCopyLog.h"
+#include "../FastCRC/FastCRC.h"
 
 #define BITBAND_ADDR(addr, bit) (((uint32_t) & (addr)-0x20000000) * 32 + (bit)*4 + 0x22000000)
 
