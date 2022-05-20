@@ -1046,7 +1046,7 @@ void XCopyDisk::scanEmptyBlocks(uint8_t retryCount) {
     _esp->setStatus("Scanning Disk");  
     _esp->setState(scanBlocks);
     _esp->resetDisk();
-    _esp->setTab("diskview");
+    _esp->setTab("diskmon");
 
     _cancelOperation = false;
 
@@ -1522,7 +1522,7 @@ bool XCopyDisk::search(String text, uint8_t retryCount, SearchProcessor processo
     }
 
     _esp->resetDisk();
-    _esp->setTab("diskview");
+    _esp->setTab("diskmon");
     _esp->clearHighlightedBlocks();
     _graphics->drawDisk();
     _graphics->drawText(0, 0, ST7735_WHITE, "ASCII Search", true);
