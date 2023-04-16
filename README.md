@@ -6,6 +6,9 @@ XCopy Standalone liberally uses floppy interface code taken from the excelent an
 https://nickslabor.niteto.de/download/
 Nicks software uses usb serial and a Java client or a MTP connection via usb to transfer data. XCopy Standalone focuses on a standalone unit using SD card storage and a LCD and / or web sockets interface for control.
 
+### Thanks
+Special thanks to Giants for all his testing and help with this version.
+
 ## Device
 
 ![XCopy Board Image](https://github.com/AdamKeher/XCopyStandalone/blob/ProjectGiants/brd/photo.png)
@@ -15,11 +18,19 @@ This project is under heavy development and is in a state of flux with new hardw
 
 ## New Features
 * v0.19 PCB released with intergrated ESP8266 for WiFi
+  * Moved to Kicad from Eagle
+* Project code moved from Arduino to ProjectIO with all libraries preinstalled
 * New web interface added
 * Amiga module ripper
 * Bootblock library / virus checker using brainfile format
-* Web based disk 
+* Web based disk monitor
 * Network NTP time update
+* Upload and download ADF files via web interface
+* Additional 3.3v power regulator to relieve Teensy's
+* Moved TFT to cheap chinese Adafruit knock off, this has changed the pinout
+  * https://www.aliexpress.com/item/4001144194129.html?spm=a2g0o.order_list.order_list_main.30.7fe81802XfOOVV
+  * USD $1.89!
+* Moved navigation stick to cheap chinese item from LCSC
 
 ## Features
 * Software
@@ -48,12 +59,12 @@ This project is under heavy development and is in a state of flux with new hardw
     * Onboard mounted speaker
   * SD Card reader
   * 128MBit Flash Rom with built in ADF files
-  * CR2032 battery backed realtime clock
+  * CR1220 battery backed realtime clock
   * ESP8266 for websockets driven interface
-  * Single USB power for floppy and Teensy 3.2
+  * Single USB plug for serial and to power floppy and Teensy 3.2
   * Status LED's
+  * Additional 3.3v power regulator
   * Gerbers, schematic and pcb layout files available 
-
 
 # PCB
 
@@ -68,6 +79,8 @@ This project is under heavy development and is in a state of flux with new hardw
 ## VSCode Plugins:
 1. PlatoformIO with Teensy & ESP8266 board 
 2. Todo+ v4.18.4 by Fabio Spampinato
+
+* Xcopy.h contains PCBVERSION define to target firmware builds to different PCB versions
 
 ## ESP8266 Build Notes:
 1. Switch PlatformIO Project Environment to "XCopyStandalone/esp8266"
