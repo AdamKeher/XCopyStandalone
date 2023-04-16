@@ -16,11 +16,11 @@ Special thanks to Giants for all his testing and help with this version.
 ## Status
 This project is under heavy development and is in a state of flux with new hardware and software being actively worked on.
 
-## New Features
+## New Features - 04/2023
 * v0.19 PCB released with intergrated ESP8266 for WiFi
   * Moved to Kicad from Eagle
 * Project code moved from Arduino to ProjectIO with all libraries preinstalled
-* New web interface added
+* New web interface
 * Amiga module ripper
 * Bootblock library / virus checker using brainfile format
 * Web based disk monitor
