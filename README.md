@@ -4,11 +4,20 @@ An Arduino / Teensy based version of the Amiga XCopy application for copying flo
 XCopy Standalone liberally uses floppy interface code taken from the excelent and generously open source ADF-Copy by Dominik Tonn. 
 https://nickslabor.niteto.de/download/
 Nicks software uses usb serial and a Java client or a MTP connection via usb to transfer data. XCopy Standalone focuses on a standalone unit using SD card storage and a LCD and / or web sockets interface for control.
+
+![XCopy Board Image](https://github.com/AdamKeher/XCopyStandalone/blob/ProjectGiants/brd/photo.png)
+
 ## Status
 This project is under heavy development and is in a state of flux with new hardware and software being actively worked on.
-Major changes in progress:
-* PCB update to include native ESP8266EX
-* PCB update to include native Teensy 3.2 circuitry
+
+## New Features
+* v0.19 PCB released with intergrated ESP8266 for WiFi
+* New web interface added
+* Amiga module ripper
+* Bootblock library / virus checker using brainfile format
+* Web based disk 
+* Network NTP time update
+
 ## Features
 * Software
   * ADF Support
@@ -42,8 +51,14 @@ Major changes in progress:
   * Status LED's
   * Gerbers, schematic and pcb layout files available 
 
-![XCopy Board Image](https://github.com/AdamKeher/XCopyStandalone/blob/ProjectGiants/brd/photo.png)
+
+# PCB
+
 ![XCopy Board Image](https://github.com/AdamKeher/XCopyStandalone/blob/ProjectGiants/brd/pcb.png)
+
+# Web Interface
+
+![XCopy Board Image](https://github.com/AdamKeher/XCopyStandalone/blob/ProjectGiants/docs/web_interface.png)
 
 # Build Environment Notes:
 
