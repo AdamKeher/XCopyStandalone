@@ -7,7 +7,7 @@ https://nickslabor.niteto.de/download/
 Nicks software uses usb serial and a Java client or a MTP connection via usb to transfer data. XCopy Standalone focuses on a standalone unit using SD card storage and a LCD and / or web sockets interface for control.
 
 ### Thanks
-Special thanks to Giants for all his testing and help with this version.
+Special thanks to Giants for all his help with this version including web interface graphics, documentation, suggestions etc.
 
 ## Device
 
