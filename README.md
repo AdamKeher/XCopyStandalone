@@ -19,6 +19,16 @@ This project is under heavy development and is in a state of flux with new hardw
 ## New Features - 04/2023
 * v0.19 PCB released with intergrated ESP8266 for WiFi
   * Moved to Kicad from Eagle
+  * Changed SD Card to MicroSD reader
+  * Added WiFi
+  * Connected USB serial to Teensy USB serial
+  * Moved TFT to cheap chinese Adafruit knock off, this has changed the pinout
+    * https://www.aliexpress.com/item/4001144194129.html?spm=a2g0o.order_list.order_list_main.30.7fe81802XfOOVV
+    * USD $1.89!
+  * Moved navigation stick to cheap chinese item from LCSC
+  * Additional 3.3v power regulator to relieve Teensy's
+  * Added larger electrolytic cap for floppy power
+  * Switced to four layer board as they are cheap and provide better power / ground planes
 * Project code moved from Arduino to ProjectIO with all libraries preinstalled
 * New web interface
 * Amiga module ripper
@@ -26,11 +36,6 @@ This project is under heavy development and is in a state of flux with new hardw
 * Web based disk monitor
 * Network NTP time update
 * Upload and download ADF files via web interface
-* Additional 3.3v power regulator to relieve Teensy's
-* Moved TFT to cheap chinese Adafruit knock off, this has changed the pinout
-  * https://www.aliexpress.com/item/4001144194129.html?spm=a2g0o.order_list.order_list_main.30.7fe81802XfOOVV
-  * USD $1.89!
-* Moved navigation stick to cheap chinese item from LCSC
 
 ## Features
 * Software
