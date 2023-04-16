@@ -1,5 +1,9 @@
 Project Resumption:
-v712.2022:    
+v712.2022:
+  ☐ Build option for multipe board versions
+    ✔ LCD tab option
+    ✔ LCD orientation
+    ✔ Joystick buttons
   ☐ xterm.js web log
     ☐ Investigate direct web sockets functionality
     ☐ Investigate bugs with multiple << and printf

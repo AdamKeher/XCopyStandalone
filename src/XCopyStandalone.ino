@@ -21,22 +21,27 @@ void navigationCallBack(uint8_t change_mask, FivePosNavigationState state, uint3
   if ((change_mask & FIVEPOSNAVIGATION_DOWN) && state.down)
   { 
     xcopy.navigateDown();
+    // Serial.println("Down");
   }
   if ((change_mask & FIVEPOSNAVIGATION_UP) && state.up)
   { 
+    // Serial.println("Up");
     xcopy.navigateUp();
   }
   if ((change_mask & FIVEPOSNAVIGATION_PUSH) && state.push)
   { 
+    // Serial.println("Push");
     xcopy.navigateSelect();
   }
   if ((change_mask & FIVEPOSNAVIGATION_LEFT) && state.left)
   { 
     xcopy.navigateLeft();
+    // Serial.println("Left");
   }
   if ((change_mask & FIVEPOSNAVIGATION_RIGHT) && state.right)
   { 
     xcopy.navigateRight();
+    // Serial.println("Right");
   }
 }
 
@@ -62,7 +67,12 @@ void setup() {
 
   navigation.begin(10, INPUT_PULLUP, navigationCallBack);
   xcopy.begin();
+  #if PCBVERSION == 1
   attachInterrupt(PIN_NAVIGATION_LEFT_PIN, ISR_CANCEL, FALLING);
+  #else
+  attachInterrupt(PIN_NAVIGATION_LEFT_PIN, ISR_CANCEL, FALLING);
+  attachInterrupt(PIN_NAVIGATION_UP_PIN, ISR_CANCEL, FALLING);
+  #endif
 }
 
 void loop() {

@@ -4,11 +4,20 @@
 #define XCOPYVERSION "v709.2022"
 // #define XCOPY_DEBUG = 1
 
+// #define PCBVERSION 1 // expensive adafruit screen and joystick
+#define PCBVERSION 2 // cheap screen and joystick
+
+#if PCBVERSION == 1
+    #define TFT_ROTATION 3
+#else
+    #define TFT_ROTATION 1
+#endif
+
+
 #define ESPSerial Serial1
 #define ESPBaudRate 576000
 
 #include <Arduino.h>
-#include "TFT_ST7735.h"
 #include <SPI.h>
 #include <SerialFlash.h>
 #include <Wire.h>

@@ -60,7 +60,7 @@ void XCopy::begin()
     // -------------------------------------------------------------------------------------------
     Log << F("Initialising TFT: ");
     _tft->begin();
-    _tft->setRotation(3);
+    _tft->setRotation(TFT_ROTATION);
     _tft->setCharSpacing(2);
     _graphics.begin(_tft);
     Log << XCopyConsole::success("OK\r\n");
@@ -301,35 +301,15 @@ void XCopy::cancelOperation()
         _cancelOperation = true;
         break;
     case testDisk:
-        _disk.cancelOperation();
-        break;
     case copyDiskToADF:
-        _disk.cancelOperation();
-        break;
     case copyADFToDisk:
-        _disk.cancelOperation();
-        break;
     case copyDiskToDisk:
-        _disk.cancelOperation();
-        break;
     case copyDiskToFlash:
-        _disk.cancelOperation();
-        break;
     case copyFlashToDisk:
-        _disk.cancelOperation();
-        break;
     case fluxDisk:
-        _disk.cancelOperation();
-        break;
     case formatDisk:
-        _disk.cancelOperation();
-        break;
     case scanBlocks:
-        _disk.cancelOperation();
-        break;
     case diskSearch:
-        _disk.cancelOperation();
-        break;
     case modSearch:
         _disk.cancelOperation();
         break;
@@ -344,8 +324,11 @@ bool XCopy::detectCancelPin() {
     uint32_t time = millis();
     while (!detected && millis() - time < 1000) { 
         _esp->print("detectpin\r\n");
-        detected = digitalRead(PIN_NAVIGATION_LEFT_PIN);
-        detected = !detected;
+#if PCBVERSION == 1
+        detected = !digitalRead(PIN_NAVIGATION_LEFT_PIN);
+#else
+        detected = !digitalRead(PIN_NAVIGATION_UP_PIN);
+#endif        
     }
     return detected;
 }

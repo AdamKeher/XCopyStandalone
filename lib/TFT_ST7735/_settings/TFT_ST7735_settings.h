@@ -10,8 +10,12 @@ Default: #include "../_display/TFT_ST7735_RED_PCB1.h"
 (uncomment just one below...)
 ----------------------------------------------------------------------------------*/
 #if !defined (TFT_ST7735_INSTANCES)
-	#include "../_display/TFT_ST7735_RED_PCB1.h"
-	//#include "../_display/TFT_ST7735_RED_PCB_SMALL.h"
+	#if PCBVERSION == 1
+		#include "../_display/TFT_ST7735_RED_PCB1.h"
+	#else
+		#include "../_display/TFT_ST7735_BLUE_PCB.h"	
+	#endif
+	// #include "../_display/TFT_ST7735_RED_PCB_SMALL.h"
 	//more to come
 #endif
 /*--------------------------------------------------------------------------------
