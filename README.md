@@ -42,8 +42,8 @@ Major changes in progress:
   * Status LED's
   * Gerbers, schematic and pcb layout files available 
 
-![XCopy Board Image](https://github.com/AdamKeher/XCopyStandalone/blob/master/brd/ADF%20Copy%20v0.5.png)
-![XCopy Board Image](https://github.com/AdamKeher/XCopyStandalone/blob/master/files/Graphics/XCopy%20Board.png)
+![XCopy Board Image](https://github.com/AdamKeher/XCopyStandalone/blob/ProjectGiants/brd/photo.png)
+![XCopy Board Image](https://github.com/AdamKeher/XCopyStandalone/blob/ProjectGiants/brd/pcb.png)
 
 # Build Environment Notes:
 
