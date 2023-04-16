@@ -23,7 +23,7 @@ This project is under heavy development and is in a state of flux with new hardw
   * Added WiFi
   * Connected USB serial to Teensy USB serial
   * Moved TFT to cheap chinese Adafruit knock off, this has changed the pinout
-    * https://www.aliexpress.com/item/4001144194129.html?spm=a2g0o.order_list.order_list_main.30.7fe81802XfOOVV
+    * https://www.aliexpress.com/item/4001144194129.html
     * USD $1.89!
   * Moved navigation stick to cheap chinese item from LCSC
   * Additional 3.3v power regulator to relieve Teensy's
