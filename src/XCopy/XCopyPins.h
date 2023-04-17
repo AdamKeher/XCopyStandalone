@@ -9,7 +9,6 @@
 #define PIN_TFTCS 10 // CS & DC can use pins 2, 6, 9, 10, 15, 20, 21, 22, 23
 
 #define PIN_FLASHCS         23
-#define PIN_CARDDETECT      2
 #define PIN_SDCS            22
 #define PIN_BUSYPIN         24
 #define PIN_ESPRESETPIN     25
@@ -23,12 +22,18 @@
     #define PIN_NAVIGATION_RIGHT_PIN 31
     #define PIN_NAVIGATION_LEFT_PIN  32
     #define PIN_NAVIGATION_PUSH_PIN  33
+
+    #define PIN_CARDWP               27
+    #define PIN_CARDDETECT           2
 #else
     #define PIN_NAVIGATION_UP_PIN    31
     #define PIN_NAVIGATION_DOWN_PIN  32
     #define PIN_NAVIGATION_RIGHT_PIN 29
     #define PIN_NAVIGATION_LEFT_PIN  30
     #define PIN_NAVIGATION_PUSH_PIN  33
+
+    #define PIN_CARDWP               2
+    #define PIN_CARDDETECT           27
 #endif
 
 

@@ -1,7 +1,7 @@
 #ifndef XCOPY_H
 #define XCOPY_H
 
-#define XCOPYVERSION "v709.2022"
+#define XCOPYVERSION "v713.2023"
 // #define XCOPY_DEBUG = 1
 
 // #define PCBVERSION 1 // expensive adafruit screen and joystick
@@ -70,6 +70,7 @@ public:
   void getFile(String path, size_t size);
   void processKeys(String keys);
   void sendBlock(int block);
+  void cardChange();
   XCopyDisk* getDisk() { return &_disk; }
   XCopyConfig* getConfig() { return _config; }
   static void onWebCommand(void* obj, const String command);
@@ -105,6 +106,7 @@ private:
   bool _drawnOnce;
   bool _cancelOperation;
   int _prevSeconds = -1;
+  bool _playCardSound = false;
 };
 
 #endif // XCOPY_H

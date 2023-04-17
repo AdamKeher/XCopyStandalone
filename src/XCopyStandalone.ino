@@ -45,8 +45,9 @@ void navigationCallBack(uint8_t change_mask, FivePosNavigationState state, uint3
   }
 }
 
-unsigned long lastCancel = 0;
 unsigned long current = 0;
+
+unsigned long lastCancel = 0;
 void ISR_CANCEL()
 {  
   // shitty debounce
@@ -57,7 +58,19 @@ void ISR_CANCEL()
     xcopy.cancelOperation();
   }
 }
-   
+
+unsigned long lastCardDetect = 0;
+void ISR_CARD_DETECT()
+{  
+  current = millis();
+  if (current - lastCardDetect > 100)
+  {
+    lastCardDetect = current;
+    delay(100);
+    xcopy.cardChange();
+  }
+}
+
 void setup() {
   // Init Reset Pin
   // -------------------------------------------------------------------------------------------
@@ -73,6 +86,9 @@ void setup() {
   attachInterrupt(PIN_NAVIGATION_LEFT_PIN, ISR_CANCEL, FALLING);
   attachInterrupt(PIN_NAVIGATION_UP_PIN, ISR_CANCEL, FALLING);
   #endif
+
+  pinMode(PIN_CARDDETECT, INPUT_PULLUP);
+  attachInterrupt(PIN_CARDDETECT, ISR_CARD_DETECT, CHANGE);
 }
 
 void loop() {

@@ -1,9 +1,15 @@
 Project Resumption:
-v712.2022:
-  ☐ Build option for multipe board versions
+v713.2023:
+  ✔ Build option for multipe board versions @done(23-04-17 14:26)
     ✔ LCD tab option
     ✔ LCD orientation
     ✔ Joystick buttons
+  ✔ Add interrupt driven audio sample for SD card insert and eject while in menus @done(23-04-17 15:48)
+  ☐ File browser
+    ☐ Implement file delete
+  ☐ Add wifi strength output
+
+v712.2022:
   ☐ xterm.js web log
     ☐ Investigate direct web sockets functionality
     ☐ Investigate bugs with multiple << and printf
@@ -12,9 +18,6 @@ v712.2022:
     ☐ Try to spead it up, it's sloooooooooooow
     ☐ File upload not reliable - sometimes too short.
     ☐ Add uploaded filesize does not match saved filesize error
-  ☐ File browser
-    ☐ Implement file delete
-  ☐ Add wifi strength output
   ☐ DiskView feature
     ☐ Add adf support
     ☐ Add sector edit / save support
@@ -97,7 +100,7 @@ v709.2022:
       ✔ Add cancel web co?mmand @done(22-04-27 15:04)
       ✔ Detect presence of cancel wire @done(22-04-27 15:48)
       ☐ Notify WebUI that cancel wire is present
-      ☐ Updated PCB layout to reflect hardware change
+      ✔ Updated PCB layout to reflect hardware change @done(23-04-17 14:27)
     ✔ Update mode, status and diskname for all disk activities @done(22-05-04 14:24)
     ✔ Change javascript states from lowercase 'to' to capitalised 'To' i.e copyFlashtoDisk -> copyFlashToDisk to match teensy states @done(22-05-04 13:39)
     ☐ Add DiskView feature
@@ -227,19 +230,23 @@ v709.2022:
 ---------------------------------------------------------------------------------------------------
 
   PCB:
+    V3 PCB:
+      ☐ Fix footprint SD card footprint to swap card detect and write protect pins and reroute
+      ☐ Fix footprint and reroute joystick
     Todo:
-      ☐ Modify SPI flash ram footprint to expand legs for easier soldering
-      ☐ Consider taking all spare pin/s to a header for future development if space permits
+      ✔ Move schematic and PCB layout to Kicad @done(23-04-17 14:28)
+      ✔ Modify SPI flash ram footprint to expand legs for easier soldering @done(23-04-17 14:27)
+      ✔ Consider taking all spare pin/s to a header for future development if space permits @done(23-04-17 14:28)
     TFT:
-      ☐ Test new cheaper Chinese TFT
-      ☐ Create alternate footprint for TFT
-      ☐ Place and route new TFT
+      ✔ Test new cheaper Chinese TFT @done(23-04-17 14:28)
+      ✔ Create alternate footprint for TFT @done(23-04-17 14:28)
+      ✔ Place and route new TFT @done(23-04-17 14:28)
     SD Card:
       ✔ Reroute SDCS away from LDO @done(22-03-30 23:50)
       ✔ Change SD card to micro sd reader to make room for ESP module @done(22-03-28 00:09)
       ☐ Hookup SD card detect
-      ☐ Fix schematic
-      ☐ Reroute to make neater
+      ✔ Fix schematic @done(23-04-17 14:28)
+      ✔ Reroute to make neater @done(23-04-17 14:28)
     ESP:
       ✔ Add ESP8266 ESP-12S module and 47uf decoupling cap @done(22-03-28 00:09)
       ✔ Cutout board around WiFi aerial @done(22-05-02 16:58)
