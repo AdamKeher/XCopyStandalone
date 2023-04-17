@@ -11,7 +11,7 @@ Special thanks to Giants for all his help with this version including web interf
 
 ## Device
 
-![XCopy Board Image](https://github.com/AdamKeher/XCopyStandalone/blob/ProjectGiants/brd/photo.png)
+![XCopy Board Image](https://github.com/AdamKeher/XCopyStandalone/blob/master/brd/photo.png)
 
 ## Status
 This project is under heavy development and is in a state of flux with new hardware and software being actively worked on.
@@ -73,11 +73,11 @@ This project is under heavy development and is in a state of flux with new hardw
 
 # PCB
 
-![XCopy Board Image](https://github.com/AdamKeher/XCopyStandalone/blob/ProjectGiants/brd/pcb.png)
+![XCopy Board Image](https://github.com/AdamKeher/XCopyStandalone/blob/master/brd/pcb.png)
 
 # Web Interface
 
-![XCopy Board Image](https://github.com/AdamKeher/XCopyStandalone/blob/ProjectGiants/docs/web_interface.png)
+![XCopy Board Image](https://github.com/AdamKeher/XCopyStandalone/blob/master/docs/web_interface.png)
 
 # Build Environment Notes:
 
