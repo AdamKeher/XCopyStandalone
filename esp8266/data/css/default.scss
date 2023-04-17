@@ -1,0 +1,19 @@
+$textColor: white;
+$textColorDark: black;
+$background: #1e1e1e;
+
+@import "./xcopy";
+
+@import "./header";
+
+@import "./diskcopy";
+
+@import "./diskcopyTracks";
+
+@import "./sdcard";
+
+@import "./diskmon";
+
+@import "./diskinfo";
+
+@import "./footer";

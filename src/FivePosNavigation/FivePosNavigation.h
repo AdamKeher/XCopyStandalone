@@ -34,11 +34,11 @@ class FivePosNavigation
     FivePosNavigationState state;
 
   private:
-    Bounce upButton = Bounce();
-    Bounce downButton = Bounce();
-    Bounce leftButton = Bounce();
-    Bounce rightButton = Bounce();
-    Bounce pushButton = Bounce();
+    Bounce upButton = Bounce(_upPin);
+    Bounce downButton = Bounce(_downPin);
+    Bounce leftButton = Bounce(_leftPin);
+    Bounce rightButton = Bounce(_rightPin);
+    Bounce pushButton = Bounce(_pushPin);
 
     FivePosNavigationState prev_state;
     ChangeCallbackFunction changeCallBack;

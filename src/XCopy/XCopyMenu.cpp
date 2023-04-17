@@ -60,7 +60,7 @@ bool XCopyMenu::back()
     return false;
 }
 
-XCopyMenuItem *XCopyMenu::addItem(String name, int command, XCopyMenuItem *root)
+XCopyMenuItem *XCopyMenu::addItem(String name, XCopyState command, XCopyMenuItem *root)
 {
     XCopyMenuItem *item = new XCopyMenuItem();
 
@@ -86,7 +86,7 @@ XCopyMenuItem *XCopyMenu::addItem(String name, int command, XCopyMenuItem *root)
     return item;
 }
 
-XCopyMenuItem *XCopyMenu::addChild(String name, int command, XCopyMenuItem *parent)
+XCopyMenuItem *XCopyMenu::addChild(String name, XCopyState command, XCopyMenuItem *parent)
 {
     XCopyMenuItem *item = new XCopyMenuItem();
 
@@ -148,14 +148,15 @@ void XCopyMenu::drawMenu(XCopyMenuItem *item)
 
 void XCopyMenu::printItem(XCopyMenuItem *item)
 {
-    Serial << "{\n";
-    Serial << "        Item: " << item->text << "\n";
-    Serial << "       Level: " << item->getLevel() << "\n";
-    Serial << "        Prev: " << (item->prev == NULL ? "NULL" : item->prev->text) << "\n";
-    Serial << "        Next: " << (item->next == NULL ? "NULL" : item->next->text) << "\n";
-    Serial << "      Parent: " << (item->parent == NULL ? "NULL" : item->parent->text) << "\n";
-    Serial << "  FirstChild: " << (item->firstChild == NULL ? "NULL" : item->firstChild->text) << "\n";
-    Serial << "}\n";
+    Serial << "{\r\n";
+    Serial << "        Item: " << item->text << "\r\n";
+    Serial << "     Command: " << item->command << "\r\n";
+    Serial << "       Level: " << item->getLevel() << "\r\n";
+    Serial << "        Prev: " << (item->prev == NULL ? "NULL" : item->prev->text) << "\r\n";
+    Serial << "        Next: " << (item->next == NULL ? "NULL" : item->next->text) << "\r\n";
+    Serial << "      Parent: " << (item->parent == NULL ? "NULL" : item->parent->text) << "\r\n";
+    Serial << "  FirstChild: " << (item->firstChild == NULL ? "NULL" : item->firstChild->text) << "\r\n";
+    Serial << "}\r\n";
 }
 
 void XCopyMenu::printItems(XCopyMenuItem *item)
@@ -171,4 +172,37 @@ void XCopyMenu::printItems(XCopyMenuItem *item)
 
         item = item->next;
     }
+}
+
+void XCopyMenu::setCurrentItem(XCopyMenuItem *item) {
+    _currentItem = item;
+}
+
+void XCopyMenu::setCurrentItem(XCopyState command) {
+    XCopyMenuItem *item = findItem(command, _root);
+    if (item != nullptr) {
+        setCurrentItem(item);
+    }
+}
+
+XCopyMenuItem* XCopyMenu::findItem(XCopyState command, XCopyMenuItem *item) {
+    XCopyMenuItem* found = nullptr;
+
+    while (item != NULL)
+    {
+        if (item->command == command) {
+            found = item;
+            break;
+        }
+
+        if (item->firstChild != NULL)
+        {
+            found = findItem(command, item->firstChild);
+            if (found != nullptr) break;
+        }
+
+        item = item->next;
+    }
+
+    return found;
 }

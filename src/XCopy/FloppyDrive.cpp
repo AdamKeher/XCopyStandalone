@@ -226,62 +226,79 @@ void setSectorCnt(byte count)
     sectorCnt = count;
 }
 
+uint32_t bootSectorCRC32() {
+    FastCRC32 CRC32;
+    uint32_t boot_crc32 = 0;
+    struct Sector *aSec;
+
+    aSec = (Sector *)&track[0].sector;
+    boot_crc32 = CRC32.crc32(aSec->data, 512);
+    
+    aSec = (Sector *)&track[1].sector;
+    boot_crc32 = CRC32.crc32_upd(aSec->data, 512);
+
+    return boot_crc32;
+}
+
 void printBootSector()
 {
     struct Sector *aSec = (Sector *)&track[0].sector;
-    Serial << "Format Type: " << aSec->format_type << " Track: " << aSec->track
-           << " Sector: " << aSec->sector << " NumSec2Gap: " << aSec->toGap
-           << " Data Chk: ";
-    Serial.print(aSec->data_chksum, HEX);
-    Serial << " Header Chk: ";
-    Serial.println(aSec->header_chksum, HEX);
-
-    Serial << ".-------------------------------------------------------------------------.\r\n";
-    Serial << "| Boot Sector                                                             |\r\n";
-    Serial << "|-------------------------------------------------------------------------|\r\n";
+    Log << "Format Type: " + String(aSec->format_type) + " Track: " + String(aSec->track);
+    Log << " Sector: " + String(aSec->sector) + " NumSec2Gap: " + String(aSec->toGap);
+    Log << " Data Chk: ";
+    Log << String(aSec->data_chksum, HEX);
+    Log << " Header Chk: ";
+    Log << String(aSec->header_chksum, HEX);
+    Log << "\r\n";
+    Log << ".-------------------------------------------------------------------------.\r\n";
+    Log << "| Boot Sector                                                             |\r\n";
+    Log << "|-------------------------------------------------------------------------|\r\n";
 
     for (int s = 0; s < 2; s++)
     {
         aSec = (Sector *)&track[s].sector;
         for (int i = 0; i < 8; i++)
         {
-            Serial << "| 0x";
+            String line = "| 0x";
             String hex = String((s * 512) + (i * 64), HEX);
-            Serial << (hex.length() < 3 ? String("0000000").substring(0, 3 - hex.length()) + hex : hex);
-            Serial << ": ";
+            line.append(hex.length() < 3 ? String("0000000").substring(0, 3 - hex.length()) + hex : hex);
+            line.append(": ");
             for (int j = 0; j < 64; j++)
             {
-                Serial.print(byte2char(aSec->data[(i * 64) + j]));
+                line.append(byte2char(aSec->data[(i * 64) + j]));
             }
-            Serial << " |\r\n";
+            line.append(" |\r\n");
+            Log << line;
         }
     }
 
-    Serial << "|-------------------------------------------------------------------------'------------------------------.\r\n";
+    Log << "|-------------------------------------------------------------------------'------------------------------.\r\n";
     for (int s = 0; s < 2; s++)
     {
         aSec = (Sector *)&track[s].sector;
         for (int i = 0; i < 16; i++)
         {
-            Serial << "| 0x";
+            String line = "| 0x";
             String hex = String((s * 512) + (i * 32), HEX);
-            Serial << (hex.length() < 3 ? String("0000000").substring(0, 3 - hex.length()) + hex : hex);
-            Serial << ": ";
+            line.append(hex.length() < 3 ? String("0000000").substring(0, 3 - hex.length()) + hex : hex).append(": ");
             for (int j = 0; j < 32; j++)
             {
                 if (aSec->data[(i * 32) + j] < 16)
                 {
-                    Serial.print("0");
+                    line.append("0");
                 }
-                Serial.print(aSec->data[(i * 32) + j], HEX);
-                Serial.print(" ");
+                line.append(String(aSec->data[(i * 32) + j], HEX)).append(" ");
             }
-            Serial << "|\r\n";
+            line.append("|\r\n");
+            Log << line;
         }
     }
-    Serial << "`--------------------------------------------------------------------------------------------------------'\r\n";
+    Log << "`--------------------------------------------------------------------------------------------------------'\r\n";
 
-    Serial << "\r\n";
+    char hexvalue[10];
+    sprintf(hexvalue, "%08x", (unsigned int)bootSectorCRC32());
+
+    Log << "crc32: 0x" + String(hexvalue) + "\r\n";
 }
 
 int *getHist()
@@ -504,7 +521,7 @@ int readTrack(boolean silent)
             {
                 if (!silent)
                 {
-                    Serial << "Timeout reached\r\n";
+                    Log << "Timeout reached\r\n";
                 }
                 stopFTM0();
                 errors = -1;
@@ -516,7 +533,7 @@ int readTrack(boolean silent)
         tZeit = micros() - tZeit;
         if (!silent)
         {
-            Serial << "Decode took " << tZeit << "\r\n";
+            Log << "Decode took " + String(tZeit) + "\r\n";
         }
         if (getTrackInfo() != logTrack)
         {
@@ -530,8 +547,7 @@ int readTrack(boolean silent)
         }
         if (!silent)
         {
-            Serial << "Read Error, retries left: " << retries - j << " CurrentTrack: " << logTrack << " error:";
-            Serial.println(errors, BIN);
+            Log << "Read Error, retries left: " + String(retries - j) + " CurrentTrack: " + String(logTrack) + " error: " + String(errors, BIN) + "\r\n";
         }
         // the following code tries to move the stepper / seek 0 before retrying to read the track
         // but i found out that about 6 retries are sufficient to determine if a track is bad
@@ -994,28 +1010,21 @@ void adjustTimings()
    prints histogram of last read track in ascii
    mainly for debugging purposes
 */
-void printHist()
-{
+void printHist() {
     float zeit;
-    for (int i = 0; i < 256; i++)
-    {
-        if (hist[i] > 0)
-        {
+    for (int i = 0; i < 256; i++) {
+        if (hist[i] > 0) {
             zeit = (float(i) * 0.04166667) + 0.25;
-            Serial.print(zeit);
-            Serial.print(":");
-            Serial.print(i);
-            Serial.print("-");
-            Serial.print(hist[i]);
-            for (int j = 0; j < (hist[i] / 128); j++)
-            {
-                Serial.print("+");
+            String line = String(zeit).append(":").append(i).append("-").append(hist[i]);
+            for (int j = 0; j < (hist[i] / 128); j++) {
+                line.append("+");
             }
-            Serial.println();
+            line.append("\r\n");
+            Log << line;
         }
-    }
-    Serial << "1. Minima: " << findMinima(high2) << " high2:" << high2 << "\r\n";
-    Serial << "2. Minima: " << findMinima(high3) << " high3:" << high3 << "\r\n";
+    }    
+    Log << "1. Minima: " + String(findMinima(high2)) + " high2:" + String(high2) + "\r\n";
+    Log << "2. Minima: " + String(findMinima(high3)) + " high3:" + String(high3) + "\r\n";
 }
 
 /*
@@ -1206,29 +1215,15 @@ unsigned long calcChkSum(long secPtr, int pos, int b)
 */
 void decodeTrack(boolean silent)
 {
-    if (!silent)
-    {
-        Serial << "Sectors start at: ";
-    }
-    for (int i = 0; i < sectorCnt; i++)
-    {
-        if (!silent)
-        {
-            Serial << sectorTable[i].bytePos;
-        }
-        if (i != sectorCnt - 1)
-        {
-            if (!silent)
-            {
-                Serial << ", ";
-            }
+    if (!silent) { Log << "Sectors start at: "; }
+    for (int i = 0; i < sectorCnt; i++) {
+        if (!silent) { 
+            Log << sectorTable[i].bytePos; 
+            if (i != sectorCnt - 1) { Log << ", "; }
         }
         decodeSector(sectorTable[i].bytePos, i);
     }
-    if (!silent)
-    {
-        Serial.println();
-    }
+    if (!silent) { Log << "\r\n"; }
 }
 
 /*
@@ -1248,32 +1243,26 @@ int getTrackInfo()
    dumps the sector <index> from the buffer in human readable acsii to the serial port
    mainly for debugging
 */
-void printAmigaSector(int index)
-{
+void printAmigaSector(int index) {
     struct Sector *aSec = (Sector *)&track[index].sector;
-    Serial << "Format Type: " << aSec->format_type << " Track: " << aSec->track
-           << " Sector: " << aSec->sector << " NumSec2Gap: " << aSec->toGap
-           << " Data Chk: ";
-    Serial.print(aSec->data_chksum, HEX);
-    Serial << " Header Chk: ";
-    Serial.println(aSec->header_chksum, HEX);
+    String line = "Format Type: " + String(aSec->format_type) + " Logical Track: " + String(aSec->track) + " Sector: " + String(aSec->sector) + " NumSec2Gap: " + String(aSec->toGap) + " Data Chk: ";
+    line.append(String(aSec->data_chksum, HEX));
+    line.append(" Header Chk: ");
+    line.append(String(aSec->header_chksum, HEX));
+    Log << line + "\r\n";
 
-    for (int i = 0; i < 16; i++)
-    {
-        for (int j = 0; j < 32; j++)
-        {
-            if (aSec->data[(i * 32) + j] < 16)
-            {
-                Serial.print("0");
+    for (int i = 0; i < 16; i++) {
+        line = "";
+        for (int j = 0; j < 32; j++) {
+            if (aSec->data[(i * 32) + j] < 16) {
+                line.append("0");
             }
-            Serial.print(aSec->data[(i * 32) + j], HEX);
-            Serial.print(" ");
+            line.append(String(aSec->data[(i * 32) + j], HEX) + " ");
         }
-        for (int j = 0; j < 32; j++)
-        {
-            Serial.print(byte2char(aSec->data[(i * 32) + j]));
+        for (int j = 0; j < 32; j++) {
+            line.append(byte2char(aSec->data[(i * 32) + j]));
         }
-        Serial.println();
+        Log << line + "\r\n";
     }
 }
 
@@ -1281,10 +1270,8 @@ void printAmigaSector(int index)
    dumps the whole track in ascii
    mainly for debugging
 */
-void printTrack()
-{
-    for (int i = 0; i < sectorCnt; i++)
-    {
+void printTrack() {
+    for (int i = 0; i < sectorCnt; i++) {
         printAmigaSector(i);
     }
 }
@@ -1350,11 +1337,11 @@ void uploadTrack()
 /*
    returns c if printable, else returns a whitespace
 */
-char byte2char(byte c)
+char byte2char(byte c, char delim)
 {
     if ((c < 32) | (c > 126))
     {
-        return (char)46;
+        return delim;
     }
     else
     {

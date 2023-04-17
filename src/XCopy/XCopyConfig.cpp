@@ -8,88 +8,107 @@ XCopyConfig::XCopyConfig(bool readConfig)
 
 void XCopyConfig::createConfig()
 {
-    StaticJsonBuffer<512> jsonBuffer;
-    JsonObject &root = jsonBuffer.createObject();
+    StaticJsonDocument<512> jsonDocument;
+    JsonObject root = jsonDocument.as<JsonObject>();
     root["verify"] = "TRUE";
     root["retryCount"] = 5;
     root["ssid"] = "";
     root["password"] = "";
 
     _config = "";
-    root.printTo(_config);
+    serializeJson(root, _config);
 
     parseConfig();
 }
 
 void XCopyConfig::setRetryCount(int value)
 {
-    StaticJsonBuffer<512> jsonBuffer;
-    JsonObject &root = jsonBuffer.parseObject(_config);
+    StaticJsonDocument<512> root;
+    deserializeJson(root, _config.c_str());
     root["retryCount"] = value;
 
     _config = "";
-    root.printTo(_config);
-
+    serializeJson(root, _config);
     _retryCount = value;
 }
 
 void XCopyConfig::setVerify(bool value)
 {
-    StaticJsonBuffer<512> jsonBuffer;
-    JsonObject &root = jsonBuffer.parseObject(_config);
+    StaticJsonDocument<512> root;
+    deserializeJson(root, _config.c_str());
     root["verify"] = value ? "TRUE" : "FALSE";
 
     _config = "";
-    root.printTo(_config);
-
+    serializeJson(root, _config);
     _verify = value;
 }
 
 void XCopyConfig::setVolume(float value)
 {
-    StaticJsonBuffer<512> jsonBuffer;
-    JsonObject &root = jsonBuffer.parseObject(_config);
+    StaticJsonDocument<512> root;
+    deserializeJson(root, _config.c_str());
     root["volume"] = value;
 
     _config = "";
-    root.printTo(_config);
-
+    serializeJson(root, _config);
     _volume = value;
 }
 
 void XCopyConfig::setSSID(String value)
 {
-    StaticJsonBuffer<512> jsonBuffer;
-    JsonObject &root = jsonBuffer.parseObject(_config);
+    StaticJsonDocument<512> root;
+    deserializeJson(root, _config.c_str());
     root["ssid"] = value;
 
     _config = "";
-    root.printTo(_config);
-
+    serializeJson(root, _config);
     _ssid = value;
 }
 
 void XCopyConfig::setPassword(String value)
 {
-    StaticJsonBuffer<512> jsonBuffer;
-    JsonObject &root = jsonBuffer.parseObject(_config);
+    StaticJsonDocument<512> root;
+    deserializeJson(root, _config.c_str());
     root["password"] = value;
 
     _config = "";
-    root.printTo(_config);
-
+    serializeJson(root, _config);
     _password = value;
 }
 
+void XCopyConfig::setDiskDelay(uint16_t delayMs) {
+    StaticJsonDocument<512> root;
+    deserializeJson(root, _config.c_str());
+    root["diskDelay"] = delayMs;
+
+    _config = "";
+    serializeJson(root, _config);
+    _diskDelay = delayMs;
+}
+
+void XCopyConfig::setTimeZone(int timeZone) {
+    StaticJsonDocument<512> root;
+    deserializeJson(root, _config.c_str());
+    root["timeZone"] = timeZone;
+
+    _config = "";
+    serializeJson(root, _config);
+    _timeZone = timeZone;
+}
+
+
 void XCopyConfig::parseConfig()
 {
-    StaticJsonBuffer<512> jsonBuffer;
-    JsonObject &root = jsonBuffer.parseObject(_config);
+    StaticJsonDocument<512> root;
+    deserializeJson(root, _config.c_str());
+
     _verify = root["verify"] == "TRUE" ? true : false;
     _retryCount = root["retryCount"];
-    _volume = root["volume"];
-    _ssid = root["ssid"].asString();
-    _password = root["password"].asString();
+    _volume = root["volume"].as<float>();
+    _ssid = root["ssid"].as<const char*>();
+    _password = root["password"].as<const char*>();
+    _diskDelay = root["diskDelay"];
+    _timeZone = root["timeZone"];
 }
 
 bool XCopyConfig::readConfig()

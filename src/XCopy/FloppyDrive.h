@@ -3,6 +3,8 @@
 
 #include <Arduino.h>
 #include <Streaming.h>
+#include "XCopyLog.h"
+#include "../FastCRC/FastCRC.h"
 
 #define BITBAND_ADDR(addr, bit) (((uint32_t) & (addr)-0x20000000) * 32 + (bit)*4 + 0x22000000)
 
@@ -72,6 +74,7 @@ void printBootSector();
 int *getHist();
 byte getWeakTrack();
 byte getRetries();
+uint32_t bootSectorCRC32();
 // ADDED FUNCTIONS
 
 void pinModeFast(uint8_t pin, uint8_t mode);
@@ -118,7 +121,7 @@ void dumpSector(int index);
 int loadSector(int index);
 void downloadTrack();
 void uploadTrack();
-char byte2char(byte c);
+char byte2char(byte c, char delim = '.');
 void print_binary(int v, int num_places);
 void fillSector(int sect);
 unsigned long oddLong(unsigned long odd);

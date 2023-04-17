@@ -8,14 +8,14 @@ void XCopyADFLib::begin(uint8_t sdCSPin)
     adfEnvInitDefault();
 }
 
-Device *XCopyADFLib::mount(char *filename)
+Device *XCopyADFLib::mount(const char *filename)
 {
     _filename = String(filename);
-    Serial << "XCopyADFLib::mount::1\r\n";
+    // Serial << "XCopyADFLib::mount::1\r\n";
 
-    _dev = adfMountDev(filename, true);
+    _dev = adfMountDev((char*)filename, true);
 
-    Serial << "XCopyADFLib::mount::2\r\n";
+    // Serial << "XCopyADFLib::mount::2\r\n";
     return _dev;
 }
 
@@ -32,66 +32,74 @@ void XCopyADFLib::unmount()
     adfUnMountDev(_dev);
 }
 
-void XCopyADFLib::printDevice(Device *device)
+String XCopyADFLib::printDevice(Device *device)
 {
-    Serial << "ADF:\r\n";
-    Serial << "\t     Filename: " << _filename << "\r\n";
-    Serial << "\t  Device Type: ";
+    String result = "";
+    result.append("ADF:\r\n");
+    result.append("\t     Filename: " + _filename + "\r\n");
+    result.append("\t  Device Type: ");
     switch (device->devType)
     {
     case DEVTYPE_FLOPDD:
-        Serial << "Double Density Floppy\r\n";
+        result.append("Double Density Floppy\r\n");
         break;
     case DEVTYPE_FLOPHD:
-        Serial << "High Density Floppy\r\n";
+        result.append("High Density Floppy\r\n");
         break;
     case DEVTYPE_HARDDISK:
-        Serial << "Harddisk\r\n";
+        result.append("Harddisk\r\n");
         break;
     case DEVTYPE_HARDFILE:
-        Serial << "Hardfile\r\n";
+        result.append("Hardfile\r\n");
         break;
     default:
         break;
     }
-    Serial << "\t    Cylinders: " << device->cylinders << "\r\n";
-    Serial << "\t        Heads: " << device->heads << "\r\n";
-    Serial << "\t      Sectors: " << device->sectors << "\r\n";
-    Serial << "\t         Size: " << device->size << "\r\n";
-    Serial << "\t       Native: " << (device->isNativeDev ? "true" : "false") << "\r\n";
-    Serial << "\t     ReadOnly: " << (device->readOnly ? "true" : "false") << "\r\n";
-    Serial << "\t      Volumes: " << device->nVol << "\r\n";
+    result.append("\t    Cylinders: " + String(device->cylinders) + "\r\n");
+    result.append("\t        Heads: " + String(device->heads) + "\r\n");
+    result.append("\t      Sectors: " + String(device->sectors) + "\r\n");
+    result.append("\t         Size: " + String(device->size) + "\r\n");
+    result.append("\t       Native: " + String(device->isNativeDev ? "true" : "false") + "\r\n");
+    result.append("\t     ReadOnly: " + String(device->readOnly ? "true" : "false") + "\r\n");
+    result.append("\t      Volumes: " + String(device->nVol) + "\r\n");
+
+    return result;
 }
 
-void XCopyADFLib::printVolume(Volume *volume)
-{
-    Serial << "Volume:\r\n";
-    Serial << "\t         Name: " << volume->volName << "\r\n";
-    Serial << "\t      dosType: ";
-    Serial.printf("%s", isFFS(volume->dosType) ? "FFS" : "OFS");
+String XCopyADFLib::printVolume(Volume *volume) {
+    String result = "";    
+    result.append("Volume:\r\n");
+    result.append("\t         Name: " + String(volume->volName) + "\r\n");
+    result.append("\t      dosType: ");
+    result.append(isFFS(volume->dosType) ? "FFS" : "OFS");
     if (isINTL(volume->dosType))
-        Serial << " INTL";
+        result.append(" INTL");
     if (isDIRCACHE(volume->dosType))
-        Serial << " DIRCACHE";
-    Serial << "\r\n";
-    Serial << "\t    blockSize: " << volume->blockSize << "\r\n";
-    Serial << "\tdatablockSize: " << volume->datablockSize << "\r\n";
-    Serial << "\t     bootCode: " << volume->bootCode << "\r\n";
-    Serial << "\t   freeBlocks: " << adfCountFreeBlocks(volume) << "/" << (volume->lastBlock - volume->firstBlock + 1) << "\r\n";
-    Serial << "\t       filled: " << 100.0 - (adfCountFreeBlocks(volume) * 100.0) / (volume->lastBlock - volume->firstBlock + 1) << "%\r\n";
+        result.append(" DIRCACHE");
+    result.append("\r\n");
+    result.append("\t    blockSize: " + String(volume->blockSize) + "\r\n");
+    result.append("\tdatablockSize: " + String(volume->datablockSize) + "\r\n");
+    result.append("\t     bootCode: " + String(volume->bootCode) + "\r\n");
+    result.append("\t   freeBlocks: " + String(adfCountFreeBlocks(volume)) + "/" + String((volume->lastBlock - volume->firstBlock + 1)) + "\r\n");
+    result.append("\t       filled: " + String(100.0 - (adfCountFreeBlocks(volume) * 100.0) / (volume->lastBlock - volume->firstBlock + 1)) + "%\r\n");
+    result.append("Directory:\r\n");
+    result.append("    Size Date         Time     @Bloc   Name / Comment\r\n");
+    result.append("-------- ----------   -------  ------  ------------------------------------\r\n");
 
-    Serial << "Directory:\r\n";
-    Serial << "    Size Date         Time     @Bloc   Name / Comment\r\n";
-    Serial << "-------- ----------   -------  ------  ------------------------------------\r\n";
+    return result;
+}
 
+String XCopyADFLib::printDirectory(Volume *volume) {
+    String result = "";    
     struct List *list, *cell;
     cell = list = adfGetDirEnt(volume, volume->curDirPtr);
-    while (cell)
-    {
-        printEntry(volume, (Entry *)cell->content, "", true, true);
-        cell = cell->next;
+    while (cell) {
+        result.append(printEntry(volume, (Entry *)cell->content, String("").c_str(), true, true));
+        cell = cell->next;        
     }
     adfFreeDirList(list);
+
+    return result;
 }
 
 void XCopyADFLib::adfDump()
@@ -111,31 +119,38 @@ void XCopyADFLib::adfDump()
         Serial << "Error: Unable to mount ADF device\r\n";
 }
 
-void XCopyADFLib::printEntry(struct Volume *vol, struct Entry *entry, char *path, bool sect, bool comment)
-{
+String XCopyADFLib::printEntry(struct Volume *vol, struct Entry *entry, const char *path, bool sect, bool comment) {
+    String result = "";
+    char cresult[255] = "";
+
     /* do not print the links entries, ADFlib do not support them yet properly */
-    if (entry->type == ST_LFILE || entry->type == ST_LDIR || entry->type == ST_LSOFT)
-        return;
+    if (entry->type == ST_LFILE || entry->type == ST_LDIR || entry->type == ST_LSOFT) {
+        return "";
+    }
 
-    if (entry->type == ST_DIR)
-        Serial.printf("         ");
-    else
-        Serial.printf("%7d  ", entry->size);
+    sprintf(cresult, entry->type == ST_DIR ? "         " : "%7lu  ", entry->size);
+    result.append(cresult);
 
-    Serial.printf("%4d/%02d/%02d  %2d:%02d:%02d ", entry->year, entry->month, entry->days,
-                  entry->hour, entry->mins, entry->secs);
-    if (sect)
-        Serial.printf(" %06d ", entry->sector);
+    sprintf(cresult, "%4d/%02d/%02d  %2d:%02d:%02d ", entry->year, entry->month, entry->days, entry->hour, entry->mins, entry->secs);
+    result.append(cresult);
 
-    if (strlen(path) > 0)
-        Serial.printf(" %s/", path);
-    else
-        Serial.printf(" ");
-    if (entry->type == ST_DIR)
-        Serial.printf("%s/", entry->name);
-    else
-        Serial.printf("%s", entry->name);
-    if (comment && entry->comment != NULL && strlen(entry->comment) > 0)
-        Serial.printf(", %s", entry->comment);
-    Serial.printf("\r\n");
+    if (sect) {
+        sprintf(cresult, " %06lu ", entry->sector);
+        result.append(cresult);
+    }
+
+    sprintf(cresult, strlen(path) > 0 ? " %s/" : " ", path);
+    result.append(cresult);
+
+    sprintf(cresult, entry->type == ST_DIR ? "%s/" : "%s", entry->name);
+    result.append(cresult);
+
+    if (comment && entry->comment != NULL && strlen(entry->comment) > 0) {
+        sprintf(cresult, ", %s", entry->comment);
+        result.append(cresult);
+    }
+
+    result.append("\r\n");
+
+    return result;
 }

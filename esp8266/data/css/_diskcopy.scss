@@ -1,0 +1,55 @@
+/* Headings
+-------------------------------------------------- */
+
+.diskcopyInfo {
+    background-color:darkblue;
+    color: $textColor;
+
+    .mode {
+        width: 25%;
+    }
+}
+
+
+/* Icons
+-------------------------------------------------- */
+
+.gray {
+    filter: grayscale(100%);
+}
+
+/* Flux
+-------------------------------------------------- */
+
+.fluxCanvas
+{
+    background-color: black;
+    border:1px solid darkgrey;
+}
+
+/* Buttons
+-------------------------------------------------- */
+.cancelButton
+{
+    margin-bottom: 20px;
+}
+
+/* Modal
+-------------------------------------------------- */
+.modal {
+    color: black;
+}
+
+.websocket {
+    background: #180202d4;
+    .modal-content {
+        display: flex;
+        justify-content: center;
+        align-items: center;    
+    }
+    p {
+        display: flex;
+        align-items: center;
+        justify-content: center
+    }
+}

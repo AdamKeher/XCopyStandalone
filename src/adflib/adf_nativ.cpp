@@ -96,16 +96,16 @@ RETCODE myInitDevice(struct Device* dev, char* name, BOOL ro)
  */
 RETCODE myReadSector(struct Device *dev, int32_t n, int size, uint8_t* buf)
 {
-    Serial.printf( "myReadSector\r\n" );
+    // Serial.printf( "myReadSector\r\n" );
     int track = n / dev->sectors;
     int sector = n % dev->sectors;
 	// Serial.printf("Read Track: file: %s %d Sector: %d n: %d size: %d seek: %d\r\n", adfFileName, track, sector, n, size, n * size);
 
     // FIX: why is the file closed?
     // adfFile.close();
-    Serial.print( "myReadSector::1::'");
-    Serial.print(adfFileName);
-    Serial.println("'");
+    // Serial.print( "myReadSector::1::'");
+    // Serial.print(adfFileName);
+    // Serial.println("'");
     // Serial.print("Open: ");
     // Serial.println(adfFile.isOpen());
     SdFat SD;
@@ -113,11 +113,11 @@ RETCODE myReadSector(struct Device *dev, int32_t n, int size, uint8_t* buf)
     File adfFile3 = SD.open(adfFileName);
     adfFile3.seek(n * size);
     adfFile3.close();
-    Serial.printf("myReadSector::2\r\n");
+    // Serial.printf("myReadSector::2\r\n");
     File adfFile2 = SD.open(adfFileName);
-    Serial.printf( "myReadSector::2.5\r\n" );
+    // Serial.printf( "myReadSector::2.5\r\n" );
     // FatFile adfFile = SD.open(adfFileName);
-    Serial.printf( "myReadSector::3\r\n" );
+    // Serial.printf( "myReadSector::3\r\n" );
 
     byte buffer[size];
     adfFile2.seek(n * size);

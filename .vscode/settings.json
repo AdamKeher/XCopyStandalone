@@ -1,15 +1,13 @@
 {
-    "esp8266fs.dataFiles": "./esp8266/data",
-    "esp8266fs.preferencesPath": "C:/Users/adam/AppData/Local/Arduino15",
-    "esp8266fs.arduinoUserPath": "D:/Electronics/Arduino",
-    "esp8266fs.spiffsImage": "../../ArduinoOutput/spiffs.bin",
-    "esp8266fs.logLevel": "normal",
     "files.associations": {
+        "*.tcc": "cpp",
+        "string": "cpp",
         "initializer_list": "cpp",
-        "xstring": "cpp",
-        "xutility": "cpp",
-        "list": "cpp",
-        "vector": "cpp",
-        "xhash": "cpp"
-    }
+        "limits": "cpp",
+        "cmath": "cpp",
+        "istream": "cpp",
+        "ostream": "cpp",
+        "streambuf": "cpp"
+    },
+    "cmake.configureOnOpen": false
 }

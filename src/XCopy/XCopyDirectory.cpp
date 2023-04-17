@@ -4,12 +4,8 @@ XCopyDirectory::XCopyDirectory()
 {
 }
 
-void XCopyDirectory::begin(XCopyGraphics *graphics, XCopyDisk *disk, uint8_t sdCSPin, uint8_t flashCSPin)
+void XCopyDirectory::begin(XCopyGraphics *graphics, XCopyDisk *disk)
 {
-    _graphics = graphics;
-    _sdCSPin = sdCSPin;
-    _flashCSPin = flashCSPin;
-
     _graphics = graphics;
     _disk = disk;
 }
@@ -55,53 +51,37 @@ bool XCopyDirectory::down()
 
 void XCopyDirectory::getDirectoryFlash(bool root, XCopyDisk *disk, String filter)
 {
-    if (!SerialFlash.begin(_flashCSPin))
-    {
+    if (!SerialFlash.begin(PIN_FLASHCS)) {
         Serial << "\r\nError Accessing SPI Flash.\r\n";
         return;
     }
 
-    if (root)
-    {
+    if (root) {
         XCopyDirectoryEntry *defaultItems = new XCopyDirectoryEntry();
         defaultItems->setIsDirectory(true);
-        defaultItems->source = flashMemory;
-        defaultItems->name = "Built In ADF Files";
+        defaultItems->source = _flashMemory;
         defaultItems->longName = "Built In ADF Files";
-        defaultItems->path = "/Built In ADF Files/";
         addRoot(defaultItems);
     }
-    else
-    {
+    else {
         clear();
         _currentPath = "/Built In ADF Files/";
         SerialFlash.opendir();
-        while (1)
-        {
+        while (1) {
             char filename[64];
             uint32_t filesize;
 
-            if (SerialFlash.readdir(filename, sizeof(filename), filesize))
-            {
-                if (String(filename).toUpperCase().endsWith(filter.toUpperCase()))
-                {
+            if (SerialFlash.readdir(filename, sizeof(filename), filesize)) {
+                if (String(filename).toUpperCase().endsWith(filter.toUpperCase())) {
                     XCopyDirectoryEntry *flashFile = new XCopyDirectoryEntry();
                     flashFile->setIsDirectory(false);
-                    flashFile->name = filename;
-                    strlwr(filename);
                     flashFile->longName = filename;
-                    flashFile->size = filesize;
-                    flashFile->source = flashMemory;
-                    flashFile->volumeName = "Unknown";
-                    flashFile->volumeName = disk->getADFVolumeName(flashFile->name, _flashMemory);
-                    flashFile->path = "";
+                    flashFile->source = _flashMemory;
                     flashFile = addItem(flashFile);
                 }
             }
-            else
-            {
-                break; // no more files
-            }
+            // no more files
+            else { break; }
         }
     }
 }
@@ -111,83 +91,80 @@ void XCopyDirectory::getDirectory(String path, XCopyDisk *disk, String filter, b
     clear();
     _currentPath = path;
 
-    if (_disk->cardDetect())
-        if (SD.begin(_sdCSPin))
-        {
-            char buffer[path.length()];
-            memset(buffer, 0, sizeof(buffer));
-            path.toCharArray(buffer, sizeof(buffer) + 1);
+    XCopySDCard *_sdcard = new XCopySDCard();
 
-            SdFile root;
-            root.open(buffer);
+    if (!_sdcard->cardDetect()) {
+        Serial << "SD card missing\r\n";
+        delete _sdcard;
+        return;
+    }
 
-            while (true)
-            {
-                SdFile entry;
-                if (!entry.openNext(&root, O_RDONLY))
-                    break;
+    if (!_sdcard->begin()) {
+        Serial << "SD card initialisation failed\r\n";
+        delete _sdcard;
+        return;
+    }
 
-                char sfnBuffer[20];
-                char lfnBuffer[255];
-                entry.getSFN(sfnBuffer);
-                entry.getName(lfnBuffer, 255);
-                strupr(sfnBuffer);
 
-                dir_t d;
-                entry.dirEntry(&d);
+    SdFile root;
+    bool result = root.open(path.c_str());
+    if (!result) { 
+        Serial << "Failed to open path: '" + path + "'\r\n";
+        delete _sdcard;
+        return;
+    }
 
-                if (entry.isDir() && String(sfnBuffer) != "SYSTEM~1")
-                {
-                    XCopyDirectoryEntry *item = new XCopyDirectoryEntry();
-                    item->name = sfnBuffer;
-                    item->longName = lfnBuffer;
-                    item->setIsDirectory(true);
-                    item->path = path + sfnBuffer + '/';
-                    item->source = sdCard;
-                    addItem(item);
-                }
-                else if ((String(sfnBuffer).endsWith(filter.toUpperCase()) || filter == "") && String(sfnBuffer) != "SYSTEM~1")
-                {
-                    XCopyDirectoryEntry *item = new XCopyDirectoryEntry();
-                    item->name = sfnBuffer;
-                    item->longName = lfnBuffer;
-                    item->date = String(FAT_YEAR(d.creationDate)) + "/" + String(FAT_MONTH(d.creationDate)) + '/' + String(FAT_DAY(d.creationDate));
-                    item->size = entry.fileSize();
-                    item->setIsDirectory(false);
-                    item->path = path;
-                    item->source = sdCard;
-                    item->volumeName = disk->getADFVolumeName(item->path + item->name);
-
-                    addItem(item);
-                }
-                entry.close();
-            }
-
-            // move directory entries to top in sorted order
-            if (dirAtTop)
-            {
-                XCopyDirectoryEntry *item = getRoot();
-                XCopyDirectoryEntry *before = NULL;
-                while (item != NULL)
-                {
-                    if (item->isDirectory())
-                    {
-                        XCopyDirectoryEntry *tempNext;
-                        tempNext = item->next;
-                        moveItemBefore(item, before == NULL ? getRoot() : before);
-                        before = item->next;
-                        item = tempNext;
-                        continue;
-                    }
-                    item = item->next;
-                }
-            }
-        }
-
-    if (path == "/")
+    while (true)
     {
+        SdFile entry;
+        if (!entry.openNext(&root, O_RDONLY)) break;
+
+        char lfnBuffer[255];
+        entry.getName(lfnBuffer, 255);
+
+        if (entry.isDir() && String(lfnBuffer) != "System Volume Information") {
+            XCopyDirectoryEntry *item = new XCopyDirectoryEntry();
+            item->longName = lfnBuffer;
+            item->setIsDirectory(true);
+            item->source = _sdCard;
+            addItem(item);
+        } 
+        else if ((String(lfnBuffer).toUpperCase().endsWith(filter.toUpperCase()) || filter == "")) {
+            XCopyDirectoryEntry *item = new XCopyDirectoryEntry();
+            item->longName = lfnBuffer;
+            item->setIsDirectory(false);
+            item->source = _sdCard;
+            if (entry.fileSize() != 901120) item->isIncorrectSize = true;
+
+            addItem(item);
+        }
+        entry.close();
+    }
+
+    // move directory entries to top in sorted order
+    if (dirAtTop) {
+        XCopyDirectoryEntry *item = getRoot();
+        XCopyDirectoryEntry *before = NULL;
+        while (item != NULL)
+        {
+            if (item->isDirectory())
+            {
+                XCopyDirectoryEntry *tempNext;
+                tempNext = item->next;
+                moveItemBefore(item, before == NULL ? getRoot() : before);
+                before = item->next;
+                item = tempNext;
+                continue;
+            }
+            item = item->next;
+        }
+    }
+
+    if (path == "/") {
         getDirectoryFlash(true, NULL);
     }
+
+    delete _sdcard;
 }
 
 XCopyDirectoryEntry *XCopyDirectory::addRoot(XCopyDirectoryEntry *item)
@@ -217,7 +194,7 @@ XCopyDirectoryEntry *XCopyDirectory::addItem(XCopyDirectoryEntry *item, XCopyDir
         bool result = false;
         while (compare != NULL)
         {
-            result = item->name < compare->name;
+            result = item->longName < compare->longName;
             if (result)
                 break;
             compare = compare->next;
@@ -357,14 +334,11 @@ uint16_t XCopyDirectory::getItemIndex(XCopyDirectoryEntry *item)
 void XCopyDirectory::printItem(XCopyDirectoryEntry *item)
 {
     Serial << "{\r\n";
-    Serial << "        Item: " << item->name << "\r\n";
-    Serial << "        Path: " << item->path << "\r\n";
-    Serial << " Volume Name: " << item->volumeName << "\r\n";
+    Serial << "        Item: " << item->longName << "\r\n";
     Serial << "   Directory: " << (item->isDirectory() ? "TRUE" : "FALSE") << "\r\n";
-    Serial << "        Size: " << item->size << "\r\n";
     Serial << "      Source: " << item->source << "\r\n";
-    Serial << "        Prev: " << (item->prev == NULL ? "NULL" : item->prev->name) << "\r\n";
-    Serial << "        Next: " << (item->next == NULL ? "NULL" : item->next->name) << "\r\n";
+    Serial << "        Prev: " << (item->prev == NULL ? "NULL" : item->prev->longName) << "\r\n";
+    Serial << "        Next: " << (item->next == NULL ? "NULL" : item->next->longName) << "\r\n";
     Serial << "}\r\n";
 }
 
@@ -408,39 +382,28 @@ void XCopyDirectory::drawDirectory(bool clearScreen)
         _graphics->setCursor(5, 0 + (count * 10));
         if (item->isDirectory())
         {
-            if (item->source == flashMemory)
+            if (item->source == _flashMemory)
                 _graphics->drawText(ST7735_CYAN, ">> ");
             else
                 _graphics->drawText(ST7735_YELLOW, ">> ");
         }
 
         uint16_t color = isCurrentItem(item) ? ST7735_GREEN : ST7735_WHITE;
+        if (item->isIncorrectSize) color = ST7735_RED;
 
-        // color red if ADF file size is unexpected
-        if (!item->isDirectory() && item->size != 901120)
-            color = ST7735_RED;
-        
         _graphics->setTextWrap(false);
         _graphics->drawText(color, item->longName);
 
         // draw fullscreen thumbnail or information footer
-        if (item->source == flashMemory && isCurrentItem(item))
+        if (item->source == _flashMemory && isCurrentItem(item))
         {
-            String imageName = item->name.substring(0, item->name.lastIndexOf(".")) + ".565";
+            String imageName = item->longName.substring(0, item->longName.lastIndexOf(".")) + ".565";
             if (SerialFlash.exists(imageName.c_str()))
             {
                 _graphics->rawDraw(imageName.c_str(), 0, 0);
                 break;
             }
         } 
-        else if (item->source == sdCard && isCurrentItem(item))
-        {
-            _graphics->getTFT()->fillRect(0, 119, _graphics->getTFT()->width(), 10, ST7735_BLUE);
-            String text = item->isDirectory() ? "Directory" : "Vol: " + item->volumeName;
-            if (item->size != 901120)
-                text = "invalid ADF Size: " + String(item->size) + " bytes";
-            _graphics->drawText(5, 120, ST7735_YELLOW, text);
-        }
 
         item = item->next;
         count++;

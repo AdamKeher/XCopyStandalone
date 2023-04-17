@@ -1,0 +1,21 @@
+/* Main Page
+-------------------------------------------------- */
+
+html {
+    position: relative;
+    min-height: 100%;
+}
+
+body {
+    background-color: $background;
+    color: $textColor;
+    margin-top: 10px;
+    margin-bottom: 90px; /* Margin bottom by footer height */
+    overflow-y: scroll; /* Show vertical scrollbar */    
+}
+
+.container {
+    width: auto;
+    max-width: 680px;
+    padding: 0 15px;
+}

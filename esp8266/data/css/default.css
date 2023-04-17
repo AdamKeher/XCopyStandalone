@@ -1,0 +1,395 @@
+/* Main Page
+-------------------------------------------------- */
+html {
+  position: relative;
+  min-height: 100%;
+}
+
+body {
+  background-color: #1e1e1e;
+  color: white;
+  margin-top: 10px;
+  margin-bottom: 90px;
+  /* Margin bottom by footer height */
+  overflow-y: scroll;
+  /* Show vertical scrollbar */
+}
+
+.container {
+  width: auto;
+  max-width: 680px;
+  padding: 0 15px;
+}
+
+/* Header
+-------------------------------------------------- */
+.nav-link {
+  color: white;
+}
+
+.nav-link:hover {
+  color: gray;
+}
+
+/* Headings
+-------------------------------------------------- */
+.diskcopyInfo {
+  background-color: darkblue;
+  color: white;
+}
+
+.diskcopyInfo .mode {
+  width: 25%;
+}
+
+/* Icons
+-------------------------------------------------- */
+.gray {
+  -webkit-filter: grayscale(100%);
+          filter: grayscale(100%);
+}
+
+/* Flux
+-------------------------------------------------- */
+.fluxCanvas {
+  background-color: black;
+  border: 1px solid darkgrey;
+}
+
+/* Buttons
+-------------------------------------------------- */
+.cancelButton {
+  margin-bottom: 20px;
+}
+
+/* Modal
+-------------------------------------------------- */
+.modal {
+  color: black;
+}
+
+.websocket {
+  background: #180202d4;
+}
+
+.websocket .modal-content {
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-pack: center;
+      -ms-flex-pack: center;
+          justify-content: center;
+  -webkit-box-align: center;
+      -ms-flex-align: center;
+          align-items: center;
+}
+
+.websocket p {
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-align: center;
+      -ms-flex-align: center;
+          align-items: center;
+  -webkit-box-pack: center;
+      -ms-flex-pack: center;
+          justify-content: center;
+}
+
+/* Tracks
+-------------------------------------------------- */
+.table-sm {
+  width: 100%;
+  background-color: black;
+  color: white;
+}
+
+.table-sm td {
+  height: 40px;
+  width: 40px;
+  text-align: center;
+}
+
+.track {
+  font-size: smaller;
+  background-color: #151515;
+  color: white;
+  border: 1px solid white;
+}
+
+.track.white {
+  background-color: whitesmoke;
+  color: black;
+}
+
+.track.green {
+  background-color: green;
+  color: white;
+}
+
+.track.yellow {
+  background-color: yellow;
+  color: black;
+}
+
+.track.orange {
+  background-color: orange;
+  color: black;
+}
+
+.track.red {
+  background-color: red;
+  color: white;
+}
+
+.track.magenta {
+  background-color: magenta;
+  color: white;
+}
+
+/* Disk Read / Write Key
+-------------------------------------------------- */
+.key {
+  border: 1px solid white;
+  width: 450px;
+  padding: 20px;
+}
+
+.key .size, .key .text {
+  width: 30px;
+  height: 30px;
+  margin-bottom: 20px;
+}
+
+.key .size:last-child, .key .text:last-child {
+  margin-bottom: 0px;
+}
+
+.key .text {
+  margin-left: 10px;
+  width: auto;
+}
+
+/* SD Table
+-------------------------------------------------- */
+.sdcardTable th {
+  background-color: white;
+  color: black;
+}
+
+.sdcardTable td a {
+  color: lightblue;
+}
+
+.sdcardTable td a:hover {
+  color: white;
+}
+
+.sdcardDirectory {
+  color: yellow;
+}
+
+.sdcardADF {
+  color: limegreen;
+}
+
+/* SD Table
+-------------------------------------------------- */
+@font-face {
+  font-family: 'TopazPlus a500a1000a2000';
+  src: url("../fonts/topaz.ttf");
+}
+
+.dvEdit {
+  background-color: lightblue;
+  width: 50px;
+  text-align: center;
+  border: 2px solid white;
+}
+
+.dvEdit:focus {
+  outline: none !important;
+  background-color: white;
+  border: 2px solid green;
+}
+
+.dvEdit.wide {
+  width: 150px;
+  text-align: start;
+}
+
+.sectorTable pre {
+  overflow: hidden;
+  margin: 0px;
+  padding: 0px;
+  margin-top: 1px;
+}
+
+.sectorTable pre .asciiChar {
+  background-color: #303030;
+  margin-right: 2px;
+  padding: 1.25px;
+}
+
+.sectorTable pre .hex {
+  background-color: gray;
+  color: black;
+  padding: 3px;
+  margin: 0px;
+  margin-right: 2px;
+}
+
+.sectorTable pre .hex:hover {
+  background-color: white;
+  color: black;
+  cursor: text;
+}
+
+.sectorTable pre .asciiBlock {
+  border-left: 4px solid gray;
+  color: white;
+  margin-left: 10px;
+  padding-left: 10px;
+  padding-right: 10px;
+  padding: 3px;
+}
+
+.sectorTable pre .range {
+  margin: 0px;
+  margin-right: 10px;
+  background-color: white;
+  color: black;
+  padding: 3px;
+}
+
+.sectorTable pre .asciiHighlight {
+  color: black;
+  background-color: white;
+}
+
+.asciiTable {
+  overflow: hidden;
+}
+
+.asciiTable pre:not(:first-of-type) {
+  margin-top: -9px;
+}
+
+.asciiTable pre {
+  margin: 0px;
+  padding: 0px;
+  overflow: hidden;
+}
+
+.asciiTable pre .asciiBlock {
+  margin-right: 20px;
+  font-family: 'TopazPlus a500a1000a2000';
+  font-style: normal;
+  font-size: large;
+}
+
+.asciiTable pre .range {
+  margin: 0px;
+  margin-right: 10px;
+  background-color: white;
+  color: black;
+  padding: 3px;
+}
+
+.asciiTable pre .asciiHighlight {
+  color: black;
+  background-color: white;
+}
+
+.emptyTable {
+  font-family: monospace;
+  font-size: smaller;
+}
+
+.emptyTable .emptyTrack {
+  background-color: white;
+  color: black;
+  padding-left: 3px;
+  padding-right: 3px;
+}
+
+.emptyTable .side {
+  background-color: gray;
+  color: black;
+  margin-left: 10px;
+  margin-right: 10px;
+  padding-left: 3px;
+  padding-right: 3px;
+}
+
+.emptyTable .block {
+  border: 2px solid #212529;
+  padding-left: 15px;
+  padding-right: 15px;
+  background-color: #303030;
+}
+
+.emptyTable .block:hover {
+  background-color: white;
+  color: black;
+  cursor: -webkit-zoom-in;
+  cursor: zoom-in;
+}
+
+.emptyTable .empty {
+  background-color: green;
+}
+
+.emptyTable .full {
+  background-color: red;
+}
+
+.emptyTable .copy {
+  background-color: purple;
+}
+
+.emptyTable .current {
+  border: 2px solid white;
+}
+
+/* Histogram
+-------------------------------------------------- */
+.histCanvas {
+  background-color: black;
+  border: 1px solid darkgrey;
+}
+
+/* Disk Info
+-------------------------------------------------- */
+.diskCanvas {
+  background-color: #050505;
+  border: 1px solid darkgrey;
+}
+
+/* Footer
+-------------------------------------------------- */
+.footer {
+  position: fixed;
+  bottom: 0;
+  width: 100%;
+  height: 90px;
+  line-height: 90px;
+  background-color: lightgray;
+}
+
+.statusfooter {
+  position: relative;
+  top: -25px;
+}
+
+/* Pin Status
+-------------------------------------------------- */
+.busy {
+  background-color: red;
+  color: white;
+}
+
+.idle {
+  background-color: green;
+  color: white;
+}

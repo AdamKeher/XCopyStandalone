@@ -1,4 +1,272 @@
-Todo:
+Project Resumption:
+v712.2022:
+  ☐ Build option for multipe board versions
+    ✔ LCD tab option
+    ✔ LCD orientation
+    ✔ Joystick buttons
+  ☐ xterm.js web log
+    ☐ Investigate direct web sockets functionality
+    ☐ Investigate bugs with multiple << and printf
+  ☐ File transfer
+    ☐ Figure out why the download function occasionly resends the file. Probably something to do with contentlength, as thats when it was noticed
+    ☐ Try to spead it up, it's sloooooooooooow
+    ☐ File upload not reliable - sometimes too short.
+    ☐ Add uploaded filesize does not match saved filesize error
+  ☐ File browser
+    ☐ Implement file delete
+  ☐ Add wifi strength output
+  ☐ DiskView feature
+    ☐ Add adf support
+    ☐ Add sector edit / save support
+  ☐ Implement disk delay. Currently in setup but not in code
+  ☐ Add manual from Giants
+    ☐ Convert to HTML and host on aksevenfour
+    ☐ Link manual into WebUI
+v711.2022:
+  ☐ Rewrite floppy routines
+    ✔ Rewrite drive seek routines @done(22-03-26 16:03)
+    ☐ Configurable Delays
+      ☐ Move timing options to a common struct
+      ✔ Create settings options for most common item @started(20-03-26 21:39) @done(22-03-28 13:33) @lasted(2y1d15h54m53s)
+    ☐ Rewrite track write routines
+    ☐ Rewrite track read routines
+    ☐ Rewrite MFM decode / encode routines
+    ☐ Migrate XCopyDisk to XCopyFloppy routines
+  ☐ Writebin / write binary file
+    ☐ Add write verification
+v711.2022:
+  ☐ Add auto copy feature for Giants
+v709.2022:   
+  ✔ Boot Block @done(22-05-20 17:19)
+    ✔ Add CRC32 to boot block output for 'boot' command @done(22-05-20 13:05)
+    ✔ Add XCopyBrainFile class to identify bootblocks in brainfile.json on SD Card @done(22-05-20 14:48)
+    ✔ Add bootblock identification to 'boot' command @done(22-05-20 14:48)
+    ✘ Compact brainfile @cancelled(22-05-20 17:18)
+    ✔ Move brainfile to Flash memory @done(22-05-20 17:18)
+  ☐ Add cursor to logging console 
+  ✔ Add new device pin out image from Giants @done(22-05-03 01:19)
+  ✔ Add writebin / write binary file to disk command @done(22-05-09 14:25)
+  ✔ Compiler warnings @done(22-05-16 15:49)
+    ✔ Clean up compiler warnings for esp8266 @done(22-04-25 12:56)
+    ✔ Clean up compiler warnings for teensy @done(22-05-16 15:49)
+  ✔ xterm.js web log @done(22-04-24 16:26)
+    ✔ Accept terminal input in the webbrowser @done(22-04-24 16:26)
+    ✔ Add backsapce @done(22-04-24 17:32)
+    ✔ Block cursor keys @done(22-04-24 17:32)
+  ✔ MD5 @done(22-04-20 13:34)
+    ✔ Add MD5 to disk to adf and log file @done(22-04-18 00:41)
+    ✔ Add MD5 <filename> command @done(22-04-18 00:41)
+    ✔ Add MD5 to verify data of write adf to disk @done(22-04-20 11:30)
+    ✔ Add MD5 to read to flash @done(22-04-20 13:34)
+    ✔ Add MD5 to test disk and output MD5 to cmdline and @done(22-04-18 12:20)
+  ✔ Work on terminal log @done(22-04-24 12:58)
+    ✔ Write terminal log directly to serial esp serial port and do not wait for acknowledgement @done(22-04-24 12:58)
+  ✔ Crashes when directory too large in ADF write - WebUI OK @done(22-04-24 12:59)
+    ✔ Memory footprint decreased but this is still an issue @done(22-04-24 12:59)
+  WebUI
+    ☐ Increase ping time out
+    ✔ Fix cancel button @done(22-05-16 15:49)
+    ✔ Fix source and destination icons, mode status text @done(22-05-04 14:24)
+      ✔ Test Disk @done(22-05-04 13:42)
+        ✔ Web UI @done(22-05-04 13:42)
+        ✔ TFT @done(22-05-04 13:42)
+      ✔ ADF to Disk @done(22-05-04 13:43)
+        ✔ Web UI @done(22-05-04 13:43)
+        ✔ TFT @done(22-05-04 13:43)
+      ✔ Disk to ADF @done(22-05-04 13:44)
+        ✔ Web UI @done(22-05-04 13:44)
+        ✔ TFT @done(22-05-04 13:44)
+      ✔ Disk to Flash @done(22-05-04 14:06)
+        ✔ Web UI @done(22-05-04 13:46)
+        ✔ TFT @done(22-05-04 14:06)
+      ✔ Flash to Disk @done(22-05-04 14:06)
+        ✔ Web UI @done(22-05-04 13:47)
+        ✔ TFT @done(22-05-04 14:06)
+      ✔ Disk to Disk @done(22-05-04 14:23)
+        ✔ Web UI @done(22-05-04 14:23)
+        ✔ TFT @done(22-05-04 14:23)
+      ✔ Flux @done(22-05-04 13:42)
+        ✔ Web UI @done(22-05-04 13:42)
+        ✔ TFT @done(22-05-04 13:42)
+      ✔ Format Disk @done(22-05-04 13:43)
+        ✔ Web UI @done(22-05-04 13:43)
+        ✔ TFT @done(22-05-04 13:43)
+    ☐ Add cancel button to WebUI
+      ✔ Wire Teensy IO32 / JOY_LEFT to Esp8266 GPIO13 @done(22-04-27 14:51)
+      ✔ Set pullup @done(22-04-27 15:04)
+      ✔ Add cancel web co?mmand @done(22-04-27 15:04)
+      ✔ Detect presence of cancel wire @done(22-04-27 15:48)
+      ☐ Notify WebUI that cancel wire is present
+      ☐ Updated PCB layout to reflect hardware change
+    ✔ Update mode, status and diskname for all disk activities @done(22-05-04 14:24)
+    ✔ Change javascript states from lowercase 'to' to capitalised 'To' i.e copyFlashtoDisk -> copyFlashToDisk to match teensy states @done(22-05-04 13:39)
+    ☐ Add DiskView feature
+      ✔ Add ASCII search feature @done(22-05-09 14:24)
+      ✔ Add write to copy blocks to SD card feature @done(22-05-09 14:24)
+      ✔ sendBlock command from WebUI @done(22-05-01 16:39)
+      ✔ Display hex dump of track @done(22-05-01 16:39)
+      ✔ Display ascii dump of track @done(22-05-01 16:39)
+      ✔ Update block / track / sector / side details @done(22-05-01 16:39)
+      ✔ Update type / gap / chksums @done(22-05-02 14:44)
+      ✔ Direct input of block / track / sector / side @done(22-05-02 14:43)
+      ✔ Highlight ascii value on hover over hex value and vice versa @done(22-05-02 16:23)
+      ✔ Show histogram @done(22-05-03 00:41)
+      ✔ Add labels to vertical tick lines @done(22-05-03 00:52)
+      ✔ Add dummy data to hex dump and ascii dump to make screen static / not bounce on update @done(22-05-03 13:13)
+      ☐ Test for disk present
+    ✔ Don't send ping command while device is busy @done(22-04-25 12:55)
+    ✔ Update UI @done(22-04-15 14:53)
+      ✔ Update mode / status table th's to 30/70% width in css @done(22-04-20 13:34)
+      ✔ Add read / write color key for disk operations @done(22-04-20 13:34)
+      ✔ Figure out Giants packet loss / flux drawing issue @done(22-04-20 13:34)
+        ✔ Increase websocket ping / pong health check timeout from 1000ms to 3000ms @done(22-04-15 23:09)
+        ✔ write flux commands directly to serial with not wait for repsonse @done(22-04-15 23:09)
+    ✔ Move CSS to Saas @done(22-04-14 17:44)
+      ☐ Exclude Saas files from LitteFS
+    ✔ Switch web ui to correct tab when starting function from teensy menu @done(22-04-14 16:30)
+    ✔ Improve websocket server / client disconnection code @done(22-04-14 13:35)
+    ✔ Flux disk does not clear the WebUI @done(22-04-13 23:36)
+    ✔ Detect websocket server / client disconnect quickly @done(22-04-13 23:26)
+    ✔ Dim & disable tabs in WebUI when device is busy @done(22-04-13 17:40)
+    ✔ Display flux when dump floppy @done(22-04-13 16:51)
+    ✔ Add AK74 link to the footer @done(22-04-13 17:12)
+    ✔ WebUI not calling copyDiskToFlash @done(22-04-10 22:56)
+    ✔ Fixed WebUI status icons for Flash to Disk. Was showing flash to flash @done(22-04-10 22:39)
+    ✔ Add font awesome icons @done(22-04-10 21:50)
+    ✔ Set url anchor when tab is selected @done(22-04-10 14:01)
+    ✔ refresh the child directories @done(22-04-10 14:01)
+    ✔ Force vertical scrollbar so screen is always aligned regardless of tab @done(22-04-10 14:01)
+    ✔ Select tab from url anchor via javscript on page load @done(22-04-10 14:02)
+    ✔ Fix url encoded file names @done(22-04-10 12:54)
+    ✔ Fix width of flux canvas in webui as it's not wide enough @done(22-04-09 22:35)
+    ✔ Added bootcamp to the web ui @done(22-04-06 15:50)
+    ✔ Added jquery to the web ui @done(22-04-06 15:50)
+    ✔ Updated web ui look and feel @done(22-04-06 15:50)
+    ✔ Added xterm.js web log with ANSI terminal features @done(22-04-06 15:50)
+    File Browser
+      ✔ Added SD Card file browser to web ui @done(22-04-06 15:51)
+      ✔ Implement sub directories @done(22-04-06 17:56)
+      ✔ Implement file download @started(22-04-07 12:02) @done(22-04-07 20:45) @lasted(8h43m57s)
+        ✔ Finished sendSize command so we can set the http header for content length for the file being sent @done(22-04-10 12:01)
+      ✔ Implement file upload @done(22-04-12 00:17)
+        ✔ Skin upload with bootstrap @done(22-04-13 18:05)
+        ✔ Implement percentage bar & related info @done(22-04-13 18:05)
+      ✔ Change to less memory intesive process as it currently limmits how files are returned in terminal ls and web ui due to ram constraints @done(22-04-10 12:02)
+      ✔ Add refresh button to select modal dialog @done(22-04-10 21:53)
+    File Upload
+      ✔ When SD Card refresh is hit in WebUI, you can no longer upload files!? @done(22-04-14 10:09)
+      ✔ Failed uploads (file exists, sd card error etc) need to cancel the xhr transfer @done(22-04-14 11:15)
+      ✔ Report back failed upload reason to user @done(22-04-14 11:15)
+      ✔ Websocket cannot repsond while uploading causing false websocket disconnect failure @done(22-04-14 11:31)
+      ✔ Add cancel button to file upload dialog @done(22-04-14 12:06)
+      ✔ Websocket cannot repsond while downloading causing false websocket disconnect failure @done(22-04-14 15:22)
+      ✔ Add connect button to websocket error modal @done(22-04-14 14:05)
+      ✔ Indicate on the TFT when files are being sent and received @done(22-04-14 13:53)
+  ESP
+    ✔ Flash esp led when web request being processed @done(22-04-11 14:57)
+    ✔ Refactor ESP8266 SPIFFS code to LittleFS @done(22-04-14 15:39)
+  Command Line
+    ☐ Fix time commands
+    ✔ Add 'pass' command to enter passthrough mode @done(22-05-01 16:31)
+    ✔ Fix esp command output @done(22-04-27 14:00)
+    ✔ Added busy state to ls command @done(22-04-27 14:03)
+    ✔ Test WebUI output for console commands @done(22-04-26 17:17)
+      ✔ Fixed MD5 @done(22-04-24 17:44)
+      ✔ Removed flux command @done(22-04-24 17:44)
+      ✔ Fixed Hist @done(22-04-26 13:59)
+      ✔ Fixed Print @done(22-04-26 14:09)
+      ✔ Read / ReadF @done(22-04-26 13:43)
+      ✔ Fixed Dump @done(22-04-26 17:17)
+      ✔ Fixed Scan -> set busy @done(22-04-24 18:02)
+      ✔ Fixed Config @done(22-04-26 13:27)
+    ✔ Added cat command to print files to terminal @done(22-04-11 17:42)
+    ✔ Added rm command to delete files from terminal @done(22-04-11 17:42)
+    ✔ Removed debug output from ADFlib to clean up results from dump command @done(22-04-10 23:15)
+    ✔ Currently neeeds to clear screen at start of function @done(22-04-10 22:39)
+    ✔ Flushed serial port before sending command from esp to teensy. Patched bug where every second command was missed
+    ✔ Add fixed footer to bottom of webui @done(22-04-10 12:02)
+    ✔ Added streaming log function that writes to both serial and web log @done(22-04-06 15:50)
+    ✔ Move writeADFFile to specific copyADFtoDisk state and code so we can cancel the function etc @done(22-04-10 22:39)
+    ✔ Add testdisk to cmdline @done(22-04-18 12:05)
+  v708.2022:
+    ✔ Hook up commands other than ADF to Disk from web interface - ignore incorrect status text @done(22-04-02 18:00)
+    ✔ Add MAC address function @started(22-03-31 12:01) @done(22-03-31 12:13) @lasted(12m42s)
+    ✔ Fix busy pin ISR - possibly pin naming error with board definition @done(22-04-02 12:30)
+    ✔ Fixed callback issue: webinterface -> xcopy device @done(22-04-02 12:31)
+    ✔ Added source and destination globes to html
+    ✔ Cleaned minor HTML errors
+    ✔ Applied oldskool font to entire page
+    ✔ Changed status and footer areas
+    ✔ Moved source and destination areas up and made room for globes
+  v707.2022:
+    ✔ Move all ansi text functions into XCopyConsole class @done(22-03-30 17:27)
+    ✔ Added dir / ls directory listing of SDCard from console @done(22-03-30 15:28)
+    ✔ Date & Time @done(22-03-30 13:16)
+      ✔ Added commands to manage date & time from the console. @done(22-03-30 13:16)
+      ✔ Added NTP server support using ESP8266 @done(22-03-30 13:16)
+      ✔ Added time zone setting @done(22-03-30 13:16)
+      ✔ Updated settings "set time" to update from NTP @done(22-03-30 13:16)
+      ✔ Updated date & time from NTP on startup if connected to wireless @done(22-03-30 13:16)
+    ✔ Clean up startup text @done(22-03-30 21:17)
+    ✔ Fix wifi status text @done(22-03-30 22:40)
+    ✔ Add "scan" command to list wireless networks @done(22-03-30 22:40)
+    ✔ Move all PIN references to XCopyPin.h @done(22-03-30 22:43)
+    ✔ Free RAM up @done(22-03-31 11:59)
+  v706.2022:
+    ✔ Fix wifi connection at startup. Failed to connect after flashing a new ESP8266 @done(25-03-26 13:14)
+    ✔ Floppy cable orientation test @done(22-03-28 13:33)
+      ✔ Add detectCableOrientation() to XCopyFloppy @done(22-03-28 13:33)
+      ✔ Test orientation on startup and display error message @done(22-03-28 13:33)
+    ✔ Add dump config command to cli
+  v705.2022:
+    ✔ Move XCopyStandalone to PlatformIO and include libraries @done(21-03-26 16:00)
+    Projects:
+      ✔ Move ESP8266 webserver to PlatformIO and include libraries @done(21-03-26 16:00)
+      ✔ Fix flash writing error due to early exit of serialflash write routing. Added hacky delay between writes @done(22-03-26 15:59) 
+
+---------------------------------------------------------------------------------------------------
+
+  PCB:
+    Todo:
+      ☐ Modify SPI flash ram footprint to expand legs for easier soldering
+      ☐ Consider taking all spare pin/s to a header for future development if space permits
+    TFT:
+      ☐ Test new cheaper Chinese TFT
+      ☐ Create alternate footprint for TFT
+      ☐ Place and route new TFT
+    SD Card:
+      ✔ Reroute SDCS away from LDO @done(22-03-30 23:50)
+      ✔ Change SD card to micro sd reader to make room for ESP module @done(22-03-28 00:09)
+      ☐ Hookup SD card detect
+      ☐ Fix schematic
+      ☐ Reroute to make neater
+    ESP:
+      ✔ Add ESP8266 ESP-12S module and 47uf decoupling cap @done(22-03-28 00:09)
+      ✔ Cutout board around WiFi aerial @done(22-05-02 16:58)
+      ✔ Connect JOY_LEFT and ESP GPIO13 @done(22-05-02 16:59)
+    General:
+      ✔ Ground all odd pins on IDC @done(22-03-28 00:09)
+      ✔ Add LDO reulator for second 3.3v source for LCD & ESP8266 @done(22-03-28 00:12)
+      ✔ Reroute all traces @done(22-03-28 00:09)
+      ✔ Look for different speaker that JLCPCB can place @done(22-03-28 17:05)
+      ✔ Clean up labels @done(22-03-30 17:31)
+      ✔ Reset buttons @done(22-03-30 17:31)
+        ✔ Can I cram reset and programming buttons in for ESP8266 - side mount button an option? @done(22-03-30 17:31)
+        ✔ Do I want to use an extra teensy pin and tie it to a jumper wire across to the poorly placed reset pad on the bottom of the teensy? @done(22-03-30 17:31)
+          ✔ disconnect pin 40 / tft_cardcs / teensy pin 29 for use as reset? @done(22-03-30 17:31)
+      ✔ Move all status LED's to single location @done(22-03-28 00:56)
+        ✔ Use same footprint for all LED's @done(22-03-28 00:56)
+      ✔ Change to 4 layer board to make routing easier. @done(22-03-28 00:08)
+        ✔ Keep board under 10x10cm to keep cost low @done(22-03-28 00:08)
+        ✔ Use inner two layers for GND and Power planes @done(22-03-28 00:08)
+        ✔ Make seperate copper pours for 3.3v, 3.3v2 & vbus @done(22-03-28 00:08)
+      ✔ Remove serial TTL header as this serial port is now used by ESP module @done(22-03-28 00:56)
+      ✔ Add electrolytic cap for VBUS power decoupling @done(22-03-30 17:31)
+      ✔ Add new logos @done(22-03-30 17:31)
+
+---------------------------------------------------------------------------------------------------
+
+Legacy:
   Directory:
     ☐ Add paging of large directories > MAXSCREENITEMS
     ☐ Audio fires more than once when scrolled past MAXSCREENITEMS
@@ -20,40 +288,39 @@ Todo:
     ☐ Add support for mount, dir, cd
     ☐ Sometimes crashes with NDOS disks. Try workbnch then mutation
     ✔ track down memory leak when file open fails @done(19-03-16 10:59)
-      ✔ mem leak when adf file doesn't contain a volume / NDOS  disk (72bytes) @done(19-03-16 10:59)
-      ✔ mem leak when file is missing (~16bytes) - ADFlib didn't free volume when mounting disk failed @done(19-03-16 09:42)
+    ✔ mem leak when adf file doesn't contain a volume / NDOS  disk (72bytes) @done(19-03-16 10:59)
+    ✔ mem leak when file is missing (~16bytes) - ADFlib didn't free volume when mounting disk failed @done(19-03-16 09:42)
     ✔ track down memory leak, malloc fails after 3rd try @done(19-03-15 22:13)
     ✔ remove hardcoding of workbnch.adf and pass in param @done(19-03-15 22:13)
   HTTP:
     Interface
-      ☐ bind callbacks to class method
       ☐ Copy files to XCopy Flash and SD Card from PC
       ☐ Rename ADF files while copying
       ☐ Speed up diskflux notification as it adds ~10sec to disk test
         ☐ Send binary data. Attempt
         ☐ Increase serial baud rate
       ☐ Fix flux lerp function
-      ☐ Use bootstrap or angular for HTML
+      ✔ Use bootstrap or angular for HTML @done(22-04-10 23:18)
     ESP8266EX
       ☐ Add reset (rst low / pin 25) and program (gpio0 low / pin 26)
-      ☐ Add seperate debugging menu item for Serial Passthrough Mode and ESP8266 Programming Mode
+      ✔ Add seperate debugging menu item for Serial Passthrough Mode and ESP8266 Programming Mode @done(22-04-10 23:18)
     Wireless
       ☐ Fix settings menu SSID and Password menu items to udpate when 'connect <ssid> <password>' command issued
     General
       ☐ Delete _config removed from xcopy.begin() while testing due to passing through to xcopycommand. delete it at startup and recreate in connect command
-    ✔ Add flux to web interface @done(19-03-24 16:16)
-    ✔ Add getPinStatus and update interface when webpage initially loads. @done(19-03-24 16:16)
-    ✔ Use a pin to reflect busy to ESP8266 and communicate over existing serial port to send commands @done(19-03-23 15:32)
-    ✔ Order ESP8266 for development @done(19-03-11 11:49)
-    ✔ Add ESP8266 to prototype @done(19-03-20 16:33)
-    ✔ Add control pin for busy signal teensy -> esp8266 to flag when device is occupied @done(19-03-20 16:33)
-    ✔ Display test webpage with buys signal @done(19-03-20 16:33)
-    ✔ Implement command infrastructure @done(19-03-20 16:33)
-    ✔ Truncated response received from ESP866 commands @done(19-03-21 11:25)
-    ✔ Update webserver to use SPIFFS to store files @done(19-03-22 17:03)
-    ✔ Speed up websocket command, immediate exit, no waiting when timeout is -1 @done(19-03-23 15:31)
-    ✔ Add timeout function and instant exit on completion for esp8266 functions @done(19-03-23 15:31)
-    ✔ Implement websockets for two way updates @done(19-03-23 15:31)
+      ✔ Add flux to web interface @done(19-03-24 16:16)
+      ✔ Add getPinStatus and update interface when webpage initially loads. @done(19-03-24 16:16)
+      ✔ Use a pin to reflect busy to ESP8266 and communicate over existing serial port to send commands @done(19-03-23 15:32)
+      ✔ Order ESP8266 for development @done(19-03-11 11:49)
+      ✔ Add ESP8266 to prototype @done(19-03-20 16:33)
+      ✔ Add control pin for busy signal teensy -> esp8266 to flag when device is occupied @done(19-03-20 16:33)
+      ✔ Display test webpage with buys signal @done(19-03-20 16:33)
+      ✔ Implement command infrastructure @done(19-03-20 16:33)
+      ✔ Truncated response received from ESP866 commands @done(19-03-21 11:25)
+      ✔ Update webserver to use SPIFFS to store files @done(19-03-22 17:03)
+      ✔ Speed up websocket command, immediate exit, no waiting when timeout is -1 @done(19-03-23 15:31)
+      ✔ Add timeout function and instant exit on completion for esp8266 functions @done(19-03-23 15:31)
+      ✔ Implement websockets for two way updates @done(19-03-23 15:31)
   Graphics:
     ☐ Fix lost sound after rawDraw
       ☐ Investigate actual root cause

@@ -3,5 +3,7 @@
     "retryCount": 5,
     "volume": 0.8,
     "ssid": "",
-    "password": ""
+    "password": "",
+    "diskDelay": 200,
+    "timeZone": 0
 }

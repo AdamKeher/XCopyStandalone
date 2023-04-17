@@ -1,19 +1,31 @@
 #ifndef XCOPY_H
 #define XCOPY_H
 
-#define XCOPYVERSION "v 703.2019"
+#define XCOPYVERSION "v709.2022"
 // #define XCOPY_DEBUG = 1
 
+// #define PCBVERSION 1 // expensive adafruit screen and joystick
+#define PCBVERSION 2 // cheap screen and joystick
+
+#if PCBVERSION == 1
+    #define TFT_ROTATION 3
+#else
+    #define TFT_ROTATION 1
+#endif
+
+
 #define ESPSerial Serial1
-#define ESPBaudRate 115200
+#define ESPBaudRate 576000
 
 #include <Arduino.h>
-#include "TFT_ST7735.h"
 #include <SPI.h>
 #include <SerialFlash.h>
 #include <Wire.h>
 #include <Streaming.h>
 #include <SdFat.h>
+#include "XCopyState.h"
+#include "XCopyLog.h"
+#include "XCopyPins.h"
 #include "XCopyMenu.h"
 #include "XCopyCommand.h"
 #include "XCopyDisk.h"
@@ -25,53 +37,21 @@
 #include "XCopyTime.h"
 #include "XCopyADFLib.h"
 #include "XCopyESP8266.h"
+#include "XCopyFloppy.h"
+#include "XCopyDriveTest.h"
+#include "XCopyConsole.h"
+#include "XCopyBrainFile.h"
 
 #ifdef XCOPY_DEBUG
 #include "RamMonitor.h"
 #endif
 
-enum XCopyState
-{
-  undefined = 0,
-  menus = 1,
-  idle = 2,
-  copyDiskToADF = 3,
-  testDisk = 4,
-  copyADFToDisk = 5,
-  showTime = 6,
-  about = 7,
-  debuggingTempFile = 8,
-  debuggingSDFLash = 9,
-  debuggingEraseCopy = 10,
-  debuggingCompareFlashToSDCard = 12,
-  copyDiskToDisk = 13,
-  directorySelection = 14,
-  setVerify = 15,
-  setRetry = 16,
-  setVolume = 17,
-  copyDiskToFlash = 18,
-  copyFlashToDisk = 19,
-  debuggingFlashDetails = 23,
-  fluxDisk = 24,
-  formatDisk = 25,
-  debuggingSerialPassThrough = 26,
-  debuggingSerialPassThroughProg = 27,
-  setSSID = 28,
-  setPassword = 29,
-  resetESP = 30
-};
-
-class XCopy
-{
+class XCopy {
 public:
   XCopy(TFT_ST7735 *tft);
 
-  void begin(int sdCSPin, int flashCSPin, int cardDetectPin, int busyPin, int espResetPin, int espProgPin);
+  void begin();
   void update();
-  void debug();
-  void debugCompareFile(File sdFile, SerialFlashFile flashFile);
-  void debugCompareTempFile();
-  void debugEraseCopyCompare(bool erase);
   void navigateUp();
   void navigateDown();
   void navigateSelect();
@@ -79,20 +59,25 @@ public:
   void navigateRight();
   void processState();
   void intro();
-  bool cardDetect();
   void cancelOperation();
+  bool detectCancelPin();
   void setBusy(bool busy);
-  bool getBusy() { return digitalRead(_busyPin); }
-
-  static void theCallbackFunction(const String command);
-
-  void printDirectory(File dir, int numTabs);
-  void printDir();
-  void flashTest();
-
-  void ramReport();
-
+  bool getBusy() { return digitalRead(PIN_BUSYPIN); }
+  void refreshTimeNtp();
+  void startFunction(XCopyState state, String param = "");
+  void startCopyADFtoDisk(String path  = "");
+  void sendFile(String path);
+  void getFile(String path, size_t size);
+  void processKeys(String keys);
+  void sendBlock(int block);
+  XCopyDisk* getDisk() { return &_disk; }
+  XCopyConfig* getConfig() { return _config; }
+  static void onWebCommand(void* obj, const String command);
   XCopyState _xcopyState = menus;
+  #ifdef XCOPY_DEBUG
+  void ramReport();
+  #endif
+  String _searchText;
 
 private:
   TFT_ST7735 *_tft;
@@ -103,25 +88,19 @@ private:
   XCopyDirectory _directory;
   XCopyGraphics _graphics;
   XCopyConfig *_config;
-  XCopyADFLib *_adfLib;
   XCopyESP8266 *_esp;
 
 #ifdef XCOPY_DEBUG
   RamMonitor _ram;
   uint32_t _lastRam = 0;
 #endif
-  uint8_t _cardDetectPin;
-  uint8_t _sdCSPin;
-  uint8_t _flashCSPin;
-  uint8_t _busyPin;
-  uint8_t _espResetPin;
-  uint8_t _espProgPin;
-
   XCopyMenuItem *verifyMenuItem;
   XCopyMenuItem *retryCountMenuItem;
   XCopyMenuItem *volumeMenuItem;
   XCopyMenuItem *ssidMenuItem;
   XCopyMenuItem *passwordMenuItem;
+  XCopyMenuItem *diskDelayMenuItem;
+  XCopyMenuItem *timeZoneMenuItem;
 
   bool _drawnOnce;
   bool _cancelOperation;

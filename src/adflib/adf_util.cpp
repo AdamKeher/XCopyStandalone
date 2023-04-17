@@ -24,7 +24,7 @@
  */
 
 #include<stdlib.h>
-#include<time.h>
+#include <TimeLib.h>
 #include <Arduino.h>
 #include "adf_util.h"
 #include "adf_err.h"

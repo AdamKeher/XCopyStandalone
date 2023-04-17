@@ -79,12 +79,6 @@ void XCopy::navigateLeft()
             _directory.getDirectory(path, &_disk, ".adf");
 
             XCopyDirectoryEntry *item = _directory.getRoot();
-            while (item != NULL)
-            {
-                if (item->path == oldPath)
-                    break;
-                item = item->next;
-            }
 
             _directory.setCurrentItem(item);
             _directory.setIndex(_directory.getItemIndex(item));
@@ -126,37 +120,26 @@ void XCopy::navigateSelect()
             return;
 
         // avoid changing the name to a fixed lowercase/upprcase for comparison.
-        String itemName = item->name;
 
-        if (item->isDirectory() && item->source == sdCard)
+        if (item->isDirectory() && item->source == _sdCard)
         {
+            String directory = _directory.getCurrentPath() + item->longName + "/";
             _audio.playBack(false);
-            _directory.getDirectory(item->path, &_disk, ".adf");
+            _directory.getDirectory(directory, &_disk, ".adf");
             _directory.drawDirectory(true);
         }
-        else if (item->isDirectory() && item->source == flashMemory)
+        else if (item->isDirectory() && item->source == _flashMemory)
         {
             _audio.playBack(false);
             _directory.getDirectoryFlash(false, &_disk, ".adf");
             _directory.drawDirectory(true);
         }
-        else if (itemName.toLowerCase().endsWith(".adf") && item->source == sdCard)
+        else if (item->longName.toLowerCase().endsWith(".adf"))
         {
             _xcopyState = copyADFToDisk;
             _audio.playSelect(false);
-            _graphics.clearScreen();
-            _config = new XCopyConfig();
-            _disk.adfToDisk(item->path + item->name, _config->getVerify(), _config->getRetryCount(), _sdCard);
-            delete _config;
-        }
-        else if (itemName.toLowerCase().endsWith(".adf") && item->source == flashMemory)
-        {
-            _xcopyState = copyADFToDisk;
-            _audio.playBack(false);
-            _graphics.clearScreen();
-            _config = new XCopyConfig();
-            _disk.adfToDisk(item->path + item->name, _config->getVerify(), _config->getRetryCount(), _flashMemory);
-            delete _config;
+            String itemname = (item->source == _sdCard ? _directory.getCurrentPath() + item->longName : item->longName.toUpperCase());
+            _disk.adfToDisk(itemname, _config->getVerify(), _config->getRetryCount(), item->source);
         }
 
         return;
@@ -196,6 +179,20 @@ void XCopy::navigateSelect()
             _audio.playSelect(false);
         }
 
+        if (item->command == debuggingFaultFind)
+        {
+            setBusy(true);
+            _xcopyState = debuggingFaultFind;
+            _audio.playSelect(false);
+        }
+
+        if (item->command == debuggingEraseFlash)
+        {
+            setBusy(true);
+            _xcopyState = debuggingEraseFlash;
+            _audio.playSelect(false);
+        }
+
         if (item->command == debuggingCompareFlashToSDCard)
         {
             setBusy(true);
@@ -216,7 +213,7 @@ void XCopy::navigateSelect()
             _xcopyState = debuggingSerialPassThrough;
             _audio.playSelect(false);
             _graphics.clearScreen();
-            _graphics.drawText(0, 0, ST7735_GREEN, "ESP Passtrhough Mode", true);
+            _graphics.drawText(0, 0, ST7735_GREEN, "ESP Passthrough Mode", true);
         }
 
         if (item->command == debuggingSerialPassThroughProg)
@@ -250,6 +247,9 @@ void XCopy::navigateSelect()
             _xcopyState = showTime;
             _audio.playSelect(false);
             _graphics.clearScreen();
+            _graphics.drawText(0, 35, ST7735_YELLOW, "    Updating Time via NTP", true);
+            _graphics.drawText(0, 35, ST7735_YELLOW, "          Updated Time", true);
+            refreshTimeNtp();
         }
 
         if (item->command == about)
@@ -261,86 +261,59 @@ void XCopy::navigateSelect()
             _graphics.clearScreen();
         }
 
-        if (item->command == copyDiskToADF)
-        {
-            setBusy(true);
-            _xcopyState = copyDiskToADF;
-            _drawnOnce = false;
-            _audio.playSelect(false);
-            _graphics.clearScreen();
-        }
-
-        if (item->command == copyDiskToFlash)
-        {
-            setBusy(true);
-            _xcopyState = copyDiskToFlash;
-            _drawnOnce = false;
-            _audio.playSelect(false);
-            _graphics.clearScreen();
-        }
-
-        if (item->command == copyFlashToDisk)
-        {
-            setBusy(true);
-            _xcopyState = copyFlashToDisk;
-            _drawnOnce = false;
-            _audio.playSelect(false);
-            _graphics.clearScreen();
-        }
-
-        if (item->command == testDisk)
-        {
-            setBusy(true);
-            _xcopyState = testDisk;
-            _drawnOnce = false;
-            _audio.playSelect(false);
-            _graphics.clearScreen();
-        }
-
-        if (item->command == fluxDisk)
-        {
-            setBusy(true);
-            _xcopyState = fluxDisk;
-            _drawnOnce = false;
-            _audio.playSelect(false);
-            _graphics.clearScreen();
-        }
-
-        if (item->command == formatDisk)
-        {
-            setBusy(true);
-            _xcopyState = formatDisk;
-            _drawnOnce = false;
-            _audio.playSelect(false);
-            _graphics.clearScreen();
-        }
-
         if (item->command == copyADFToDisk)
         {
-            setBusy(true);
-            _xcopyState = directorySelection;
-            _drawnOnce = false;
-            _audio.playSelect(false);
-            _directory.getDirectory("/", &_disk, ".adf");
+            startCopyADFtoDisk();
+        }
+
+        if (item->command == copyDiskToADF)
+        {
+            startFunction(copyDiskToADF);
         }
 
         if (item->command == copyDiskToDisk)
         {
-            setBusy(true);
-            _xcopyState = copyDiskToDisk;
-            _drawnOnce = false;
-            _audio.playSelect(false);
+            startFunction(copyDiskToDisk);
+        }
+
+        if (item->command == copyDiskToFlash)
+        {
+            startFunction(copyDiskToFlash);
+        }
+
+        if (item->command == copyFlashToDisk)
+        {
+            startFunction(copyFlashToDisk);
+        }
+
+        if (item->command == testDisk)
+        {
+            startFunction(testDisk);
+        }
+
+        if (item->command == scanBlocks) {
+            startFunction(scanBlocks);
+        }
+
+        if (item->command == formatDisk)
+        {
+            startFunction(formatDisk);
+        }
+
+        if (item->command == fluxDisk)
+        {
+            startFunction(fluxDisk);
         }
 
         if (item->command == setVerify)
         {
             setBusy(true);
             _audio.playSelect(false);
-            _config = new XCopyConfig();
+            // _config = new XCopyConfig();
             _config->setVerify(!_config->getVerify());
             verifyMenuItem->text = "Set Verify: " + (_config->getVerify() ? String("True") : String("False"));
             _config->writeConfig();
-            delete _config;
+            // delete _config;
 
             setBusy(false);
             // redraw menu
@@ -351,7 +324,7 @@ void XCopy::navigateSelect()
         {
             setBusy(true);
             _audio.playSelect(false);
-            _config = new XCopyConfig();
+            // _config = new XCopyConfig();
             uint8_t count = _config->getRetryCount();
             count++;
             if (count > 5)
@@ -360,7 +333,7 @@ void XCopy::navigateSelect()
 
             retryCountMenuItem->text = "Set Retry Count: " + String(_config->getRetryCount());
             _config->writeConfig();
-            delete _config;
+            // delete _config;
 
             setBusy(false);
             // redraw menu
@@ -371,7 +344,7 @@ void XCopy::navigateSelect()
         {
             setBusy(true);
 
-            _config = new XCopyConfig();
+            // _config = new XCopyConfig();
             float volume = _config->getVolume();
             volume += 0.2f;
             if (volume > 1.2f)
@@ -380,7 +353,7 @@ void XCopy::navigateSelect()
 
             volumeMenuItem->text = "Set Volume: " + String(_config->getVolume());
             _config->writeConfig();
-            delete _config;
+            // delete _config;
 
             _audio.setGain(0, volume);
             _audio.playSelect(false);
@@ -413,6 +386,63 @@ void XCopy::navigateSelect()
             // redraw menu
             _xcopyState = menus;
         }
+
+        if (item->command == testDrive) {
+            setBusy(true);
+            _xcopyState = testDrive;
+            _drawnOnce = false;
+            _audio.playSelect(false);
+            _graphics.clearScreen();
+        }
+
+        if (item->command == setDiskDelay) {
+            setBusy(true);
+
+            // _config = new XCopyConfig();
+            uint16_t delay2 = _config->getDiskDelay();
+            delay2 += 100;
+            if (delay2 > 500 )
+                delay2 = 200;
+            _config->setDiskDelay(delay2);
+
+            diskDelayMenuItem->text = "Set Disk Delay: " + String(_config->getDiskDelay()) + "ms";
+            _config->writeConfig();
+            // delete _config;
+
+            _audio.playSelect(false);
+
+            setBusy(false);
+            // redraw menu
+            _xcopyState = menus;
+        }        
+
+        if (item->command == setTimeZone) {
+            setBusy(true);
+
+            // _config = new XCopyConfig();
+            int timeZone = _config->getTimeZone();
+            timeZone++;
+            if (timeZone > 12 )
+                timeZone = -12;
+            _config->setTimeZone(timeZone);
+
+            timeZoneMenuItem->text = "Set Time Zone: " + String(timeZone >= 0 ? "+" : "") + String(timeZone);
+            _config->writeConfig();
+
+            // delete _config;
+            _audio.playSelect(false);
+
+            setBusy(false);
+            // redraw menu
+            _xcopyState = menus;
+        }        
+
+        if (item->command == resetDevice) {
+            Serial << "Resetting ...";
+            pinMode(28, OUTPUT);
+            pinMode(28, OUTPUT_OPENDRAIN);
+            Serial << " Looks like pin 28 has not been jumpered to the RST pad on your Teensy 3.2\r\n";
+        }   
     }
 }
 
@@ -420,7 +450,7 @@ void XCopy::processState()
 {
     if (_xcopyState == debuggingTempFile)
     {
-        XCopyDebug *_debug = new XCopyDebug(&_graphics, &_audio, _sdCSPin, _flashCSPin, _cardDetectPin);
+        XCopyDebug *_debug = new XCopyDebug(&_graphics, &_audio, PIN_SDCS, PIN_FLASHCS, PIN_CARDDETECT);
         _debug->debugCompareTempFile();
         delete _debug;
 
@@ -430,8 +460,8 @@ void XCopy::processState()
 
     if (_xcopyState == debuggingSDFLash)
     {
-        XCopyDebug *_debug = new XCopyDebug(&_graphics, &_audio, _sdCSPin, _flashCSPin, _cardDetectPin);
-        _debug->debug();
+        XCopyDebug *_debug = new XCopyDebug(&_graphics, &_audio, PIN_SDCS, PIN_FLASHCS, PIN_CARDDETECT);
+        _debug->debugTestFlashSD();
         delete _debug;
 
         setBusy(false);
@@ -440,8 +470,28 @@ void XCopy::processState()
 
     if (_xcopyState == debuggingEraseCopy)
     {
-        XCopyDebug *_debug = new XCopyDebug(&_graphics, &_audio, _sdCSPin, _flashCSPin, _cardDetectPin);
-        _debug->debugEraseCopyCompare(true);
+        XCopyDebug *_debug = new XCopyDebug(&_graphics, &_audio, PIN_SDCS, PIN_FLASHCS, PIN_CARDDETECT);
+        _debug->debugEraseCopyCompare();
+        delete _debug;
+
+        setBusy(false);
+        _xcopyState = menus;
+    }
+
+    if (_xcopyState == debuggingFaultFind)
+    {
+        XCopyDebug *_debug = new XCopyDebug(&_graphics, &_audio, PIN_SDCS, PIN_FLASHCS, PIN_CARDDETECT);
+        _debug->debugFaultFind();
+        delete _debug;
+
+        setBusy(false);
+        _xcopyState = menus;
+    }
+
+    if (_xcopyState == debuggingEraseFlash)
+    {
+        XCopyDebug *_debug = new XCopyDebug(&_graphics, &_audio, PIN_SDCS, PIN_FLASHCS, PIN_CARDDETECT);
+        _debug->debugEraseFlash();
         delete _debug;
 
         setBusy(false);
@@ -451,8 +501,8 @@ void XCopy::processState()
     if (_xcopyState == debuggingCompareFlashToSDCard)
     {
         _graphics.clearScreen();
-        XCopyDebug *_debug = new XCopyDebug(&_graphics, &_audio, _sdCSPin, _flashCSPin, _cardDetectPin);
-        _debug->debugEraseCopyCompare(false);
+        XCopyDebug *_debug = new XCopyDebug(&_graphics, &_audio, PIN_SDCS, PIN_FLASHCS, PIN_CARDDETECT);
+        _debug->debugCompare();
         delete _debug;
 
         setBusy(false);
@@ -461,8 +511,8 @@ void XCopy::processState()
 
     if (_xcopyState == debuggingFlashDetails)
     {
-        XCopyDebug *_debug = new XCopyDebug(&_graphics, &_audio, _sdCSPin, _flashCSPin, _cardDetectPin);
-        _debug->flashDetails();
+        XCopyDebug *_debug = new XCopyDebug(&_graphics, &_audio, PIN_SDCS, PIN_FLASHCS, PIN_CARDDETECT);
+        _debug->debugFlashDetails();
         delete _debug;
 
         setBusy(false);
@@ -516,9 +566,9 @@ void XCopy::processState()
     {
         if (_drawnOnce == false)
         {
-            _config = new XCopyConfig();
-            _disk.diskToADF("Auto Named.ADF", _config->getVerify(), _config->getRetryCount(), _sdCard);
-            delete _config;
+            // _config = new XCopyConfig();
+            _disk.diskToADF("", _config->getVerify(), _config->getRetryCount(), _sdCard);
+            // delete _config;
 
             setBusy(false);
             _drawnOnce = true;
@@ -529,9 +579,9 @@ void XCopy::processState()
     {
         if (_drawnOnce == false)
         {
-            _config = new XCopyConfig();
+            // _config = new XCopyConfig();
             _disk.diskToADF("DISKCOPY.TMP", _config->getVerify(), _config->getRetryCount(), _flashMemory);
-            delete _config;
+            // delete _config;
 
             setBusy(false);
             _drawnOnce = true;
@@ -542,9 +592,9 @@ void XCopy::processState()
     {
         if (_drawnOnce == false)
         {
-            _config = new XCopyConfig();
+            // _config = new XCopyConfig();
             _disk.diskToDisk(_config->getVerify(), _config->getRetryCount());
-            delete _config;
+            // delete _config;
 
             setBusy(false);
             _drawnOnce = true;
@@ -555,9 +605,9 @@ void XCopy::processState()
     {
         if (_drawnOnce == false)
         {
-            _config = new XCopyConfig();
+            // _config = new XCopyConfig();
             _disk.adfToDisk("DISKCOPY.TMP", _config->getVerify(), _config->getRetryCount(), _flashMemory);
-            delete _config;
+            // delete _config;
 
             setBusy(false);
             _drawnOnce = true;
@@ -568,10 +618,17 @@ void XCopy::processState()
     {
         if (_drawnOnce == false)
         {
-            _config = new XCopyConfig();
-            _disk.testDisk(_config->getRetryCount());
-            delete _config;
+            _disk.testDiskette(_config->getRetryCount());
+            setBusy(false);
+            _drawnOnce = true;
+        }
+    }
 
+    if (_xcopyState == scanBlocks)
+    {
+        if (_drawnOnce == false)
+        {
+            _disk.scanEmptyBlocks(_config->getRetryCount());
             setBusy(false);
             _drawnOnce = true;
         }
@@ -592,9 +649,9 @@ void XCopy::processState()
     {
         if (_drawnOnce == false)
         {
-            _config = new XCopyConfig();
+            // _config = new XCopyConfig();
             _disk.adfToDisk("BLANK.TMP", _config->getVerify(), _config->getRetryCount(), _flashMemory);
-            delete _config;
+            // delete _config;
 
             setBusy(false);
             _drawnOnce = true;
@@ -611,13 +668,46 @@ void XCopy::processState()
         }
     }
 
+    if (_xcopyState == testDrive) {
+        if (_drawnOnce == false)
+        {
+            XCopyDriveTest *driveTest = new XCopyDriveTest();
+            driveTest->begin(&_graphics, &_audio, _esp);
+            driveTest->draw();
+            while (1==1) {
+                driveTest->update();
+            }
+            delete driveTest;
+            setBusy(false);
+            _drawnOnce = true;
+        }        
+    }
+
+    if (_xcopyState == diskSearch) {
+        if (_drawnOnce == false) {
+            _disk.asciiSearch(_searchText, _config->getRetryCount());
+            _searchText = "";
+            setBusy(false);
+            _drawnOnce = true;
+        }
+    }
+
+    if (_xcopyState == modSearch) {
+        if (_drawnOnce == false) {
+            _disk.modSearch(_config->getRetryCount());
+            _searchText = "";
+            setBusy(false);
+            _drawnOnce = true;
+        }
+    }    
+
     if (_xcopyState == about)
     {
         if (_drawnOnce == false)
         {
             _graphics.clearScreen();
             _graphics.drawText(0, 55, ST7735_WHITE, "     (c)2019 iTeC/crAss");
-            _graphics.drawText(0, 65, ST7735_GREEN, "         " + String(XCOPYVERSION));
+            _graphics.drawText(0, 65, ST7735_GREEN, "           " + String(XCOPYVERSION));
             _graphics.drawText(0, 75, ST7735_YELLOW, "  Insert Demo Effect Here");
 
             _drawnOnce = true;

@@ -119,53 +119,34 @@ void XCopyGraphics::bmpDraw(const char *filename, uint16_t x, uint16_t y)
     if ((x >= _tft->width()) || (y >= _tft->height()))
         return;
 
-    // Serial.println();
-    // Serial.print(F("Loading image '"));
-    // Serial.print(filename);
-    // Serial.println('\'');
-
-    // flashFile.close(); // FIX: Whats This? Why close a file thats not open?
-    if ((flashFile = SerialFlash.open(filename)) == NULL)
-    {
+    flashFile = SerialFlash.open(filename);
+    if (!flashFile) {
         Serial.print(F("File not found"));
         return;
     }
 
     // Parse BMP header
-    // Serial.println("POS: " + String(flashFile.position()));
     if (read16(flashFile) == 0x4D42)
     { // BMP signature
 
         (void)read32(flashFile); // read & ignore filesize
-        // Serial.print(F("File size: "));
-        // Serial.println(size);
 
         (void)read32(flashFile); // Read & ignore creator bytes
 
         bmpImageoffset = read32(flashFile); // Start of image data
-        // Serial.print(F("Image Offset: "));
-        // Serial.println(bmpImageoffset, DEC);
-        // Read DIB header
 
+        // Read DIB header
         (void)read32(flashFile); // read & ignore headerSize
-        // Serial.print(F("Header size: "));
-        // Serial.println(headerSize);
 
         bmpWidth = read32(flashFile);
         bmpHeight = read32(flashFile);
         if (read16(flashFile) == 1)
         {                                 // # planes -- must be '1'
             bmpDepth = read16(flashFile); // bits per pixel
-            // Serial.print(F("Bit Depth: "));
-            // Serial.println(bmpDepth);
             if ((bmpDepth == 24) && (read32(flashFile) == 0))
             { // 0 = uncompressed
 
                 goodBmp = true; // Supported BMP format -- proceed!
-                // Serial.print(F("Image size: "));
-                // Serial.print(bmpWidth);
-                // Serial.print('x');
-                // Serial.println(bmpHeight);
 
                 // BMP rows are padded (if needed) to 4-byte boundary
                 rowSize = (bmpWidth * 3 + 3) & ~3;
@@ -185,14 +166,6 @@ void XCopyGraphics::bmpDraw(const char *filename, uint16_t x, uint16_t y)
                     w = _tft->width() - x;
                 if ((y + h - 1) >= _tft->height())
                     h = _tft->height() - y;
-
-                //FIX: why isnt push working?
-                // Set TFT address window to clipped image bounds
-                // _tft->setAddrWindow(x, y, x + w - 1, y + h - 1);
-
-                // alternative tries
-                // _tft->setArea(x, y, x + w - 1, y + h - 1);
-                // _tft->startPushData(x, y, x + w - 1, y + h - 1);
 
                 for (row = 0; row < h; row++)
                 { // For each scanline...
@@ -231,16 +204,9 @@ void XCopyGraphics::bmpDraw(const char *filename, uint16_t x, uint16_t y)
 
                         // alternative tries
                         _tft->drawPixel(x + col, y + row, _tft->Color565(r, g, b));
-                        // _tft->pushColor(_tft->Color565(r, g, b));
-                        // _tft->pushData(_tft->Color565(r, g, b));
 
                     } // end pixel
-                    // alternative tries
-                    // _tft->endPushData();
                 } // end scanline
-                // Serial.print(F("Loaded in "));
-                // Serial.print(millis() - startTime);
-                // Serial.println(" ms");
             } // end goodBmp
         }
     }
@@ -258,25 +224,15 @@ void XCopyGraphics::rawDraw(const char *filename, uint16_t x, uint16_t y)
     SerialFlashFile bmpFile;
     int bmpWidth, bmpHeight; // W+H in pixels
     uint8_t bmpDepth;        // Bit depth (currently must be 24)
-    uint8_t headerSize;
-    uint32_t bmpImageoffset; // Start of image data in file
-    uint32_t rowSize;        // Not always = bmpWidth; may have padding
-    uint32_t fileSize;
     boolean goodBmp = false; // Set to true on valid header parse
-    boolean flip = true;     // BMP is stored bottom-to-top
-    uint16_t w, h, row, col;
-    uint8_t r, g, b;
-    uint32_t pos = 0, startTime;
+    uint16_t w, h;
 
     if ((x >= _tft->width()) || (y >= _tft->height()))
         return;
 
-    // startTime = millis();
-
-    // if (!bmpFile.open(filename, O_READ))
     // Open requested file on SD card
-    if ((bmpFile = SerialFlash.open(filename)) == NULL)
-    {
+    bmpFile = SerialFlash.open(filename);
+    if (!bmpFile) {
         Serial.print(F("File not found\r\n"));
         return;
     }
@@ -284,10 +240,9 @@ void XCopyGraphics::rawDraw(const char *filename, uint16_t x, uint16_t y)
     // Parse BMP header
     if (read16(bmpFile) == 0x4D42)
     { // BMP signature
-        fileSize = read32(bmpFile);
+        read32(bmpFile); // fileSize
         (void)read32(bmpFile);            // Read & ignore creator bytes
-        bmpImageoffset = read32(bmpFile); // Start of image data
-        headerSize = read32(bmpFile);
+        read32(bmpFile); // bmpImageoffset - Start of image data
         bmpWidth = read32(bmpFile);
         bmpHeight = read32(bmpFile);
         if (read16(bmpFile) == 1)
@@ -298,7 +253,6 @@ void XCopyGraphics::rawDraw(const char *filename, uint16_t x, uint16_t y)
                 if (bmpHeight < 0)
                 {
                     bmpHeight = -bmpHeight;
-                    flip = false;
                 }
 
                 // Crop area to be loaded
@@ -350,13 +304,6 @@ void XCopyGraphics::rawDraw(const char *filename, uint16_t x, uint16_t y)
                 }
 
                 _tft->endPushData();
-
-                // if (goodBmp)
-                // {
-                //     Serial.print("Loaded in ");
-                //     Serial.print(millis() - startTime);
-                //     Serial.println(" ms");
-                // }
             }
         }
     }
@@ -382,13 +329,6 @@ uint16_t XCopyGraphics::read16(SerialFlashFile f)
     f.read(buffer, 2);
     offset = offset + 2;
 
-    /*
-    Serial.println("\nstart16:\n");
-    Serial.println(buffer[0], HEX);
-    Serial.println(buffer[1], HEX);
-    Serial.println("\nend\n");
-    */
-
     ((uint8_t *)&result)[0] = (uint16_t)buffer[0]; // LSB
     ((uint8_t *)&result)[1] = (uint16_t)buffer[1]; // MSB
     return result;
@@ -402,15 +342,6 @@ uint32_t XCopyGraphics::read32(SerialFlashFile f)
     f.seek(offset);
     f.read(buffer, 4);
     offset = offset + 4;
-
-    /*
-    Serial.println("\nstart32:\n");
-    Serial.println(buffer[0], HEX);
-    Serial.println(buffer[1], HEX);
-    Serial.println(buffer[2], HEX);
-    Serial.println(buffer[3], HEX);
-    Serial.println("\nend\n");
-    */
 
     ((uint8_t *)&result)[0] = (uint16_t)buffer[0]; // LSB
     ((uint8_t *)&result)[1] = (uint16_t)buffer[1];

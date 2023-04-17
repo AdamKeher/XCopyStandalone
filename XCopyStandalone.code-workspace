@@ -2,18 +2,65 @@
 	"folders": [
 		{
 			"path": "."
+		},
+		{
+			"name": "esp8266",
+			"path": "esp8266"
 		}
 	],
 	"settings": {
 		"files.associations": {
+			"*.tcc": "cpp",
+			"string": "cpp",
 			"initializer_list": "cpp",
-			"xstring": "cpp",
-			"xutility": "cpp",
-			"xlocale": "cpp",
-			"xlocnum": "cpp",
-			"xiosbase": "cpp",
+			"limits": "cpp",
+			"cmath": "cpp",
+			"istream": "cpp",
+			"ostream": "cpp",
+			"streambuf": "cpp",
+			"array": "cpp",
+			"deque": "cpp",
+			"list": "cpp",
+			"map": "cpp",
+			"set": "cpp",
+			"unordered_map": "cpp",
+			"vector": "cpp",
+			"bit": "cpp",
+			"functional": "cpp",
+			"sstream": "cpp",
+			"compare": "cpp",
+			"numeric": "cpp",
+			"atomic": "cpp",
+			"cctype": "cpp",
+			"clocale": "cpp",
+			"cstdarg": "cpp",
+			"cstddef": "cpp",
+			"cstdint": "cpp",
+			"cstdio": "cpp",
+			"cstdlib": "cpp",
+			"cstring": "cpp",
+			"cwchar": "cpp",
+			"cwctype": "cpp",
+			"exception": "cpp",
+			"algorithm": "cpp",
+			"optional": "cpp",
+			"string_view": "cpp",
+			"system_error": "cpp",
+			"tuple": "cpp",
 			"type_traits": "cpp",
-			"system_error": "cpp"
+			"fstream": "cpp",
+			"iosfwd": "cpp",
+			"memory": "cpp",
+			"new": "cpp",
+			"stdexcept": "cpp",
+			"cinttypes": "cpp",
+			"utility": "cpp",
+			"typeinfo": "cpp",
+			"concepts": "cpp",
+			"iterator": "cpp",
+			"memory_resource": "cpp",
+			"random": "cpp",
+			"ranges": "cpp"
 		}
 	}
 }
