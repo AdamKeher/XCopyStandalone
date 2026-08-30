@@ -276,7 +276,8 @@ void XCopyCommandLine::doCommand(String command)
     {
         Log.printf("Reading Track %2d:\r\n", param.toInt());
         gotoLogicTrack(param.toInt());
-        uint8_t errors = readTrack(false);
+        // int, not uint8_t: readTrack() signals failure with -1.
+        int errors = readTrack(false);
         if (errors != -1)
         {
             Log << F("Sectors found: ") << getSectorCnt() << F(" Errors found: ");
@@ -351,7 +352,8 @@ void XCopyCommandLine::doCommand(String command)
         else
         {
             gotoLogicTrack(0);
-            uint8_t errors = readTrack(false);
+            // int, not uint8_t: readTrack() signals failure with -1.
+            int errors = readTrack(false);
             if (errors != -1)
             {
                 Log << F("Sectors found: ") << getSectorCnt() << F(" Errors found: ");

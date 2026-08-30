@@ -9,6 +9,20 @@ XCopyDebug::XCopyDebug(XCopyGraphics *graphics, XCopyAudio *audio, uint8_t sdCSP
     _cardDetectPin = cardDetectPin;
 }
 
+/*
+   Writes text left justified in a field of width columns.
+
+   Replaces a pair of sprintf(buf, "%-Ns", buf) calls: passing the same buffer as
+   source and destination is undefined behaviour, and "%-20s" emits 20 characters
+   plus a terminator, one byte more than the 20 byte buffers it was writing into.
+*/
+static void printPadded(const char *text, int width)
+{
+    Serial << text;
+    for (int i = (int)strlen(text); i < width; i++)
+        Serial << " ";
+}
+
 void XCopyDebug::debugCompareFile(FatFile sdFile, SerialFlashFile flashFile)
 {
     unsigned long n = sdFile.fileSize();
@@ -18,16 +32,16 @@ void XCopyDebug::debugCompareFile(FatFile sdFile, SerialFlashFile flashFile)
 
     char sfnBuffer[20];
     char lfnBuffer[256];
-    char sfnTempBuffer[20];
-    sdFile.getName(lfnBuffer, 256);
+    char sfnTempBuffer[24];
+    sdFile.getName(lfnBuffer, sizeof(lfnBuffer));
     sdFile.getSFN(sfnBuffer);
     strupr(sfnBuffer);
-    sprintf(lfnBuffer, "%-40s", lfnBuffer);
-    sprintf(sfnTempBuffer, "(%s)", sfnBuffer);
-    sprintf(sfnTempBuffer, "%-20s", sfnTempBuffer);
+    snprintf(sfnTempBuffer, sizeof(sfnTempBuffer), "(%s)", sfnBuffer);
 
-    Serial << lfnBuffer << " " << sfnTempBuffer
-           << " SD: " << sdFile.fileSize() << "\t\tFlash: " << flashFile.size() << "\t\t";
+    printPadded(lfnBuffer, 40);
+    Serial << " ";
+    printPadded(sfnTempBuffer, 20);
+    Serial << " SD: " << sdFile.fileSize() << "\t\tFlash: " << flashFile.size() << "\t\t";
 
     while (n > 0)
     {
@@ -238,16 +252,17 @@ void XCopyDebug::debugEraseCopyCompare()
 
         char sfnBuffer[20];
         char lfnBuffer[255];
-        char sfnTempBuffer[20];
+        char sfnTempBuffer[24];
         f.getSFN(sfnBuffer);
-        f.getName(lfnBuffer, 255);
+        f.getName(lfnBuffer, sizeof(lfnBuffer));
         strupr(sfnBuffer);
-        sprintf(lfnBuffer, "%-40s", lfnBuffer);
-        sprintf(sfnTempBuffer, "(%s)", sfnBuffer);
-        sprintf(sfnTempBuffer, "%-20s", sfnTempBuffer);
+        snprintf(sfnTempBuffer, sizeof(sfnTempBuffer), "(%s)", sfnBuffer);
         unsigned long length = f.fileSize();
 
-        Serial << lfnBuffer << " " << sfnTempBuffer << "\t" << length << "\t\tcopying ";
+        printPadded(lfnBuffer, 40);
+        Serial << " ";
+        printPadded(sfnTempBuffer, 20);
+        Serial << "\t" << length << "\t\tcopying ";
 
         bool result = false;
         delay(delayMs);

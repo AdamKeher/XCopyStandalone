@@ -427,9 +427,14 @@ void XCopy::onWebCommand(void* obj, const String command)
     }
     else if (command.startsWith("copyEmptyBlocks")) {
         String _params = command.substring(command.indexOf(",") + 1);
-        int count = 0;
+        size_t count = 0;
+        // 1760 blocks packed one bit per block. Zeroed because the loops below and
+        // writeBlocksToFile() always read all 220 entries, so a short message would
+        // otherwise operate on stack garbage; bounded because the message arrives
+        // over the websocket and could carry any number of fields.
         byte blocks[220];
-        while (_params.length() > 0) {            
+        memset(blocks, 0, sizeof(blocks));
+        while (_params.length() > 0 && count < sizeof(blocks)) {
             int index = _params.indexOf(",");
             blocks[count++] = _params.substring(0, index).toInt();
             _params = _params.substring(index + 1);
@@ -634,7 +639,9 @@ void XCopy::sendBlock(int block) {
     int sector = block % 11;
 
     gotoLogicTrack(track);
-    uint8_t errors = readTrack(true);
+    // int, not uint8_t: readTrack() signals failure with -1, which truncates to 255
+    // in a uint8_t and makes the comparison below always true.
+    int errors = readTrack(true);
     if (errors != -1) {
         Track *track = getTrack();
         struct Sector *aSec = (Sector *)&track[sector].sector;
