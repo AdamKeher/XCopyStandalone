@@ -8,7 +8,14 @@
 #include <WebSocketsServer.h>
 #include <LITTLEFS.h>
 
-#define ESPBaudRate 576000
+// Must match ESPBaudRate in src/XCopy/XCopy.h. 1,000,000 divides exactly on both ends
+// (ESP8266: 80e6/80, Teensy: 192e6/192) -- zero divisor error, unlike the old 576000.
+#define ESPBaudRate 1000000
+
+// SD upload transfer protocol -- must match the XFER_* defines in src/XCopy/XCopy.h.
+#define XFER_CHUNK 1024
+#define XFER_ACK 0x06
+#define XFER_TIMEOUT 5000
 
 ESP8266WebServer server(80);
 WebSocketsServer webSocket(81);
@@ -162,48 +169,146 @@ bool handleFileRead(String path)
   return false;
 }
 
-bool handleFileUpload() {
-  digitalWrite(led, 0);
+static bool   uploadFailed = false;
+static String uploadError = "";
+static size_t uploadSize = 0;
+static size_t uploadSent = 0;
+static String uploadCrc = "";
 
+// Blocks until the Teensy confirms the chunk is buffered, or we give up. yield() keeps the
+// WiFi stack and the soft WDT fed; stalling here is exactly the backpressure we want, since
+// it propagates up the TCP window to the browser instead of overrunning the UART.
+static bool waitAck() {
+  unsigned long t = millis();
+  while (millis() - t < XFER_TIMEOUT) {
+    if (Serial.available() && Serial.read() == XFER_ACK) return true;
+    yield();
+  }
+  return false;
+}
+
+// Reads the expected size from a header rather than server.arg(): headers are parsed before
+// the body and cannot be clobbered by multipart form parsing, which is core-version
+// dependent. Falls back to the query string.
+static size_t requestedFileSize() {
+  size_t n = 0;
+  String v = server.header("X-File-Size");
+  if (v.length() == 0) v = server.arg("filesize");
+  sscanf(v.c_str(), "%zu", &n);
+  return n;
+}
+
+// NOTE: this handler must never call server.send(). Responding from here emits a second
+// HTTP response on the same connection and closes the socket before the multipart trailer
+// has been consumed, which the browser reports as a network error even though every byte
+// arrived. handleUploadDone() sends the single response.
+void handleFileUpload() {
   HTTPUpload& upload = server.upload();
-  
-  size_t filesize = 0;
-  String ssize = server.arg("filesize");
-  sscanf(ssize.c_str(), "%zu", &filesize);
 
   if (upload.status == UPLOAD_FILE_START) {
+    digitalWrite(led, 0);
+    uploadFailed = false;
+    uploadError = "";
+    uploadSent = 0;
+    uploadCrc = "";
+    uploadSize = requestedFileSize();
+
     String path = upload.filename;
-    if(!path.startsWith("/")) path = "/"+path;
+    if (!path.startsWith("/")) path = "/" + path;
 
-    // request file start
-    Serial.print("\r\n");
-    Serial.printf("xcopyCommand,getFile,%s,%d\r\n", path.c_str(), filesize);
+    bool overwrite = (server.header("X-Overwrite") == "1");
 
-    // file creation error?
-    String response = "";
-    response = Serial.readStringUntil('\n');
-    response.replace("\n", "");  
-
-    if (response.startsWith("error")) {
-      response.replace("error,", "");
-      webSocket.broadcastTXT(String("cancelUpload," + response).c_str());
-      String url = "/#sdcard?fileerror=";
-      url.concat(response);
-      server.send(409, "text/plain", String("409: Conflict - Upload error: " + upload.filename + "(" + String(filesize) + ")").c_str());
+    // The transfer is length-delimited, so a missing size would make the Teensy write a
+    // zero-byte file and report success. Fail loudly instead.
+    if (uploadSize == 0) {
+      uploadFailed = true;
+      uploadError = "nosize";
+      webSocket.broadcastTXT("cancelUpload,nosize");
       digitalWrite(led, 1);
-      return false;
+      return;
     }
-  } 
+
+    while (Serial.available()) Serial.read();   // drop stale bytes before the handshake
+
+    Serial.print("\r\n");
+    Serial.printf("xcopyCommand,getFile,%s,%u,%d\r\n", path.c_str(), (unsigned)uploadSize, overwrite ? 1 : 0);
+
+    Serial.setTimeout(8000);                    // SD init + bmpDraw headroom
+    String response = Serial.readStringUntil('\n');
+    response.trim();
+
+    if (response != "OK") {
+      uploadFailed = true;
+      uploadError = response.startsWith("error,") ? response.substring(6)
+                  : (response.length() ? response : "timeout");
+      webSocket.broadcastTXT(String("cancelUpload," + uploadError).c_str());
+      digitalWrite(led, 1);
+    }
+  }
   else if (upload.status == UPLOAD_FILE_WRITE) {
-    Serial.write(upload.buf, upload.currentSize);
-    delay(125);
+    if (uploadFailed) return;                   // swallow the rest of the body quietly
+
+    size_t off = 0;
+    while (off < upload.currentSize) {
+      size_t n = upload.currentSize - off;
+      if (n > XFER_CHUNK) n = XFER_CHUNK;
+
+      Serial.write(upload.buf + off, n);
+      Serial.flush();
+
+      if (!waitAck()) {
+        uploadFailed = true;
+        uploadError = "timeout";
+        webSocket.broadcastTXT("cancelUpload,timeout");
+        digitalWrite(led, 1);
+        return;
+      }
+      off += n;
+      uploadSent += n;
+    }
   }
   else if (upload.status == UPLOAD_FILE_END) {
-    server.send(200, "text/plain", String("200: OK - File uploaded: " + upload.filename + "(" + String(filesize) + ")").c_str());
-  }
+    if (!uploadFailed) {
+      Serial.setTimeout(XFER_TIMEOUT);
+      String receipt = Serial.readStringUntil('\n');   // "done,<bytes>,<crc32>"
+      receipt.trim();
 
-  digitalWrite(led, 1);
-  return true;
+      if (receipt.startsWith("done,")) {
+        int last = receipt.lastIndexOf(',');
+        size_t got = 0;
+        sscanf(receipt.substring(5, last).c_str(), "%zu", &got);
+        uploadCrc = receipt.substring(last + 1);
+
+        if (uploadSize > 0 && got != uploadSize) {
+          uploadFailed = true;
+          uploadError = "short";
+        }
+      } else {
+        uploadFailed = true;
+        uploadError = receipt.startsWith("error,") ? receipt.substring(6) : "noreceipt";
+      }
+    }
+    digitalWrite(led, 1);
+  }
+  else if (upload.status == UPLOAD_FILE_ABORTED) {
+    // Just stop sending -- the Teensy closes the file on its own read timeout.
+    uploadFailed = true;
+    uploadError = "aborted";
+    digitalWrite(led, 1);
+  }
+}
+
+// The single response for the whole POST.
+void handleUploadDone() {
+  if (uploadFailed) {
+    webSocket.broadcastTXT(String("cancelUpload," + uploadError).c_str());
+    server.send(500, "application/json",
+                String("{\"ok\":false,\"error\":\"") + uploadError + "\"}");
+  } else {
+    server.send(200, "application/json",
+                String("{\"ok\":true,\"size\":") + String(uploadSent) +
+                ",\"crc32\":\"" + uploadCrc + "\"}");
+  }
 }
 
 void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t lenght)
@@ -252,6 +357,10 @@ void setup(void)
   digitalWrite(cancelPin, HIGH);
   attachInterrupt(busyPin, busyISR, CHANGE);
 
+  // Must precede begin(). The core default is 256 bytes; the SD *download* path blasts
+  // 2048-byte bursts from the Teensy while server.sendContent() can block on TCP, so at
+  // 1 Mbaud 256 bytes is only ~2.5ms of headroom. 2048 gives ~20ms.
+  Serial.setRxBufferSize(2048);
   Serial.begin(ESPBaudRate);
 
   if (MDNS.begin("esp8266"))
@@ -266,8 +375,13 @@ void setup(void)
   Serial.println("WebSockets server started");
   webSocket.onEvent(webSocketEvent);
 
+  const char *uploadHeaders[] = { "X-File-Size", "X-Overwrite" };
+  // (size_t) cast is required: with an int literal the variadic collectHeaders() overload
+  // wins overload resolution and fails to compile on newer cores.
+  server.collectHeaders(uploadHeaders, (size_t)2);
+
   server.on("/upload", HTTP_GET, handleNotFound);
-  server.on("/upload", HTTP_POST, [](){ server.send(200); }, handleFileUpload);
+  server.on("/upload", HTTP_POST, handleUploadDone, handleFileUpload);
   server.onNotFound([]() {
     digitalWrite(led, 0);
     if (!handleFileRead(server.uri()))

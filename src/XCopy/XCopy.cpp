@@ -386,13 +386,18 @@ void XCopy::onWebCommand(void* obj, const String command)
         xcopy->sendFile(path);
     }
     else if (command.startsWith("getFile")) {
+        // getFile,<path>,<size>[,<overwrite>]
         size_t filesize = 0;
-        String path = command.substring(command.indexOf(",")+1);        
-        String ssize = path.substring(path.indexOf(",")+1);
-        path = path.substring(1, path.indexOf(","));
-        sscanf(ssize.c_str(), "%zu", &filesize);
+        bool overwrite = false;
+        String args = command.substring(command.indexOf(",") + 1);
+        String path = args.substring(1, args.indexOf(","));      // strip leading '/'
+        String rest = args.substring(args.indexOf(",") + 1);
+        sscanf(rest.c_str(), "%zu", &filesize);                  // stops at the next comma
+        if (rest.indexOf(",") > 0) {
+            overwrite = (rest.substring(rest.indexOf(",") + 1).toInt() != 0);
+        }
 
-        xcopy->getFile(path, filesize);
+        xcopy->getFile(path, filesize, overwrite);
     }
     // (command == "copyADFtoDisk") {
     //     xcopy->startCopyADFtoDisk();
@@ -520,89 +525,95 @@ void XCopy::sendFile(String path) {
     setBusy(false);
 }
 
-void XCopy::getFile(String path, size_t filesize) {
-   setBusy(true);
+void XCopy::getFile(String path, size_t filesize, bool overwrite) {
+    setBusy(true);
 
-   Serial << "Getting file: '" << path << "' (" << filesize << ")\r\n";
-    
+    Serial << "Getting file: '" << path << "' (" << filesize << ")\r\n";
+
     XCopySDCard *_sdCard = new XCopySDCard();
-    _sdCard->begin();
-    bool error = false;
 
-    if (!_sdCard->cardDetect()) {
-        Serial1.print("error,detect\n");
-        Serial << "Error: Card detect error\r\n";
-        error = true;
-    }
-
-    if (!_sdCard->begin()) {
-        Serial1.print("error,init\n");
-        Serial << "Error: Initialisation error\r\n";
-        error = true;
-    }    
-
-    if (_sdCard->fileExists(path)) {
-        Serial1.print("error,exists\n");
-        Serial << "Error: File exists\r\n";
-        error = true;
-    }
+    // Exactly one status line goes back to the ESP, always. The old code used independent
+    // if()s and could emit several error lines; the ESP read one and the rest were left in
+    // the buffer to be misread as file data or as console commands.
+    const char *err = NULL;
+    if (!_sdCard->cardDetect())                       err = "detect";
+    else if (!_sdCard->begin())                       err = "init";
+    else if (_sdCard->fileExists(path) && !overwrite) err = "exists";
 
     FatFile file;
-    bool fresult = file.open(path.c_str(), O_RDWR | O_CREAT);
-    if (!fresult) {
-        Serial1.print("error,open\n");
-        Serial << "Error: SD file open failed\r\n";
-        error = true;
-    }
+    // O_TRUNC matters once overwrite is allowed: without it a shorter re-upload would
+    // leave the tail of the previous file behind.
+    if (err == NULL && !file.open(path.c_str(), O_WRONLY | O_CREAT | O_TRUNC)) err = "open";
 
-    if (error) {
+    if (err != NULL) {
+        Serial1.printf("error,%s\n", err);
+        Serial << "Error: " << err << "\r\n";
         delete _sdCard;
         setBusy(false);
         return;
     }
 
+    // Sent BEFORE any drawing. bmpDraw() reads a bitmap off the SD card and blits it over
+    // SPI, which can outrun the ESP's handshake timeout and leave it streaming into a
+    // Teensy that is not yet listening.
+    Serial1.print("OK\n");
+
     _graphics.clearScreen();
     _graphics.bmpDraw("XCPYLOGO.BMP", 0, 30);
     _graphics.drawText(42, 85, ST7735_GREEN, "Receiving File", TRUE);
 
-    // send file size
-    Serial1.print("OK\n");
-
-    // copy data from sd file to flash file
-    size_t bufferSize = 2048;
-    char buffer[bufferSize];
-    int readsize = 0;
+    static uint8_t buffer[XFER_CHUNK];
+    FastCRC32 CRC32;
+    uint32_t crc = 0;
+    bool firstChunk = true;
+    size_t totalsize = 0;
+    bool ok = true;
+    uint32_t chunks = 0;
 
     unsigned long time = millis();
-    unsigned long lasttime = millis();
-    size_t totalsize = 0;
+    Serial1.setTimeout(XFER_TIMEOUT);
 
-    do {
-        while (Serial1.available()) {
-            lasttime = millis();
-            readsize = Serial1.readBytes(buffer, bufferSize);
-            if (readsize > 0) {
-                totalsize += readsize;
-                file.write(buffer, readsize);
-                Serial.print(".");            
-            }
-            if (totalsize >= filesize) {
-                Serial << "Exact File Size!\r\n";
-                break;
-            }
+    while (totalsize < filesize) {
+        size_t want = filesize - totalsize;
+        if (want > XFER_CHUNK) want = XFER_CHUNK;
+
+        if (Serial1.readBytes((char *)buffer, want) != want) {
+            Serial << "\r\nError: timeout after " << totalsize << " bytes\r\n";
+            ok = false;
+            break;
         }
 
-        if (millis() - lasttime > 1000) { break; }
-    } while (true);
+        // ACK as soon as the chunk is in RAM, not after the SD write. The ESP can then
+        // transmit chunk N+1 while we write chunk N, so per-chunk cost is max(tx, sd)
+        // rather than tx + sd. Still overrun-proof: only one chunk is ever un-ACKed, so
+        // peak Serial1 ring occupancy is XFER_CHUNK, well under SERIAL1_RX_BUFFER_SIZE.
+        Serial1.write(XFER_ACK);
 
-    Serial << "\r\nReceived file '";
-    file.printName();
-    Serial << "': " << file.fileSize() << " in " << (millis() - time) / 1000.0f << "s\r\n";
+        if (file.write(buffer, want) != (int)want) {
+            Serial << "\r\nError: SD write failed at " << totalsize << " bytes\r\n";
+            ok = false;
+            break;
+        }
 
+        crc = firstChunk ? CRC32.crc32(buffer, want) : CRC32.crc32_upd(buffer, want);
+        firstChunk = false;
+        totalsize += want;
+
+        // Throttled: USB CDC writes can block when a host is attached but not reading.
+        if ((++chunks & 0x3F) == 0) Serial.print(".");
+    }
+
+    file.sync();
     file.close();
     delete _sdCard;
 
-    Serial.println("Done");
+    // Receipt. The byte count and CRC32 are what actually verify the transfer -- the
+    // per-chunk ACK above is flow control only.
+    if (ok) Serial1.printf("done,%u,%08lX\n", (unsigned)totalsize, (unsigned long)crc);
+    else    Serial1.print("error,write\n");
+
+    Serial << "\r\nReceived '" << path << "': " << totalsize << "/" << filesize
+           << " bytes, crc32 " << _HEX(crc) << ", in " << (millis() - time) / 1000.0f << "s\r\n";
 
     _menu.redraw();
 
@@ -933,6 +944,11 @@ void XCopy::navigateSelect()
             _graphics.clearScreen();
             _graphics.drawText(0, 0, ST7735_GREEN, "ESP Programming Mode", true);
 
+            // esptool has to talk to the ESP bootloader through this passthrough, so
+            // Serial1 must run at a rate esptool is happy with -- independent of the
+            // (much faster) rate the data link uses. Restored when passthrough exits.
+            ESPSerial.begin(ESPProgBaudRate);
+
             _esp->progMode();
         }
 
@@ -1245,6 +1261,7 @@ void XCopy::processState()
         }
 
         _esp->setEcho(false);
+        ESPSerial.begin(ESPBaudRate);   // restore the data-link rate after programming mode
         _cancelOperation = false;
         setBusy(false);
         _xcopyState = menus;

@@ -39,15 +39,26 @@ String XCopyESP8266::sendCommand(String command, bool strip, int timeout)
 
     char OK_EOC[5] = "OK\r\n";
     char ER_EOC[5] = "ER\r\n";
-    char buffer[512];
+    const int bufferSize = 512;
+    char buffer[bufferSize];
     int i = 0;
     int len = strlen(OK_EOC);
     uint32_t start = millis();
 
-    while (millis() < start + timeout)
+    while (millis() - start < (uint32_t)timeout)
     {
         if (Serial1.available())
         {
+            // An unresponsive ESP -- or one running at a different baud rate -- produces
+            // continuous framing garbage that never contains an end-of-command marker.
+            // Slide the window rather than running off the end of this stack buffer,
+            // keeping enough tail that an EOC straddling the boundary still matches.
+            if (i >= bufferSize - 1)
+            {
+                memmove(buffer, buffer + i - (len - 1), len - 1);
+                i = len - 1;
+            }
+
             buffer[i++] = Serial1.read();
             if (i >= len)
             {
@@ -122,7 +133,12 @@ void XCopyESP8266::Update()
         }
         else
         {
-            _command += inChar;
+            // Same guard as sendCommand(): line noise carries no line endings to flush the
+            // accumulator, and an unbounded String will exhaust the heap.
+            if (_command.length() < 512)
+                _command += inChar;
+            else
+                _command = "";
         }
     }
 }

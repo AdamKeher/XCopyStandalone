@@ -15,7 +15,21 @@
 
 
 #define ESPSerial Serial1
-#define ESPBaudRate 576000
+
+// 1,000,000 divides exactly on both ends: Teensy BAUD2DIV -> 192e6/192, ESP8266 -> 80e6/80.
+// Zero divisor error on both sides, unlike the old 576000 (0.54% combined skew).
+#define ESPBaudRate 1000000
+
+// Serial1 drops to this while the ESP is flashed through the Teensy passthrough, so the
+// data-link rate stays independent of what esptool has to cope with.
+#define ESPProgBaudRate 115200
+
+// SD upload transfer protocol (see XCopy::getFile and esp8266.ino handleFileUpload).
+// The ESP may never have more than one un-ACKed chunk outstanding, so peak Serial1 ring
+// occupancy is XFER_CHUNK -- keep it well under SERIAL1_RX_BUFFER_SIZE.
+#define XFER_CHUNK 1024
+#define XFER_ACK 0x06
+#define XFER_TIMEOUT 5000
 
 #include <Arduino.h>
 #include <SPI.h>
@@ -67,7 +81,7 @@ public:
   void startFunction(XCopyState state, String param = "");
   void startCopyADFtoDisk(String path  = "");
   void sendFile(String path);
-  void getFile(String path, size_t size);
+  void getFile(String path, size_t size, bool overwrite = false);
   void processKeys(String keys);
   void sendBlock(int block);
   void cardChange();
