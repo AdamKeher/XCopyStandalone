@@ -45,28 +45,30 @@ void navigationCallBack(uint8_t change_mask, FivePosNavigationState state, uint3
   }
 }
 
-unsigned long current = 0;
-
-unsigned long lastCancel = 0;
+// Each ISR keeps its own debounce timestamp. These were previously sharing a single
+// non-volatile "current" global, so either handler could overwrite the timestamp the
+// other was about to compare against.
+volatile unsigned long lastCancel = 0;
 void ISR_CANCEL()
-{  
+{
   // shitty debounce
-  current = millis();
+  unsigned long current = millis();
   if (current - lastCancel > 150)
   {
-    lastCancel = current;  
+    lastCancel = current;
     xcopy.cancelOperation();
   }
 }
 
-unsigned long lastCardDetect = 0;
+volatile unsigned long lastCardDetect = 0;
 void ISR_CARD_DETECT()
-{  
-  current = millis();
+{
+  unsigned long current = millis();
   if (current - lastCardDetect > 100)
   {
     lastCardDetect = current;
-    delay(100);
+    // No delay() here: this runs in interrupt context. cardChange() only timestamps
+    // the event; XCopy::update() waits out the switch bounce before reading the pin.
     xcopy.cardChange();
   }
 }

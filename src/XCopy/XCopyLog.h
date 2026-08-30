@@ -14,8 +14,12 @@ class XCopyLog
         Serial << text;
         text = text.replace("\r", "\033[^M");
         text = text.replace("\n", "\033[^J");
-        _esp->print("broadcast log," + text + "\r\n");
-        delay(6);
+        // _esp is null until XCopy::begin() constructs it, and the default
+        // constructor sets it to nullptr, so every use has to be guarded.
+        if (_esp != nullptr) {
+            _esp->print("broadcast log," + text + "\r\n");
+            delay(6);
+        }
         return *this;
     }
 
@@ -31,7 +35,7 @@ class XCopyLog
         String strOutput = String(output);
         strOutput = strOutput.replace("\r", "\033[^M");
         strOutput = strOutput.replace("\n", "\033[^J");
-        _esp->log(strOutput);
+        if (_esp != nullptr) _esp->log(strOutput);
         return 0;
     }
 

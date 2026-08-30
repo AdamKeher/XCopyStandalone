@@ -19,6 +19,12 @@ void XCopy::begin()
     pinMode(PIN_ESPRESETPIN, OUTPUT);
     pinMode(PIN_ESPPROGPIN, OUTPUT);
 
+    // Must precede Log.setESP() and _disk.begin(): both store this pointer for the
+    // life of the program and were previously handed a null one. The constructor
+    // only opens Serial1 and drives the two pins configured above, so it is safe
+    // this early; the reset and handshake stay in "Init ESP" below.
+    _esp = new XCopyESP8266(ESPBaudRate, PIN_ESPRESETPIN, PIN_ESPPROGPIN);
+
     Log.setESP(_esp);
 
     Log << XCopyConsole::clearscreen() << XCopyConsole::home() << XCopyConsole::background_purple() << XCopyConsole::high_yellow();
@@ -100,7 +106,6 @@ void XCopy::begin()
 
     Log << F("Initialising ESP8266 WIFI (Serial") + String(Serial1) + F(" @ ") + String(ESPBaudRate) + F("): ") ;
     _graphics.drawText(0, 115, ST7735_WHITE, F("               Init WiFi"), true);
-    _esp = new XCopyESP8266(ESPBaudRate, PIN_ESPRESETPIN, PIN_ESPPROGPIN);
     _esp->reset();
     _esp->setEcho(false);
     if (_esp->begin())
@@ -292,7 +297,9 @@ void XCopy::update()
     _command->Update();
     _esp->Update();
 
-    if (_playCardSound == true) {
+    // The card-detect switch is still bouncing when the interrupt fires, so the
+    // settle happens here rather than as a delay() inside the ISR.
+    if (_playCardSound == true && millis() - _cardChangeMs >= 100) {
         _playCardSound = false;
         if (digitalRead(PIN_CARDDETECT) == 1)
             _audio.playSelect(false);
@@ -670,7 +677,9 @@ void XCopy::sendBlock(int block) {
 
 void XCopy::cardChange()
 {
-    // mark the audio sample to be played, do not play inside the interrupt
+    // Runs in interrupt context: mark the audio sample to be played and record when,
+    // so update() can wait out the switch bounce before sampling PIN_CARDDETECT.
+    _cardChangeMs = millis();
     _playCardSound = true;
 }
 

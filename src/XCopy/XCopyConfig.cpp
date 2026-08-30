@@ -147,17 +147,22 @@ bool XCopyConfig::writeConfig()
 {
     SerialFlash.remove(configFilename);
 
-    char buffer[_config.length()];
+    // toCharArray() writes up to size bytes including the terminator, so the buffer
+    // needs room for it. Passing sizeof(buffer) + 1 wrote one byte past the end.
+    size_t length = _config.length();
+    char buffer[length + 1];
     memset(buffer, 0, sizeof(buffer));
-    _config.toCharArray(buffer, sizeof(buffer) + 1);
+    _config.toCharArray(buffer, sizeof(buffer));
 
-    if (SerialFlash.create(configFilename, sizeof(buffer)))
+    // The terminator is not stored: readConfig() reads exactly size() bytes into a
+    // zeroed buffer, and existing config files were written this way.
+    if (SerialFlash.create(configFilename, length))
     {
         SerialFlashFile configfile = SerialFlash.open(configFilename);
 
         if (configfile)
         {
-            configfile.write(buffer, sizeof(buffer));
+            configfile.write(buffer, length);
             configfile.close();
         }
         else

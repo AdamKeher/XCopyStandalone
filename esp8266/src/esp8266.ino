@@ -27,11 +27,22 @@ const String _marker = "espCommand";
 ESPCommandLine command;
 
 volatile int busyState = 0;
+volatile bool busyChanged = false;
+
+// IRAM_ATTR only places this function in IRAM. String, lwIP and arduinoWebSockets all
+// live in flash, and calling into flash from an interrupt while the SPI flash cache is
+// disabled faults the chip. Sample the pin here, broadcast from loop().
 void IRAM_ATTR busyISR()
 {
-  busyState = digitalRead(busyPin);  
-  String command = "pinStatus," + String(busyState);
-  webSocket.broadcastTXT(command);
+  busyState = digitalRead(busyPin);
+  busyChanged = true;
+}
+
+void sendBusyStatus()
+{
+  // broadcastTXT takes String by non-const reference, so this needs to be an lvalue.
+  String payload = "pinStatus," + String(busyState);
+  webSocket.broadcastTXT(payload);
 }
 
 String getContentType(String filename)
@@ -332,14 +343,22 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t lenght)
     case WStype_TEXT: {
       String cmd = (char *)payload;
       if (cmd == "ping") { webSocket.sendTXT(num, "pong"); }
-      if (cmd.startsWith(_marker)) { 
-        if (cmd = cmd.substring(_marker.length()+1) == "busyPin") busyISR(); 
-        if (cmd = cmd.substring(_marker.length()+1) == "cancelPin") {
+      if (cmd.startsWith(_marker)) {
+        // These were "if (cmd = ... == \"busyPin\")": an assignment, not a comparison.
+        // The bool result was assigned to cmd and the if tested the resulting String,
+        // which is always truthy, so every espCommand message fired both branches --
+        // including a pulse on the cancel pin.
+        String subcmd = cmd.substring(_marker.length() + 1);
+        if (subcmd == "busyPin") {
+          busyState = digitalRead(busyPin);
+          sendBusyStatus();
+        }
+        if (subcmd == "cancelPin") {
           digitalWrite(cancelPin, LOW);
           delay(50);
           digitalWrite(cancelPin, HIGH);
-        }; 
-      }      
+        }
+      }
       else { Serial.printf("\r\nxcopyCommand,%s\r\n", cmd.c_str()); }
       break;
     }
@@ -396,6 +415,11 @@ void setup(void)
 
 void loop(void)
 {
+  if (busyChanged) {
+    busyChanged = false;
+    sendBusyStatus();
+  }
+
   webSocket.loop();
   server.handleClient();
   MDNS.update();

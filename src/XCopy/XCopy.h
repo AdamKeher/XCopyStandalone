@@ -103,7 +103,7 @@ private:
   XCopyDirectory _directory;
   XCopyGraphics _graphics;
   XCopyConfig *_config;
-  XCopyESP8266 *_esp;
+  XCopyESP8266 *_esp = nullptr;
 
 #ifdef XCOPY_DEBUG
   RamMonitor _ram;
@@ -118,9 +118,14 @@ private:
   XCopyMenuItem *timeZoneMenuItem;
 
   bool _drawnOnce;
-  bool _cancelOperation;
+  // Set from ISR_CANCEL (XCopyStandalone.ino) and polled by processState()'s
+  // passthrough loop. Without volatile the compiler is free to hoist the load out
+  // of that loop, and passthrough mode can then never be exited.
+  volatile bool _cancelOperation = false;
   int _prevSeconds = -1;
-  bool _playCardSound = false;
+  // Set from ISR_CARD_DETECT, consumed in update().
+  volatile bool _playCardSound = false;
+  volatile uint32_t _cardChangeMs = 0;
 };
 
 #endif // XCOPY_H
