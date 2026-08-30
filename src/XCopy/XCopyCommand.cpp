@@ -59,6 +59,7 @@ void XCopyCommandLine::doCommand(String command)
         Log << F("| boot                           | print boot block from disk                          |\r\n");
         Log << F("| bootf                          | print boot block from flash                         |\r\n");
         Log << F("| hist                           | prints histogram of track in ascii                  |\r\n");
+        Log << F("| rpm <ms>                       | drive speed from index pulses, every <ms>           |\r\n");
         Log << F("| name                           | reads track 80 an returns disklabel in ascii        |\r\n");
         Log << F("| print                          | prints amiga track with header                      |\r\n");
         Log << F("| read <n>                       | read logical track #n from disk                     |\r\n");
@@ -182,6 +183,50 @@ void XCopyCommandLine::doCommand(String command)
     {
         analyseHist(false);
         printHist();
+        return;
+    }
+
+    if (cmd == F("rpm"))
+    {
+        if (!diskChange())
+        {
+            Log << F("Disk not inserted into floppy\r\n");
+            return;
+        }
+
+        uint32_t interval = param == "" ? 1000 : (uint32_t)param.toInt();
+        if (interval < 100) interval = 100;
+
+        setBusy(true);
+        motorOn();
+        XCopyFloppy *floppy = new XCopyFloppy();
+        floppy->beginRPM();
+
+        Log << F("Measuring drive speed, press any key to stop ...\r\n");
+
+        uint32_t lastReading = millis() - interval;
+        while (!Serial.available())
+        {
+            // motorTimeout() shuts the drive down after motorMaxTick idle
+            // seconds; keep resetting the tick or it stops mid measurement
+            motorOn();
+
+            if (millis() - lastReading < interval) continue;
+            lastReading = millis();
+
+            float rpm = floppy->readRPM();
+            if (rpm == 0.0f)
+                Log << XCopyConsole::error(F("No index signal detected\r\n"));
+            else
+                Log << F("Drive speed: ") << String(rpm, 2) << F(" RPM\r\n");
+        }
+        while (Serial.available()) Serial.read();
+
+        floppy->endRPM();
+        delete floppy;
+        motorOff();
+        setBusy(false);
+
         return;
     }
 

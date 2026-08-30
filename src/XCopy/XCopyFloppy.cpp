@@ -210,51 +210,76 @@ bool XCopyFloppy::detectCableOrientation() {
 }
 
 
-volatile uint32_t XCopyFloppy::_indexCount = 0;
-volatile uint32_t XCopyFloppy::_indexFirstUs = 0;
-volatile uint32_t XCopyFloppy::_indexLastUs = 0;
+volatile uint32_t XCopyFloppy::_indexTimes[RPM_WINDOW];
+volatile uint8_t XCopyFloppy::_indexHead = 0;
+volatile uint8_t XCopyFloppy::_indexSamples = 0;
 
 void XCopyFloppy::readIndexISR() {
-    uint32_t now = micros();
-
-    // the first edge only starts the window, it does not close an interval
-    if (_indexFirstUs == 0) {
-        _indexFirstUs = now;
-    } else {
-        _indexLastUs = now;
-        _indexCount++;
-    }
+    _indexTimes[_indexHead] = micros();
+    _indexHead = (_indexHead + 1) % RPM_WINDOW;
+    if (_indexSamples < RPM_WINDOW) _indexSamples++;
 }
 
-float XCopyFloppy::diskRPM() {
-    if (!_motorStatus) motor(true);
+void XCopyFloppy::beginRPM() {
+    if (_rpmRunning) return;
 
     noInterrupts();
-    _indexCount = 0;
-    _indexFirstUs = 0;
-    _indexLastUs = 0;
+    _indexHead = 0;
+    _indexSamples = 0;
     interrupts();
 
     attachInterrupt(_index, readIndexISR, FALLING);
+    _rpmRunning = true;
+}
+
+void XCopyFloppy::endRPM() {
+    if (!_rpmRunning) return;
+    detachInterrupt(_index);
+    _rpmRunning = false;
+}
+
+/*
+   speed over the edges currently in the buffer. Safe to call as often as you
+   like: it reports the newest complete window, or 0 when the drive is not
+   turning or the buffer has not filled with at least two edges yet.
+*/
+float XCopyFloppy::readRPM() {
+    uint32_t times[RPM_WINDOW];
+    uint8_t n, head;
+
+    noInterrupts();
+    n = _indexSamples;
+    head = _indexHead;
+    for (uint8_t i = 0; i < RPM_WINDOW; i++) times[i] = _indexTimes[i];
+    interrupts();
+
+    if (n < 2) return 0.0f;
+
+    // when the buffer is full head points at the oldest entry, otherwise the
+    // samples simply run 0..n-1 and head sits one past the newest
+    uint8_t oldest = (n == RPM_WINDOW) ? head : 0;
+    uint8_t newest = (head + RPM_WINDOW - 1) % RPM_WINDOW;
+
+    // the drive stopped or the disk was pulled part way through a window
+    if (micros() - times[newest] > _rpmStallUs) return 0.0f;
+
+    uint32_t spanUs = times[newest] - times[oldest];
+    if (spanUs == 0) return 0.0f;
+
+    return (60000000.0f * (n - 1)) / spanUs;
+}
+
+/*
+   one shot measurement: spin up, wait for a full window, hand back the result
+*/
+float XCopyFloppy::diskRPM() {
+    if (!_motorStatus) motor(true);
+    beginRPM();
 
     uint32_t start = millis();
-    uint32_t count = 0;
-    uint32_t spanUs = 0;
+    while (_indexSamples < RPM_WINDOW && millis() - start < _rpmStallUs / 1000) { }
 
-    while (millis() - start < _rpmTimeoutMs) {
-        noInterrupts();
-        count = _indexCount;
-        spanUs = _indexLastUs - _indexFirstUs;
-        interrupts();
-
-        if (count >= _rpmRevolutions) break;
-    }
-
-    detachInterrupt(_index);
-
-    // no disk, no index signal, or the drive never spun up
-    if (count == 0 || spanUs == 0) return 0.0f;
-
-    float avgUs = spanUs / float(count);
-    return (1000000.0f / avgUs) * 60.0f;
+    float rpm = readRPM();
+    endRPM();
+    return rpm;
 }

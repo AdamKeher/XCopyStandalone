@@ -4,6 +4,7 @@
 #include <Arduino.h>
 #include <Streaming.h>
 #include "FloppyDrive.h"
+#include "XCopyFloppy.h"
 #include "GenericList.h"
 #include "XCopyPins.h"
 #include "XCopyLog.h"

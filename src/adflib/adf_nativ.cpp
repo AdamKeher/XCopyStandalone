@@ -24,10 +24,12 @@
 #include<stdio.h>
 #include<stdlib.h>
 #include<string.h>
+// Changed
+#include <Arduino.h>
+// Changed
 #include"adf_str.h"
 #include"adf_nativ.h"
 #include"adf_err.h"
-#include <Arduino.h>
 
 #include <SdFat.h>
 

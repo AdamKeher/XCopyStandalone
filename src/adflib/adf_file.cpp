@@ -28,6 +28,9 @@
 #include<stdlib.h>
 #include<string.h>
 
+// Changed
+#include <Arduino.h>
+// Changed
 #include"adf_util.h"
 #include"adf_file.h"
 #include"adf_str.h"
@@ -37,7 +40,6 @@
 #include"adf_dir.h"
 #include"adf_bitm.h"
 #include"adf_cache.h"
-	#include <Arduino.h>
 
 extern struct Env adfEnv;
 

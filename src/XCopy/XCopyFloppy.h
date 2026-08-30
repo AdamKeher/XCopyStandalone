@@ -4,6 +4,7 @@
 #define FLOPPY_GAP_BYTES 1482
 #define streamSizeDD 12 * 1088 + FLOPPY_GAP_BYTES //11 sectors + gap + spare sector
 #define writeSizeDD 11 * 1088 + FLOPPY_GAP_BYTES  //11 sectors + xx bytes gap
+#define RPM_WINDOW 11                             //index timestamps kept -> 10 intervals
 
 #include <Arduino.h>
 #include <Streaming.h>
@@ -89,6 +90,9 @@ class XCopyFloppy {
         bool gotoTrack(int trackNumber);
         void readTrack();
         float diskRPM();
+        void beginRPM();   // caller must have the drive spinning
+        float readRPM();
+        void endRPM();
 
     private:
         // 
@@ -110,14 +114,16 @@ class XCopyFloppy {
         void initRead();
         //
 
-        // index pulse RPM measurement
-        static volatile uint32_t _indexCount;
-        static volatile uint32_t _indexFirstUs;
-        static volatile uint32_t _indexLastUs;
+        // index pulse RPM measurement: the ISR keeps a rolling buffer of the
+        // last RPM_WINDOW edge timestamps, so readRPM() can be called at any
+        // time and always reports the most recent full revolutions
+        static volatile uint32_t _indexTimes[RPM_WINDOW];
+        static volatile uint8_t _indexHead;
+        static volatile uint8_t _indexSamples;
         static void readIndexISR();
 
-        uint32_t _rpmRevolutions = 10;
-        uint32_t _rpmTimeoutMs = 3000;
+        bool _rpmRunning = false;
+        uint32_t _rpmStallUs = 3000000;
 
         FloppyDelays _delays;
         FloppyPosition _position;

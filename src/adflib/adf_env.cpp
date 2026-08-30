@@ -28,13 +28,15 @@
 #include<stdio.h>
 #include <stdlib.h>
 
+// Changed
+#include <Arduino.h>
+// Changed
 #include"adf_defs.h"
 #include"adf_str.h"
 #include"adf_nativ.h"
 #include"adf_env.h"
 
 #include"defendian.h"
-#include <Arduino.h>
 
 #define debugadf
 
