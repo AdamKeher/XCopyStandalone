@@ -10,7 +10,9 @@ bool XCopySDCard::begin() {
     return true;
 }
 bool XCopySDCard::cardDetect() {
-    if (!digitalRead(PIN_CARDDETECT) == 0) {
+    // The pin is pulled up and driven low by the card switch. This read as
+    // "(!digitalRead(...)) == 0", which is the same test written backwards.
+    if (digitalRead(PIN_CARDDETECT) != 0) {
         _error = F("No SDCard detected");
         return false;
     }

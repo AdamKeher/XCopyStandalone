@@ -121,7 +121,7 @@ private:
   XCopyMenuItem *diskDelayMenuItem;
   XCopyMenuItem *timeZoneMenuItem;
 
-  bool _drawnOnce;
+  bool _drawnOnce = false;
   // True while the passthrough loop is servicing ESP *programming* mode, where
   // Serial1 runs at ESPProgBaudRate and the ESP is in its ROM bootloader.
   bool _espProgMode = false;

@@ -12,8 +12,11 @@ XCopyCommandLine::XCopyCommandLine(String version, XCopyESP8266 *esp, XCopyConfi
 
 void XCopyCommandLine::doCommand(String command)
 {
-    command.replace((char)10, (char)0);
-    command.replace((char)13, (char)0);
+    // Arduino's char/char replace substitutes bytes without changing the length, so
+    // the previous replace((char)10, (char)0) pair embedded NULs instead of removing
+    // anything. Replacing with an empty String actually shortens it.
+    command.replace("\r", "");
+    command.replace("\n", "");
 
     String cmd = command;
     String param = "";
@@ -21,8 +24,10 @@ void XCopyCommandLine::doCommand(String command)
     {
         param = command.substring(command.indexOf(" ") + 1);
         cmd.remove(command.indexOf(" "), command.length());
-        cmd.toLowerCase();
     }
+    // Outside the if: this used to run only when a parameter was present, so
+    // parameterless commands such as "HELP" were case sensitive.
+    cmd.toLowerCase();
 
     if (cmd == F("version") || cmd == F("ver"))
     {
@@ -812,7 +817,7 @@ bool XCopyCommandLine::printDirectory(String directory, bool color) {
             if (color) {
                 filename = XCopyConsole::high_yellow() + filename + XCopyConsole::reset();
             }
-        } else if (_sdcard->getfile().isADF & color) {
+        } else if (_sdcard->getfile().isADF && color) {
                 filename = XCopyConsole::high_green()+ filename + XCopyConsole::reset();
         }
 
@@ -845,10 +850,12 @@ void XCopyCommandLine::processKey(char key) {
     // linefeed
     else if (key == 0x0d || key == 0x0a) {
         Log << "\r\n";
-        if (_command != String(0x0d)) {
-            doCommand(_command);
-            printPrompt();
-        }
+        // Was "if (_command != String(0x0d))". String(int) formats the number, so
+        // that compared against "13" rather than a carriage return: entering the
+        // command "13" was silently swallowed, prompt and all. doCommand() already
+        // ignores an empty command, so no guard is needed.
+        doCommand(_command);
+        printPrompt();
         _command = "";
     }
     else {

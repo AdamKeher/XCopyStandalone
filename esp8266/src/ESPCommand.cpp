@@ -7,8 +7,10 @@ void ESPCommandLine::begin(WebSocketsServer *webSocket)
 
 void ESPCommandLine::doCommand(String command)
 {
-    command.replace((char)10, (char)0);
-    command.replace((char)13, (char)0);
+    // Arduino's char/char replace substitutes bytes without changing the length, so
+    // replacing with (char)0 embedded NULs instead of removing anything.
+    command.replace("\r", "");
+    command.replace("\n", "");
 
     String cmd = command;
     cmd.toLowerCase();
@@ -335,33 +337,45 @@ void ESPCommandLine::Update()
 
         if (inChar == 0x08) // backspace
         {
+            // continue, not return: returning abandoned everything else already in
+            // the RX buffer for this pass.
             if (_command.length() == 0)
-                return;
+                continue;
 
             _command = _command.substring(0, _command.length() - 1);
 
             if (_localecho)
                 Serial << "\033[1D \033[1D";
 
-            return;
+            continue;
         }
 
         if (inChar == 0x0d || inChar == 0x0a) // CR or LF
         {
             if (_localecho)
                 Serial << "\r\n";
-            if (_command != String(0x0d))
-            {
-                doCommand(_command);
-                printPrompt();
-            }
+            // Was "if (_command != String(0x0d))". String(int) formats the number,
+            // so that compared against "13" rather than a carriage return, silently
+            // swallowing the command "13". doCommand() already ignores an empty one.
+            doCommand(_command);
+            printPrompt();
             _command = "";
         }
         else
         {
-            _command += inChar;
-            if (_localecho)
-                Serial << inChar;
+            // Bounded for the same reason XCopyESP8266::Update() is: file data left
+            // in the buffer after an aborted transfer carries no line endings to
+            // flush the accumulator, and an unbounded String exhausts the heap.
+            if (_command.length() < 512)
+            {
+                _command += inChar;
+                if (_localecho)
+                    Serial << inChar;
+            }
+            else
+            {
+                _command = "";
+            }
         }
     }
 }

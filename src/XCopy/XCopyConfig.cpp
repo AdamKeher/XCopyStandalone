@@ -9,11 +9,19 @@ XCopyConfig::XCopyConfig(bool readConfig)
 void XCopyConfig::createConfig()
 {
     StaticJsonDocument<512> jsonDocument;
-    JsonObject root = jsonDocument.as<JsonObject>();
+    // to<JsonObject>(), not as<JsonObject>(): as() on an empty document returns a
+    // null object and every assignment below was silently discarded, leaving
+    // _config as the string "null".
+    JsonObject root = jsonDocument.to<JsonObject>();
     root["verify"] = "TRUE";
     root["retryCount"] = 5;
     root["ssid"] = "";
     root["password"] = "";
+    // parseConfig() reads these too; without them a fresh config came up muted,
+    // with no disk delay. Values match the shipped config.json.
+    root["volume"] = 0.8;
+    root["diskDelay"] = 200;
+    root["timeZone"] = 0;
 
     _config = "";
     serializeJson(root, _config);

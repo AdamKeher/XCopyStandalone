@@ -26,7 +26,9 @@ class XCopySDCard
     bool deleteFile(String path) { return _sd.remove(path.c_str()); }
     bool makeDirectory(String path) { return _sd.mkdir(path.c_str()); }
 
-    SdFat getSdFat() { return _sd; }
+    // By reference. Returning by value copied the whole SdFat object -- block cache
+    // included -- onto the caller's stack for every open, on a 64KB part.
+    SdFat &getSdFat() { return _sd; }
 
     // TODO: These functions have a maxItems parameter as they is not currently enough memory
     //       change them to some sort of getNext() type arrangement

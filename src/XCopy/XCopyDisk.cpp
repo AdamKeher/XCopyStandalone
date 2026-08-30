@@ -137,18 +137,30 @@ String XCopyDisk::getADFVolumeName(String ADFFileName, ADFFileSource source)
     if (ADFFileName == "")
         return ">> File Error";
 
+    // Zeroed: an unrecognised source would otherwise run the root block checks below
+    // over stack garbage. All-zero fails them and yields "NDOS".
     byte trackBuffer[512];
+    memset(trackBuffer, 0, sizeof(trackBuffer));
 
     if (source == _sdCard)
     {
         XCopySDCard *_sdcard = new XCopySDCard();
-    
-        if (_sdcard->begin()) { return ">> SD Error"; }
+
+        // Was `if (_sdcard->begin())`, which reported an error when the card
+        // initialised and carried on when it did not. begin() returns true on
+        // success. Both early returns also leaked _sdcard.
+        if (!_sdcard->begin()) {
+            delete _sdcard;
+            return ">> SD Error";
+        }
 
         File ADFFile;
         ADFFile.open(ADFFileName.c_str(), FILE_READ);
 
-        if (!ADFFile) { return ">> File Error"; }
+        if (!ADFFile) {
+            delete _sdcard;
+            return ">> File Error";
+        }
 
         ADFFile.seek(40 * 2 * 11 * 512);
         ADFFile.read(trackBuffer, sizeof(trackBuffer));

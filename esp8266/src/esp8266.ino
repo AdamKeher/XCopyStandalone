@@ -356,8 +356,10 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t lenght)
     // if new text data is received 
     case WStype_TEXT: {
       String cmd = (char *)payload;
+      // else if: the else below binds to this if, so "ping" was answered *and*
+      // forwarded to the Teensy as "xcopyCommand,ping".
       if (cmd == "ping") { webSocket.sendTXT(num, "pong"); }
-      if (cmd.startsWith(_marker)) {
+      else if (cmd.startsWith(_marker)) {
         // These were "if (cmd = ... == \"busyPin\")": an assignment, not a comparison.
         // The bool result was assigned to cmd and the if tested the resulting String,
         // which is always truthy, so every espCommand message fired both branches --
