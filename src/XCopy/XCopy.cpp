@@ -313,6 +313,7 @@ void XCopy::cancelOperation()
     switch (_xcopyState)
     {
     case debuggingSerialPassThrough:
+    case testDrive:
         _cancelOperation = true;
         break;
     case testDisk:
@@ -510,18 +511,21 @@ void XCopy::sendFile(String path) {
     Serial1.print("\n");
 
     // copy data from sd file to flash file
-    size_t bufferSize = 2048;
-    char buffer[bufferSize];
+    static const size_t bufferSize = 2048;
+    static char buffer[bufferSize];
     int readsize = 0;
 
     unsigned long time = millis();
 
-    do {
+    while (true) {
+        // read() returns -1 on error. The old loop only tested readsize after the
+        // write, so a read failure became Serial1.write(buffer, (size_t)-1).
         readsize = file.read(buffer, bufferSize);
+        if (readsize <= 0) break;
         Serial1.write(buffer, readsize);
         Serial.print(".");
         delay(75);
-    } while (readsize > 0);
+    }
 
     Serial << "\r\nSent file '";
     file.printName();
@@ -614,6 +618,8 @@ void XCopy::getFile(String path, size_t filesize, bool overwrite) {
         // Throttled: USB CDC writes can block when a host is attached but not reading.
         if ((++chunks & 0x3F) == 0) Serial.print(".");
     }
+
+    Serial1.setTimeout(SERIAL_DEFAULT_TIMEOUT);
 
     file.sync();
     file.close();
@@ -854,7 +860,11 @@ void XCopy::navigateSelect()
         if (item == NULL)
             return;
 
-        // avoid changing the name to a fixed lowercase/upprcase for comparison.
+        // Compare against a copy. Teensy's String::toLowerCase()/toUpperCase()
+        // modify in place and return a reference, so calling them on longName
+        // permanently rewrote the name shown in the listing.
+        String lowerName = item->longName;
+        lowerName.toLowerCase();
 
         if (item->isDirectory() && item->source == _sdCard)
         {
@@ -869,11 +879,15 @@ void XCopy::navigateSelect()
             _directory.getDirectoryFlash(false, &_disk, ".adf");
             _directory.drawDirectory(true);
         }
-        else if (item->longName.toLowerCase().endsWith(".adf"))
+        else if (lowerName.endsWith(".adf"))
         {
             _xcopyState = copyADFToDisk;
             _audio.playSelect(false);
-            String itemname = (item->source == _sdCard ? _directory.getCurrentPath() + item->longName : item->longName.toUpperCase());
+            String itemname = item->longName;
+            if (item->source == _sdCard)
+                itemname = _directory.getCurrentPath() + itemname;
+            else
+                itemname.toUpperCase();
             _disk.adfToDisk(itemname, _config->getVerify(), _config->getRetryCount(), item->source);
         }
 
@@ -956,6 +970,7 @@ void XCopy::navigateSelect()
             setBusy(true);
 
             _xcopyState = debuggingSerialPassThrough; // set as passthrough now ESP is in programming mode
+            _espProgMode = true;
             _audio.playSelect(false);
             _graphics.clearScreen();
             _graphics.drawText(0, 0, ST7735_GREEN, "ESP Programming Mode", true);
@@ -1261,7 +1276,11 @@ void XCopy::processState()
 
     if (_xcopyState == debuggingSerialPassThrough)
     {
-        _esp->setEcho(true);
+        // In programming mode the ESP sits in its ROM bootloader and Serial1 runs at
+        // ESPProgBaudRate, so it cannot answer the echo commands -- and sending them
+        // pushes stray bytes at esptool's sync.
+        if (!_espProgMode)
+            _esp->setEcho(true);
 
         while (!_cancelOperation)
         {
@@ -1276,8 +1295,18 @@ void XCopy::processState()
             }
         }
 
-        _esp->setEcho(false);
-        ESPSerial.begin(ESPBaudRate);   // restore the data-link rate after programming mode
+        if (_espProgMode)
+        {
+            // Serial1 is still at the programming rate. Restore the data-link rate
+            // first: the old order sent setEcho(false) at ESPProgBaudRate, which the
+            // ESP was never going to hear.
+            ESPSerial.begin(ESPBaudRate);
+            _espProgMode = false;
+        }
+        else
+        {
+            _esp->setEcho(false);
+        }
         _cancelOperation = false;
         setBusy(false);
         _xcopyState = menus;
@@ -1415,12 +1444,16 @@ void XCopy::processState()
             XCopyDriveTest *driveTest = new XCopyDriveTest();
             driveTest->begin(&_graphics, &_audio, _esp);
             driveTest->draw();
-            while (1==1) {
+            // Was while (1==1): no exit, so the two lines below were unreachable and
+            // the drive test could only be left by resetting the board.
+            while (!_cancelOperation) {
                 driveTest->update();
             }
+            _cancelOperation = false;
             delete driveTest;
             setBusy(false);
             _drawnOnce = true;
+            _xcopyState = menus;
         }        
     }
 

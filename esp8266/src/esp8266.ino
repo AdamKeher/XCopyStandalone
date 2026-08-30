@@ -12,6 +12,9 @@
 // (ESP8266: 80e6/80, Teensy: 192e6/192) -- zero divisor error, unlike the old 576000.
 #define ESPBaudRate 1000000
 
+// Arduino Stream default, restored after a transfer raises it.
+#define SERIAL_DEFAULT_TIMEOUT 1000
+
 // SD upload transfer protocol -- must match the XFER_* defines in src/XCopy/XCopy.h.
 #define XFER_CHUNK 1024
 #define XFER_ACK 0x06
@@ -116,9 +119,10 @@ bool handleFileRead(String path)
     return true;
   }
 
-  if (path.startsWith("/sdcard/")) {   
-    int bufferSize = 2048;
-    char buffer[bufferSize];
+  if (path.startsWith("/sdcard/")) {
+    // static: 2048 bytes is half the cont stack this handler runs on.
+    static const int bufferSize = 2048;
+    static char buffer[bufferSize];
     size_t totalsize = 0;
     unsigned long lastDataTime = millis();
     size_t filesize = 0;
@@ -143,11 +147,16 @@ bool handleFileRead(String path)
     }
     sscanf(ssize.c_str(), "%zu", &filesize);
 
+    // Without a size the loop below exits on its first pass (0 >= 0) and the reply is
+    // a 200 with an empty, never-terminated chunked body. Fail the request instead.
+    if (filesize == 0) {
+      return false;
+    }
+
     webSocket.broadcastTXT("download,start");
 
     // start http send
-    server.setContentLength(filesize <= 0 ? CONTENT_LENGTH_UNKNOWN : filesize);
-    // server.setContentLength(CONTENT_LENGTH_UNKNOWN);
+    server.setContentLength(filesize);
     server.send(200, contentType.c_str(), "");
 
     // get file
@@ -172,8 +181,9 @@ bool handleFileRead(String path)
       }
     }
 
+    server.sendContent("");
     webSocket.broadcastTXT("download,end");
-    
+
     return true;
   }
 
@@ -299,12 +309,16 @@ void handleFileUpload() {
         uploadError = receipt.startsWith("error,") ? receipt.substring(6) : "noreceipt";
       }
     }
+    // UPLOAD_FILE_START raised this to 8000 and the receipt read to XFER_TIMEOUT;
+    // without this the download path would inherit a 5s timeout on its size read.
+    Serial.setTimeout(SERIAL_DEFAULT_TIMEOUT);
     digitalWrite(led, 1);
   }
   else if (upload.status == UPLOAD_FILE_ABORTED) {
     // Just stop sending -- the Teensy closes the file on its own read timeout.
     uploadFailed = true;
     uploadError = "aborted";
+    Serial.setTimeout(SERIAL_DEFAULT_TIMEOUT);
     digitalWrite(led, 1);
   }
 }

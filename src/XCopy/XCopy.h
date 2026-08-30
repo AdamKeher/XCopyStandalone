@@ -31,6 +31,10 @@
 #define XFER_ACK 0x06
 #define XFER_TIMEOUT 5000
 
+// Arduino Stream default, restored after a transfer raises it. The pinned Teensy core
+// has no Stream::getTimeout(), so the value is spelled out rather than saved.
+#define SERIAL_DEFAULT_TIMEOUT 1000
+
 #include <Arduino.h>
 #include <SPI.h>
 #include <SerialFlash.h>
@@ -118,6 +122,9 @@ private:
   XCopyMenuItem *timeZoneMenuItem;
 
   bool _drawnOnce;
+  // True while the passthrough loop is servicing ESP *programming* mode, where
+  // Serial1 runs at ESPProgBaudRate and the ESP is in its ROM bootloader.
+  bool _espProgMode = false;
   // Set from ISR_CANCEL (XCopyStandalone.ino) and polled by processState()'s
   // passthrough loop. Without volatile the compiler is free to hoist the load out
   // of that loop, and passthrough mode can then never be exited.

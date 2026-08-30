@@ -98,7 +98,7 @@ bool XCopyESP8266::connect(String ssid, String password, uint32_t timeout)
 
 bool XCopyESP8266::begin()
 {
-    String result = sendCommand("ping\r\n", 200);
+    String result = sendCommand("ping\r\n", false, 200);
     if (result.indexOf("pong") != -1)
         return true;
     else
