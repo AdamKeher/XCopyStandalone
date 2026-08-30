@@ -88,6 +88,7 @@ class XCopyFloppy {
         bool home();
         bool gotoTrack(int trackNumber);
         void readTrack();
+        float diskRPM();
 
     private:
         // 
@@ -108,6 +109,15 @@ class XCopyFloppy {
 
         void initRead();
         //
+
+        // index pulse RPM measurement
+        static volatile uint32_t _indexCount;
+        static volatile uint32_t _indexFirstUs;
+        static volatile uint32_t _indexLastUs;
+        static void readIndexISR();
+
+        uint32_t _rpmRevolutions = 10;
+        uint32_t _rpmTimeoutMs = 3000;
 
         FloppyDelays _delays;
         FloppyPosition _position;

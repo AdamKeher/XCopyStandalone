@@ -208,3 +208,53 @@ bool XCopyFloppy::detectCableOrientation() {
 
     return (step & select & write);
 }
+
+
+volatile uint32_t XCopyFloppy::_indexCount = 0;
+volatile uint32_t XCopyFloppy::_indexFirstUs = 0;
+volatile uint32_t XCopyFloppy::_indexLastUs = 0;
+
+void XCopyFloppy::readIndexISR() {
+    uint32_t now = micros();
+
+    // the first edge only starts the window, it does not close an interval
+    if (_indexFirstUs == 0) {
+        _indexFirstUs = now;
+    } else {
+        _indexLastUs = now;
+        _indexCount++;
+    }
+}
+
+float XCopyFloppy::diskRPM() {
+    if (!_motorStatus) motor(true);
+
+    noInterrupts();
+    _indexCount = 0;
+    _indexFirstUs = 0;
+    _indexLastUs = 0;
+    interrupts();
+
+    attachInterrupt(_index, readIndexISR, FALLING);
+
+    uint32_t start = millis();
+    uint32_t count = 0;
+    uint32_t spanUs = 0;
+
+    while (millis() - start < _rpmTimeoutMs) {
+        noInterrupts();
+        count = _indexCount;
+        spanUs = _indexLastUs - _indexFirstUs;
+        interrupts();
+
+        if (count >= _rpmRevolutions) break;
+    }
+
+    detachInterrupt(_index);
+
+    // no disk, no index signal, or the drive never spun up
+    if (count == 0 || spanUs == 0) return 0.0f;
+
+    float avgUs = spanUs / float(count);
+    return (1000000.0f / avgUs) * 60.0f;
+}
