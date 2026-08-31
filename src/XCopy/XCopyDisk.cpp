@@ -162,13 +162,12 @@ String XCopyDisk::getADFVolumeName(String ADFFileName, ADFFileSource source)
 
     if (source == _sdCard)
     {
-        XCopySDCard *_sdcard = new XCopySDCard();
+        XCopySDCard _sdcard;
 
-        // Was `if (_sdcard->begin())`, which reported an error when the card
+        // Was `if (_sdcard.begin())`, which reported an error when the card
         // initialised and carried on when it did not. begin() returns true on
-        // success. Both early returns also leaked _sdcard.
-        if (!_sdcard->begin()) {
-            delete _sdcard;
+        // success.
+        if (!_sdcard.begin()) {
             return ">> SD Error";
         }
 
@@ -176,15 +175,12 @@ String XCopyDisk::getADFVolumeName(String ADFFileName, ADFFileSource source)
         ADFFile.open(ADFFileName.c_str(), FILE_READ);
 
         if (!ADFFile) {
-            delete _sdcard;
             return ">> File Error";
         }
 
         ADFFile.seek(40 * 2 * 11 * 512);
         ADFFile.read(trackBuffer, sizeof(trackBuffer));
         ADFFile.close();
-
-        delete _sdcard;
     }
     else if (source == _flashMemory) {
         if (!SerialFlash.begin(PIN_FLASHCS)) { return ">> Flash Error"; }
@@ -455,37 +451,35 @@ bool XCopyDisk::diskToADF(String ADFFileName, bool verify, uint8_t retryCount, A
     _esp->setStatus(statusText);
 
     // Open SD File or SerialFile
-    XCopySDCard *_sdcard = new XCopySDCard();
+    XCopySDCard _sdcard;
     if (destination == _sdCard) {
         // card detect
-        if (!_sdcard->cardDetect()) {
+        if (!_sdcard.cardDetect()) {
             _graphics->drawText(0, 10, ST7735_RED, "No SDCard detected");
             _esp->setStatus("SD card not inserted");
             _audio->playBong(false);
-            delete _sdcard;
             return false;
         }
 
         // init
-        if (!_sdcard->begin()) {
+        if (!_sdcard.begin()) {
             _graphics->drawText(0, 10, ST7735_RED, "SD Init Failed");
             _esp->setStatus("SD card initialisation failed");
             _audio->playBong(false);
-            delete _sdcard;
             return false;
         }
 
         // make ADF path
-        if (!_sdcard->fileExists(SD_ADF_PATH)) _sdcard->makeDirectory(SD_ADF_PATH);
+        if (!_sdcard.fileExists(SD_ADF_PATH)) _sdcard.makeDirectory(SD_ADF_PATH);
 
         // remove sdcard adf & log files if they exist
-        if (_sdcard->fileExists(fullPath)) _sdcard->deleteFile(fullPath.c_str());
-        if (_sdcard->fileExists(logfileName)) _sdcard->deleteFile(logfileName.c_str());
+        if (_sdcard.fileExists(fullPath)) _sdcard.deleteFile(fullPath.c_str());
+        if (_sdcard.fileExists(logfileName)) _sdcard.deleteFile(logfileName.c_str());
 
         // open sdcard files
         SdFile::dateTimeCallback(dateTime);
-        ADFFile = _sdcard->getSdFat().open(fullPath.c_str(), FILE_WRITE);
-        ADFLogFile = _sdcard->getSdFat().open(logfileName.c_str(), FILE_WRITE);
+        ADFFile = _sdcard.getSdFat().open(fullPath.c_str(), FILE_WRITE);
+        ADFLogFile = _sdcard.getSdFat().open(logfileName.c_str(), FILE_WRITE);
         SdFile::dateTimeCallbackCancel();
 
         // if adf file failed top open
@@ -495,7 +489,6 @@ bool XCopyDisk::diskToADF(String ADFFileName, bool verify, uint8_t retryCount, A
             _graphics->drawText(0, 10, ST7735_RED, "SD ADF File Open Failed");
             _esp->setStatus("File '" + ADFFileName + "' failed to open on the SD card");
             _audio->playBong(false);
-            delete _sdcard;
             return false;
         }
 
@@ -506,7 +499,6 @@ bool XCopyDisk::diskToADF(String ADFFileName, bool verify, uint8_t retryCount, A
             _graphics->drawText(0, 10, ST7735_RED, "SD Log File Open Failed");
             _esp->setStatus("File '" + logfileName + "' failed to open on the SD card");
             _audio->playBong(false);
-            delete _sdcard;
             return false;
         }
 
@@ -525,7 +517,6 @@ bool XCopyDisk::diskToADF(String ADFFileName, bool verify, uint8_t retryCount, A
             _graphics->drawText(0, 10, ST7735_RED, "Serial Flash Init Failed");
             _esp->setStatus("Onboard serial Flash failed to initialise");
             _audio->playBong(false);
-            delete _sdcard;
             return false;
         }
 
@@ -547,7 +538,6 @@ bool XCopyDisk::diskToADF(String ADFFileName, bool verify, uint8_t retryCount, A
             _graphics->drawText(0, 10, ST7735_RED, "Serial Flash File Open Failed", true);
             _esp->setStatus("Serial flash file failed to open");
             _audio->playBong(false);
-            delete _sdcard;
             return false;
         }
 
@@ -569,7 +559,6 @@ bool XCopyDisk::diskToADF(String ADFFileName, bool verify, uint8_t retryCount, A
             ADFLogFile.println("\r\nCancelled.");
             ADFLogFile.close();
             ADFFile.close();
-            delete _sdcard;
             return false;
         }
 
@@ -705,8 +694,6 @@ bool XCopyDisk::diskToADF(String ADFFileName, bool verify, uint8_t retryCount, A
     statusText = String("Completed copying floppy disk to ").append(destination == _sdCard ? "'<a href=\"/sdcard" + fullPath + "\">" + fullPath + "</a>' on SD card. <a target=\"_blank\" href=\"/sdcard" + logfileName  + "\">Log File</a> <i class=\"fa-solid fa-hashtag\"></i> MD5: " + sMD5 : "flash memory. <i class=\"fa-solid fa-hashtag\"></i> MD5: " + sMD5);
     _esp->setStatus(statusText);
 
-    delete _sdcard;
-
     return true;
 }
 
@@ -767,24 +754,22 @@ void XCopyDisk::adfToDisk(String ADFFileName, bool verify, uint8_t retryCount, A
 
     File ADFFile;
     SerialFlashFile ADFFlashFile;
-    XCopySDCard *_sdcard = new XCopySDCard();
+    XCopySDCard _sdcard;
 
     if (source == _sdCard) {
-        if (!_sdcard->begin()) {
+        if (!_sdcard.begin()) {
             _graphics->drawText(0, 10, ST7735_RED, "SD Init Failed");
             _esp->setStatus("SD Init Failed");
             _audio->playBong(false);
-            delete _sdcard;
             return;
         }
 
-        ADFFile = _sdcard->getSdFat().open(ADFFileName.c_str(), FILE_READ);
+        ADFFile = _sdcard.getSdFat().open(ADFFileName.c_str(), FILE_READ);
         if (!ADFFile) {
             _graphics->drawText(0, 10, ST7735_RED, "SD File Open Failed");
             _esp->setStatus("SD File Open Failed");
             _audio->playBong(false);
             ADFFile.close();
-            delete _sdcard;
             return;
         }
     }
@@ -793,7 +778,6 @@ void XCopyDisk::adfToDisk(String ADFFileName, bool verify, uint8_t retryCount, A
             _graphics->drawText(0, 10, ST7735_RED, "Serial Flash Init Failed");
             _esp->setStatus("Serial Flash Init Failed");
             _audio->playBong(false);
-            delete _sdcard;
             return;
         }
 
@@ -803,7 +787,6 @@ void XCopyDisk::adfToDisk(String ADFFileName, bool verify, uint8_t retryCount, A
             _esp->setStatus("Serial Flash File Open Failed");
             _audio->playBong(false);
             ADFFlashFile.close();
-            delete _sdcard;
             return;
         }
 
@@ -827,7 +810,6 @@ void XCopyDisk::adfToDisk(String ADFFileName, bool verify, uint8_t retryCount, A
     for (int trackNum = 0; trackNum < 160; trackNum++) {
         if (_cancelOperation) {
             OperationCancelled(trackNum);
-            delete _sdcard;
             return;
         }
 
@@ -913,8 +895,6 @@ void XCopyDisk::adfToDisk(String ADFFileName, bool verify, uint8_t retryCount, A
     ADFFile.close();
     ADFFlashFile.close();
     _audio->playBoing(false);
-
-    delete _sdcard;
 
     _esp->setStatus(status);
 }
@@ -1180,33 +1160,31 @@ bool XCopyDisk::writeBlocksToFile(byte blocks[], int offset, int size, String fi
     Serial << "Filename: " << fullPath << "\r\n";
 
     // Open SD File
-    XCopySDCard *_sdcard = new XCopySDCard();
+    XCopySDCard _sdcard;
 
     // card detect
-    if (!_sdcard->cardDetect()) {
+    if (!_sdcard.cardDetect()) {
         Serial << "No SDCard detected" << "\r\n";
         _audio->playBong(false);
-        delete _sdcard;
         return false;
     }
 
     // init
-    if (!_sdcard->begin()) {
+    if (!_sdcard.begin()) {
         Serial << "SD Init Failed" << "\r\n";
         _audio->playBong(false);
-        delete _sdcard;
         return false;
     }
 
     // make ADF path
-    if (!_sdcard->fileExists(SD_ADF_PATH)) _sdcard->makeDirectory(SD_ADF_PATH);
+    if (!_sdcard.fileExists(SD_ADF_PATH)) _sdcard.makeDirectory(SD_ADF_PATH);
 
     // remove sdcard adf & log files if they exist
-    if (_sdcard->fileExists(fullPath)) _sdcard->deleteFile(fullPath.c_str());
+    if (_sdcard.fileExists(fullPath)) _sdcard.deleteFile(fullPath.c_str());
 
     // open sdcard files
     SdFile::dateTimeCallback(dateTime);
-    ADFFile = _sdcard->getSdFat().open(fullPath.c_str(), FILE_WRITE);
+    ADFFile = _sdcard.getSdFat().open(fullPath.c_str(), FILE_WRITE);
     SdFile::dateTimeCallbackCancel();
 
     // if adf file failed top open
@@ -1214,7 +1192,6 @@ bool XCopyDisk::writeBlocksToFile(byte blocks[], int offset, int size, String fi
         ADFFile.close();
         Serial << "File '" + fullPath + "' failed to open on the SD card" << "\r\n";
         _audio->playBong(false);
-        delete _sdcard;
         return false;
     }
 
@@ -1275,8 +1252,6 @@ bool XCopyDisk::writeBlocksToFile(byte blocks[], int offset, int size, String fi
     ADFFile.close();
     _audio->playBoing(false);
 
-    delete _sdcard;
-
     return true;
 }
 
@@ -1311,30 +1286,27 @@ bool XCopyDisk::writeFileToBlocks(String BinFileName, int startBlock, uint8_t re
         return false;
     }
 
-    XCopySDCard *_sdcard = new XCopySDCard();
+    XCopySDCard _sdcard;
 
-    if (!_sdcard->begin()) {
+    if (!_sdcard.begin()) {
         Log << "SD Init Failed\r\n";
         _audio->playBong(false);
-        delete _sdcard;
         return false;
     }
 
-    if (!_sdcard->fileExists(BinFileName)) {
+    if (!_sdcard.fileExists(BinFileName)) {
         Log << "File: '" + BinFileName + "' does not exist.\r\n";
         _audio->playBong(false);
-        delete _sdcard;
         return false;
     }
 
     File BinFile;
-    BinFile = _sdcard->getSdFat().open(BinFileName.c_str(), FILE_READ);
+    BinFile = _sdcard.getSdFat().open(BinFileName.c_str(), FILE_READ);
 
     if (!BinFile) {
         Log << "SD File Open Failed\r\n";
         _audio->playBong(false);
         BinFile.close();
-        delete _sdcard;
         return false;
     }
 
@@ -1420,11 +1392,8 @@ bool XCopyDisk::writeFileToBlocks(String BinFileName, int startBlock, uint8_t re
         delay(100);
     }
 
-
     BinFile.close();
     _audio->playBoing(false);
-
-    delete _sdcard;
 
     return true;
 }
