@@ -27,6 +27,7 @@
 #include <SdFat.h>
 #include "XCopyProtocol.h"
 #include "XCopyState.h"
+#include "XCopyAction.h"
 #include "XCopyLog.h"
 #include "XCopyPins.h"
 #include "XCopyMenu.h"
@@ -68,7 +69,7 @@ public:
   void setBusy(bool busy);
   bool getBusy() { return digitalRead(PIN_BUSYPIN); }
   void refreshTimeNtp();
-  void startFunction(XCopyState state, String param = "");
+  void startFunction(XCopyAction action, String param = "");
   void startCopyADFtoDisk(String path  = "");
   void sendFile(String path);
   void getFile(String path, size_t size, bool overwrite = false);

@@ -1,8 +1,24 @@
 #ifndef XCOPYSTATE_H
 #define XCOPYSTATE_H
 
+/*
+   What the machine is currently doing.
+
+   This is deliberately not the same thing as what the user asked for -- that is
+   XCopyAction, and XCopyAction.h maps one to the other. The two used to share a
+   single enum, so "set the volume" and "copying a disk to ADF" were the same kind
+   of value and nothing stopped either being used where the other belonged. An
+   action that runs to completion where it stands (every setting, reset ESP, reset
+   device, list the SD card) has no state at all and no longer appears here.
+
+   processState() dispatches on these; XCopy::_xcopyState holds one.
+
+   The numbers are a wire format. XCopyESP8266::setState() sends them to the browser
+   as "setState,<n>" and esp8266/data/scripts/websocket.js switches on 3, 4, 5, 13,
+   18, 19, 24 and 25, so those may not be renumbered. The gaps are where values that
+   turned out to be actions, not states, used to sit.
+*/
 enum XCopyState {
-  undefined = 0,
   menus = 1,
   idle = 2,
   copyDiskToADF = 3,
@@ -16,27 +32,15 @@ enum XCopyState {
   debuggingCompareFlashToSDCard = 12,
   copyDiskToDisk = 13,
   directorySelection = 14,
-  setVerify = 15,
-  setRetry = 16,
-  setVolume = 17,
   copyDiskToFlash = 18,
   copyFlashToDisk = 19,
   debuggingFlashDetails = 23,
   fluxDisk = 24,
   formatDisk = 25,
   debuggingSerialPassThrough = 26,
-  debuggingSerialPassThroughProg = 27,
-  setSSID = 28,
-  setPassword = 29,
-  resetESP = 30,
   debuggingFaultFind = 31,
   debuggingEraseFlash = 32,
-  setDiskDelay = 33,
   testDrive = 34,
-  resetDevice = 35,
-  getSdFiles = 36,
-  setTimeZone = 37,
-  sendBlock = 38,
   scanBlocks = 39,
   diskSearch = 40,
   modSearch = 41

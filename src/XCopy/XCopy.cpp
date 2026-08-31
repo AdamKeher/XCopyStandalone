@@ -169,66 +169,66 @@ void XCopy::begin()
     XCopyMenuItem *parentItem;
     XCopyMenuItem *debugParentItem;
 
-    parentItem = _menu.addItem("Disk Copy", undefined);
-    _menu.addChild("Copy ADF   to Disk", copyADFToDisk, parentItem);
-    _menu.addChild("Copy Disk  to ADF", copyDiskToADF, parentItem);
-    _menu.addChild("", undefined, parentItem);
-    _menu.addChild("Copy Disk  to Disk", copyDiskToDisk, parentItem);
-    _menu.addChild("Copy Disk  to Flash", copyDiskToFlash, parentItem);
-    _menu.addChild("Copy Flash to Disk", copyFlashToDisk, parentItem);
+    parentItem = _menu.addItem("Disk Copy", XCopyAction::none);
+    _menu.addChild("Copy ADF   to Disk", XCopyAction::copyADFToDisk, parentItem);
+    _menu.addChild("Copy Disk  to ADF", XCopyAction::copyDiskToADF, parentItem);
+    _menu.addChild("", XCopyAction::none, parentItem);
+    _menu.addChild("Copy Disk  to Disk", XCopyAction::copyDiskToDisk, parentItem);
+    _menu.addChild("Copy Disk  to Flash", XCopyAction::copyDiskToFlash, parentItem);
+    _menu.addChild("Copy Flash to Disk", XCopyAction::copyFlashToDisk, parentItem);
 
-    parentItem = _menu.addItem("Utils", undefined);
-    _menu.addChild("Test Disk", testDisk, parentItem);
-    _menu.addChild("Format Disk", formatDisk, parentItem);
-    _menu.addChild("Disk Flux", fluxDisk, parentItem);
-    _menu.addChild("Scan Free Blocks", scanBlocks, parentItem);
-    _menu.addChild("Compare Disk to ADF", undefined, parentItem);
-    _menu.addChild("Test Drive", testDrive, parentItem);
+    parentItem = _menu.addItem("Utils", XCopyAction::none);
+    _menu.addChild("Test Disk", XCopyAction::testDisk, parentItem);
+    _menu.addChild("Format Disk", XCopyAction::formatDisk, parentItem);
+    _menu.addChild("Disk Flux", XCopyAction::fluxDisk, parentItem);
+    _menu.addChild("Scan Free Blocks", XCopyAction::scanBlocks, parentItem);
+    _menu.addChild("Compare Disk to ADF", XCopyAction::none, parentItem);
+    _menu.addChild("Test Drive", XCopyAction::testDrive, parentItem);
 
-    debugParentItem = _menu.addItem("Debugging", undefined);
+    debugParentItem = _menu.addItem("Debugging", XCopyAction::none);
 
-    XCopyMenuItem *espParentItem = _menu.addChild("ESP", undefined, debugParentItem);
-    _menu.addChild("ESP Passthrough Mode", debuggingSerialPassThrough, espParentItem);
-    _menu.addChild("ESP Programming Mode", debuggingSerialPassThroughProg, espParentItem);
-    _menu.addItem("", undefined);
-    _menu.addChild("Reset ESP", resetESP, espParentItem);
+    XCopyMenuItem *espParentItem = _menu.addChild("ESP", XCopyAction::none, debugParentItem);
+    _menu.addChild("ESP Passthrough Mode", XCopyAction::debuggingSerialPassThrough, espParentItem);
+    _menu.addChild("ESP Programming Mode", XCopyAction::debuggingSerialPassThroughProg, espParentItem);
+    _menu.addItem("", XCopyAction::none);
+    _menu.addChild("Reset ESP", XCopyAction::resetESP, espParentItem);
 
-    XCopyMenuItem *flashParentItem = _menu.addChild("Flash", undefined, debugParentItem);
-    XCopyMenuItem *dangerousParentitem = _menu.addChild("Dangerous", undefined, flashParentItem);
-    _menu.addChild("Erase Flash", debuggingEraseFlash, dangerousParentitem);
-    _menu.addChild("Erase Flash and Copy SD", debuggingEraseCopy, dangerousParentitem);
-    _menu.addChild("Erase Flash and Fault Find", debuggingFaultFind, dangerousParentitem);
-    _menu.addChild("Flash Memory Details", debuggingFlashDetails, flashParentItem);
-    _menu.addChild("Compare Flash to SD Card", debuggingCompareFlashToSDCard, flashParentItem);
-    _menu.addChild("Test Temp File", debuggingTempFile, flashParentItem);
-    _menu.addChild("Test Flash & SD Card", debuggingSDFLash, flashParentItem);
+    XCopyMenuItem *flashParentItem = _menu.addChild("Flash", XCopyAction::none, debugParentItem);
+    XCopyMenuItem *dangerousParentitem = _menu.addChild("Dangerous", XCopyAction::none, flashParentItem);
+    _menu.addChild("Erase Flash", XCopyAction::debuggingEraseFlash, dangerousParentitem);
+    _menu.addChild("Erase Flash and Copy SD", XCopyAction::debuggingEraseCopy, dangerousParentitem);
+    _menu.addChild("Erase Flash and Fault Find", XCopyAction::debuggingFaultFind, dangerousParentitem);
+    _menu.addChild("Flash Memory Details", XCopyAction::debuggingFlashDetails, flashParentItem);
+    _menu.addChild("Compare Flash to SD Card", XCopyAction::debuggingCompareFlashToSDCard, flashParentItem);
+    _menu.addChild("Test Temp File", XCopyAction::debuggingTempFile, flashParentItem);
+    _menu.addChild("Test Flash & SD Card", XCopyAction::debuggingSDFLash, flashParentItem);
     
-    _menu.addItem("", undefined);
-    _menu.addItem("", undefined);
-    _menu.addItem("", undefined);
+    _menu.addItem("", XCopyAction::none);
+    _menu.addItem("", XCopyAction::none);
+    _menu.addItem("", XCopyAction::none);
 
-    parentItem = _menu.addItem("Settings", undefined);
-    volumeMenuItem = _menu.addChild("Set Volume: " + String(_config->getVolume()), setVolume, parentItem);
+    parentItem = _menu.addItem("Settings", XCopyAction::none);
+    volumeMenuItem = _menu.addChild("Set Volume: " + String(_config->getVolume()), XCopyAction::setVolume, parentItem);
 
-    XCopyMenuItem *timeParentItem = _menu.addChild("Time", undefined, parentItem);
-    _menu.addChild("Set Time from NTP", showTime, timeParentItem);
+    XCopyMenuItem *timeParentItem = _menu.addChild("Time", XCopyAction::none, parentItem);
+    _menu.addChild("Set Time from NTP", XCopyAction::showTime, timeParentItem);
     int timeZone = _config->getTimeZone();
-    timeZoneMenuItem = _menu.addChild("Set Time Zone: " + String(timeZone >= 0 ? "+" : "") + String(timeZone), setTimeZone, timeParentItem);
+    timeZoneMenuItem = _menu.addChild("Set Time Zone: " + String(timeZone >= 0 ? "+" : "") + String(timeZone), XCopyAction::setTimeZone, timeParentItem);
 
-    XCopyMenuItem *diskParentItem = _menu.addChild("Disk", undefined, parentItem);
-    retryCountMenuItem = _menu.addChild("Set Retry Count: " + String(_config->getRetryCount()), setRetry, diskParentItem);
-    verifyMenuItem = _menu.addChild("Set Verify: " + (_config->getVerify() ? String("True") : String("False")), setVerify, diskParentItem);
-    diskDelayMenuItem = _menu.addChild("Set Disk Delay: " + String(_config->getDiskDelay()) + "ms", setDiskDelay, diskParentItem);
+    XCopyMenuItem *diskParentItem = _menu.addChild("Disk", XCopyAction::none, parentItem);
+    retryCountMenuItem = _menu.addChild("Set Retry Count: " + String(_config->getRetryCount()), XCopyAction::setRetry, diskParentItem);
+    verifyMenuItem = _menu.addChild("Set Verify: " + (_config->getVerify() ? String("True") : String("False")), XCopyAction::setVerify, diskParentItem);
+    diskDelayMenuItem = _menu.addChild("Set Disk Delay: " + String(_config->getDiskDelay()) + "ms", XCopyAction::setDiskDelay, diskParentItem);
 
 
-    XCopyMenuItem *networkParentItem = _menu.addChild("Network", undefined, parentItem);
-    ssidMenuItem = _menu.addChild("SSID: " + _config->getSSID(), setSSID, networkParentItem);
-    passwordMenuItem = _menu.addChild("Password: " + _config->getPassword(), setPassword, networkParentItem);
+    XCopyMenuItem *networkParentItem = _menu.addChild("Network", XCopyAction::none, parentItem);
+    ssidMenuItem = _menu.addChild("SSID: " + _config->getSSID(), XCopyAction::setSSID, networkParentItem);
+    passwordMenuItem = _menu.addChild("Password: " + _config->getPassword(), XCopyAction::setPassword, networkParentItem);
 
-    _menu.addChild("", undefined, parentItem);
-    _menu.addChild("", undefined, parentItem);
-    _menu.addChild("Reset / Reboot", resetDevice, parentItem);
-    _menu.addChild("About XCopy", about, parentItem);
+    _menu.addChild("", XCopyAction::none, parentItem);
+    _menu.addChild("", XCopyAction::none, parentItem);
+    _menu.addChild("Reset / Reboot", XCopyAction::resetDevice, parentItem);
+    _menu.addChild("About XCopy", XCopyAction::about, parentItem);
 
     // delete _config;
 
@@ -363,35 +363,35 @@ void XCopy::onWebCommand(void* obj, const String command)
     XCopy* xcopy = (XCopy*)obj;
     
     if (command == "copyDiskToADF") {
-        xcopy->startFunction(copyDiskToADF);
+        xcopy->startFunction(XCopyAction::copyDiskToADF);
     }
     else if (command == "copyDiskToDisk") {
-        xcopy->startFunction(copyDiskToDisk);
+        xcopy->startFunction(XCopyAction::copyDiskToDisk);
     }
     else if (command == "copyDiskToFlash") {
-        xcopy->startFunction(copyDiskToFlash);
+        xcopy->startFunction(XCopyAction::copyDiskToFlash);
     }
     else if (command == "copyFlashToDisk") {
-        xcopy->startFunction(copyFlashToDisk);
+        xcopy->startFunction(XCopyAction::copyFlashToDisk);
     }
     else if (command == "testDisk") {
-        xcopy->startFunction(testDisk);
+        xcopy->startFunction(XCopyAction::testDisk);
     }
     else if (command == "scanBlocks") {
-        xcopy->startFunction(scanBlocks);
+        xcopy->startFunction(XCopyAction::scanBlocks);
     }
     else if (command == "formatDisk") {
-        xcopy->startFunction(formatDisk);
+        xcopy->startFunction(XCopyAction::formatDisk);
     }
     else if (command == "diskFlux") {
-        xcopy->startFunction(fluxDisk);
+        xcopy->startFunction(XCopyAction::fluxDisk);
     }
     else if (command.startsWith("getSdFiles")) {
         String _param = "/";
         if (command.indexOf(",") > 0) {
             _param = command.substring(command.indexOf(",") + 1);
         }        
-        xcopy->startFunction(getSdFiles, _param);
+        xcopy->startFunction(XCopyAction::getSdFiles, _param);
     }
     else if (command.startsWith(XFER_CMD_SENDFILE)) {
         String path = command.substring(command.indexOf(",")+1);
@@ -459,14 +459,14 @@ void XCopy::onWebCommand(void* obj, const String command)
     }
     else if (command.startsWith("asciiSearch")) {
         xcopy->_searchText = command.substring(command.indexOf(",") + 1);
-        xcopy->startFunction(diskSearch);
+        xcopy->startFunction(XCopyAction::diskSearch);
     }
     else if (command.startsWith("modSearch")) {
         xcopy->_searchText = command.substring(command.indexOf(",") + 1);
-        xcopy->startFunction(modSearch);
+        xcopy->startFunction(XCopyAction::modSearch);
     }
     else if (command == "debuggingSerialPassThrough") {
-            xcopy->startFunction(debuggingSerialPassThrough);
+            xcopy->startFunction(XCopyAction::debuggingSerialPassThrough);
     }
 }
 
@@ -546,22 +546,29 @@ void XCopy::cardChange()
 //     _disk.writeBlocksToFile(blocks, _config->getRetryCount());
 // }
 
-void XCopy::startFunction(XCopyState state, String param) {
-    if (state == getSdFiles) {
+void XCopy::startFunction(XCopyAction action, String param) {
+    // Listing the card is answered on the spot; there is no state to enter.
+    if (action == XCopyAction::getSdFiles) {
         setBusy(true);
         _esp->updateWebSdCardFiles(param);
         setBusy(false);
         return;
     }
 
-    if (state == debuggingSerialPassThrough) {
-        _menu.setCurrentItem(state);
+    // Passthrough needs the setup navigateSelect() does around it (the banner, and
+    // for programming mode the baud rate change), so go in through the menu.
+    if (action == XCopyAction::debuggingSerialPassThrough) {
+        _menu.setCurrentItem(action);
         navigateSelect();
         return;
     }
+
     setBusy(true);
+    XCopyState state = stateForAction(action);
     _esp->setState(state);
-    _menu.setCurrentItem(state);
+    // Silently does nothing for an action with no menu item of its own, which is
+    // what browsing the ADF directory wants.
+    _menu.setCurrentItem(action);
     _xcopyState = state;
     _drawnOnce = false;
     _audio.playSelect(false);
@@ -570,7 +577,7 @@ void XCopy::startFunction(XCopyState state, String param) {
 
 void XCopy::startCopyADFtoDisk(String path) {
     if (path == "") {
-        startFunction(directorySelection);
+        startFunction(XCopyAction::directorySelection);
         _directory.getDirectory("/", &_disk, ".adf");
     } else {
         // startFunction(directorySelection);
@@ -753,65 +760,67 @@ void XCopy::navigateSelect()
             return;
         }
 
-        if (item->command == debuggingTempFile)
+        switch (item->action)
+        {
+        case XCopyAction::debuggingTempFile:
         {
             setBusy(true);
             _xcopyState = debuggingTempFile;
             _audio.playSelect(false);
+            break;
         }
-
-        if (item->command == debuggingSDFLash)
+        case XCopyAction::debuggingSDFLash:
         {
             setBusy(true);
             _xcopyState = debuggingSDFLash;
             _audio.playSelect(false);
+            break;
         }
-
-        if (item->command == debuggingEraseCopy)
+        case XCopyAction::debuggingEraseCopy:
         {
             setBusy(true);
             _xcopyState = debuggingEraseCopy;
             _audio.playSelect(false);
+            break;
         }
-
-        if (item->command == debuggingFaultFind)
+        case XCopyAction::debuggingFaultFind:
         {
             setBusy(true);
             _xcopyState = debuggingFaultFind;
             _audio.playSelect(false);
+            break;
         }
-
-        if (item->command == debuggingEraseFlash)
+        case XCopyAction::debuggingEraseFlash:
         {
             setBusy(true);
             _xcopyState = debuggingEraseFlash;
             _audio.playSelect(false);
+            break;
         }
-
-        if (item->command == debuggingCompareFlashToSDCard)
+        case XCopyAction::debuggingCompareFlashToSDCard:
         {
             setBusy(true);
             _xcopyState = debuggingCompareFlashToSDCard;
             _audio.playSelect(false);
+            break;
         }
-
-        if (item->command == debuggingFlashDetails)
+        case XCopyAction::debuggingFlashDetails:
         {
             setBusy(true);
             _xcopyState = debuggingFlashDetails;
             _audio.playSelect(false);
+            break;
         }
-
-        if (item->command == debuggingSerialPassThrough)
+        case XCopyAction::debuggingSerialPassThrough:
         {
             setBusy(true);
             _xcopyState = debuggingSerialPassThrough;
             _audio.playSelect(false);
             _graphics.clearScreen();
             _graphics.drawText(0, 0, ST7735_GREEN, "ESP Passthrough Mode", true);
+            break;
         }
-
-        if (item->command == debuggingSerialPassThroughProg)
+        case XCopyAction::debuggingSerialPassThroughProg:
         {
             setBusy(true);
 
@@ -827,22 +836,24 @@ void XCopy::navigateSelect()
             ESPSerial.begin(ESPProgBaudRate);
 
             _esp->progMode();
+            break;
         }
-
-        if (item->command == resetESP)
+        case XCopyAction::resetESP:
         {
             setBusy(true);
-            _xcopyState = resetESP;
             _audio.playSelect(false);
 
             _esp->reset();
 
             setBusy(false);
 
+            // Resetting the ESP is over by the time this returns. It used to park
+            // _xcopyState on a "resetESP" state first, which nothing ever observed
+            // before the line below put it back.
             _xcopyState = menus;
+            break;
         }
-
-        if (item->command == showTime)
+        case XCopyAction::showTime:
         {
             setBusy(true);
             _xcopyState = showTime;
@@ -851,62 +862,63 @@ void XCopy::navigateSelect()
             _graphics.drawText(0, 35, ST7735_YELLOW, "    Updating Time via NTP", true);
             _graphics.drawText(0, 35, ST7735_YELLOW, "          Updated Time", true);
             refreshTimeNtp();
+            break;
         }
-
-        if (item->command == about)
+        case XCopyAction::about:
         {
             setBusy(true);
             _xcopyState = about;
             _drawnOnce = false;
             _audio.playSelect(false);
             _graphics.clearScreen();
+            break;
         }
-
-        if (item->command == copyADFToDisk)
+        case XCopyAction::copyADFToDisk:
         {
             startCopyADFtoDisk();
+            break;
         }
-
-        if (item->command == copyDiskToADF)
+        case XCopyAction::copyDiskToADF:
         {
-            startFunction(copyDiskToADF);
+            startFunction(XCopyAction::copyDiskToADF);
+            break;
         }
-
-        if (item->command == copyDiskToDisk)
+        case XCopyAction::copyDiskToDisk:
         {
-            startFunction(copyDiskToDisk);
+            startFunction(XCopyAction::copyDiskToDisk);
+            break;
         }
-
-        if (item->command == copyDiskToFlash)
+        case XCopyAction::copyDiskToFlash:
         {
-            startFunction(copyDiskToFlash);
+            startFunction(XCopyAction::copyDiskToFlash);
+            break;
         }
-
-        if (item->command == copyFlashToDisk)
+        case XCopyAction::copyFlashToDisk:
         {
-            startFunction(copyFlashToDisk);
+            startFunction(XCopyAction::copyFlashToDisk);
+            break;
         }
-
-        if (item->command == testDisk)
+        case XCopyAction::testDisk:
         {
-            startFunction(testDisk);
+            startFunction(XCopyAction::testDisk);
+            break;
         }
-
-        if (item->command == scanBlocks) {
-            startFunction(scanBlocks);
-        }
-
-        if (item->command == formatDisk)
+        case XCopyAction::scanBlocks:
         {
-            startFunction(formatDisk);
+            startFunction(XCopyAction::scanBlocks);
+            break;
         }
-
-        if (item->command == fluxDisk)
+        case XCopyAction::formatDisk:
         {
-            startFunction(fluxDisk);
+            startFunction(XCopyAction::formatDisk);
+            break;
         }
-
-        if (item->command == setVerify)
+        case XCopyAction::fluxDisk:
+        {
+            startFunction(XCopyAction::fluxDisk);
+            break;
+        }
+        case XCopyAction::setVerify:
         {
             setBusy(true);
             _audio.playSelect(false);
@@ -919,9 +931,9 @@ void XCopy::navigateSelect()
             setBusy(false);
             // redraw menu
             _xcopyState = menus;
+            break;
         }
-
-        if (item->command == setRetry)
+        case XCopyAction::setRetry:
         {
             setBusy(true);
             _audio.playSelect(false);
@@ -939,9 +951,9 @@ void XCopy::navigateSelect()
             setBusy(false);
             // redraw menu
             _xcopyState = menus;
+            break;
         }
-
-        if (item->command == setVolume)
+        case XCopyAction::setVolume:
         {
             setBusy(true);
 
@@ -962,9 +974,9 @@ void XCopy::navigateSelect()
             setBusy(false);
             // redraw menu
             _xcopyState = menus;
+            break;
         }
-
-        if (item->command == setSSID)
+        case XCopyAction::setSSID:
         {
             setBusy(true);
             _audio.playSelect(false);
@@ -974,9 +986,9 @@ void XCopy::navigateSelect()
             setBusy(false);
             // redraw menu
             _xcopyState = menus;
+            break;
         }
-
-        if (item->command == setPassword)
+        case XCopyAction::setPassword:
         {
             setBusy(true);
             _audio.playSelect(false);
@@ -986,17 +998,19 @@ void XCopy::navigateSelect()
             setBusy(false);
             // redraw menu
             _xcopyState = menus;
+            break;
         }
-
-        if (item->command == testDrive) {
+        case XCopyAction::testDrive:
+        {
             setBusy(true);
             _xcopyState = testDrive;
             _drawnOnce = false;
             _audio.playSelect(false);
             _graphics.clearScreen();
+            break;
         }
-
-        if (item->command == setDiskDelay) {
+        case XCopyAction::setDiskDelay:
+        {
             setBusy(true);
 
             // _config = new XCopyConfig();
@@ -1015,9 +1029,10 @@ void XCopy::navigateSelect()
             setBusy(false);
             // redraw menu
             _xcopyState = menus;
-        }        
-
-        if (item->command == setTimeZone) {
+            break;
+        }
+        case XCopyAction::setTimeZone:
+        {
             setBusy(true);
 
             // _config = new XCopyConfig();
@@ -1036,306 +1051,336 @@ void XCopy::navigateSelect()
             setBusy(false);
             // redraw menu
             _xcopyState = menus;
-        }        
-
-        if (item->command == resetDevice) {
+            break;
+        }
+        case XCopyAction::resetDevice:
+        {
             Serial << "Resetting ...";
             pinMode(28, OUTPUT);
             pinMode(28, OUTPUT_OPENDRAIN);
             Serial << " Looks like pin 28 has not been jumpered to the RST pad on your Teensy 3.2\r\n";
-        }   
+            break;
+        }
+
+        // Headings, spacers and anything with no menu item of its own.
+        default:
+            break;
+        }
     }
 }
 
 void XCopy::processState()
 {
-    if (_xcopyState == debuggingTempFile)
+    /*
+       The if-chain this replaced fell through on purpose: a branch that finished by
+       setting _xcopyState -- a debug operation returning to the menus, or the menus
+       branch turning itself into idle -- was picked up by a later if in the same
+       pass. A switch dispatches once, so the loop settles the state the same way
+       rather than leaving the redraw a lap behind.
+    */
+    XCopyState entered;
+    do
     {
-        XCopyDebug *_debug = new XCopyDebug(&_graphics, &_audio, PIN_FLASHCS, PIN_CARDDETECT);
-        _debug->debugCompareTempFile();
-        delete _debug;
+        entered = _xcopyState;
 
-        setBusy(false);
-        _xcopyState = menus;
-    }
-
-    if (_xcopyState == debuggingSDFLash)
-    {
-        XCopyDebug *_debug = new XCopyDebug(&_graphics, &_audio, PIN_FLASHCS, PIN_CARDDETECT);
-        _debug->debugTestFlashSD();
-        delete _debug;
-
-        setBusy(false);
-        _xcopyState = menus;
-    }
-
-    if (_xcopyState == debuggingEraseCopy)
-    {
-        XCopyDebug *_debug = new XCopyDebug(&_graphics, &_audio, PIN_FLASHCS, PIN_CARDDETECT);
-        _debug->debugEraseCopyCompare();
-        delete _debug;
-
-        setBusy(false);
-        _xcopyState = menus;
-    }
-
-    if (_xcopyState == debuggingFaultFind)
-    {
-        XCopyDebug *_debug = new XCopyDebug(&_graphics, &_audio, PIN_FLASHCS, PIN_CARDDETECT);
-        _debug->debugFaultFind();
-        delete _debug;
-
-        setBusy(false);
-        _xcopyState = menus;
-    }
-
-    if (_xcopyState == debuggingEraseFlash)
-    {
-        XCopyDebug *_debug = new XCopyDebug(&_graphics, &_audio, PIN_FLASHCS, PIN_CARDDETECT);
-        _debug->debugEraseFlash();
-        delete _debug;
-
-        setBusy(false);
-        _xcopyState = menus;
-    }
-
-    if (_xcopyState == debuggingCompareFlashToSDCard)
-    {
-        _graphics.clearScreen();
-        XCopyDebug *_debug = new XCopyDebug(&_graphics, &_audio, PIN_FLASHCS, PIN_CARDDETECT);
-        _debug->debugCompare();
-        delete _debug;
-
-        setBusy(false);
-        _xcopyState = menus;
-    }
-
-    if (_xcopyState == debuggingFlashDetails)
-    {
-        XCopyDebug *_debug = new XCopyDebug(&_graphics, &_audio, PIN_FLASHCS, PIN_CARDDETECT);
-        _debug->debugFlashDetails();
-        delete _debug;
-
-        setBusy(false);
-        _xcopyState = menus;
-    }
-
-    if (_xcopyState == debuggingSerialPassThrough)
-    {
-        // In programming mode the ESP sits in its ROM bootloader and Serial1 runs at
-        // ESPProgBaudRate, so it cannot answer the echo commands -- and sending them
-        // pushes stray bytes at esptool's sync.
-        if (!_espProgMode)
-            _esp->setEcho(true);
-
-        while (!_cancelOperation)
+        switch (_xcopyState)
         {
-            if (Serial.available())
-            {
-                ESPSerial.write(Serial.read());
-            }
-
-            if (ESPSerial.available())
-            {
-                Serial.write(ESPSerial.read());
-            }
-        }
-
-        if (_espProgMode)
+        case debuggingTempFile:
         {
-            // Serial1 is still at the programming rate. Restore the data-link rate
-            // first: the old order sent setEcho(false) at ESPProgBaudRate, which the
-            // ESP was never going to hear.
-            ESPSerial.begin(ESPBaudRate);
-            _espProgMode = false;
-        }
-        else
-        {
-            _esp->setEcho(false);
-        }
-        _cancelOperation = false;
-        setBusy(false);
-        _xcopyState = menus;
-    }
-
-    if (_xcopyState == menus)
-    {
-        _graphics.clearScreen();
-        _graphics.drawHeader();
-        _menu.drawMenu(_menu.getRoot());
-        _xcopyState = idle;
-    }
-
-    if (_xcopyState == showTime)
-    {
-        if (_prevSeconds != second())
-        {
-            char buffer[32];
-            sprintf(buffer, "    %02d:%02d:%02d %02d/%02d/%04d", hour(), minute(), second(), day(), month(), year());
-            _graphics.drawText(0, 55, ST7735_YELLOW, buffer, true);
-
-            _prevSeconds = second();
-        }
-    }
-
-    if (_xcopyState == copyDiskToADF)
-    {
-        if (_drawnOnce == false)
-        {
-            // _config = new XCopyConfig();
-            _disk.diskToADF("", _config->getVerify(), _config->getRetryCount(), _sdCard);
-            // delete _config;
+            XCopyDebug *_debug = new XCopyDebug(&_graphics, &_audio, PIN_FLASHCS, PIN_CARDDETECT);
+            _debug->debugCompareTempFile();
+            delete _debug;
 
             setBusy(false);
-            _drawnOnce = true;
+            _xcopyState = menus;
+            break;
         }
-    }
-
-    if (_xcopyState == copyDiskToFlash)
-    {
-        if (_drawnOnce == false)
+        case debuggingSDFLash:
         {
-            // _config = new XCopyConfig();
-            _disk.diskToADF("DISKCOPY.TMP", _config->getVerify(), _config->getRetryCount(), _flashMemory);
-            // delete _config;
+            XCopyDebug *_debug = new XCopyDebug(&_graphics, &_audio, PIN_FLASHCS, PIN_CARDDETECT);
+            _debug->debugTestFlashSD();
+            delete _debug;
 
             setBusy(false);
-            _drawnOnce = true;
+            _xcopyState = menus;
+            break;
         }
-    }
-
-    if (_xcopyState == copyDiskToDisk)
-    {
-        if (_drawnOnce == false)
+        case debuggingEraseCopy:
         {
-            // _config = new XCopyConfig();
-            _disk.diskToDisk(_config->getVerify(), _config->getRetryCount());
-            // delete _config;
+            XCopyDebug *_debug = new XCopyDebug(&_graphics, &_audio, PIN_FLASHCS, PIN_CARDDETECT);
+            _debug->debugEraseCopyCompare();
+            delete _debug;
 
             setBusy(false);
-            _drawnOnce = true;
+            _xcopyState = menus;
+            break;
         }
-    }
-
-    if (_xcopyState == copyFlashToDisk)
-    {
-        if (_drawnOnce == false)
+        case debuggingFaultFind:
         {
-            // _config = new XCopyConfig();
-            _disk.adfToDisk("DISKCOPY.TMP", _config->getVerify(), _config->getRetryCount(), _flashMemory);
-            // delete _config;
+            XCopyDebug *_debug = new XCopyDebug(&_graphics, &_audio, PIN_FLASHCS, PIN_CARDDETECT);
+            _debug->debugFaultFind();
+            delete _debug;
 
             setBusy(false);
-            _drawnOnce = true;
+            _xcopyState = menus;
+            break;
         }
-    }
-
-    if (_xcopyState == testDisk)
-    {
-        if (_drawnOnce == false)
+        case debuggingEraseFlash:
         {
-            _disk.testDiskette(_config->getRetryCount());
-            setBusy(false);
-            _drawnOnce = true;
-        }
-    }
-
-    if (_xcopyState == scanBlocks)
-    {
-        if (_drawnOnce == false)
-        {
-            _disk.scanEmptyBlocks(_config->getRetryCount());
-            setBusy(false);
-            _drawnOnce = true;
-        }
-    }
-
-    if (_xcopyState == fluxDisk)
-    {
-        if (_drawnOnce == false)
-        {
-            _disk.diskFlux();
+            XCopyDebug *_debug = new XCopyDebug(&_graphics, &_audio, PIN_FLASHCS, PIN_CARDDETECT);
+            _debug->debugEraseFlash();
+            delete _debug;
 
             setBusy(false);
-            _drawnOnce = true;
+            _xcopyState = menus;
+            break;
         }
-    }
-
-    if (_xcopyState == formatDisk)
-    {
-        if (_drawnOnce == false)
-        {
-            // _config = new XCopyConfig();
-            _disk.adfToDisk("BLANK.TMP", _config->getVerify(), _config->getRetryCount(), _flashMemory);
-            // delete _config;
-
-            setBusy(false);
-            _drawnOnce = true;
-        }
-    }
-
-    if (_xcopyState == directorySelection)
-    {
-        if (_drawnOnce == false)
+        case debuggingCompareFlashToSDCard:
         {
             _graphics.clearScreen();
-            _directory.drawDirectory();
-            _drawnOnce = true;
-        }
-    }
+            XCopyDebug *_debug = new XCopyDebug(&_graphics, &_audio, PIN_FLASHCS, PIN_CARDDETECT);
+            _debug->debugCompare();
+            delete _debug;
 
-    if (_xcopyState == testDrive) {
-        if (_drawnOnce == false)
+            setBusy(false);
+            _xcopyState = menus;
+            break;
+        }
+        case debuggingFlashDetails:
         {
-            XCopyDriveTest *driveTest = new XCopyDriveTest();
-            driveTest->begin(&_graphics, &_audio, _esp);
-            driveTest->draw();
-            // Was while (1==1): no exit, so the two lines below were unreachable and
-            // the drive test could only be left by resetting the board.
-            while (!_cancelOperation) {
-                driveTest->update();
+            XCopyDebug *_debug = new XCopyDebug(&_graphics, &_audio, PIN_FLASHCS, PIN_CARDDETECT);
+            _debug->debugFlashDetails();
+            delete _debug;
+
+            setBusy(false);
+            _xcopyState = menus;
+            break;
+        }
+        case debuggingSerialPassThrough:
+        {
+            // In programming mode the ESP sits in its ROM bootloader and Serial1 runs at
+            // ESPProgBaudRate, so it cannot answer the echo commands -- and sending them
+            // pushes stray bytes at esptool's sync.
+            if (!_espProgMode)
+                _esp->setEcho(true);
+
+            while (!_cancelOperation)
+            {
+                if (Serial.available())
+                {
+                    ESPSerial.write(Serial.read());
+                }
+
+                if (ESPSerial.available())
+                {
+                    Serial.write(ESPSerial.read());
+                }
+            }
+
+            if (_espProgMode)
+            {
+                // Serial1 is still at the programming rate. Restore the data-link rate
+                // first: the old order sent setEcho(false) at ESPProgBaudRate, which the
+                // ESP was never going to hear.
+                ESPSerial.begin(ESPBaudRate);
+                _espProgMode = false;
+            }
+            else
+            {
+                _esp->setEcho(false);
             }
             _cancelOperation = false;
-            delete driveTest;
             setBusy(false);
-            _drawnOnce = true;
             _xcopyState = menus;
-        }        
-    }
-
-    if (_xcopyState == diskSearch) {
-        if (_drawnOnce == false) {
-            _disk.asciiSearch(_searchText, _config->getRetryCount());
-            _searchText = "";
-            setBusy(false);
-            _drawnOnce = true;
+            break;
         }
-    }
-
-    if (_xcopyState == modSearch) {
-        if (_drawnOnce == false) {
-            _disk.modSearch(_config->getRetryCount());
-            _searchText = "";
-            setBusy(false);
-            _drawnOnce = true;
-        }
-    }    
-
-    if (_xcopyState == about)
-    {
-        if (_drawnOnce == false)
+        case menus:
         {
             _graphics.clearScreen();
-            _graphics.drawText(0, 55, ST7735_WHITE, "     (c)2019 iTeC/crAss");
-            _graphics.drawText(0, 65, ST7735_GREEN, "           " + String(XCOPYVERSION));
-            _graphics.drawText(0, 75, ST7735_YELLOW, "  Insert Demo Effect Here");
-
-            _drawnOnce = true;
+            _graphics.drawHeader();
+            _menu.drawMenu(_menu.getRoot());
+            _xcopyState = idle;
+            break;
         }
-    }
+        case showTime:
+        {
+            if (_prevSeconds != second())
+            {
+                char buffer[32];
+                sprintf(buffer, "    %02d:%02d:%02d %02d/%02d/%04d", hour(), minute(), second(), day(), month(), year());
+                _graphics.drawText(0, 55, ST7735_YELLOW, buffer, true);
 
-    if (_xcopyState == idle)
-    {
-        setBusy(false);
-    }
+                _prevSeconds = second();
+            }
+            break;
+        }
+        case copyDiskToADF:
+        {
+            if (_drawnOnce == false)
+            {
+                // _config = new XCopyConfig();
+                _disk.diskToADF("", _config->getVerify(), _config->getRetryCount(), _sdCard);
+                // delete _config;
+
+                setBusy(false);
+                _drawnOnce = true;
+            }
+            break;
+        }
+        case copyDiskToFlash:
+        {
+            if (_drawnOnce == false)
+            {
+                // _config = new XCopyConfig();
+                _disk.diskToADF("DISKCOPY.TMP", _config->getVerify(), _config->getRetryCount(), _flashMemory);
+                // delete _config;
+
+                setBusy(false);
+                _drawnOnce = true;
+            }
+            break;
+        }
+        case copyDiskToDisk:
+        {
+            if (_drawnOnce == false)
+            {
+                // _config = new XCopyConfig();
+                _disk.diskToDisk(_config->getVerify(), _config->getRetryCount());
+                // delete _config;
+
+                setBusy(false);
+                _drawnOnce = true;
+            }
+            break;
+        }
+        case copyFlashToDisk:
+        {
+            if (_drawnOnce == false)
+            {
+                // _config = new XCopyConfig();
+                _disk.adfToDisk("DISKCOPY.TMP", _config->getVerify(), _config->getRetryCount(), _flashMemory);
+                // delete _config;
+
+                setBusy(false);
+                _drawnOnce = true;
+            }
+            break;
+        }
+        case testDisk:
+        {
+            if (_drawnOnce == false)
+            {
+                _disk.testDiskette(_config->getRetryCount());
+                setBusy(false);
+                _drawnOnce = true;
+            }
+            break;
+        }
+        case scanBlocks:
+        {
+            if (_drawnOnce == false)
+            {
+                _disk.scanEmptyBlocks(_config->getRetryCount());
+                setBusy(false);
+                _drawnOnce = true;
+            }
+            break;
+        }
+        case fluxDisk:
+        {
+            if (_drawnOnce == false)
+            {
+                _disk.diskFlux();
+
+                setBusy(false);
+                _drawnOnce = true;
+            }
+            break;
+        }
+        case formatDisk:
+        {
+            if (_drawnOnce == false)
+            {
+                // _config = new XCopyConfig();
+                _disk.adfToDisk("BLANK.TMP", _config->getVerify(), _config->getRetryCount(), _flashMemory);
+                // delete _config;
+
+                setBusy(false);
+                _drawnOnce = true;
+            }
+            break;
+        }
+        case directorySelection:
+        {
+            if (_drawnOnce == false)
+            {
+                _graphics.clearScreen();
+                _directory.drawDirectory();
+                _drawnOnce = true;
+            }
+            break;
+        }
+        case testDrive:
+        {
+            if (_drawnOnce == false)
+            {
+                XCopyDriveTest *driveTest = new XCopyDriveTest();
+                driveTest->begin(&_graphics, &_audio, _esp);
+                driveTest->draw();
+                // Was while (1==1): no exit, so the two lines below were unreachable and
+                // the drive test could only be left by resetting the board.
+                while (!_cancelOperation) {
+                    driveTest->update();
+                }
+                _cancelOperation = false;
+                delete driveTest;
+                setBusy(false);
+                _drawnOnce = true;
+                _xcopyState = menus;
+            }
+            break;
+        }
+        case diskSearch:
+        {
+            if (_drawnOnce == false) {
+                _disk.asciiSearch(_searchText, _config->getRetryCount());
+                _searchText = "";
+                setBusy(false);
+                _drawnOnce = true;
+            }
+            break;
+        }
+        case modSearch:
+        {
+            if (_drawnOnce == false) {
+                _disk.modSearch(_config->getRetryCount());
+                _searchText = "";
+                setBusy(false);
+                _drawnOnce = true;
+            }
+            break;
+        }
+        case about:
+        {
+            if (_drawnOnce == false)
+            {
+                _graphics.clearScreen();
+                _graphics.drawText(0, 55, ST7735_WHITE, "     (c)2019 iTeC/crAss");
+                _graphics.drawText(0, 65, ST7735_GREEN, "           " + String(XCOPYVERSION));
+                _graphics.drawText(0, 75, ST7735_YELLOW, "  Insert Demo Effect Here");
+
+                _drawnOnce = true;
+            }
+            break;
+        }
+        case idle:
+        {
+            setBusy(false);
+            break;
+        }
+
+        default:
+            break;
+        }
+    } while (_xcopyState != entered);
 }

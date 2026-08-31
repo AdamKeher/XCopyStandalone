@@ -2,7 +2,7 @@
 #define XCOPYMENU_H
 #include <Arduino.h>
 #include <Streaming.h>
-#include "XCopyState.h"
+#include "XCopyAction.h"
 #include "XCopyGraphics.h"
 
 class XCopyMenuItem
@@ -13,7 +13,9 @@ public:
   struct XCopyMenuItem *next;
   struct XCopyMenuItem *parent;
   struct XCopyMenuItem *firstChild;
-  XCopyState command;
+  // What selecting this item asks for. Headings and spacers carry
+  // XCopyAction::none.
+  XCopyAction action;
 
   int getLevel();
 };
@@ -28,8 +30,8 @@ public:
   bool up();
   bool back();
 
-  XCopyMenuItem *addItem(String name, XCopyState command, XCopyMenuItem *root = NULL);
-  XCopyMenuItem *addChild(String name, XCopyState command, XCopyMenuItem *parent);
+  XCopyMenuItem *addItem(String name, XCopyAction action, XCopyMenuItem *root = NULL);
+  XCopyMenuItem *addChild(String name, XCopyAction action, XCopyMenuItem *parent);
 
   XCopyMenuItem *getFirst(XCopyMenuItem *item);
   XCopyMenuItem *getLast(XCopyMenuItem *item);
@@ -38,9 +40,9 @@ public:
 
   void setRoot(XCopyMenuItem *item) { _root = item; }
   void setCurrentItem(XCopyMenuItem *item);
-  void setCurrentItem(XCopyState command);
-  XCopyMenuItem *findItem(XCopyState command) { return findItem(command, _root); };
-  XCopyMenuItem *findItem(XCopyState command, XCopyMenuItem *item);
+  void setCurrentItem(XCopyAction action);
+  XCopyMenuItem *findItem(XCopyAction action) { return findItem(action, _root); };
+  XCopyMenuItem *findItem(XCopyAction action, XCopyMenuItem *item);
 
   bool isCurrentItem(XCopyMenuItem *item) { return item == _currentItem; }
 
