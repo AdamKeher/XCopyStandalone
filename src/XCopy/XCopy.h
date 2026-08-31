@@ -46,6 +46,7 @@
 #include "XCopyConsole.h"
 #include "XCopyBrainFile.h"
 #include "XCopyTransfer.h"
+#include "XCopyLive.h"
 
 #ifdef XCOPY_DEBUG
 #include "RamMonitor.h"

@@ -319,6 +319,7 @@ void XCopy::cancelOperation()
     {
     case debuggingSerialPassThrough:
     case testDrive:
+    case liveStream:
         _cancelOperation = true;
         break;
     case testDisk:
@@ -392,6 +393,12 @@ void XCopy::onWebCommand(void* obj, const String command)
     }
     else if (command == "testDisk") {
         xcopy->startFunction(XCopyAction::testDisk);
+    }
+    // Only ever sent by the serial console's "live" command. The web UI has no button
+    // for it: a live session stops servicing the ESP link for its whole duration, so
+    // starting one from the browser would strand the browser that asked for it.
+    else if (command == "liveStream") {
+        xcopy->startFunction(XCopyAction::liveStream);
     }
     else if (command == "scanBlocks") {
         xcopy->startFunction(XCopyAction::scanBlocks);
@@ -1300,6 +1307,44 @@ void XCopy::processState()
             _cancelOperation = false;
             setBusy(false);
             _xcopyState = menus;
+            break;
+        }
+        case liveStream:
+        {
+            /*
+               A live streaming session. XCopyLive::run() blocks for the whole of it and
+               nothing else is serviced while it does - no TFT redraw, no ESP poll, no
+               audio. That is the point rather than an oversight: the host is paying for
+               the timing, and every one of those is put back on the way out.
+
+               The session's buffers are in bss, not in this object - see the note above
+               liveTx in XCopyLive.h for why that is not negotiable on this part. What
+               is left here is a few hundred bytes, but it is still checked: a null new
+               would fault inside run() before the session had printed a single byte,
+               which is a fault with no symptom to debug from.
+            */
+            XCopyLive *live = new XCopyLive(&_floppy, &_graphics);
+
+            if (live == nullptr)
+            {
+                Log << F("Out of memory starting the live session\r\n");
+            }
+            else
+            {
+                live->run(&_cancelOperation);
+                delete live;
+            }
+
+            // The ESP has been talking to a Serial1 nobody was reading. Whatever is
+            // left in the ring is the tail of a line, so drop it rather than hand
+            // XCopyESP8266's parser half a command.
+            while (ESPSerial.available())
+                ESPSerial.read();
+
+            _cancelOperation = false;
+            setBusy(false);
+            _xcopyState = menus;
+            _command->printPrompt();
             break;
         }
         case menus:

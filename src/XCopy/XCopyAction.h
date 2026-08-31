@@ -50,6 +50,7 @@ enum class XCopyAction : uint8_t {
   debuggingFlashDetails,
   debuggingSerialPassThrough,
   debuggingSerialPassThroughProg,
+  liveStream,
 
   // Run to completion where they stand and leave the machine in the menus.
   setVerify,
