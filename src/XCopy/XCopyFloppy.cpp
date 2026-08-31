@@ -82,6 +82,45 @@ float transitionTime = transTimeDD;
 volatile int motorTick = 0;
 volatile boolean motor = false;
 
+/*
+   Head and motor timings.
+
+   Every one of these was a literal in the function that used it. They are variables
+   now so a live streaming host can tune them through the protocol's CONFIG command,
+   and every default is exactly the number that was there before: setDir()'s delay(20),
+   step1()'s delayMicroseconds(2) and delay(3), setSide()'s delay(2),
+   gotoLogicTrack()'s delay(18) and motorOn()'s delay(600). Nothing that does not ask
+   sees any change at all.
+
+   The step pulse is deliberately still 2us and not exposed as anything a caller is
+   likely to lower: it is a pulse width the drive has to see, not a delay to be
+   optimised away.
+*/
+uint32_t stepPulseUs = 2;
+uint32_t stepIntervalUs = 3000;
+uint32_t dirSettleUs = 20000;
+uint32_t sideSettleUs = 2000;
+uint32_t seekSettleUs = 18000;
+uint32_t motorSpinupMs = 600;
+//! False while a live session owns the drive, so the idle timeout cannot stop it.
+volatile boolean motorIdleOff = true;
+
+/*
+   delay() takes milliseconds and delayMicroseconds() is a busy loop meant for short
+   waits, so a settle that is configurable in microseconds and may be tens of
+   milliseconds needs both.
+*/
+static void delayUs(uint32_t us)
+{
+    if (us >= 1000)
+    {
+        delay(us / 1000);
+        us %= 1000;
+    }
+    if (us)
+        delayMicroseconds(us);
+}
+
 // --- interrupt handlers and pure helpers ------------------------------------
 void pinModeFast(uint8_t pin, uint8_t mode);
 void driveSelect();
@@ -393,7 +432,7 @@ void XCopyFloppy::motorOn()
         driveSelect();
         digitalWriteFast(_motor, LOW);
         motor = true;
-        delay(600); // more than plenty of time to spinup motor
+        delayUs(motorSpinupMs * 1000); // more than plenty of time to spinup motor
         if (_autoDensity)
             initDrive();
     }
@@ -1209,6 +1248,11 @@ void XCopyFloppy::stopFTM0()
 */
 void motorTimeout()
 {
+    // A live streaming session spins the motor up once and keeps it up for as long as
+    // the host wants it, so it turns this off for the duration and back on afterwards.
+    if (!motorIdleOff)
+        return;
+
     motorTick++;
     if (motorTick > motorMaxTick)
     {
@@ -1233,7 +1277,7 @@ void XCopyFloppy::setDir(int dir)
     {
         digitalWriteFast(_dir, LOW);
     }
-    delay(20);
+    delayUs(dirSettleUs);
 }
 
 /*
@@ -1254,7 +1298,7 @@ void XCopyFloppy::setSide(int side)
     {
         digitalWriteFast(_side, LOW);
     }
-    delay(2);
+    delayUs(sideSettleUs);
 }
 
 /*
@@ -1264,9 +1308,9 @@ void XCopyFloppy::step1()
 {
     motorTick = 0;
     digitalWriteFast(_step, LOW);
-    delayMicroseconds(2);
+    delayMicroseconds(stepPulseUs);
     digitalWriteFast(_step, HIGH);
-    delay(3);
+    delayUs(stepIntervalUs);
     if (_floppyPos.dir == 0)
     {
         _floppyPos.track--;
@@ -1354,7 +1398,87 @@ void XCopyFloppy::gotoLogicTrack(int track)
     _logTrack = track;
     setSide(track % 2);
     gotoTrack(track / 2);
-    delay(18);
+    delayUs(seekSettleUs);
+}
+
+/*
+   Head and motor timing setters.
+
+   Clamped where a value could damage something or stall the drive rather than merely
+   be slow: the step interval has a floor because stepping a head faster than it can
+   move loses position silently, and the step pulse has one because a pulse too short
+   to be seen is a seek that never happened.
+*/
+void XCopyFloppy::setStepPulseUs(uint32_t us) { stepPulseUs = (us < 1) ? 1 : us; }
+void XCopyFloppy::setStepIntervalUs(uint32_t us) { stepIntervalUs = (us < 2000) ? 2000 : us; }
+void XCopyFloppy::setDirSettleUs(uint32_t us) { dirSettleUs = us; }
+void XCopyFloppy::setSideSettleUs(uint32_t us) { sideSettleUs = us; }
+void XCopyFloppy::setSeekSettleUs(uint32_t us) { seekSettleUs = us; }
+void XCopyFloppy::setMotorSpinupMs(uint32_t ms) { motorSpinupMs = ms; }
+
+uint32_t XCopyFloppy::getStepPulseUs() const { return stepPulseUs; }
+uint32_t XCopyFloppy::getStepIntervalUs() const { return stepIntervalUs; }
+uint32_t XCopyFloppy::getDirSettleUs() const { return dirSettleUs; }
+uint32_t XCopyFloppy::getSideSettleUs() const { return sideSettleUs; }
+uint32_t XCopyFloppy::getSeekSettleUs() const { return seekSettleUs; }
+uint32_t XCopyFloppy::getMotorSpinupMs() const { return motorSpinupMs; }
+
+void XCopyFloppy::setMotorIdleOff(bool enabled)
+{
+    motorIdleOff = enabled;
+    motorTick = 0;
+}
+
+/*
+   The pieces of a seek, with the waiting left to the caller.
+
+   Same lines, same order and same effect as setDir(), setSide() and step1() - what is
+   missing is only the delay() each of those ends with. A caller that uses these owns
+   the settling, and XCopyLive owns it from a state machine so that the flux capture
+   keeps being drained while the head is moving.
+*/
+void XCopyFloppy::setDirFast(int dir)
+{
+    motorTick = 0;
+    _floppyPos.dir = dir;
+    digitalWriteFast(_dir, dir == 0 ? HIGH : LOW);
+}
+
+void XCopyFloppy::setSideFast(int side)
+{
+    motorTick = 0;
+    _floppyPos.side = side;
+    digitalWriteFast(_side, side == 0 ? HIGH : LOW);
+}
+
+void XCopyFloppy::stepPulse()
+{
+    motorTick = 0;
+    digitalWriteFast(_step, LOW);
+    delayMicroseconds(stepPulseUs);
+    digitalWriteFast(_step, HIGH);
+
+    if (_floppyPos.dir == 0)
+        _floppyPos.track--;
+    else
+        _floppyPos.track++;
+}
+
+bool XCopyFloppy::readTrack0Line() { return digitalRead(_track0) == 0; }
+
+/*
+   The disk change line as it stands, with nothing moved to find out.
+
+   diskChange() steps the head to make the drive update the line, which is right when
+   nothing else is going on and completely wrong in the middle of a stream. This is
+   the passive read, for a caller that is already stepping for its own reasons.
+*/
+bool XCopyFloppy::readDiskChangeLine() { return digitalRead(_diskChange) == 1; }
+
+void XCopyFloppy::setTrackPosition(int cylinder)
+{
+    _currentTrack = cylinder;
+    _floppyPos.track = (byte)cylinder;
 }
 
 /*

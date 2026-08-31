@@ -58,6 +58,8 @@ void XCopyCommandLine::doCommand(String command)
         Log << F("|                                | optional cylinder range <a-b> and <n> revolutions   |\r\n");
         Log << F("| writeflash                     | read floppy disk into flash memory                  |\r\n");
         Log << F("| writebin <filename> <block>    | write binary file to disk starting at block         |\r\n");
+        Log << F("| live                           | hand this usb session to a host over the binary     |\r\n");
+        Log << F("|                                | live streaming protocol - see XCopyLiveProtocol.h   |\r\n");
         Log << F("| testdisk                       | test floppy disk                                    |\r\n");
         Log << F("| scanblocks                     | scan floppy disk for free blocks                    |\r\n");
         Log << F("| search <searchtext>            | search disk for case sensative ascii text           |\r\n");
@@ -806,6 +808,16 @@ void XCopyCommandLine::doCommand(String command)
         _callback(_caller, "testDisk");
 
         return;        
+    }
+
+    if (cmd == F("live")) {
+        /*
+           Hands this USB session to XCopyLive, which switches it to the binary protocol
+           in shared/XCopyLiveProtocol.h. Everything after the banner XCopyLive prints
+           is frames, so nothing may print here on the way in.
+        */
+        _callback(_caller, "liveStream");
+        return;
     }
 
     if (cmd == F("pass")) {

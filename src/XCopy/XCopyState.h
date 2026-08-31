@@ -44,7 +44,11 @@ enum XCopyState {
   scanBlocks = 39,
   diskSearch = 40,
   modSearch = 41,
-  copyDiskToSCP = 42
+  copyDiskToSCP = 42,
+  // Serial console only: the USB port in binary mode, streaming to a host that is
+  // doing the decoding. The web UI has no button for it and websocket.js does not
+  // switch on it, so the number is free but is still never reused.
+  liveStream = 43
 };
 
 #endif // XCOPYSTATE_H

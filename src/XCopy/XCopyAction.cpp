@@ -27,6 +27,7 @@ XCopyState stateForAction(XCopyAction action)
     case XCopyAction::debuggingFaultFind:            return debuggingFaultFind;
     case XCopyAction::debuggingCompareFlashToSDCard: return debuggingCompareFlashToSDCard;
     case XCopyAction::debuggingFlashDetails:         return debuggingFlashDetails;
+    case XCopyAction::liveStream:                    return liveStream;
 
     // Programming mode is the passthrough state with the ESP held in its bootloader;
     // the caller raises _espProgMode and drops the baud rate around it.
