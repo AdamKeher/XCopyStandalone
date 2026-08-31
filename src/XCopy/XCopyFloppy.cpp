@@ -315,6 +315,8 @@ int *XCopyFloppy::getHist()
 
 byte XCopyFloppy::getWeakTrack()
 {
+    if (_logTrack < 0 || _logTrack >= (int)sizeof(_weakTracks))
+        return 0;
     return _weakTracks[_logTrack];
 }
 
@@ -672,8 +674,13 @@ int XCopyFloppy::readTrack(boolean silent)
             break;
         }
     }
-    _weakTracks[_logTrack] = j;
-    _trackLog[_logTrack] = getTrackInfo();
+    // _logTrack is -1 until gotoLogicTrack() has run, and the retry path above can
+    // briefly drive it negative near track 0, so do not index on it blind.
+    if (_logTrack >= 0 && _logTrack < (int)sizeof(_weakTracks))
+    {
+        _weakTracks[_logTrack] = j;
+        _trackLog[_logTrack] = getTrackInfo();
+    }
     if (sectorCnt != sectors)
     {
         _errors = -1;
