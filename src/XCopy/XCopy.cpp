@@ -511,8 +511,12 @@ void XCopy::sendFile(String path) {
     Serial1.print("\n");
 
     // copy data from sd file to flash file
-    static const size_t bufferSize = 2048;
-    static char buffer[bufferSize];
+    // Stack, not static. This buffer is live only for the duration of a transfer,
+    // whereas a static costs the 2KB for the whole runtime -- and RAM headroom, not
+    // stack depth, is the binding constraint on this part. Making it static was
+    // enough on its own to push the console directory listing into a collision.
+    const size_t bufferSize = 2048;
+    char buffer[bufferSize];
     int readsize = 0;
 
     unsigned long time = millis();
