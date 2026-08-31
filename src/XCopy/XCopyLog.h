@@ -10,14 +10,18 @@ class XCopyLog
     XCopyLog() { _esp = nullptr; }
     XCopyLog(XCopyESP8266 *esp) { _esp = esp; }
 
-    XCopyLog& operator<<(String text) {
+    // const reference, not by value: this is called once per directory entry and
+    // the by value parameter copied the caller's String on every call.
+    XCopyLog& operator<<(const String &text) {
         Serial << text;
-        text = text.replace("\r", "\033[^M");
-        text = text.replace("\n", "\033[^J");
         // _esp is null until XCopy::begin() constructs it, and the default
-        // constructor sets it to nullptr, so every use has to be guarded.
+        // constructor sets it to nullptr, so every use has to be guarded. The
+        // copy below only happens when there is somewhere to send it.
         if (_esp != nullptr) {
-            _esp->print("broadcast log," + text + "\r\n");
+            String payload = text;
+            payload.replace("\r", "\033[^M");
+            payload.replace("\n", "\033[^J");
+            _esp->print("broadcast log," + payload + "\r\n");
             delay(6);
         }
         return *this;

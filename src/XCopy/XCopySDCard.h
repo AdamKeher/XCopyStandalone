@@ -21,7 +21,10 @@ class XCopySDCard
     bool open(String directory);
     bool open() { return open(_directory); }
     bool next();
-    XCopyFile getfile() { return _xfile; }
+    // By const reference. Returning by value deep copied three Strings on every
+    // call, and the directory loops call it six times per file. The reference is
+    // only valid until the next next() call, which is all any caller needs.
+    const XCopyFile &getfile() { return _xfile; }
     String getError() { return _error; }
     bool fileExists(String path) { return xcopySd().exists(path.c_str()); }
     bool deleteFile(String path) { return xcopySd().remove(path.c_str()); }

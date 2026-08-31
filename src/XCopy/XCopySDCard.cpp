@@ -53,14 +53,24 @@ bool XCopySDCard::next() {
     // filesize
     _xfile.size = dir.fileSize;
 
-    // filename
+    // filename. 255 is required: getName() refuses a buffer under 13 bytes and a
+    // FAT long name can reach 255, so a smaller one would silently truncate.
     char lfnBuffer[255];
-    _file.getName(lfnBuffer, 255);
+    if (!_file.getName(lfnBuffer, sizeof(lfnBuffer))) {
+        // On failure the buffer may be partly written and unterminated.
+        lfnBuffer[0] = 0;
+    }
     _xfile.filename = String(lfnBuffer);
 
     // bools
     _xfile.isDirectory = _file.isDir();
-    _xfile.isADF = _xfile.filename.toLowerCase().endsWith(".adf");
+    // A case insensitive endsWith(".adf") over the existing buffer. The old
+    // filename.toLowerCase() allocated nothing but modified in place -- Teensy
+    // returns String& -- so it rewrote the stored name and ls listed every file
+    // in lower case.
+    int nameLen = _xfile.filename.length();
+    _xfile.isADF = nameLen >= 4 &&
+                   strcasecmp(_xfile.filename.c_str() + nameLen - 4, ".adf") == 0;
 
     _file.close();
 

@@ -181,14 +181,24 @@ bool XCopyESP8266::updateWebSdCardFiles(String directory) {
     }
 
     while (_sdcard->next()) {
+        // Bound once, and grown once: this was six getfile() calls (three String
+        // deep copies each) plus a temporary per append.
+        const XCopyFile &file = _sdcard->getfile();
+
         String newline;
-       
-        newline.append(_sdcard->getfile().date);
-        newline.append("&" + _sdcard->getfile().time);
-        newline.append("&" + String(_sdcard->getfile().size));
-        newline.append("&" + _sdcard->getfile().filename);        
-        newline.append("&").append(_sdcard->getfile().isDirectory ? "1" : "0");
-        newline.append("&").append(_sdcard->getfile().isADF ? "1" : "0");
+        newline.reserve(file.date.length() + file.time.length() +
+                        file.filename.length() + 24);
+        newline += file.date;
+        newline += "&";
+        newline += file.time;
+        newline += "&";
+        newline += file.size;
+        newline += "&";
+        newline += file.filename;
+        newline += "&";
+        newline += file.isDirectory ? "1" : "0";
+        newline += "&";
+        newline += file.isADF ? "1" : "0";
 
         // send command
         sendWebSocket(F("addSdFile,") + newline + F("\r"));

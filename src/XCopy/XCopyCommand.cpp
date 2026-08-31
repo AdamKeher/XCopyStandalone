@@ -809,19 +809,36 @@ bool XCopyCommandLine::printDirectory(String directory, bool color) {
     int _count = 0;
     while (_sdcard->next()) {
         _count++;
+        // Bound once. This used to be six getfile() calls, each deep copying the
+        // entry's three Strings. Valid until the next next().
+        const XCopyFile &file = _sdcard->getfile();
+
         char filesize[12];
-        sprintf(filesize, "%11lu", _sdcard->getfile().size);
-        String filename = _sdcard->getfile().filename;
-        if (_sdcard->getfile().isDirectory) {
+        sprintf(filesize, "%11lu", file.size);
+
+        String filename = file.filename;
+        if (file.isDirectory) {
             filename.append("/");
             if (color) {
                 filename = XCopyConsole::high_yellow() + filename + XCopyConsole::reset();
             }
-        } else if (_sdcard->getfile().isADF && color) {
-                filename = XCopyConsole::high_green()+ filename + XCopyConsole::reset();
+        } else if (file.isADF && color) {
+            filename = XCopyConsole::high_green() + filename + XCopyConsole::reset();
         }
 
-        Log << _sdcard->getfile().date + " " + _sdcard->getfile().time + " " + String(filesize) + " " + filename + "\r\n";
+        // One buffer sized up front rather than a chain of + temporaries, each of
+        // which allocated and copied the whole line so far.
+        String line;
+        line.reserve(file.date.length() + file.time.length() + filename.length() + 16);
+        line += file.date;
+        line += " ";
+        line += file.time;
+        line += " ";
+        line += filesize;
+        line += " ";
+        line += filename;
+        line += "\r\n";
+        Log << line;
     }
 
     Log << "file count: " + String(_count) + "\r\n";
