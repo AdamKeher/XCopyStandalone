@@ -82,7 +82,7 @@ String XCopyESP8266::sendCommand(String command, bool strip, int timeout)
     return response;
 }
 
-void XCopyESP8266::sendWebSocket(String command)
+void XCopyESP8266::sendWebSocket(const String &command)
 {
     sendCommand("broadcast " + command + "\r\n", false, -1);
 }

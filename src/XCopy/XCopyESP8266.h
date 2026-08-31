@@ -16,20 +16,22 @@ public:
   bool begin();
   bool connect(String ssid, String password, uint32_t timeout);
   String sendCommand(String command, bool strip = false, int timeout = 250);
-  void sendWebSocket(String command);
-  void print(String text) { Serial1.print(text); };
+  void sendWebSocket(const String &command);
+  // By reference: taking this by value copied the whole string on every
+  // call, and drawFlux() sends ~620 bytes per track through here.
+  void print(const String &text) { Serial1.print(text); };
 
-  void setMode(String text) { sendWebSocket("setMode," + text); }
-  void setStatus(String text) { sendWebSocket("setStatus," + text); }
-  void setDiskName(String name) { sendWebSocket("setDiskname," + name); }
-  void setTrack(int trackNumber, String color, String text = "") { 
+  void setMode(const String &text) { sendWebSocket("setMode," + text); }
+  void setStatus(const String &text) { sendWebSocket("setStatus," + text); }
+  void setDiskName(const String &name) { sendWebSocket("setDiskname," + name); }
+  void setTrack(int trackNumber, const String &color, const String &text = "") { 
     String command = "setTrack," + String(trackNumber) + "," + color;
     if (text != "") command += "," + text;
     sendWebSocket(command);
   }
   void resetDisk() { sendWebSocket("resetDisk"); }
   void setState(XCopyState state) { sendWebSocket("setState," + String(state)); }
-  void log(String text) { sendWebSocket("log," + text); };
+  void log(const String &text) { sendWebSocket("log," + text); };
   bool updateWebSdCardFiles(String directory);
   void setTab(String tab) { sendWebSocket("setTab," + tab); }
   void highlightBlock(int track, int side, int sector, int count, boolean highlight) { sendWebSocket("highlightEmptyBlock," + String(track) + "," + String (side) + "," + String(sector) + "," + count + "," + (highlight ? "true" : "false")); }
