@@ -159,34 +159,44 @@ void XCopyFloppy::setupDrive()
 
     _extError.reserve(31);
 
-    byte *tempMem;
-    tempMem = (byte *)malloc(1);
+    // The read buffer has to live in SRAM_U, at 0x20000000 and above: writeTrack()
+    // reaches it through streamBitband, and the bit-band alias region only maps the
+    // upper RAM bank. The heap starts at the end of .bss down in SRAM_L, so claim a
+    // filler block spanning the rest of SRAM_L first, take the buffer above it, then
+    // hand the filler back.
+    //
+    // The filler is sized from wherever the heap currently is, so this does not
+    // depend on how much anything earlier in begin() happened to allocate - but the
+    // result is still checked below, because being wrong here is silent otherwise.
+    byte *filler;
+    filler = (byte *)malloc(1);
 
-    long foo = 0x20000000 - (long)tempMem;
-    free(tempMem);
-    tempMem = (byte *)malloc(foo);
-
-    // workaround to prevent the compiler from optimizing away the malloc(foo)
-    // for aligning the stream memory to bitband memory space
-    // you might get a warning that preventCompilerOptimize is never used.
-    volatile long preventCompilerOptimize;
-    preventCompilerOptimize = (long)&tempMem[foo];
-    // end of workaround
+    long fillerSize = 0x20000000 - (long)filler;
+    free(filler);
+    filler = (fillerSize > 0) ? (byte *)malloc(fillerSize) : NULL;
 
     stream = (byte *)malloc(streamSizeHD + 10);
-    streamBitband = (int *)BITBAND_ADDR(*stream, 0);
-#ifdef debug
-    printPtr(tempMem, "tempMem");
-    printPtr(stream, "stream");
-#endif
 
-    if (stream == 0)
+    if (filler != NULL)
+        free(filler);
+
+    if (stream == NULL)
     {
-        Serial.println("Out of memory");
+        Serial.println("Out of memory allocating the track buffer");
         while (1)
             ;
     }
-    free(tempMem);
+
+    if ((uint32_t)stream < 0x20000000)
+    {
+        // Carrying on would alias the buffer to a wild address the first time a
+        // track is written, so stop here rather than corrupt memory later.
+        Serial.println("Track buffer landed below 0x20000000, bit-band aliasing invalid");
+        while (1)
+            ;
+    }
+
+    streamBitband = (int *)BITBAND_ADDR(*stream, 0);
     initRead();
     _floppyPos.dir = 0;
     _floppyPos.side = 0;
