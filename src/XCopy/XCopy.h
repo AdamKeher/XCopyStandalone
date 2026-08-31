@@ -110,6 +110,10 @@ private:
   XCopyMenuItem *diskDelayMenuItem;
   XCopyMenuItem *timeZoneMenuItem;
 
+  // Destination for the next disk to ADF read. Empty means diskToADF() picks the
+  // name from the disk label and the clock.
+  String _adfFilePath;
+
   bool _drawnOnce = false;
   // True while the passthrough loop is servicing ESP *programming* mode, where
   // Serial1 runs at ESPProgBaudRate and the ESP is in its ROM bootloader.
