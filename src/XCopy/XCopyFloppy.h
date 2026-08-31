@@ -123,6 +123,60 @@ class XCopyFloppy
     int seek0();
     void gotoLogicTrack(int track);
 
+    /*
+       Head and motor timings.
+
+       These were literals inside setDir(), setSide(), step1(), gotoLogicTrack() and
+       motorOn(), chosen for a UI driven copier where an extra 20ms on a seek is
+       invisible. A live streaming host cares about every one of them, so they are
+       settable - and every default below is exactly the number that was hard coded
+       before, so nothing that does not ask behaves any differently.
+    */
+    void setStepPulseUs(uint32_t us);
+    void setStepIntervalUs(uint32_t us);
+    void setDirSettleUs(uint32_t us);
+    void setSideSettleUs(uint32_t us);
+    void setSeekSettleUs(uint32_t us);
+    void setMotorSpinupMs(uint32_t ms);
+
+    uint32_t getStepPulseUs() const;
+    uint32_t getStepIntervalUs() const;
+    uint32_t getDirSettleUs() const;
+    uint32_t getSideSettleUs() const;
+    uint32_t getSeekSettleUs() const;
+    uint32_t getMotorSpinupMs() const;
+
+    /*
+       Lets the five second motor idle timeout run, or stops it.
+
+       A live session spins the motor up once and leaves it up for as long as the host
+       wants it, so the timeout is disabled for the duration and put back afterwards.
+    */
+    void setMotorIdleOff(bool enabled);
+
+    /*
+       Head movement with the waiting taken out.
+
+       gotoLogicTrack() is built out of delay(), which is right everywhere it is used
+       today and wrong for a live stream: a 40 cylinder seek is around 155ms of delay
+       and the flux capture ring holds 78ms, so a blocking seek would overrun the ring
+       every time. These are the same operations with the settling left to the caller,
+       so a live session can drive a seek from its main loop and keep draining the
+       capture the whole way through it.
+    */
+    void setDirFast(int dir);
+    void setSideFast(int side);
+    void stepPulse();
+
+    //! Reads the drive lines without moving anything. diskChange() steps the head.
+    bool readTrack0Line();
+    bool readDiskChangeLine();
+
+    int getCurrentTrack() const { return _currentTrack; }
+    int getCurrentSide() const { return _floppyPos.side; }
+    //! Tells the driver where the head actually is after a caller-driven seek.
+    void setTrackPosition(int cylinder);
+
     // track transfer
     int readTrack(boolean silent);
     int writeTrack();
