@@ -1,7 +1,7 @@
 #ifndef XCOPY_H
 #define XCOPY_H
 
-#define XCOPYVERSION "v713.2023"
+#define XCOPYVERSION "v714.2026"
 // #define XCOPY_DEBUG = 1
 
 // #define PCBVERSION 1 // expensive adafruit screen and joystick

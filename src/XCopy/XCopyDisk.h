@@ -19,7 +19,9 @@
 #include "XCopyState.h"
 #include "XCopyESP8266.h"
 #include "XCopySDCard.h"
+#include "XCopyConsole.h"
 #include "XCopyModFile.h"
+#include "XCopyTrackMap.h"
 #include "MD5.h"
 
 enum ADFFileSource
@@ -156,6 +158,7 @@ class XCopyDisk
     XCopyAudio *_audio;
     XCopyGraphics *_graphics;
     XCopyFloppy *_floppy;
+    XCopyTrackMap _trackMap;
     volatile bool _cancelOperation = false;
 };
 
