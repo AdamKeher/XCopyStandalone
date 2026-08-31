@@ -1224,7 +1224,9 @@ void XCopyFloppy::decodeSector(long secPtr, int index)
         sectorTable[index].sector = (decoded >> 8) & 0xff;
         index = (decoded >> 8) & 0xff;
         // if sector out of bounds, return with error
-        if ((index > sectors) || (index < 0))
+        // >=, not >: sectors are numbered 0..sectors-1, and letting index == sectors
+        // through wrote 540 bytes past the end of _track[] on an HD disk.
+        if ((index >= sectors) || (index < 0))
         {
             _errors = _errors | (1 << 31);
             _extError = "Sector out of bounds\n";
