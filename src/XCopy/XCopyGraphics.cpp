@@ -12,7 +12,9 @@ void XCopyGraphics::drawHeader()
 
 void XCopyGraphics::drawTrack(uint8_t track, uint8_t side, bool drawText, bool retry, int retryCount, bool verify, uint16_t color)
 {
-    const uint8_t blockSize = 6;
+    // 5px blocks, not 6: GRID_COLS of them plus the gap between the two sides has to
+    // fit a 160px panel, and at 6px a 12 column row is 183px wide.
+    const uint8_t blockSize = 5;
     if (drawText)
     {
         this->drawText(0, 10, ST7735_WHITE, "TRACK: ", true);
@@ -34,7 +36,7 @@ void XCopyGraphics::drawTrack(uint8_t track, uint8_t side, bool drawText, bool r
     const int yoffset = 25;
     const int xoffset = 5;
     const int sidegap = 10;
-    const int tracksperline = 10;
+    const int tracksperline = GRID_COLS;
     const int col = track / tracksperline;
     const int row = track - (col * tracksperline);
 
@@ -52,7 +54,7 @@ void XCopyGraphics::drawDiskName(String name)
 
 void XCopyGraphics::drawDisk(uint8_t start, uint16_t color)
 {
-    for (int x = start; x < 160; x++)
+    for (int x = start; x < MAX_TRACKS; x++)
     {
         if (x % 2 == 0)
             drawTrack(x / 2, 0, false, false, 0, false, color);

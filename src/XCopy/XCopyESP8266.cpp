@@ -199,6 +199,10 @@ bool XCopyESP8266::updateWebSdCardFiles(String directory) {
         newline += file.isDirectory ? "1" : "0";
         newline += "&";
         newline += file.isADF ? "1" : "0";
+        // Appended, not inserted: the browser splits this row on & by position, and
+        // a trailing field is the only kind an older script would simply ignore.
+        newline += "&";
+        newline += file.isSCP ? "1" : "0";
 
         // send command
         sendWebSocket(F("addSdFile,") + newline + F("\r"));

@@ -43,7 +43,8 @@ enum XCopyState {
   testDrive = 34,
   scanBlocks = 39,
   diskSearch = 40,
-  modSearch = 41
+  modSearch = 41,
+  copyDiskToSCP = 42
 };
 
 #endif // XCOPYSTATE_H

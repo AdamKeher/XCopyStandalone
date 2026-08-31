@@ -23,6 +23,7 @@ function drawSdFiles() {
     var filename = file.name;
     if (file.isDir) { filename = "<span class='sdcardDirectory'>" + file.name + "</span>"; }
     if (file.isADF) { filename = "<span class='sdcardADF'>" + file.name + "</span>"; }
+    if (file.isSCP) { filename = "<span class='sdcardSCP'>" + file.name + "</span>"; }
     if (file.isDir) {
       filename = "<a onclick=\"getSdFiles('" + sdPath + file.name + "/" + "');\" href=\"#\">" + filename + "</a>";
     } else {
@@ -78,6 +79,7 @@ function addSdFile(details) {
   file.name = values[3];
   file.isDir = values[4] == "1" ? true : false;
   file.isADF = values[5] == "1" ? true : false;
+  file.isSCP = values[6] == "1" ? true : false;
   sdFiles.push(file);
 }
 

@@ -170,6 +170,7 @@ void XCopy::begin()
     parentItem = _menu.addItem("Disk Copy", XCopyAction::none);
     _menu.addChild("Copy ADF   to Disk", XCopyAction::copyADFToDisk, parentItem);
     _menu.addChild("Copy Disk  to ADF", XCopyAction::copyDiskToADF, parentItem);
+    _menu.addChild("Copy Disk  to SCP", XCopyAction::copyDiskToSCP, parentItem);
     _menu.addChild("", XCopyAction::none, parentItem);
     _menu.addChild("Copy Disk  to Disk", XCopyAction::copyDiskToDisk, parentItem);
     _menu.addChild("Copy Disk  to Flash", XCopyAction::copyDiskToFlash, parentItem);
@@ -217,6 +218,8 @@ void XCopy::begin()
     retryCountMenuItem = _menu.addChild("Set Retry Count: " + String(_config->getRetryCount()), XCopyAction::setRetry, diskParentItem);
     verifyMenuItem = _menu.addChild("Set Verify: " + (_config->getVerify() ? String("True") : String("False")), XCopyAction::setVerify, diskParentItem);
     diskDelayMenuItem = _menu.addChild("Set Disk Delay: " + String(_config->getDiskDelay()) + "ms", XCopyAction::setDiskDelay, diskParentItem);
+    scpRevolutionsMenuItem = _menu.addChild("Set SCP Revs: " + String(_config->getScpRevolutions()), XCopyAction::setScpRevolutions, diskParentItem);
+    scpCylindersMenuItem = _menu.addChild("Set SCP Cyls: 0-" + String(_config->getScpEndCylinder()), XCopyAction::setScpCylinders, diskParentItem);
 
 
     XCopyMenuItem *networkParentItem = _menu.addChild("Network", XCopyAction::none, parentItem);
@@ -368,6 +371,15 @@ void XCopy::onWebCommand(void* obj, const String command)
             path = command.substring(command.indexOf(",") + 1);
         }
         xcopy->startFunction(XCopyAction::copyDiskToADF, path);
+    }
+    // Same shape as copyDiskToADF: bare from the web UI, with a destination path and
+    // optionally "<first>-<last>" and a revolution count from "readscp".
+    else if (command.startsWith("copyDiskToSCP")) {
+        String param = "";
+        if (command.indexOf(",") > 0) {
+            param = command.substring(command.indexOf(",") + 1);
+        }
+        xcopy->startFunction(XCopyAction::copyDiskToSCP, param);
     }
     else if (command == "copyDiskToDisk") {
         xcopy->startFunction(XCopyAction::copyDiskToDisk);
@@ -571,6 +583,46 @@ void XCopy::startFunction(XCopyAction action, String param) {
     // left over from an earlier read cannot leak into a menu driven copy.
     if (action == XCopyAction::copyDiskToADF) {
         _adfFilePath = param;
+    }
+
+    /*
+       Same for the SCP capture, which also carries a cylinder range and a revolution
+       count. The payload is "<first>-<last>,<revs>,<path>" or empty, deliberately
+       with the path last: a filename may legitimately contain a comma, the two
+       numeric fields never can, so only this order parses unambiguously.
+
+       Zero means "not given" and processState() falls back to the saved setting.
+       Everything is reset first, so nothing from an earlier run leaks into a capture
+       started from the menu.
+    */
+    if (action == XCopyAction::copyDiskToSCP) {
+        _scpFilePath = "";
+        _scpStartCylinder = 0;
+        _scpEndCylinder = 0;
+        _scpRevolutions = 0;
+        _scpRangeGiven = false;
+
+        if (param != "") {
+            int firstComma = param.indexOf(",");
+            String range = firstComma < 0 ? param : param.substring(0, firstComma);
+            String rest = firstComma < 0 ? "" : param.substring(firstComma + 1);
+
+            int dash = range.indexOf("-");
+            if (dash > 0) {
+                _scpStartCylinder = (uint8_t)range.substring(0, dash).toInt();
+                _scpEndCylinder = (uint8_t)range.substring(dash + 1).toInt();
+                _scpRangeGiven = true;
+            }
+
+            int secondComma = rest.indexOf(",");
+            if (secondComma >= 0) {
+                _scpRevolutions = (uint8_t)rest.substring(0, secondComma).toInt();
+                _scpFilePath = rest.substring(secondComma + 1);
+            }
+            else {
+                _scpRevolutions = (uint8_t)rest.toInt();
+            }
+        }
     }
 
     setBusy(true);
@@ -1041,6 +1093,52 @@ void XCopy::navigateSelect()
             _xcopyState = menus;
             break;
         }
+        case XCopyAction::setScpRevolutions:
+        {
+            setBusy(true);
+
+            // 1..SCP_MAX_REVS, wrapping. More revolutions catch weak bits that differ
+            // between reads, at a proportional cost in time and card space.
+            uint8_t revolutions = _config->getScpRevolutions();
+            revolutions++;
+            if (revolutions > SCP_MAX_REVS)
+                revolutions = 1;
+            _config->setScpRevolutions(revolutions);
+
+            scpRevolutionsMenuItem->text = "Set SCP Revs: " + String(revolutions);
+            _config->writeConfig();
+
+            _audio.playSelect(false);
+
+            setBusy(false);
+            _xcopyState = menus;
+            break;
+        }
+        case XCopyAction::setScpCylinders:
+        {
+            setBusy(true);
+
+            // 79 is AmigaDOS. The steps past it are where long track protections sit,
+            // and 83 is the last cylinder SCP can address - but a drive that cannot
+            // reach them will simply fail those tracks, so this stays opt in.
+            uint8_t cylinder = _config->getScpEndCylinder();
+            switch (cylinder)
+            {
+            case 79: cylinder = 81; break;
+            case 81: cylinder = 83; break;
+            default: cylinder = 79; break;
+            }
+            _config->setScpEndCylinder(cylinder);
+
+            scpCylindersMenuItem->text = "Set SCP Cyls: 0-" + String(cylinder);
+            _config->writeConfig();
+
+            _audio.playSelect(false);
+
+            setBusy(false);
+            _xcopyState = menus;
+            break;
+        }
         case XCopyAction::setTimeZone:
         {
             setBusy(true);
@@ -1231,6 +1329,23 @@ void XCopy::processState()
                 // _config = new XCopyConfig();
                 _disk.diskToADF(_adfFilePath, _config->getVerify(), _config->getRetryCount(), _sdCard);
                 // delete _config;
+
+                setBusy(false);
+                _drawnOnce = true;
+            }
+            break;
+        }
+        case copyDiskToSCP:
+        {
+            if (_drawnOnce == false)
+            {
+                // A range or revolution count supplied for this run wins; zero means
+                // nothing was given and the saved setting applies.
+                uint8_t revolutions = _scpRevolutions ? _scpRevolutions : _config->getScpRevolutions();
+                uint8_t endCylinder = _scpRangeGiven ? _scpEndCylinder : _config->getScpEndCylinder();
+
+                _disk.diskToSCP(_scpFilePath, revolutions, _scpStartCylinder, endCylinder,
+                                _config->getRetryCount());
 
                 setBusy(false);
                 _drawnOnce = true;

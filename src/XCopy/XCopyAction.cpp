@@ -6,6 +6,7 @@ XCopyState stateForAction(XCopyAction action)
     {
     case XCopyAction::copyADFToDisk:                 return copyADFToDisk;
     case XCopyAction::copyDiskToADF:                 return copyDiskToADF;
+    case XCopyAction::copyDiskToSCP:                 return copyDiskToSCP;
     case XCopyAction::copyDiskToDisk:                return copyDiskToDisk;
     case XCopyAction::copyDiskToFlash:               return copyDiskToFlash;
     case XCopyAction::copyFlashToDisk:               return copyFlashToDisk;

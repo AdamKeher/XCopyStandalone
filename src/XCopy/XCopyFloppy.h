@@ -5,6 +5,9 @@
 #include <Streaming.h>
 #include "XCopyLog.h"
 #include "../FastCRC/FastCRC.h"
+// SCP_MAX_REVS: the most revolutions one flux capture will store, which is a limit
+// of the image format rather than of the drive.
+#include "SCPFormat.h"
 
 #define BITBAND_ADDR(addr, bit) (((uint32_t) & (addr)-0x20000000) * 32 + (bit)*4 + 0x22000000)
 
@@ -86,6 +89,9 @@ class XCopyFloppy
     Track *getTrack();
     byte *getStream();
     int *getHist();
+    //! Bytes allocated to getStream(). Kept next to the malloc that sizes it so a
+    //! borrower - flux capture reuses this buffer - cannot get it wrong.
+    size_t getStreamSize() { return streamSizeHD + 10; }
 
     // configuration
     void setAutoDensity(bool setting);
@@ -122,6 +128,37 @@ class XCopyFloppy
     int writeTrack();
     void floppyTrackMfmEncode(unsigned long track, byte *src, byte *dst);
 
+    /*
+       Raw flux capture, for SCP imaging.
+
+       This is the same FTM0 input capture the MFM read path uses, with the interval
+       kept instead of being thresholded into a bitcell and thrown away. It runs from a
+       second ISR installed over the vector for the duration of a capture, so
+       ftm0_isr() - the hot path for every ADF read - is left exactly as it was.
+
+       The ring buffer is supplied by the caller because the only block of RAM big
+       enough on a 64KB part is the MFM stream buffer, which is idle during a capture.
+       See beginFluxCapture() for why that is safe and when it is not.
+    */
+    bool beginFluxCapture(uint16_t *ring, size_t ringSamples, uint8_t revolutions);
+    void endFluxCapture();
+
+    //! Longest run of samples readable without wrapping the ring. 0 when empty.
+    size_t fluxPeek(const uint16_t **samples);
+    //! Release @p count samples previously returned by fluxPeek().
+    void fluxConsume(size_t count);
+
+    bool fluxCaptureDone();
+    bool fluxOverran();
+    uint8_t fluxRevolutionsCaptured();
+    //! Length of revolution @p rev in timer ticks, index to index.
+    uint32_t fluxRevolutionTicks(uint8_t rev);
+    //! Number of samples in revolution @p rev.
+    uint32_t fluxRevolutionSamples(uint8_t rev);
+
+    //! HD or DD, as last set by setMode() or densityDetect(). Sets the tick length.
+    int getMode() { return _mode; }
+
     // drive speed, measured from the index pulse
     void beginRPM(); // caller must have the drive spinning
     float readRPM();
@@ -156,6 +193,7 @@ class XCopyFloppy
     int hardwareVersion();
     void registerSetup(int version);
     void setupFTM0();
+    void setupFTM0Flux();
     void initRead();
     void startFTM0();
     void stopFTM0();

@@ -431,6 +431,9 @@ function onWebSocketMessage(msg) {
       case '3':
         setState('copyDiskToADF');
         break;
+      case '42':
+        setState('copyDiskToSCP');
+        break;
       case '5':
         setState('copyADFToDisk');
         break;

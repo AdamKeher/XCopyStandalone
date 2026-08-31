@@ -94,6 +94,50 @@ void XCopyTrackMap::textRow(const char *text)
     Serial.print(" |\r\n");
 }
 
+char XCopyTrackMap::columnLabel(uint8_t col)
+{
+    return (col < 10) ? (char)('0' + col) : (char)('A' + (col - 10));
+}
+
+/*
+   The two header rows, generated rather than written out. The column labels have to
+   track COLS, and a stale hand written row is a silent lie about which cylinder a
+   cell belongs to. Labels run 0-9 then A-Z so a wide grid still fits the two
+   characters per cell the rest of the map is drawn on.
+*/
+void XCopyTrackMap::headerRows()
+{
+    char buffer[16];
+
+    Serial.write('|');
+    Serial.write(' ');
+    Serial.print("TRK");
+    repeat(' ', LABELWIDTH - 4);
+    for (uint8_t side = 0; side < 2; side++)
+    {
+        snprintf(buffer, sizeof(buffer), "SIDE %u", (unsigned)side);
+        Serial.write('|');
+        Serial.write(' ');
+        Serial.print(buffer);
+        repeat(' ', SIDEWIDTH - 1 - strlen(buffer));
+    }
+    Serial.print("|\r\n");
+
+    Serial.write('|');
+    repeat(' ', LABELWIDTH);
+    for (uint8_t side = 0; side < 2; side++)
+    {
+        Serial.print("| ");
+        for (uint8_t col = 0; col < COLS; col++)
+        {
+            if (col > 0) Serial.write(' ');
+            Serial.write(columnLabel(col));
+        }
+        Serial.write(' ');
+    }
+    Serial.print("|\r\n");
+}
+
 void XCopyTrackMap::gridRow(uint8_t row)
 {
     // Sized well past the six characters this produces: the compiler cannot see
@@ -191,8 +235,7 @@ void XCopyTrackMap::begin(const String &operation, const String &diskName)
 
     joinRow();
 
-    Serial.print("| TRK  | SIDE 0              | SIDE 1              |\r\n");
-    Serial.print("|      | 0 1 2 3 4 5 6 7 8 9 | 0 1 2 3 4 5 6 7 8 9 |\r\n");
+    headerRows();
 
     joinRow();
 
@@ -239,14 +282,14 @@ void XCopyTrackMap::begin(const String &operation, const String &diskName)
 /**
  * @brief Repaint one track and describe it on the status line.
  *
- * @param logicalTrack logical track number, 0 - 159
+ * @param logicalTrack logical track number, 0 - (MAX_TRACKS - 1)
  * @param state state to paint the track in
  * @param attempt attempt number, shown in the cell while a track is failing
  * @param verify flags that this is the verify pass over the track
  */
 void XCopyTrackMap::setTrack(uint8_t logicalTrack, XCopyTrackState state, uint8_t attempt, bool verify)
 {
-    if (!_active || logicalTrack > 159) return;
+    if (!_active || logicalTrack >= MAX_TRACKS) return;
 
     paintCell(logicalTrack, state, attempt);
 
@@ -270,7 +313,7 @@ void XCopyTrackMap::setRange(uint8_t fromTrack, XCopyTrackState state)
 {
     if (!_active) return;
 
-    for (uint16_t track = fromTrack; track < 160; track++)
+    for (uint16_t track = fromTrack; track < MAX_TRACKS; track++)
         paintCell((uint8_t)track, state, 0);
 }
 

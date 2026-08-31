@@ -8,6 +8,10 @@ function onLoad() {
   var hash = location.hash;
   if (hash != "") { setTab(hash); }
 
+  // Before disableGlobes(), which reaches for the icons the grid builds, and well
+  // before wsConnect(), which can start painting tracks the moment it opens.
+  buildTrackGrid();
+
   disableGlobes();
   term = new Terminal({
     rows: 45,

@@ -54,6 +54,8 @@ void XCopyCommandLine::doCommand(String command)
         Log << F("|--------------------------------+-----------------------------------------------------|\r\n");
         Log << F("| readadf [<filename>]           | read floppy disk to adf file on sdcard              |\r\n");
         Log << F("| writeadf <filename>            | write adf file to floppy disk                       |\r\n");
+        Log << F("| readscp [<a-b>] [<n>] [<file>] | read floppy disk to scp flux image on sdcard        |\r\n");
+        Log << F("|                                | optional cylinder range <a-b> and <n> revolutions   |\r\n");
         Log << F("| writeflash                     | read floppy disk into flash memory                  |\r\n");
         Log << F("| writebin <filename> <block>    | write binary file to disk starting at block         |\r\n");
         Log << F("| testdisk                       | test floppy disk                                    |\r\n");
@@ -647,6 +649,103 @@ void XCopyCommandLine::doCommand(String command)
         }
 
         _callback(_caller, "copyDiskToADF," + param);
+
+        return;
+    }
+
+    if (cmd == F("readscp")) {
+        if (!_floppy->diskChange()) {
+            Log << F("Disk not inserted into floppy\r\n");
+            return;
+        }
+
+        /*
+           readscp [<first>-<last>] [<revs>] [<filename>]
+
+           Options lead and the filename is whatever is left, taken verbatim - the
+           generated names contain spaces ("20260831 1830 Workbench.scp"), so the
+           filename cannot be tokenised the way the options are.
+
+           An option is recognised by shape, and the shapes are narrow enough that
+           neither can swallow a filename: a range is digits, one dash, digits; a
+           revolution count is a single digit, which is all SCP_MAX_REVS needs.
+        */
+        uint8_t firstCylinder = 0;
+        uint8_t lastCylinder = 0;
+        uint8_t revolutions = 0;
+
+        String rest = param;
+        rest.trim();
+
+        while (rest.length()) {
+            int space = rest.indexOf(" ");
+            String token = space < 0 ? rest : rest.substring(0, space);
+
+            int dash = token.indexOf("-");
+            bool isRange = dash > 0 && dash < (int)token.length() - 1;
+            for (unsigned int i = 0; isRange && i < token.length(); i++) {
+                if ((int)i != dash && !isDigit(token.charAt(i))) isRange = false;
+            }
+
+            bool isCount = token.length() == 1 && isDigit(token.charAt(0));
+
+            if (!isRange && !isCount) break;
+
+            if (isRange) {
+                firstCylinder = (uint8_t)token.substring(0, dash).toInt();
+                lastCylinder = (uint8_t)token.substring(dash + 1).toInt();
+
+                if (lastCylinder >= MAX_CYLINDERS || firstCylinder > lastCylinder) {
+                    Log << F("Cylinder range must be within 0-") << (MAX_CYLINDERS - 1)
+                        << F(", lowest first\r\n");
+                    return;
+                }
+            }
+            else {
+                revolutions = (uint8_t)token.toInt();
+
+                if (revolutions < 1 || revolutions > SCP_MAX_REVS) {
+                    Log << F("Revolutions must be 1-") << SCP_MAX_REVS << F("\r\n");
+                    return;
+                }
+            }
+
+            rest = space < 0 ? "" : rest.substring(space + 1);
+            rest.trim();
+        }
+
+        String filename = rest;
+
+        if (filename != "") {
+            // On a copy: toLowerCase() mutates in place and filename is the
+            // destination path, which has to keep the case the user typed.
+            String extension = filename;
+            if (!extension.toLowerCase().endsWith(".scp")) {
+                Log << F("The file must be an SCP file\r\n");
+                return;
+            }
+
+            // A bare filename lands in the SCP folder alongside the generated ones;
+            // diskToSCP() creates that directory if it is missing.
+            if (filename.indexOf("/") == -1) {
+                filename = "/" + String(SD_SCP_PATH) + "/" + filename;
+            }
+        }
+
+        // Reported here rather than left to diskToSCP(), so the failure lands on the
+        // prompt instead of behind the capture screen it would otherwise draw first.
+        XCopySDCard _sdcard;
+
+        if (!_sdcard.cardDetect() || !_sdcard.begin()) {
+            Log << _sdcard.getError() + "\r\n";
+            return;
+        }
+
+        // "<first>-<last>,<revs>,<path>", with the path last because a filename may
+        // contain a comma and the two numeric fields never can. Zero means "not
+        // given" and the saved setting applies.
+        _callback(_caller, "copyDiskToSCP," + String(firstCylinder) + "-" + String(lastCylinder) +
+                               "," + String(revolutions) + "," + filename);
 
         return;
     }

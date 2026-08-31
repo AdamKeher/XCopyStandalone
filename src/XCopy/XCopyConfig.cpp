@@ -22,6 +22,8 @@ void XCopyConfig::createConfig()
     root["volume"] = 0.8;
     root["diskDelay"] = 200;
     root["timeZone"] = 0;
+    root["scpRevolutions"] = 3;
+    root["scpEndCylinder"] = 79;
 
     _config = "";
     serializeJson(root, _config);
@@ -104,6 +106,25 @@ void XCopyConfig::setTimeZone(int timeZone) {
     _timeZone = timeZone;
 }
 
+void XCopyConfig::setScpRevolutions(uint8_t revolutions) {
+    StaticJsonDocument<512> root;
+    deserializeJson(root, _config.c_str());
+    root["scpRevolutions"] = revolutions;
+
+    _config = "";
+    serializeJson(root, _config);
+    _scpRevolutions = revolutions;
+}
+
+void XCopyConfig::setScpEndCylinder(uint8_t cylinder) {
+    StaticJsonDocument<512> root;
+    deserializeJson(root, _config.c_str());
+    root["scpEndCylinder"] = cylinder;
+
+    _config = "";
+    serializeJson(root, _config);
+    _scpEndCylinder = cylinder;
+}
 
 void XCopyConfig::parseConfig()
 {
@@ -117,6 +138,10 @@ void XCopyConfig::parseConfig()
     _password = root["password"].as<const char*>();
     _diskDelay = root["diskDelay"];
     _timeZone = root["timeZone"];
+    // Defaulted rather than read bare: a config written before SCP existed has
+    // neither key, and root["missing"] is 0 - which would mean zero revolutions.
+    _scpRevolutions = root["scpRevolutions"] | 3;
+    _scpEndCylinder = root["scpEndCylinder"] | 79;
 }
 
 bool XCopyConfig::readConfig()
