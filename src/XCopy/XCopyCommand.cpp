@@ -205,6 +205,9 @@ void XCopyCommandLine::doCommand(String command)
 
         setBusy(true);
         _floppy->motorOn();
+        // The newline that submitted this command is still queued, so the
+        // wait-for-keypress loop below would exit before taking a reading.
+        while (Serial.available()) Serial.read();
         _floppy->beginRPM();
 
         Log << F("Measuring drive speed, press any key to stop ...\r\n");
