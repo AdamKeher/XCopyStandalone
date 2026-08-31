@@ -8,17 +8,10 @@
 #include <WebSocketsServer.h>
 #include <LITTLEFS.h>
 
-// Must match ESPBaudRate in src/XCopy/XCopy.h. 1,000,000 divides exactly on both ends
-// (ESP8266: 80e6/80, Teensy: 192e6/192) -- zero divisor error, unlike the old 576000.
-#define ESPBaudRate 1000000
-
-// Arduino Stream default, restored after a transfer raises it.
-#define SERIAL_DEFAULT_TIMEOUT 1000
-
-// SD upload transfer protocol -- must match the XFER_* defines in src/XCopy/XCopy.h.
-#define XFER_CHUNK 1024
-#define XFER_ACK 0x06
-#define XFER_TIMEOUT 5000
+// Baud rate, timeouts and the file transfer wire format are the Teensy link contract.
+// The same header is compiled into the Teensy tree, so there is nothing to keep in
+// step by hand -- see the -I in platformio.ini.
+#include "XCopyProtocol.h"
 
 ESP8266WebServer server(80);
 WebSocketsServer webSocket(81);
@@ -136,13 +129,13 @@ bool handleFileRead(String path)
 
     // request file
     Serial.print("\r\n");
-    Serial.printf("xcopyCommand,sendFile,%s\r\n", path.c_str());
+    Serial.printf(XCOPY_COMMAND_MARKER XFER_CMD_SENDFILE ",%s\r\n", path.c_str());
 
     // get file size
     String ssize = "";
     ssize = Serial.readStringUntil('\n');
     ssize.replace("\n", "");
-    if (ssize.startsWith("error")) {
+    if (ssize.startsWith(XFER_REPLY_ERROR)) {
       return false;
     }
     sscanf(ssize.c_str(), "%zu", &filesize);
@@ -172,8 +165,8 @@ bool handleFileRead(String path)
       // exit all bytes of file received
       if (totalsize >= filesize) { break; }
 
-      // timeout if no data received for 1 seconds
-      if (millis() - lastDataTime > 1000) {
+      // give up once the Teensy has gone quiet for XFER_IDLE_TIMEOUT
+      if (millis() - lastDataTime > XFER_IDLE_TIMEOUT) {
           // finish http send
           server.sendContent("");
           webSocket.broadcastTXT("download,end");
@@ -252,15 +245,15 @@ void handleFileUpload() {
     while (Serial.available()) Serial.read();   // drop stale bytes before the handshake
 
     Serial.print("\r\n");
-    Serial.printf("xcopyCommand,getFile,%s,%u,%d\r\n", path.c_str(), (unsigned)uploadSize, overwrite ? 1 : 0);
+    Serial.printf(XCOPY_COMMAND_MARKER XFER_CMD_GETFILE ",%s,%u,%d\r\n", path.c_str(), (unsigned)uploadSize, overwrite ? 1 : 0);
 
-    Serial.setTimeout(8000);                    // SD init + bmpDraw headroom
+    Serial.setTimeout(XFER_HANDSHAKE_TIMEOUT);  // SD init + bmpDraw headroom
     String response = Serial.readStringUntil('\n');
     response.trim();
 
-    if (response != "OK") {
+    if (response != XFER_REPLY_OK) {
       uploadFailed = true;
-      uploadError = response.startsWith("error,") ? response.substring(6)
+      uploadError = response.startsWith(XFER_REPLY_ERROR ",") ? response.substring(6)
                   : (response.length() ? response : "timeout");
       webSocket.broadcastTXT(String("cancelUpload," + uploadError).c_str());
       digitalWrite(led, 1);
@@ -294,7 +287,7 @@ void handleFileUpload() {
       String receipt = Serial.readStringUntil('\n');   // "done,<bytes>,<crc32>"
       receipt.trim();
 
-      if (receipt.startsWith("done,")) {
+      if (receipt.startsWith(XFER_REPLY_DONE ",")) {
         int last = receipt.lastIndexOf(',');
         size_t got = 0;
         sscanf(receipt.substring(5, last).c_str(), "%zu", &got);
@@ -306,11 +299,12 @@ void handleFileUpload() {
         }
       } else {
         uploadFailed = true;
-        uploadError = receipt.startsWith("error,") ? receipt.substring(6) : "noreceipt";
+        uploadError = receipt.startsWith(XFER_REPLY_ERROR ",") ? receipt.substring(6) : "noreceipt";
       }
     }
-    // UPLOAD_FILE_START raised this to 8000 and the receipt read to XFER_TIMEOUT;
-    // without this the download path would inherit a 5s timeout on its size read.
+    // UPLOAD_FILE_START raised this to XFER_HANDSHAKE_TIMEOUT and the receipt read
+    // above to XFER_TIMEOUT; without this the download path would inherit that
+    // timeout on its size read.
     Serial.setTimeout(SERIAL_DEFAULT_TIMEOUT);
     digitalWrite(led, 1);
   }

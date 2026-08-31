@@ -3,6 +3,7 @@
 
 #include <Arduino.h>
 #include <Streaming.h>
+#include "XCopyProtocol.h"
 #include "XCopyState.h"
 #include "XCopySDCard.h"
 
@@ -48,7 +49,7 @@ private:
   char ER_EOC[5] = "ER\r\n";
   // HardwareSerial _serial;
   String _command;
-  const String _marker = "xcopyCommand,";
+  const String _marker = XCOPY_COMMAND_MARKER;
   
   void* _caller;
   OnWebCommand _callback;

@@ -16,24 +16,8 @@
 
 #define ESPSerial Serial1
 
-// 1,000,000 divides exactly on both ends: Teensy BAUD2DIV -> 192e6/192, ESP8266 -> 80e6/80.
-// Zero divisor error on both sides, unlike the old 576000 (0.54% combined skew).
-#define ESPBaudRate 1000000
-
-// Serial1 drops to this while the ESP is flashed through the Teensy passthrough, so the
-// data-link rate stays independent of what esptool has to cope with.
-#define ESPProgBaudRate 115200
-
-// SD upload transfer protocol (see XCopy::getFile and esp8266.ino handleFileUpload).
-// The ESP may never have more than one un-ACKed chunk outstanding, so peak Serial1 ring
-// occupancy is XFER_CHUNK -- keep it well under SERIAL1_RX_BUFFER_SIZE.
-#define XFER_CHUNK 1024
-#define XFER_ACK 0x06
-#define XFER_TIMEOUT 5000
-
-// Arduino Stream default, restored after a transfer raises it. The pinned Teensy core
-// has no Stream::getTimeout(), so the value is spelled out rather than saved.
-#define SERIAL_DEFAULT_TIMEOUT 1000
+// Baud rates, timeouts and the file transfer wire format are the ESP link contract and
+// live in shared/XCopyProtocol.h, which both firmware trees compile.
 
 #include <Arduino.h>
 #include <SPI.h>
@@ -41,6 +25,7 @@
 #include <Wire.h>
 #include <Streaming.h>
 #include <SdFat.h>
+#include "XCopyProtocol.h"
 #include "XCopyState.h"
 #include "XCopyLog.h"
 #include "XCopyPins.h"
@@ -59,6 +44,7 @@
 #include "XCopyDriveTest.h"
 #include "XCopyConsole.h"
 #include "XCopyBrainFile.h"
+#include "XCopyTransfer.h"
 
 #ifdef XCOPY_DEBUG
 #include "RamMonitor.h"
@@ -108,6 +94,7 @@ private:
   XCopyGraphics _graphics;
   XCopyConfig *_config;
   XCopyESP8266 *_esp = nullptr;
+  XCopyTransfer _transfer;
 
 #ifdef XCOPY_DEBUG
   RamMonitor _ram;
