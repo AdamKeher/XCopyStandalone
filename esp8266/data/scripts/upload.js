@@ -2,6 +2,15 @@ var ajaxUpload
 var fileTransferInProgress = false;
 var uploadCancelReason = null;
 
+function setUploadProgress(percent) {
+    var pct = Math.max(0, Math.min(100, Math.round(percent)));
+    // Width is the visual, the text and aria-valuenow are what is actually read --
+    // by a person and by a screen reader. All three have to move together. Setting
+    // only the width left the label stuck on the "0%" written when the file was
+    // picked, so the bar slid across while the number never changed.
+    $('#uploadProgress').width(pct + '%').html(pct + '%').attr('aria-valuenow', pct);
+}
+
 function fileUploadChange() {
     if ($('#uploadFile')[0].files.length == 0) {
       $("#uploadSuccess").hide();
@@ -11,7 +20,7 @@ function fileUploadChange() {
       return;
     }
 
-    $('#uploadProgress').width('0%').html('0%');
+    setUploadProgress(0);
     var files = $('#uploadFile')[0].files[0];
     $('#uploadFilename').html(files.name);
     $('#uploadFileSize').html(files.size);
@@ -88,7 +97,7 @@ function fileUploadSelect() {
 
     $("#uploadNoFileError").hide();
     $("#uploadDetails").show();
-    $('#uploadProgress').width('0%');
+    setUploadProgress(0);
     uploadCancelReason = null;
 
     var fd = new FormData();
@@ -102,8 +111,7 @@ function fileUploadSelect() {
             var xhr = new window.XMLHttpRequest();
             xhr.upload.addEventListener("progress", function(evt) {
                 if (evt.lengthComputable) {
-                    var percentComplete = (evt.loaded / evt.total) * 100;
-                    $('#uploadProgress').width(percentComplete + '%');
+                    setUploadProgress((evt.loaded / evt.total) * 100);
                 }
         }, false);
         return xhr;
@@ -127,7 +135,7 @@ function fileUploadSelect() {
             // The firmware returns the byte count it actually committed to the SD card plus
             // a CRC32 over that data. A 200 alone is not proof the file arrived intact.
             if (response && response.ok === true) {
-                $('#uploadProgress').width('100%');
+                setUploadProgress(100);
                 $('#uploadCrc32').html(response.crc32);
                 $("#uploadSuccess").show();
                 $("#uploadError").hide();
