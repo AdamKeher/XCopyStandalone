@@ -263,7 +263,12 @@ void XCopyDisk::OperationCancelled(uint8_t trackNum) {
     {
         _graphics->drawDisk(trackNum, ST7735_RED);
         _esp->sendWebSocket("resetTracks,red," + String(trackNum));
+        _trackMap.setRange(trackNum, trackSkipped);
     }
+    // Released before logging - anything printed while the map owns the console
+    // scrolls the table out from under the cursor addressing.
+    _trackMap.end("CANCELLED");
+    Log << XCopyConsole::error("Operation Cancelled") << "\r\n";
     _audio->playBong(false);
 }
 
@@ -293,6 +298,7 @@ int XCopyDisk::readDiskTrack(uint8_t trackNum, bool verify, uint8_t retryCount, 
     while (readResult == -1 && retries < retryCount) {
         // read track
         if (!silent) _graphics->drawTrack(trackNum / 2, trackNum % 2, true, false, 0, verify, ST7735_WHITE);
+        if (!silent) _trackMap.setTrack(trackNum, trackBusy, 0, verify);
         _esp->setTrack(trackNum, "white", verify ? "V" : "");
         _floppy->gotoLogicTrack(trackNum);
         readResult = _floppy->readTrack(true);
@@ -301,16 +307,19 @@ int XCopyDisk::readDiskTrack(uint8_t trackNum, bool verify, uint8_t retryCount, 
             // read OK
             if (_floppy->getWeakTrack() > 0) {
                 if (!silent) _graphics->drawTrack(trackNum / 2, trackNum % 2, true, false, 0, verify, ST7735_YELLOW);
+                if (!silent) _trackMap.setTrack(trackNum, trackWeak, 0, verify);
                 _esp->setTrack(trackNum, "yellow", verify ? "V" : "");
             }
             else {
                 if (!silent) _graphics->drawTrack(trackNum / 2, trackNum % 2, true, false, 0, verify, ST7735_GREEN);
+                if (!silent) _trackMap.setTrack(trackNum, trackOK, 0, verify);
                 _esp->setTrack(trackNum, "green", verify ? "V" : "");
             }
         }
         else {
             // read error
             if (!silent) _graphics->drawTrack(trackNum / 2, trackNum % 2, true, false, 0, verify, ST7735_RED);            
+            if (!silent) _trackMap.setTrack(trackNum, trackError, retries + 1, verify);
             _esp->setTrack(trackNum, "red", verify ? "V" : String(retries + 1));
             retries++;
             _audio->playBong(false);
@@ -322,6 +331,7 @@ int XCopyDisk::readDiskTrack(uint8_t trackNum, bool verify, uint8_t retryCount, 
 
     if (readResult == 0 && retries > 0) {
         if (!silent) _graphics->drawTrack(trackNum / 2, trackNum % 2, true, false, 0, verify, ST7735_ORANGE);
+        if (!silent) _trackMap.setTrack(trackNum, trackRetried, retries, verify);
         _esp->setTrack(trackNum, "orange", verify ? "V" : String(retries));
     }
 
@@ -350,6 +360,7 @@ int XCopyDisk::writeDiskTrack(uint8_t trackNum, uint8_t retryCount)
     while (writeResult == -1 && retries < retryCount) {
         // write track
         _graphics->drawTrack(trackNum / 2, trackNum % 2, true, false, 0, false, ST7735_WHITE);
+        _trackMap.setTrack(trackNum, trackBusy);
         _esp->setTrack(trackNum, "white");
         _floppy->gotoLogicTrack(trackNum);    
         writeResult = _floppy->writeTrack(); // returns 0 = OK, -1 = ERROR
@@ -359,19 +370,24 @@ int XCopyDisk::writeDiskTrack(uint8_t trackNum, uint8_t retryCount)
             if (retries == 0) {
                 // write OK w/ no retries
                 _graphics->drawTrack(trackNum / 2, trackNum % 2, true, false, 0, false, ST7735_GREEN);
+                _trackMap.setTrack(trackNum, trackOK);
                 _esp->setTrack(trackNum, "green");
             }
             else {
                 // write OK w/ retries
                 _graphics->drawTrack(trackNum / 2, trackNum % 2, true, false, 0, false, ST7735_ORANGE);
+                _trackMap.setTrack(trackNum, trackRetried, retries + 1);
                 _esp->setTrack(trackNum, "orange", String(retries + 1));
             }
         }
         else {
             // write error
             _graphics->drawTrack(trackNum / 2, trackNum % 2, true, true, retries + 1, false, ST7735_RED);
+            _trackMap.setTrack(trackNum, trackError, retries + 1);
             _esp->setTrack(trackNum, "red", String(retries + 1));
-            Serial << "Write failed! - Try: << " << retries + 1 << "\r\n";
+            // The map already carries the failing track and the attempt number;
+            // printing here as well would scroll the table out from under it.
+            if (!_trackMap.active()) Serial << "Write failed! - Try: " << retries + 1 << "\r\n";
             retries++;
             _audio->playBong(false);
             delay(1000);
@@ -432,6 +448,7 @@ bool XCopyDisk::diskToADF(String ADFFileName, bool verify, uint8_t retryCount, A
     // check if disk is present in floppy
     if (!_floppy->diskChange()) {
         _graphics->drawText(0, 10, ST7735_RED, "No Disk Inserted");
+        Log << XCopyConsole::error("No Disk Inserted") << "\r\n";
         _esp->setStatus("No disk inserted");
         _audio->playBong(false);
         return false;
@@ -456,6 +473,7 @@ bool XCopyDisk::diskToADF(String ADFFileName, bool verify, uint8_t retryCount, A
         // card detect
         if (!_sdcard.cardDetect()) {
             _graphics->drawText(0, 10, ST7735_RED, "No SDCard detected");
+            Log << XCopyConsole::error("No SDCard detected") << "\r\n";
             _esp->setStatus("SD card not inserted");
             _audio->playBong(false);
             return false;
@@ -464,6 +482,7 @@ bool XCopyDisk::diskToADF(String ADFFileName, bool verify, uint8_t retryCount, A
         // init
         if (!_sdcard.begin()) {
             _graphics->drawText(0, 10, ST7735_RED, "SD Init Failed");
+            Log << XCopyConsole::error("SD Init Failed") << "\r\n";
             _esp->setStatus("SD card initialisation failed");
             _audio->playBong(false);
             return false;
@@ -487,6 +506,7 @@ bool XCopyDisk::diskToADF(String ADFFileName, bool verify, uint8_t retryCount, A
             ADFFile.close();
             ADFLogFile.close();
             _graphics->drawText(0, 10, ST7735_RED, "SD ADF File Open Failed");
+            Log << XCopyConsole::error("SD ADF File Open Failed") << "\r\n";
             _esp->setStatus("File '" + ADFFileName + "' failed to open on the SD card");
             _audio->playBong(false);
             return false;
@@ -497,6 +517,7 @@ bool XCopyDisk::diskToADF(String ADFFileName, bool verify, uint8_t retryCount, A
             ADFFile.close();
             ADFLogFile.close();
             _graphics->drawText(0, 10, ST7735_RED, "SD Log File Open Failed");
+            Log << XCopyConsole::error("SD Log File Open Failed") << "\r\n";
             _esp->setStatus("File '" + logfileName + "' failed to open on the SD card");
             _audio->playBong(false);
             return false;
@@ -515,6 +536,7 @@ bool XCopyDisk::diskToADF(String ADFFileName, bool verify, uint8_t retryCount, A
     else if (destination == _flashMemory) {
         if (!SerialFlash.begin(PIN_FLASHCS)) {
             _graphics->drawText(0, 10, ST7735_RED, "Serial Flash Init Failed");
+            Log << XCopyConsole::error("Serial Flash Init Failed") << "\r\n";
             _esp->setStatus("Onboard serial Flash failed to initialise");
             _audio->playBong(false);
             return false;
@@ -536,6 +558,7 @@ bool XCopyDisk::diskToADF(String ADFFileName, bool verify, uint8_t retryCount, A
         if (!ADFFlashFile) {
             ADFFlashFile.close();
             _graphics->drawText(0, 10, ST7735_RED, "Serial Flash File Open Failed", true);
+            Log << XCopyConsole::error("Serial Flash File Open Failed") << "\r\n";
             _esp->setStatus("Serial flash file failed to open");
             _audio->playBong(false);
             return false;
@@ -547,6 +570,8 @@ bool XCopyDisk::diskToADF(String ADFFileName, bool verify, uint8_t retryCount, A
     // clear XCopy logo for flux
     _graphics->getTFT()->fillRect(0, 85, _graphics->getTFT()->width(), _graphics->getTFT()->height()-85, ST7735_BLACK);
     _graphics->getTFT()->drawFastHLine(0, 85, _graphics->getTFT()->width(), ST7735_GREEN);
+
+    _trackMap.begin(destination == _sdCard ? "READ DISK TO ADF" : "READ DISK TO FLASH", diskName);
 
     // MD5 setup
     MD5_CTX ctx;
@@ -663,17 +688,24 @@ bool XCopyDisk::diskToADF(String ADFFileName, bool verify, uint8_t retryCount, A
 
             if (compareError) {
                 _graphics->drawTrack(trackNum / 2, trackNum % 2, true, false, 0, true, ST7735_MAGENTA);
+                _trackMap.setTrack(trackNum, trackVerifyError, 0, true);
                 _esp->setTrack(trackNum, "magenta,");
                 _audio->playBong(false);
             }
             else {
                 _graphics->drawTrack(trackNum / 2, trackNum % 2, true, false, 0, true, ST7735_GREEN);
+                _trackMap.setTrack(trackNum, trackOK, 0, true);
                 _esp->setTrack(trackNum, "green");
             }
         }
     }
 
     String sMD5 = ctxToMD5(&ctx);
+
+    _trackMap.end(String("COMPLETE - ") + totalReadErrors + " bad, " + totalWeakTracks + " weak of 160 tracks");
+    Log << (totalReadErrors ? XCopyConsole::error("Read errors on " + String(totalReadErrors) + " track(s)")
+                            : XCopyConsole::success("All 160 tracks read")) << "\r\n";
+    Log << "MD5: " << sMD5 << "\r\n";
 
     if (destination == _sdCard) {
         ADFLogFile.println("\t],");
@@ -740,6 +772,7 @@ void XCopyDisk::adfToDisk(String ADFFileName, bool verify, uint8_t retryCount, A
 
     if (!_floppy->diskChange()) {
         _graphics->drawText(0, 10, ST7735_RED, "No Disk Inserted");
+        Log << XCopyConsole::error("No Disk Inserted") << "\r\n";
         _esp->setStatus("No Disk Inserted");
         _audio->playBong(false);
         return;
@@ -747,6 +780,7 @@ void XCopyDisk::adfToDisk(String ADFFileName, bool verify, uint8_t retryCount, A
 
     if (_floppy->getWriteProtect()) {
         _graphics->drawText(0, 10, ST7735_RED, "Disk Write Protected");
+        Log << XCopyConsole::error("Disk Write Protected") << "\r\n";
         _esp->setStatus("Disk Write Protected");
         _audio->playBong(false);
         return;
@@ -759,6 +793,7 @@ void XCopyDisk::adfToDisk(String ADFFileName, bool verify, uint8_t retryCount, A
     if (source == _sdCard) {
         if (!_sdcard.begin()) {
             _graphics->drawText(0, 10, ST7735_RED, "SD Init Failed");
+            Log << XCopyConsole::error("SD Init Failed") << "\r\n";
             _esp->setStatus("SD Init Failed");
             _audio->playBong(false);
             return;
@@ -767,6 +802,7 @@ void XCopyDisk::adfToDisk(String ADFFileName, bool verify, uint8_t retryCount, A
         ADFFile = _sdcard.getSdFat().open(ADFFileName.c_str(), FILE_READ);
         if (!ADFFile) {
             _graphics->drawText(0, 10, ST7735_RED, "SD File Open Failed");
+            Log << XCopyConsole::error("SD File Open Failed") << "\r\n";
             _esp->setStatus("SD File Open Failed");
             _audio->playBong(false);
             ADFFile.close();
@@ -776,6 +812,7 @@ void XCopyDisk::adfToDisk(String ADFFileName, bool verify, uint8_t retryCount, A
     else if (source == _flashMemory) {
         if (!SerialFlash.begin(PIN_FLASHCS)) {
             _graphics->drawText(0, 10, ST7735_RED, "Serial Flash Init Failed");
+            Log << XCopyConsole::error("Serial Flash Init Failed") << "\r\n";
             _esp->setStatus("Serial Flash Init Failed");
             _audio->playBong(false);
             return;
@@ -784,6 +821,7 @@ void XCopyDisk::adfToDisk(String ADFFileName, bool verify, uint8_t retryCount, A
         ADFFlashFile = SerialFlash.open(ADFFileName.c_str());
         if (!ADFFlashFile) {
             _graphics->drawText(0, 10, ST7735_RED, "Serial Flash File Open Failed");
+            Log << XCopyConsole::error("Serial Flash File Open Failed") << "\r\n";
             _esp->setStatus("Serial Flash File Open Failed");
             _audio->playBong(false);
             ADFFlashFile.close();
@@ -801,6 +839,9 @@ void XCopyDisk::adfToDisk(String ADFFileName, bool verify, uint8_t retryCount, A
     _floppy->motorOn();
     _floppy->seek0();
     delay(100);
+
+    _trackMap.begin(source == _sdCard ? "WRITE ADF TO DISK" : "WRITE FLASH TO DISK",
+                    ADFFileName.substring(ADFFileName.lastIndexOf("/") + 1));
 
     // MD5 setup
     MD5_CTX ctx;
@@ -865,6 +906,7 @@ void XCopyDisk::adfToDisk(String ADFFileName, bool verify, uint8_t retryCount, A
 
             if (compareError) {
                 _graphics->drawTrack(trackNum / 2, trackNum % 2, true, false, 0, false, ST7735_MAGENTA);
+                _trackMap.setTrack(trackNum, trackVerifyError, 0, true);
                 _esp->setTrack(trackNum, "magenta");
                 _audio->playBong(false);
             }
@@ -872,11 +914,13 @@ void XCopyDisk::adfToDisk(String ADFFileName, bool verify, uint8_t retryCount, A
                 if (result == 0) {
                     // write OK w/ no retries
                     _graphics->drawTrack(trackNum / 2, trackNum % 2, true, false, 0, false, ST7735_GREEN);
+                    _trackMap.setTrack(trackNum, trackOK, 0, true);
                     _esp->setTrack(trackNum, "green");
                 }
                 else {
                     // write OK w/ retries
                     _graphics->drawTrack(trackNum / 2, trackNum % 2, true, false, 0, false, ST7735_ORANGE);
+                    _trackMap.setTrack(trackNum, trackRetried, result + 1, true);
                     _esp->setTrack(trackNum, "orange", String(result + 1));
                 }
             }
@@ -885,10 +929,13 @@ void XCopyDisk::adfToDisk(String ADFFileName, bool verify, uint8_t retryCount, A
 
     String status = "'" + ADFFileName + "' file written to disk";
 
+    _trackMap.end("COMPLETE - 160 tracks written");
+    Log << XCopyConsole::success(status) << "\r\n";
+
     if (verify) {
         // output MD5
         String sMD5 = ctxToMD5(&ctx);
-        Serial << "Verify data MD5: " << sMD5 << "\r\n";
+        Log << "Verify data MD5: " << sMD5 << "\r\n";
         status.append(". Verify data <i class=\"fa-solid fa-hashtag\"></i> MD5: ").append(sMD5);
     }
 
@@ -919,6 +966,7 @@ void XCopyDisk::diskToDisk(bool verify, uint8_t retryCount) {
         _graphics->drawDiskName("");
         _graphics->drawDisk();
         _graphics->drawText(0, 10, ST7735_RED, "No Disk Inserted");
+        Log << XCopyConsole::error("No Disk Inserted") << "\r\n";
         _esp->setStatus("No Disk Inserted");
         _audio->playBong(false);
         return;
@@ -1002,6 +1050,7 @@ void XCopyDisk::testDiskette(uint8_t retryCount) {
 
     if (!_floppy->diskChange()) {
         _graphics->drawText(0, 10, ST7735_RED, "No Disk Inserted");
+        Log << XCopyConsole::error("No Disk Inserted") << "\r\n";
         _esp->setStatus("No Disk Inserted");
 
         _audio->playBong(false);
@@ -1012,6 +1061,8 @@ void XCopyDisk::testDiskette(uint8_t retryCount) {
     _graphics->drawDiskName(diskName);
     _graphics->getTFT()->drawFastHLine(0, 85, _graphics->getTFT()->width(), ST7735_GREEN);
     _esp->setDiskName(diskName);
+
+    _trackMap.begin("TEST DISK", diskName);
 
     // MD5 setup
     MD5_CTX ctx;
@@ -1039,7 +1090,9 @@ void XCopyDisk::testDiskette(uint8_t retryCount) {
     }
 
     String sMD5 = ctxToMD5(&ctx);
-    Serial << "\r\nFloppy disk test MD5:\r\n" << sMD5 << "\r\n";
+
+    _trackMap.end("TEST COMPLETE - 160 tracks read");
+    Log << "Floppy disk test MD5: " << sMD5 << "\r\n";
 
     _audio->playBoing(false);
 
@@ -1065,6 +1118,7 @@ void XCopyDisk::scanEmptyBlocks(uint8_t retryCount) {
 
     if (!_floppy->diskChange()) {
         _graphics->drawText(0, 10, ST7735_RED, "No Disk Inserted");
+        Log << XCopyConsole::error("No Disk Inserted") << "\r\n";
         _esp->setStatus("No Disk Inserted");
 
         _audio->playBong(false);
@@ -1275,7 +1329,7 @@ bool XCopyDisk::writeFileToBlocks(String BinFileName, int startBlock, uint8_t re
 
     if (_floppy->getWriteProtect()) {
         _graphics->drawText(0, 10, ST7735_RED, "Disk Write Protected");
-        Log << "Disk Write Protected";
+        Log << XCopyConsole::error("Disk Write Protected") << "\r\n";
         _audio->playBong(false);
         return false;
     }
@@ -1746,6 +1800,7 @@ String XCopyDisk::flashToMD5() {
 
    if (!SerialFlash.begin(PIN_FLASHCS)) {
         _graphics->drawText(0, 10, ST7735_RED, "Serial Flash Init Failed");
+        Log << XCopyConsole::error("Serial Flash Init Failed") << "\r\n";
         _esp->setStatus("Serial Flash Init Failed");
         _audio->playBong(false);
         return "";
@@ -1754,6 +1809,7 @@ String XCopyDisk::flashToMD5() {
     ADFFlashFile = SerialFlash.open("DISKCOPY.TMP");
     if (!ADFFlashFile) {
         _graphics->drawText(0, 10, ST7735_RED, "Serial Flash File Open Failed");
+        Log << XCopyConsole::error("Serial Flash File Open Failed") << "\r\n";
         _esp->setStatus("Serial Flash File Open Failed");
         _audio->playBong(false);
         ADFFlashFile.close();
