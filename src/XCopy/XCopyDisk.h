@@ -15,7 +15,7 @@
 #include "../FastCRC/FastCRC.h"
 #include "XCopyAudio.h"
 #include "XCopyGraphics.h"
-#include "FloppyDrive.h"
+#include "XCopyFloppy.h"
 #include "XCopyState.h"
 #include "XCopyESP8266.h"
 #include "XCopySDCard.h"
@@ -99,7 +99,7 @@ class XCopyDisk
   public:
     typedef SearchResult (*SearchProcessor)(XCopyDisk* obj, String text, DiskLocation dl, int offset, uint8_t retryCount);
 
-    void begin(XCopyGraphics *graphics, XCopyAudio *audio, XCopyESP8266 *esp);
+    void begin(XCopyGraphics *graphics, XCopyAudio *audio, XCopyESP8266 *esp, XCopyFloppy *floppy);
 
     // UI
     void changeDisk();
@@ -155,6 +155,7 @@ class XCopyDisk
     XCopyESP8266 *_esp;
     XCopyAudio *_audio;
     XCopyGraphics *_graphics;
+    XCopyFloppy *_floppy;
     volatile bool _cancelOperation = false;
 };
 

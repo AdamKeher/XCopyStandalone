@@ -6,14 +6,13 @@
 #include "XCopyAudio.h"
 #include "XCopyGraphics.h"
 #include "XCopyFloppy.h"
-#include "FloppyDrive.h"
 #include "XCopyESP8266.h"
 
 class XCopyDriveTest
 {
   public:
     XCopyDriveTest();
-    void begin(XCopyGraphics *graphics, XCopyAudio *audio, XCopyESP8266 *esp);
+    void begin(XCopyGraphics *graphics, XCopyAudio *audio, XCopyESP8266 *esp, XCopyFloppy *floppy);
     void draw();
     void update();
     void cancelOperation();

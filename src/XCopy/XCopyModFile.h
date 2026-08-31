@@ -3,7 +3,6 @@
 
 #include <Arduino.h>
 #include <Streaming.h>
-#include "XCopyFloppy.h"
 
 class ModSample {
 public:

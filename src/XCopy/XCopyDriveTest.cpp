@@ -34,20 +34,21 @@ void motorIRQ2()
     _redrawMotor = true;
 }
 
-void XCopyDriveTest::begin(XCopyGraphics *graphics, XCopyAudio *audio, XCopyESP8266 *esp) {
+void XCopyDriveTest::begin(XCopyGraphics *graphics, XCopyAudio *audio, XCopyESP8266 *esp, XCopyFloppy *floppy) {
     _graphics = graphics;
     _audio = audio;
     _esp = esp;
-    _floppy = new XCopyFloppy();
-    _floppy->setupDrive();
-    _floppy->motor(true);
-    _diskChangeValue = _floppy->getDiskChange();
+    _floppy = floppy;
+    // setupDrive() already ran during boot and would malloc a second stream
+    // buffer if called again, so only the drive state is picked up here
+    _floppy->motorOn();
+    _diskChangeValue = _floppy->diskChange();
 
     // setup ISR
-    attachInterrupt(_diskChange, diskChangeIRQ2, CHANGE);    
-    attachInterrupt(_driveSelect, driveSelectIRQ2, CHANGE);    
-    attachInterrupt(_motor, motorIRQ2, CHANGE);    
-    // attachInterrupt(_index, diskIndexIRQ2, CHANGE);    
+    attachInterrupt(_floppy->diskChangePin(), diskChangeIRQ2, CHANGE);    
+    attachInterrupt(_floppy->driveSelectPin(), driveSelectIRQ2, CHANGE);    
+    attachInterrupt(_floppy->motorPin(), motorIRQ2, CHANGE);    
+    // attachInterrupt(_floppy->indexPin(), diskIndexIRQ2, CHANGE);    
 }
 
 void XCopyDriveTest::draw() {
@@ -99,7 +100,7 @@ void XCopyDriveTest::cancelOperation() {
 void XCopyDriveTest::operationCancelled(uint8_t trackNum) {
     _graphics->drawText(0, 10, ST7735_RED, "Operation Cancelled", true);
 
-    // TODO: remove interrupt & delete _floppy
+    // TODO: remove interrupt
 
     _audio->playBong(false);
 }

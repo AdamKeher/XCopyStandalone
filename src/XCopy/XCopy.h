@@ -90,6 +90,7 @@ private:
   XCopyMenu _menu;
   XCopyCommandLine *_command;
   XCopyAudio _audio;
+  XCopyFloppy _floppy;
   XCopyDisk _disk;
   XCopyDirectory _directory;
   XCopyGraphics _graphics;

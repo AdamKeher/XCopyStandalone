@@ -82,7 +82,7 @@ void XCopy::begin()
     // Init Disk Routines
     // -------------------------------------------------------------------------------------------
     Log << F("Initialising drive: ");
-    _disk.begin(&_graphics, &_audio, _esp);
+    _disk.begin(&_graphics, &_audio, _esp, &_floppy);
     Log << XCopyConsole::success("OK\r\n");
 
     // Test Disk Orientation
@@ -90,8 +90,7 @@ void XCopy::begin()
     Log << F("Testing drive cable orientation: ");
     _graphics.drawText(0, 115, ST7735_WHITE, "       Test Floppy Cable", true);
     delay(300);
-    XCopyFloppy* _floppy = new XCopyFloppy();
-    if (_floppy->detectCableOrientation() == true) {
+    if (_floppy.detectCableOrientation() == true) {
         Log << XCopyConsole::success("OK\r\n");
     } else {
         Log << XCopyConsole::error("ERROR\r\n");
@@ -103,7 +102,6 @@ void XCopy::begin()
         _audio.playChime(true);
         delay(5000);
     }
-    delete _floppy;
 
     // Init ESP
     // -------------------------------------------------------------------------------------------
@@ -155,7 +153,7 @@ void XCopy::begin()
 
     // Init Command Line
     // -------------------------------------------------------------------------------------------
-    _command = new XCopyCommandLine(XCOPYVERSION, _esp, _config, &_disk);
+    _command = new XCopyCommandLine(XCOPYVERSION, _esp, _config, &_disk, &_floppy);
     _command->setCallBack(this, onWebCommand);
 
     // Test Brainfile
@@ -490,16 +488,16 @@ void XCopy::sendBlock(int block) {
     int track = floor(block / 11.0f);
     int sector = block % 11;
 
-    gotoLogicTrack(track);
+    _floppy.gotoLogicTrack(track);
     // int, not uint8_t: readTrack() signals failure with -1, which truncates to 255
     // in a uint8_t and makes the comparison below always true.
-    int errors = readTrack(true);
+    int errors = _floppy.readTrack(true);
     if (errors != -1) {
-        Track *track = getTrack();
+        Track *track = _floppy.getTrack();
         struct Sector *aSec = (Sector *)&track[sector].sector;
 
-        String webLine = "broadcast sendBlockDetails," + String(block) + "," + String(getTrackInfo()) + "," + String(errors) 
-            + "," + String(getSectorCnt()) + "," + String(getBitCount()) +  "," + String(aSec->format_type) + "," 
+        String webLine = "broadcast sendBlockDetails," + String(block) + "," + String(_floppy.getTrackInfo()) + "," + String(errors) 
+            + "," + String(_floppy.getSectorCnt()) + "," + String(_floppy.getBitCount()) +  "," + String(aSec->format_type) + "," 
             + String(aSec->toGap) + "," + String(aSec->data_chksum) + "," + String(aSec->header_chksum) + "\r\n";
         _esp->print(webLine);
 
@@ -515,10 +513,10 @@ void XCopy::sendBlock(int block) {
             delay(20);
         }
 
-        analyseHist(true);
+        _floppy.analyseHist(true);
         float time = .0f;
         String line = "broadcast sendBlockHist,";
-        int *hist = getHist();
+        int *hist = _floppy.getHist();
         for (int i = 0; i < 256; i++) {
             if (hist[i] > 0) {
                 time = (float(i) * 0.04166667) + 0.25;
@@ -529,7 +527,7 @@ void XCopy::sendBlock(int block) {
         _esp->print(line);
     }
     else {
-        Log << F("bitCount: ") + String(getBitCount()) + F(" (Read failed!)\r\n");
+        Log << F("bitCount: ") + String(_floppy.getBitCount()) + F(" (Read failed!)\r\n");
     }
     setBusy(false);
 }
@@ -1325,7 +1323,7 @@ void XCopy::processState()
             if (_drawnOnce == false)
             {
                 XCopyDriveTest *driveTest = new XCopyDriveTest();
-                driveTest->begin(&_graphics, &_audio, _esp);
+                driveTest->begin(&_graphics, &_audio, _esp, &_floppy);
                 driveTest->draw();
                 // Was while (1==1): no exit, so the two lines below were unreachable and
                 // the drive test could only be left by resetting the board.

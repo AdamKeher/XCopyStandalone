@@ -3,7 +3,6 @@
 
 #include <Arduino.h>
 #include <Streaming.h>
-#include "FloppyDrive.h"
 #include "XCopyFloppy.h"
 #include "GenericList.h"
 #include "XCopyPins.h"
@@ -24,7 +23,7 @@ typedef void (*OnWebCommand)(void* obj, const String command);
 class XCopyCommandLine
 {
 public:
-  XCopyCommandLine(String version, XCopyESP8266 *esp, XCopyConfig *config, XCopyDisk* disk);
+  XCopyCommandLine(String version, XCopyESP8266 *esp, XCopyConfig *config, XCopyDisk* disk, XCopyFloppy* floppy);
   void doCommand(String command);
   String getCommand() { return _command; }
   void printPrompt();
@@ -41,6 +40,7 @@ private:
   XCopyESP8266 *_esp;
   XCopyConfig *_config;
   XCopyDisk *_disk;
+  XCopyFloppy *_floppy;
 
   void* _caller;
   OnWebCommand _callback;

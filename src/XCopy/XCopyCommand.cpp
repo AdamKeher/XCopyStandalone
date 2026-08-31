@@ -2,12 +2,13 @@
 #include <Streaming.h>
 #include <SerialFlash.h>
 
-XCopyCommandLine::XCopyCommandLine(String version, XCopyESP8266 *esp, XCopyConfig *config, XCopyDisk* disk)
+XCopyCommandLine::XCopyCommandLine(String version, XCopyESP8266 *esp, XCopyConfig *config, XCopyDisk* disk, XCopyFloppy* floppy)
 {
     _version = version;
     _esp = esp;
     _config = config;
     _disk = disk;
+    _floppy = floppy;
 }
 
 void XCopyCommandLine::doCommand(String command)
@@ -186,14 +187,14 @@ void XCopyCommandLine::doCommand(String command)
 
     if (cmd == F("hist"))
     {
-        analyseHist(false);
-        printHist();
+        _floppy->analyseHist(false);
+        _floppy->printHist();
         return;
     }
 
     if (cmd == F("rpm"))
     {
-        if (!diskChange())
+        if (!_floppy->diskChange())
         {
             Log << F("Disk not inserted into floppy\r\n");
             return;
@@ -203,9 +204,8 @@ void XCopyCommandLine::doCommand(String command)
         if (interval < 100) interval = 100;
 
         setBusy(true);
-        motorOn();
-        XCopyFloppy *floppy = new XCopyFloppy();
-        floppy->beginRPM();
+        _floppy->motorOn();
+        _floppy->beginRPM();
 
         Log << F("Measuring drive speed, press any key to stop ...\r\n");
 
@@ -214,12 +214,12 @@ void XCopyCommandLine::doCommand(String command)
         {
             // motorTimeout() shuts the drive down after motorMaxTick idle
             // seconds; keep resetting the tick or it stops mid measurement
-            motorOn();
+            _floppy->motorOn();
 
             if (millis() - lastReading < interval) continue;
             lastReading = millis();
 
-            float rpm = floppy->readRPM();
+            float rpm = _floppy->readRPM();
             if (rpm == 0.0f)
                 Log << XCopyConsole::error(F("No index signal detected\r\n"));
             else
@@ -227,9 +227,8 @@ void XCopyCommandLine::doCommand(String command)
         }
         while (Serial.available()) Serial.read();
 
-        floppy->endRPM();
-        delete floppy;
-        motorOff();
+        _floppy->endRPM();
+        _floppy->motorOff();
         setBusy(false);
 
         return;
@@ -244,13 +243,13 @@ void XCopyCommandLine::doCommand(String command)
 
     if (cmd == F("weak"))
     {
-        Log << getWeakTrack() << F("\r\n");
+        Log << _floppy->getWeakTrack() << F("\r\n");
         return;
     }
 
     if (cmd == F("name"))
     {
-        Log << F("Diskname: ") << getName() << F("\r\n");
+        Log << F("Diskname: ") << _floppy->getName() << F("\r\n");
         return;
     }
 
@@ -267,31 +266,31 @@ void XCopyCommandLine::doCommand(String command)
             byte sectorData[512]; // = new byte[512*11];
             flashFile.read(sectorData, sizeof(sectorData));
 
-            struct Sector *aSec = (Sector *)&getTrack()[i].sector[0];
+            struct Sector *aSec = (Sector *)&_floppy->getTrack()[i].sector[0];
             for (uint16_t i2 = 0; i2 < 512; i2++)
             {
                 aSec->data[i2] = sectorData[i2];
             }
         }
-        setSectorCnt(11);
+        _floppy->setSectorCnt(11);
         return;
     }
 
     if (cmd == F("read"))
     {
         Log.printf("Reading Track %2d:\r\n", param.toInt());
-        gotoLogicTrack(param.toInt());
+        _floppy->gotoLogicTrack(param.toInt());
         // int, not uint8_t: readTrack() signals failure with -1.
-        int errors = readTrack(false);
+        int errors = _floppy->readTrack(false);
         if (errors != -1)
         {
-            Log << F("Sectors found: ") << getSectorCnt() << F(" Errors found: ");
+            Log << F("Sectors found: ") << _floppy->getSectorCnt() << F(" Errors found: ");
             Log << String(errors, BIN);
-            Log << F(" Track expected: ") + String(param.toInt()) + F(" Track found: ") + String(getTrackInfo()) + F(" bitCount: ") + String(getBitCount()) + F(" (Read OK)\r\n");
+            Log << F(" Track expected: ") + String(param.toInt()) + F(" Track found: ") + String(_floppy->getTrackInfo()) + F(" bitCount: ") + String(_floppy->getBitCount()) + F(" (Read OK)\r\n");
         }
         else
         {
-            Log << F("bitCount: ") + String(getBitCount()) + F(" (Read failed!)\r\n");
+            Log << F("bitCount: ") + String(_floppy->getBitCount()) + F(" (Read failed!)\r\n");
         }
         return;
     }
@@ -346,37 +345,37 @@ void XCopyCommandLine::doCommand(String command)
                 byte sectorData[512]; // = new byte[512*11];
                 flashFile.read(sectorData, sizeof(sectorData));
 
-                struct Sector *aSec = (Sector *)&getTrack()[i].sector[0];
+                struct Sector *aSec = (Sector *)&_floppy->getTrack()[i].sector[0];
                 for (uint16_t i2 = 0; i2 < 512; i2++)
                 {
                     aSec->data[i2] = sectorData[i2];
                 }
             }
-            setSectorCnt(11);
+            _floppy->setSectorCnt(11);
         }
         else
         {
-            gotoLogicTrack(0);
+            _floppy->gotoLogicTrack(0);
             // int, not uint8_t: readTrack() signals failure with -1.
-            int errors = readTrack(false);
+            int errors = _floppy->readTrack(false);
             if (errors != -1)
             {
-                Log << F("Sectors found: ") << getSectorCnt() << F(" Errors found: ");
+                Log << F("Sectors found: ") << _floppy->getSectorCnt() << F(" Errors found: ");
                 Serial.print(errors, BIN);
-                Log << F(" Track expected: ") << param.toInt() << F(" Track found: ") << getTrackInfo() << F(" bitCount: ") << getBitCount() << F(" (Read OK)\r\n");
+                Log << F(" Track expected: ") << param.toInt() << F(" Track found: ") << _floppy->getTrackInfo() << F(" bitCount: ") << _floppy->getBitCount() << F(" (Read OK)\r\n");
             }
             else
             {
-                Log << F("bitCount: ") << getBitCount() << F(" (Read failed!)\r\n");
+                Log << F("bitCount: ") << _floppy->getBitCount() << F(" (Read failed!)\r\n");
             }
         }
 
-        printBootSector();
+        _floppy->printBootSector();
 
         Log << "\r\nScanning boot block for match ...\r\n";
         
-        uint32_t crc32 = bootSectorCRC32();
-        Track *track = getTrack();
+        uint32_t crc32 = _floppy->bootSectorCRC32();
+        Track *track = _floppy->getTrack();
         struct Sector *block0 = (Sector *)&track[0].sector;
         struct Sector *block1 = (Sector *)&track[0].sector;
         XCopyBrainFile::identifyBootblock(block0->data, block1->data, crc32);
@@ -386,7 +385,7 @@ void XCopyCommandLine::doCommand(String command)
 
     if (cmd == F("print"))
     {
-        printTrack();
+        _floppy->printTrack();
         Log << F("OK\r\n");
         return;
     }
@@ -656,7 +655,7 @@ void XCopyCommandLine::doCommand(String command)
     }
 
     if (cmd == F("testdisk")) {
-        if (!diskChange()) {
+        if (!_floppy->diskChange()) {
             Log << "Disk not inserted into floppy\r\n";
             return;
         }
@@ -671,7 +670,7 @@ void XCopyCommandLine::doCommand(String command)
     }
 
     if (cmd == F("scanblocks")) {
-        if (!diskChange()) {
+        if (!_floppy->diskChange()) {
             Log << "Disk not inserted into floppy\r\n";
             return;
         }
@@ -693,7 +692,7 @@ void XCopyCommandLine::doCommand(String command)
     }
 
     if (cmd == F("modsearch")) {
-        if (!diskChange()) {
+        if (!_floppy->diskChange()) {
             Log << "Disk not inserted into floppy\r\n";
             return;
         }
@@ -704,7 +703,7 @@ void XCopyCommandLine::doCommand(String command)
     }
 
     if (cmd == F("writebin")) {
-        if (!diskChange()) {
+        if (!_floppy->diskChange()) {
             Log << "Disk not inserted into floppy\r\n";
             return;
         }

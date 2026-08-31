@@ -9,13 +9,14 @@
  * @param  audio pointer to XCopyAudio object
  * @param  esp pointer to XCopyESP object
  */
-void XCopyDisk::begin(XCopyGraphics *graphics, XCopyAudio *audio, XCopyESP8266 *esp)
+void XCopyDisk::begin(XCopyGraphics *graphics, XCopyAudio *audio, XCopyESP8266 *esp, XCopyFloppy *floppy)
 {
     _graphics = graphics;
     _audio = audio;
     _esp = esp;
+    _floppy = floppy;
 
-    setupDrive();
+    _floppy->setupDrive();
 }
 
 // UI
@@ -29,7 +30,7 @@ void XCopyDisk::changeDisk()
     _graphics->drawText(0, 60, ST7735_YELLOW, "           Change Disk");
     _esp->setStatus("Change Disk");
 
-    bool diskInserted = diskChange();
+    bool diskInserted = _floppy->diskChange();
     while (diskInserted)
     {
         if (_cancelOperation)
@@ -37,14 +38,14 @@ void XCopyDisk::changeDisk()
             _graphics->drawText(0, 70, ST7735_RED, "            Cancelled");
             return;
         }
-        diskInserted = diskChange();
+        diskInserted = _floppy->diskChange();
         delay(500);
     }
 
     _graphics->drawText(0, 60, ST7735_GREEN, "    Disk Ejected. Waiting", true);
     _esp->setStatus("Disk Ejected. Waiting ...");
 
-    diskInserted = diskChange();
+    diskInserted = _floppy->diskChange();
     while (!diskInserted)
     {
         if (_cancelOperation)
@@ -53,7 +54,7 @@ void XCopyDisk::changeDisk()
             _esp->setStatus("Cancelled");
             return;
         }
-        diskInserted = diskChange();
+        diskInserted = _floppy->diskChange();
         delay(3000);
     }
 }
@@ -69,19 +70,36 @@ void XCopyDisk::changeDisk()
 void XCopyDisk::drawFlux(uint8_t trackNum, uint8_t scale, uint8_t yoffset, bool updateWebUI)
 {
     // web interface
-    String data = "";
+    // Static, and appended to in place below, so this buffer is allocated once
+    // for the life of the program. Building it locally meant a ~1KB alloc/free
+    // per track plus a realloc per concatenation, all inside the few KB left
+    // between the stream buffer and the stack - which fragmented the heap until
+    // the allocator wedged partway through the disk.
+    static String data;
+    data.reserve(1024);
+    data.remove(0);
     for (int i = 0; i < 255; i++) {
-        data = data + String(getHist()[i]);
-        data = data + "|";
+        // concat() appends in place, so the reserve above holds. `data = data + x`
+        // does not: it builds a StringSumHelper copy sized to len and assigns it
+        // back, discarding the reserved capacity and reallocating every iteration.
+        data.concat(_floppy->getHist()[i]);
+        data.concat('|');
     }
-    if (updateWebUI) _esp->print("broadcast flux," + String(trackNum) + "," + data + "\r\n");
+    // Sent in pieces: concatenating these built another ~600 byte temporary
+    // (plus intermediates) on top of the one we already hold, in the same
+    // few KB left between the stream buffer and the stack.
+    if (updateWebUI) {
+        _esp->print("broadcast flux," + String(trackNum) + ",");
+        _esp->print(data);
+        _esp->print("\r\n");
+    }
 
     // tft screen
     int scaled = 0;
     for (int i = 0; i < 255; i = i + scale)
     {
         // scale hist value
-        for (int s = 0; s < scale; s++) { scaled += getHist()[i + s]; }
+        for (int s = 0; s < scale; s++) { scaled += _floppy->getHist()[i + s]; }
 
         // draw hist
         if (scaled > 0)
@@ -280,12 +298,12 @@ int XCopyDisk::readDiskTrack(uint8_t trackNum, bool verify, uint8_t retryCount, 
         // read track
         if (!silent) _graphics->drawTrack(trackNum / 2, trackNum % 2, true, false, 0, verify, ST7735_WHITE);
         _esp->setTrack(trackNum, "white", verify ? "V" : "");
-        gotoLogicTrack(trackNum);
-        readResult = readTrack(true);
+        _floppy->gotoLogicTrack(trackNum);
+        readResult = _floppy->readTrack(true);
 
         if (readResult != -1) {
             // read OK
-            if (getWeakTrack() > 0) {
+            if (_floppy->getWeakTrack() > 0) {
                 if (!silent) _graphics->drawTrack(trackNum / 2, trackNum % 2, true, false, 0, verify, ST7735_YELLOW);
                 _esp->setTrack(trackNum, "yellow", verify ? "V" : "");
             }
@@ -337,8 +355,8 @@ int XCopyDisk::writeDiskTrack(uint8_t trackNum, uint8_t retryCount)
         // write track
         _graphics->drawTrack(trackNum / 2, trackNum % 2, true, false, 0, false, ST7735_WHITE);
         _esp->setTrack(trackNum, "white");
-        gotoLogicTrack(trackNum);    
-        writeResult = writeTrack(); // returns 0 = OK, -1 = ERROR
+        _floppy->gotoLogicTrack(trackNum);    
+        writeResult = _floppy->writeTrack(); // returns 0 = OK, -1 = ERROR
 
         if (writeResult == 0) {
             // write OK
@@ -416,7 +434,7 @@ bool XCopyDisk::diskToADF(String ADFFileName, bool verify, uint8_t retryCount, A
     _esp->setTab("diskcopy");
 
     // check if disk is present in floppy
-    if (!diskChange()) {
+    if (!_floppy->diskChange()) {
         _graphics->drawText(0, 10, ST7735_RED, "No Disk Inserted");
         _esp->setStatus("No disk inserted");
         _audio->playBong(false);
@@ -424,7 +442,7 @@ bool XCopyDisk::diskToADF(String ADFFileName, bool verify, uint8_t retryCount, A
     }
 
     // get and set diskname
-    diskName = getName();
+    diskName = _floppy->getName();
     _graphics->drawDiskName(diskName);
     _esp->setDiskName(diskName);
 
@@ -559,11 +577,11 @@ bool XCopyDisk::diskToADF(String ADFFileName, bool verify, uint8_t retryCount, A
         int readResult = readDiskTrack(trackNum, false, retryCount);
 
         // draw flux
-        analyseHist(true);
+        _floppy->analyseHist(true);
         drawFlux(trackNum, 6, 85);
 
-        if (getWeakTrack()) {
-            weakTracks += getWeakTrack();
+        if (_floppy->getWeakTrack()) {
+            weakTracks += _floppy->getWeakTrack();
             totalWeakTracks++;
         }
 
@@ -581,7 +599,7 @@ bool XCopyDisk::diskToADF(String ADFFileName, bool verify, uint8_t retryCount, A
             uint8_t side = trackNum % 2;
 
             for (int sec = 0; sec < 11; sec++) {
-                struct Sector *aSec = (Sector *)&getTrack()[sec].sector;
+                struct Sector *aSec = (Sector *)&_floppy->getTrack()[sec].sector;
 
                 // total disk CRC
                 if (sec == 0 && trackNum == 0)
@@ -614,7 +632,7 @@ bool XCopyDisk::diskToADF(String ADFFileName, bool verify, uint8_t retryCount, A
 
         // write track (11 sectors per track)
         for (int i = 0; i < 11; i++) {
-            const struct Sector *aSec = (Sector *)&getTrack()[i].sector;
+            const struct Sector *aSec = (Sector *)&_floppy->getTrack()[i].sector;
             // calculate MD5
             MD5::MD5Update(&ctx, aSec->data, 512);
             if (destination == _sdCard) {
@@ -643,7 +661,7 @@ bool XCopyDisk::diskToADF(String ADFFileName, bool verify, uint8_t retryCount, A
 
             // compare sectors to file
             for (int i = 0; i < 11; i++) {
-                const struct Sector *aSec = (Sector *)&getTrack()[i].sector;
+                const struct Sector *aSec = (Sector *)&_floppy->getTrack()[i].sector;
 
                 if (destination == _sdCard)
                     ADFFile.read(buffer, sizeof(buffer));
@@ -733,14 +751,14 @@ void XCopyDisk::adfToDisk(String ADFFileName, bool verify, uint8_t retryCount, A
 
     _esp->resetDisk();
 
-    if (!diskChange()) {
+    if (!_floppy->diskChange()) {
         _graphics->drawText(0, 10, ST7735_RED, "No Disk Inserted");
         _esp->setStatus("No Disk Inserted");
         _audio->playBong(false);
         return;
     }
 
-    if (getWriteProtect()) {
+    if (_floppy->getWriteProtect()) {
         _graphics->drawText(0, 10, ST7735_RED, "Disk Write Protected");
         _esp->setStatus("Disk Write Protected");
         _audio->playBong(false);
@@ -792,13 +810,13 @@ void XCopyDisk::adfToDisk(String ADFFileName, bool verify, uint8_t retryCount, A
         ADFFlashFile.seek(0);
     }
 
-    setAutoDensity(false);
-    setMode(DD); // DD
+    _floppy->setAutoDensity(false);
+    _floppy->setMode(DD); // DD
     delay(5);
-    setCurrentTrack(-1);
+    _floppy->setCurrentTrack(-1);
 
-    motorOn();
-    seek0();
+    _floppy->motorOn();
+    _floppy->seek0();
     delay(100);
 
     // MD5 setup
@@ -822,13 +840,13 @@ void XCopyDisk::adfToDisk(String ADFFileName, bool verify, uint8_t retryCount, A
             else if (source == _flashMemory)
                 ADFFlashFile.read(buffer, sizeof(buffer));
 
-            struct Sector *aSec = (Sector *)&getTrack()[i].sector[0];
+            struct Sector *aSec = (Sector *)&_floppy->getTrack()[i].sector[0];
 
             memcpy(aSec->data, buffer, 512);
         }
 
         // encode track
-        floppyTrackMfmEncode(trackNum, (byte *)getTrack(), getStream());
+        _floppy->floppyTrackMfmEncode(trackNum, (byte *)_floppy->getTrack(), _floppy->getStream());
 
         // write track
         int result = writeDiskTrack(trackNum, retryCount);
@@ -854,7 +872,7 @@ void XCopyDisk::adfToDisk(String ADFFileName, bool verify, uint8_t retryCount, A
                 else if (source == _flashMemory)
                     ADFFlashFile.read(buffer, sizeof(buffer));
 
-                struct Sector *aSec = (Sector *)&getTrack()[i].sector[0];
+                struct Sector *aSec = (Sector *)&_floppy->getTrack()[i].sector[0];
 
                 if (memcmp(aSec->data, buffer, 512))
                     compareError = true;
@@ -916,7 +934,7 @@ void XCopyDisk::diskToDisk(bool verify, uint8_t retryCount) {
     _cancelOperation = false;
     _graphics->clearScreen();
 
-    if (!diskChange()) {
+    if (!_floppy->diskChange()) {
         _graphics->bmpDraw("XCPYLOGO.BMP", 0, 87);
         _graphics->drawDiskName("");
         _graphics->drawDisk();
@@ -949,14 +967,14 @@ void XCopyDisk::diskFlux() {
 
     _cancelOperation = false;
 
-    if (!diskChange()) {
+    if (!_floppy->diskChange()) {
         _graphics->drawText(0, 0, ST7735_RED, "No Disk Inserted");
         _esp->setStatus("No Disk Inserted");
         _audio->playBong(false);
         return;
     }
 
-    String diskName = getName();
+    String diskName = _floppy->getName();
     _esp->setDiskName(diskName);
 
     for (int trackNum = 0; trackNum < 160; trackNum++) {
@@ -966,12 +984,12 @@ void XCopyDisk::diskFlux() {
         }
 
         // read track
-        gotoLogicTrack(trackNum);
+        _floppy->gotoLogicTrack(trackNum);
         int errors = readDiskTrack(trackNum, false, 1, true);
         // int errors = readTrack(true);
 
         if (errors != -1) {
-            analyseHist(true);
+            _floppy->analyseHist(true);
             drawFlux(trackNum);
         }
         else {
@@ -1002,7 +1020,7 @@ void XCopyDisk::testDiskette(uint8_t retryCount) {
     _graphics->drawDiskName("");
     _graphics->drawDisk();
 
-    if (!diskChange()) {
+    if (!_floppy->diskChange()) {
         _graphics->drawText(0, 10, ST7735_RED, "No Disk Inserted");
         _esp->setStatus("No Disk Inserted");
 
@@ -1010,7 +1028,7 @@ void XCopyDisk::testDiskette(uint8_t retryCount) {
         return;
     }
 
-    String diskName = getName();
+    String diskName = _floppy->getName();
     _graphics->drawDiskName(diskName);
     _graphics->getTFT()->drawFastHLine(0, 85, _graphics->getTFT()->width(), ST7735_GREEN);
     _esp->setDiskName(diskName);
@@ -1030,13 +1048,13 @@ void XCopyDisk::testDiskette(uint8_t retryCount) {
 
         // calculate MD5
         for (int sec = 0; sec < 11; sec++) {
-            struct Sector *aSec = (Sector *)&getTrack()[sec].sector;
+            struct Sector *aSec = (Sector *)&_floppy->getTrack()[sec].sector;
             // calculate MD5
             MD5::MD5Update(&ctx, aSec->data, 512);
         }
 
         // draw flux
-        analyseHist(true);
+        _floppy->analyseHist(true);
         drawFlux(trackNum, 6, 85);
     }
 
@@ -1065,7 +1083,7 @@ void XCopyDisk::scanEmptyBlocks(uint8_t retryCount) {
     _graphics->drawDiskName("");
     _graphics->drawDisk();
 
-    if (!diskChange()) {
+    if (!_floppy->diskChange()) {
         _graphics->drawText(0, 10, ST7735_RED, "No Disk Inserted");
         _esp->setStatus("No Disk Inserted");
 
@@ -1073,7 +1091,7 @@ void XCopyDisk::scanEmptyBlocks(uint8_t retryCount) {
         return;
     }
 
-    String diskName = getName();
+    String diskName = _floppy->getName();
     _graphics->drawDiskName(diskName);
     _graphics->getTFT()->drawFastHLine(0, 85, _graphics->getTFT()->width(), ST7735_GREEN);
     _esp->setDiskName(diskName);
@@ -1097,7 +1115,7 @@ void XCopyDisk::scanEmptyBlocks(uint8_t retryCount) {
         Log << " Side: " << trackNum % 2 << " | ";
 
         for (int sec = 0; sec < 11; sec++) {
-            struct Sector *aSec = (Sector *)&getTrack()[sec].sector;
+            struct Sector *aSec = (Sector *)&_floppy->getTrack()[sec].sector;
 
             // MD5 setup
             MD5_CTX ctx;
@@ -1114,7 +1132,7 @@ void XCopyDisk::scanEmptyBlocks(uint8_t retryCount) {
         if (trackNum % 2) Log << "\r\n";
 
         // draw flux
-        analyseHist(true);
+        _floppy->analyseHist(true);
         drawFlux(trackNum, 6, 85, false);
     }
 
@@ -1147,14 +1165,14 @@ bool XCopyDisk::writeBlocksToFile(byte blocks[], int offset, int size, String fi
     File ADFFile;
 
     // check if disk is present in floppy
-    if (!diskChange()) {
+    if (!_floppy->diskChange()) {
         Serial << "No disk inserted" << "\r\n";
         _audio->playBong(false);
         return false;
     }
 
     // get and set diskname
-    diskName = getName();
+    diskName = _floppy->getName();
     Serial << "Diskname: " << diskName << "\r\n";
 
     // get filesnames
@@ -1230,7 +1248,7 @@ bool XCopyDisk::writeBlocksToFile(byte blocks[], int offset, int size, String fi
                     }
                 }
 
-                const struct Sector *aSec = (Sector *)&getTrack()[dl.sector()].sector;
+                const struct Sector *aSec = (Sector *)&_floppy->getTrack()[dl.sector()].sector;
                 // set offset for first and last sectors
                 int sectorsize = filesize == 0 ? 512 - offset : 512;
                 int sectoroffset = filesize == 0 ? offset : 0;
@@ -1274,13 +1292,13 @@ bool XCopyDisk::writeBlocksToFile(byte blocks[], int offset, int size, String fi
  * @todo TODO: write verify routine. Support offset
  */
 bool XCopyDisk::writeFileToBlocks(String BinFileName, int startBlock, uint8_t retryCount) {
-    if (!diskChange()) {
+    if (!_floppy->diskChange()) {
         Log << "No Disk Inserted\r\n";
         _audio->playBong(false);
         return false;
     }
 
-    if (getWriteProtect()) {
+    if (_floppy->getWriteProtect()) {
         _graphics->drawText(0, 10, ST7735_RED, "Disk Write Protected");
         Log << "Disk Write Protected";
         _audio->playBong(false);
@@ -1329,13 +1347,13 @@ bool XCopyDisk::writeFileToBlocks(String BinFileName, int startBlock, uint8_t re
     _graphics->drawText(0, 0, ST7735_WHITE, "Write File", true);
     _graphics->getTFT()->drawFastHLine(0, 85, _graphics->getTFT()->width(), ST7735_GREEN);
 
-    setAutoDensity(false);
-    setMode(DD); // DD
+    _floppy->setAutoDensity(false);
+    _floppy->setMode(DD); // DD
     delay(5);
-    setCurrentTrack(-1);
+    _floppy->setCurrentTrack(-1);
 
-    motorOn();
-    seek0();
+    _floppy->motorOn();
+    _floppy->seek0();
     delay(100);
 
     DiskLocation startdl;
@@ -1379,13 +1397,13 @@ bool XCopyDisk::writeFileToBlocks(String BinFileName, int startBlock, uint8_t re
             if (read == 0) {
                 Log << "Error: 0 Bytes read\r\n";
             }
-            struct Sector *aSec = (Sector *)&getTrack()[i].sector[0];
+            struct Sector *aSec = (Sector *)&_floppy->getTrack()[i].sector[0];
             memcpy(aSec->data, buffer, 512);
         }
         Log << "\r\n";
 
         // encode track
-        floppyTrackMfmEncode(logicalTrack, (byte *)getTrack(), getStream());
+        _floppy->floppyTrackMfmEncode(logicalTrack, (byte *)_floppy->getTrack(), _floppy->getStream());
 
         // write track
         int result = writeDiskTrack(logicalTrack, retryCount);
@@ -1430,7 +1448,8 @@ SearchResult XCopyDisk::processAscii(XCopyDisk* obj, String text, DiskLocation d
     sprintf(f_offset, "%04x", offset);
     Log << String(f_offset) + "\r\n";
     Log << "\r\n";
-    printAmigaSector(dl.sector());
+    // static, so the drive comes in on the instance the search is running against
+    obj->_floppy->printAmigaSector(dl.sector());
     SearchResult sr;
     sr.block = dl.block();
     sr.offset = offset;
@@ -1527,7 +1546,7 @@ bool XCopyDisk::search(String text, uint8_t retryCount, SearchProcessor processo
     _cancelOperation = false;
 
     // check if disk is present in floppy
-    if (!diskChange()) {
+    if (!_floppy->diskChange()) {
         Serial << "No disk inserted" << "\r\n";
         _audio->playBong(false);
         return false;
@@ -1556,7 +1575,7 @@ bool XCopyDisk::search(String text, uint8_t retryCount, SearchProcessor processo
         sprintf(track, "%02d", trackNum / 2);
 
         for (int sec = 0; sec < 11; sec++) {
-            struct Sector *aSec = (Sector *)&getTrack()[sec].sector;
+            struct Sector *aSec = (Sector *)&_floppy->getTrack()[sec].sector;
 
             if (text == "\033MOD") {
                 for (int i=0; i<10; i++) {
@@ -1620,7 +1639,7 @@ bool XCopyDisk::search(String text, uint8_t retryCount, SearchProcessor processo
         }
 
         // draw flux
-        analyseHist(true);
+        _floppy->analyseHist(true);
         drawFlux(trackNum, 6, 85, false);
     }
 
@@ -1639,7 +1658,7 @@ bool XCopyDisk::search(String text, uint8_t retryCount, SearchProcessor processo
  */
 void XCopyDisk::loadModuleHeader(DiskLocation dl, int offset, ModInfo* modinfo, uint8_t retryCount) {
     readDiskTrack(dl.logicalTrack(), false, retryCount);
-    struct Sector *aSec = (Sector *)&getTrack()[dl.sector()].sector;    
+    struct Sector *aSec = (Sector *)&_floppy->getTrack()[dl.sector()].sector;    
     memcpy(&modinfo->header[0], &aSec->data[offset], 512 - offset);
     size_t size = 512 - offset;
 
@@ -1648,7 +1667,7 @@ void XCopyDisk::loadModuleHeader(DiskLocation dl, int offset, ModInfo* modinfo, 
     if (dl.logicalTrack() != currentTrack) {
         readDiskTrack(dl.logicalTrack(), false, retryCount);
     }
-    aSec = (Sector *)&getTrack()[dl.sector()].sector;
+    aSec = (Sector *)&_floppy->getTrack()[dl.sector()].sector;
     memcpy(&modinfo->header[size], &aSec->data[0], 512);
 
     size += 512;
@@ -1660,7 +1679,7 @@ void XCopyDisk::loadModuleHeader(DiskLocation dl, int offset, ModInfo* modinfo, 
         if (dl.logicalTrack() != currentTrack) {
             readDiskTrack(dl.logicalTrack(), false, retryCount);
         } 
-        aSec = (Sector *)&getTrack()[dl.sector()].sector;
+        aSec = (Sector *)&_floppy->getTrack()[dl.sector()].sector;
         memcpy(&modinfo->header[size], &aSec->data[0], 1084 - size);
     }
 }
