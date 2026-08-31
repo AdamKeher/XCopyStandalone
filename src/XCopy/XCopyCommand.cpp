@@ -52,8 +52,9 @@ void XCopyCommandLine::doCommand(String command)
         Log << F("| rm <filename>                  | delete file from sdcard                             |\r\n");
         Log << F("| md5 <filename|flash>           | md5 has of file from sdcard or flash                |\r\n");
         Log << F("|--------------------------------+-----------------------------------------------------|\r\n");
+        Log << F("| readadf [<filename>]           | read floppy disk to adf file on sdcard              |\r\n");
         Log << F("| writeadf <filename>            | write adf file to floppy disk                       |\r\n");
-        Log << F("| writeflash                     | write flash memory to floppy disk                   |\r\n");
+        Log << F("| writeflash                     | read floppy disk into flash memory                  |\r\n");
         Log << F("| writebin <filename> <block>    | write binary file to disk starting at block         |\r\n");
         Log << F("| testdisk                       | test floppy disk                                    |\r\n");
         Log << F("| scanblocks                     | scan floppy disk for free blocks                    |\r\n");
@@ -612,12 +613,50 @@ void XCopyCommandLine::doCommand(String command)
         return;
     }
 
+    if (cmd == F("readadf")) {
+        if (!_floppy->diskChange()) {
+            Log << F("Disk not inserted into floppy\r\n");
+            return;
+        }
+
+        // No filename given: diskToADF() names the file after the disk label and
+        // the current date & time, the same as the menu and the web UI do.
+        if (param != "") {
+            // On a copy: toLowerCase() mutates in place and param is the destination
+            // path, which has to keep the case the user typed.
+            String extension = param;
+            if (!extension.toLowerCase().endsWith(".adf")) {
+                Log << F("The file must be an ADF file\r\n");
+                return;
+            }
+
+            // A bare filename lands in the ADF folder alongside the generated ones;
+            // diskToADF() creates that directory if it is missing.
+            if (param.indexOf("/") == -1) {
+                param = "/" + String(SD_ADF_PATH) + "/" + param;
+            }
+        }
+
+        // Reported here rather than left to diskToADF(), so the failure lands on the
+        // prompt instead of behind the copy screen it would otherwise draw first.
+        XCopySDCard _sdcard;
+
+        if (!_sdcard.cardDetect() || !_sdcard.begin()) {
+            Log << _sdcard.getError() + "\r\n";
+            return;
+        }
+
+        _callback(_caller, "copyDiskToADF," + param);
+
+        return;
+    }
+
     if (cmd == F("writeadf")) {
         if (param == "") {
             Log << F("missing file paramater\r\n");
             return;
         }
-        
+
         XCopySDCard *_sdcard = new XCopySDCard();
         _sdcard->begin();
         
@@ -652,7 +691,9 @@ void XCopyCommandLine::doCommand(String command)
     }
 
     if (cmd == F("writeflash")) {
-        _callback(_caller, "copyDisktoFlash");
+        // onWebCommand() matches "copyDiskToFlash"; the old "copyDisktoFlash"
+        // spelling fell through every branch and the command did nothing.
+        _callback(_caller, "copyDiskToFlash");
 
         return;
     }

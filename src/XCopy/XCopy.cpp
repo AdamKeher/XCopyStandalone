@@ -360,8 +360,14 @@ void XCopy::onWebCommand(void* obj, const String command)
     // Log << "DEBUG::ESPCALLBACK::(" << command << ")\r\n";
     XCopy* xcopy = (XCopy*)obj;
     
-    if (command == "copyDiskToADF") {
-        xcopy->startFunction(XCopyAction::copyDiskToADF);
+    // "copyDiskToADF" alone lets diskToADF() generate the filename; the serial
+    // "readadf <filename>" form appends the destination path after a comma.
+    if (command.startsWith("copyDiskToADF")) {
+        String path = "";
+        if (command.indexOf(",") > 0) {
+            path = command.substring(command.indexOf(",") + 1);
+        }
+        xcopy->startFunction(XCopyAction::copyDiskToADF, path);
     }
     else if (command == "copyDiskToDisk") {
         xcopy->startFunction(XCopyAction::copyDiskToDisk);
@@ -559,6 +565,12 @@ void XCopy::startFunction(XCopyAction action, String param) {
         _menu.setCurrentItem(action);
         navigateSelect();
         return;
+    }
+
+    // Consumed by processState()'s copyDiskToADF case. Always assigned so a path
+    // left over from an earlier read cannot leak into a menu driven copy.
+    if (action == XCopyAction::copyDiskToADF) {
+        _adfFilePath = param;
     }
 
     setBusy(true);
@@ -1217,7 +1229,7 @@ void XCopy::processState()
             if (_drawnOnce == false)
             {
                 // _config = new XCopyConfig();
-                _disk.diskToADF("", _config->getVerify(), _config->getRetryCount(), _sdCard);
+                _disk.diskToADF(_adfFilePath, _config->getVerify(), _config->getRetryCount(), _sdCard);
                 // delete _config;
 
                 setBusy(false);
