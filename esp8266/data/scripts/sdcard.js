@@ -1,5 +1,8 @@
 var sdFiles = [];
 var sdPath = "/"
+// Set once the user has actually browsed the card, so a reconnect only re-runs
+// the Teensy SD scan for someone who is looking at a listing.
+var sdFetched = false;
 
 function drawSdFiles() {
   // sd card table
@@ -80,5 +83,6 @@ function addSdFile(details) {
 
 function getSdFiles(path) {
     sdPath = path;
-    connection.send("getSdFiles," + sdPath);
+    sdFetched = true;
+    wsSend("getSdFiles," + sdPath);
 }

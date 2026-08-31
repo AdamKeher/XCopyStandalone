@@ -345,6 +345,12 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t lenght)
       IPAddress ip = webSocket.remoteIP(num);
       Serial.print("\r\n");
       Serial.printf("xcopyCommand,connected,%u,%d.%d.%d.%d,%s\r\n", num, ip[0], ip[1], ip[2], ip[3], payload);
+      // Greet the client with the busy state instead of waiting for it to ask.
+      // Targeted rather than sendBusyStatus(), which broadcasts -- the browsers
+      // already connected have it.
+      busyState = digitalRead(busyPin);
+      String status = "pinStatus," + String(busyState);
+      webSocket.sendTXT(num, status);
       break;
     }
     // if new text data is received 
@@ -401,6 +407,14 @@ void setup(void)
   Serial.println("LittleFS started");
 
   webSocket.begin();
+  // A Wi-Fi drop tears the TCP connection down without a FIN, so without a
+  // heartbeat the client slot stays allocated forever. There are only
+  // WEBSOCKETS_SERVER_CLIENT_MAX (5) of them -- five silent drops and the server
+  // stops accepting browsers at all, which from the browser side looks like a
+  // reconnect that never succeeds. Ping every 5s, 3s to answer, disconnect after
+  // two consecutive misses. Browsers answer protocol pings themselves, so this
+  // needs nothing from the client.
+  webSocket.enableHeartbeat(5000, 3000, 2);
   Serial.println("WebSockets server started");
   webSocket.onEvent(webSocketEvent);
 

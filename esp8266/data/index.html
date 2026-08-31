@@ -27,9 +27,6 @@
         <!-- XCopy styles -->
         <link href="./css/default.css" rel="stylesheet">
 
-        <!-- Reconnecting Websocket -->
-        <script src="./scripts/re-websocket.min.js" type="text/javascript"></script>       
-        
         <!-- XCopy Scripts -->
         <script src="./scripts/xcopy.js" type="text/javascript"></script>
         <script src="./scripts/websocket.js" type="text/javascript"></script>
@@ -45,6 +42,15 @@
     </head>
 
     <body onload="onLoad();">
+        <!-- Connection status banner. Deliberately not a modal: the page stays
+             usable while the link is down, and this is plain DOM plus [hidden] so
+             it still renders when the Bootstrap/jQuery CDNs are unreachable --
+             which is exactly the situation it exists for. -->
+        <div id="connectionBanner" class="connection-banner" hidden>
+            <span id="connectionBannerText">Reconnecting to XCopy&hellip;</span>
+            <button type="button" id="wsRetryButton" class="btn btn-sm btn-light connection-action" onclick="wsRetryNow();"><i class="fa-solid fa-rotate-right"></i> Retry now</button>
+        </div>
+
         <!-- Begin page content -->
         <main role="main" class="container-lg">
             <div>
@@ -742,27 +748,6 @@
                 </div>
             </div>
 
-            <!-- Modal websocket not connected -->
-            <div class="modal websocket fade" id="websocketModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="websocketModalLabel" aria-hidden="true">
-                <div class="modal-dialog modal-dialog-centered modal-lg">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <div class="alert alert-danger" role="alert">
-                            <h5 class="modal-title" id="websocketModalLabel"><i class="fa-solid fa-bomb"></i> Websocket Error: Connection Failed</h5>
-                        </div>
-                    </div>
-                    <div class="modal-body">
-                        <p>
-                            Websocket connection failed. Currently retrying to connect to device.
-                        </p>
-                        <p>
-                            <button type="button" class="btn btn-success" id="websocketReconnectButton" onclick="webSocketRefresh();"><i class="fa-solid fa-rotate-right"></i> Reconnect</button>
-                        </p>
-                    </div>
-                </div>
-                </div>
-            </div>
-
         </main>
 
         <footer class="footer">
@@ -774,8 +759,8 @@
                 <div id="hardwareStatus" class="alert alert-danger float-end statusfooter" role="alert">
                     Device Busy
                 </div>
-                <div id="websocketStatus" class="alert alert-danger float-end statusfooter" role="alert">
-                    Websocket Error
+                <div id="websocketStatus" class="alert alert-warning float-end statusfooter" role="alert">
+                    Connecting&hellip;
                 </div>
             </div>
         </footer>

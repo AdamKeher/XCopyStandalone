@@ -60,19 +60,19 @@ function diskcopy(state) {
     if (state == 'copyADFToDisk') {
         if (sdFiles.length == 0) getSdFiles(sdPath);
     } else {
-        connection.send(state);
+        wsSend(state);
     }
 }
 
 // TODO: handle cancellation / send back to xcopydevice
 function diskcopyCancel() {
-    connection.send("espCommand,cancelPin");
+    wsSend("espCommand,cancelPin");
     // disableInterface(false);
 }
 
 function writeADFFile(path) {
     $('#staticBackdrop').modal('hide');
-    connection.send("writeADFFile," + path);
+    wsSend("writeADFFile," + path);
 }
 
 // Status / Diskname

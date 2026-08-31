@@ -33,6 +33,10 @@ function onLoad() {
 
   onLoad_DiskMon();
   onLoad_DiskInfo();
+
+  // Last: the message dispatch writes to term and to the tab DOM, so the socket
+  // must not be able to deliver anything before both exist.
+  wsConnect();
 }
 
 function setTab(tabName) {
@@ -47,24 +51,22 @@ function setTab(tabName) {
 
 function disableInterface(isBusy) {
   if (isBusy) {
-    $('button').prop('disabled', true);
-    $('button').addClass('disabled');
+    $('button:not(.connection-action)').prop('disabled', true);
+    $('button:not(.connection-action)').addClass('disabled');
     $('#diskcopy_cancel').prop('disabled', false);
     $('#diskcopy_cancel').removeClass('disabled');
     $('#diskmon_cancel').prop('disabled', false);
     $('#diskmon_cancel').removeClass('disabled');
     $('#uploadCancel').prop('disabled', false);
     $('#uploadCancel').removeClass('disabled');
-    $('#websocketReconnectButton').prop('disabled', false);
-    $('#websocketReconnectButton').removeClass('disabled');
   } else {
     $('#copyADFToDisk').removeClass('btn-light').addClass('btn-primary');
     $('#copyDiskToADF').removeClass('btn-light').addClass('btn-primary');
     $('#copyDiskToDisk').removeClass('btn-light').addClass('btn-primary');
     $('#copyDiskToFlash').removeClass('btn-light').addClass('btn-primary');
     $('#copyFlashToDisk').removeClass('btn-light').addClass('btn-primary');
-    $('button').prop('disabled', false);
-    $('button').removeClass('disabled');
+    $('button:not(.connection-action)').prop('disabled', false);
+    $('button:not(.connection-action)').removeClass('disabled');
     $('#diskcopy_cancel').prop('disabled', true);
     $('#diskcopy_cancel').addClass('disabled');
     $('#diskmon_cancel').prop('disabled', true);

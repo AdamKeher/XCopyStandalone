@@ -9,10 +9,8 @@ body {
   background-color: #1e1e1e;
   color: white;
   margin-top: 10px;
-  margin-bottom: 90px;
-  /* Margin bottom by footer height */
-  overflow-y: scroll;
-  /* Show vertical scrollbar */
+  margin-bottom: 90px; /* Margin bottom by footer height */
+  overflow-y: scroll; /* Show vertical scrollbar */
 }
 
 .container {
@@ -37,7 +35,6 @@ body {
   background-color: darkblue;
   color: white;
 }
-
 .diskcopyInfo .mode {
   width: 25%;
 }
@@ -45,8 +42,7 @@ body {
 /* Icons
 -------------------------------------------------- */
 .gray {
-  -webkit-filter: grayscale(100%);
-          filter: grayscale(100%);
+  filter: grayscale(100%);
 }
 
 /* Flux
@@ -68,34 +64,6 @@ body {
   color: black;
 }
 
-.websocket {
-  background: #180202d4;
-}
-
-.websocket .modal-content {
-  display: -webkit-box;
-  display: -ms-flexbox;
-  display: flex;
-  -webkit-box-pack: center;
-      -ms-flex-pack: center;
-          justify-content: center;
-  -webkit-box-align: center;
-      -ms-flex-align: center;
-          align-items: center;
-}
-
-.websocket p {
-  display: -webkit-box;
-  display: -ms-flexbox;
-  display: flex;
-  -webkit-box-align: center;
-      -ms-flex-align: center;
-          align-items: center;
-  -webkit-box-pack: center;
-      -ms-flex-pack: center;
-          justify-content: center;
-}
-
 /* Tracks
 -------------------------------------------------- */
 .table-sm {
@@ -103,7 +71,6 @@ body {
   background-color: black;
   color: white;
 }
-
 .table-sm td {
   height: 40px;
   width: 40px;
@@ -116,32 +83,26 @@ body {
   color: white;
   border: 1px solid white;
 }
-
 .track.white {
   background-color: whitesmoke;
   color: black;
 }
-
 .track.green {
   background-color: green;
   color: white;
 }
-
 .track.yellow {
   background-color: yellow;
   color: black;
 }
-
 .track.orange {
   background-color: orange;
   color: black;
 }
-
 .track.red {
   background-color: red;
   color: white;
 }
-
 .track.magenta {
   background-color: magenta;
   color: white;
@@ -154,17 +115,14 @@ body {
   width: 450px;
   padding: 20px;
 }
-
 .key .size, .key .text {
   width: 30px;
   height: 30px;
   margin-bottom: 20px;
 }
-
 .key .size:last-child, .key .text:last-child {
   margin-bottom: 0px;
 }
-
 .key .text {
   margin-left: 10px;
   width: auto;
@@ -176,11 +134,9 @@ body {
   background-color: white;
   color: black;
 }
-
 .sdcardTable td a {
   color: lightblue;
 }
-
 .sdcardTable td a:hover {
   color: white;
 }
@@ -196,23 +152,20 @@ body {
 /* SD Table
 -------------------------------------------------- */
 @font-face {
-  font-family: 'TopazPlus a500a1000a2000';
+  font-family: "TopazPlus a500a1000a2000";
   src: url("../fonts/topaz.ttf");
 }
-
 .dvEdit {
   background-color: lightblue;
   width: 50px;
   text-align: center;
   border: 2px solid white;
 }
-
 .dvEdit:focus {
   outline: none !important;
   background-color: white;
   border: 2px solid green;
 }
-
 .dvEdit.wide {
   width: 150px;
   text-align: start;
@@ -220,17 +173,12 @@ body {
 
 .sectorTable pre {
   overflow: hidden;
-  margin: 0px;
-  padding: 0px;
-  margin-top: 1px;
 }
-
 .sectorTable pre .asciiChar {
   background-color: #303030;
   margin-right: 2px;
   padding: 1.25px;
 }
-
 .sectorTable pre .hex {
   background-color: gray;
   color: black;
@@ -238,13 +186,11 @@ body {
   margin: 0px;
   margin-right: 2px;
 }
-
 .sectorTable pre .hex:hover {
   background-color: white;
   color: black;
   cursor: text;
 }
-
 .sectorTable pre .asciiBlock {
   border-left: 4px solid gray;
   color: white;
@@ -253,7 +199,10 @@ body {
   padding-right: 10px;
   padding: 3px;
 }
-
+.sectorTable pre {
+  margin: 0px;
+  padding: 0px;
+}
 .sectorTable pre .range {
   margin: 0px;
   margin-right: 10px;
@@ -261,33 +210,30 @@ body {
   color: black;
   padding: 3px;
 }
-
 .sectorTable pre .asciiHighlight {
   color: black;
   background-color: white;
+}
+.sectorTable pre {
+  margin-top: 1px;
 }
 
 .asciiTable {
   overflow: hidden;
 }
-
 .asciiTable pre:not(:first-of-type) {
   margin-top: -9px;
 }
-
-.asciiTable pre {
-  margin: 0px;
-  padding: 0px;
-  overflow: hidden;
-}
-
 .asciiTable pre .asciiBlock {
   margin-right: 20px;
-  font-family: 'TopazPlus a500a1000a2000';
+  font-family: "TopazPlus a500a1000a2000";
   font-style: normal;
   font-size: large;
 }
-
+.asciiTable pre {
+  margin: 0px;
+  padding: 0px;
+}
 .asciiTable pre .range {
   margin: 0px;
   margin-right: 10px;
@@ -295,24 +241,24 @@ body {
   color: black;
   padding: 3px;
 }
-
 .asciiTable pre .asciiHighlight {
   color: black;
   background-color: white;
+}
+.asciiTable pre {
+  overflow: hidden;
 }
 
 .emptyTable {
   font-family: monospace;
   font-size: smaller;
 }
-
 .emptyTable .emptyTrack {
   background-color: white;
   color: black;
   padding-left: 3px;
   padding-right: 3px;
 }
-
 .emptyTable .side {
   background-color: gray;
   color: black;
@@ -321,33 +267,26 @@ body {
   padding-left: 3px;
   padding-right: 3px;
 }
-
 .emptyTable .block {
   border: 2px solid #212529;
   padding-left: 15px;
   padding-right: 15px;
   background-color: #303030;
 }
-
 .emptyTable .block:hover {
   background-color: white;
   color: black;
-  cursor: -webkit-zoom-in;
   cursor: zoom-in;
 }
-
 .emptyTable .empty {
   background-color: green;
 }
-
 .emptyTable .full {
   background-color: red;
 }
-
 .emptyTable .copy {
   background-color: purple;
 }
-
 .emptyTable .current {
   border: 2px solid white;
 }
@@ -392,4 +331,45 @@ body {
 .idle {
   background-color: green;
   color: white;
+}
+
+/* Connection banner
+-------------------------------------------------- */
+/* Replaces the old blocking "Websocket Error: Connection Failed" modal. It sits
+   above the page rather than in front of it -- the UI stays readable and usable
+   while the link is down, which matters because a disk operation carries on at
+   the device regardless of whether a browser is watching. */
+.connection-banner {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1030;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 6px 12px;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  background: #7a4b00;
+  color: white;
+  border-bottom: 1px solid #a86800;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+}
+
+.connection-banner.ok {
+  background: #1d5c2a;
+  border-bottom-color: #2a8a3e;
+}
+
+.connection-banner.offline {
+  background: #7a1414;
+  border-bottom-color: #a81c1c;
+}
+
+.connection-banner .btn {
+  /* Bootstrap's default vertical rhythm makes the bar twice as tall as it
+     needs to be. */
+  padding: 1px 8px;
 }

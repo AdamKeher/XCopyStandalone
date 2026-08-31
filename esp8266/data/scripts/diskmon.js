@@ -101,7 +101,7 @@ function setBlock() {
 }
 
 function getBlock(block) {
-  connection.send("getBlock," + block);
+  wsSend("getBlock," + block);
   drawSectorDetails(block);
 }
 
@@ -312,7 +312,7 @@ function copyEmptyBlocks() {
   }
 
   if (line != "") {
-    connection.send("copyEmptyBlocks," + line);
+    wsSend("copyEmptyBlocks," + line);
   }
 }
 
@@ -324,12 +324,12 @@ function clearHighlightedBlocks() {
 
 function asciiSearch() {
   if ($('#dvAsciiSearch').val() != '') {
-    connection.send('asciiSearch,' + $('#dvAsciiSearch').val());
+    wsSend('asciiSearch,' + $('#dvAsciiSearch').val());
   }
 }
 
 function modSearch() {
-  connection.send('modSearch');
+  wsSend('modSearch');
 }
 
 // function generateBlocks() {
