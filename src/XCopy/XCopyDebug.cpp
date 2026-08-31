@@ -1,10 +1,9 @@
 #include "XCopyDebug.h"
 
-XCopyDebug::XCopyDebug(XCopyGraphics *graphics, XCopyAudio *audio, uint8_t sdCSPin, uint8_t flashCSPin, uint8_t cardDetectPin)
+XCopyDebug::XCopyDebug(XCopyGraphics *graphics, XCopyAudio *audio, uint8_t flashCSPin, uint8_t cardDetectPin)
 {
     _graphics = graphics;
     _audio = audio;
-    _sdCSPin = sdCSPin;
     _flashCSPin = flashCSPin;
     _cardDetectPin = cardDetectPin;
 }
@@ -68,7 +67,7 @@ void XCopyDebug::debugCompareTempFile()
     if (!initSdCard()) return;
     if (!initSerialFlash()) return;
 
-    File sdFile = SD.open("XCOPY.ADF");
+    File sdFile = xcopySd().open("XCOPY.ADF");
     SerialFlashFile flashFile = SerialFlash.open("DISKCOPY.TMP");
     debugCompareFile(sdFile, flashFile);
 }
@@ -194,7 +193,7 @@ bool XCopyDebug::initSerialFlash() {
 }
 
 bool XCopyDebug::initSdCard() {
-    if (!SD.begin(_sdCSPin))
+    if (!xcopySdBegin())
     {
         Serial << "SD Card initialization failed.\r\n";
         _audio->playBong(true);
@@ -369,7 +368,7 @@ void XCopyDebug::debugTestFlashSD()
     Serial << "--------------------------------------------------------------------------\r\n";
     if (_cardState)
     {
-        if (!SD.begin(_sdCSPin))
+        if (!xcopySdBegin())
         {
             Serial << XCopyConsole::error("SD Card initialization failed!\r\n");
             _audio->playBong(true);
@@ -622,7 +621,7 @@ void XCopyDebug::SdTest()
 {
     Serial << String(_cycles) + " - WP: " + String(digitalRead(3)) + " CD: " + String(digitalRead(4)) << "\r\n";
     Serial << "Directory:\r\n";
-    File root = SD.open("/");
+    File root = xcopySd().open("/");
     printDirectory(root, 0);
     root.close();
 }

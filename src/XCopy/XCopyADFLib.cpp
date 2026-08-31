@@ -1,10 +1,13 @@
 #include "XCopyADFLib.h"
 #include "../adflib/adflib.h"
 #include "../adflib/adf_nativ.h"
+#include "XCopySdFat.h"
 
-void XCopyADFLib::begin(uint8_t sdCSPin)
+void XCopyADFLib::begin()
 {
-    _sdCSPin = sdCSPin;
+    // The card is mounted once, here. adf_nativ.cpp used to construct its own SdFat
+    // and begin() it on every device open and every sector read.
+    xcopySdBegin();
     adfEnvInitDefault();
 }
 

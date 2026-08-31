@@ -1205,7 +1205,7 @@ void XCopy::processState()
 {
     if (_xcopyState == debuggingTempFile)
     {
-        XCopyDebug *_debug = new XCopyDebug(&_graphics, &_audio, PIN_SDCS, PIN_FLASHCS, PIN_CARDDETECT);
+        XCopyDebug *_debug = new XCopyDebug(&_graphics, &_audio, PIN_FLASHCS, PIN_CARDDETECT);
         _debug->debugCompareTempFile();
         delete _debug;
 
@@ -1215,7 +1215,7 @@ void XCopy::processState()
 
     if (_xcopyState == debuggingSDFLash)
     {
-        XCopyDebug *_debug = new XCopyDebug(&_graphics, &_audio, PIN_SDCS, PIN_FLASHCS, PIN_CARDDETECT);
+        XCopyDebug *_debug = new XCopyDebug(&_graphics, &_audio, PIN_FLASHCS, PIN_CARDDETECT);
         _debug->debugTestFlashSD();
         delete _debug;
 
@@ -1225,7 +1225,7 @@ void XCopy::processState()
 
     if (_xcopyState == debuggingEraseCopy)
     {
-        XCopyDebug *_debug = new XCopyDebug(&_graphics, &_audio, PIN_SDCS, PIN_FLASHCS, PIN_CARDDETECT);
+        XCopyDebug *_debug = new XCopyDebug(&_graphics, &_audio, PIN_FLASHCS, PIN_CARDDETECT);
         _debug->debugEraseCopyCompare();
         delete _debug;
 
@@ -1235,7 +1235,7 @@ void XCopy::processState()
 
     if (_xcopyState == debuggingFaultFind)
     {
-        XCopyDebug *_debug = new XCopyDebug(&_graphics, &_audio, PIN_SDCS, PIN_FLASHCS, PIN_CARDDETECT);
+        XCopyDebug *_debug = new XCopyDebug(&_graphics, &_audio, PIN_FLASHCS, PIN_CARDDETECT);
         _debug->debugFaultFind();
         delete _debug;
 
@@ -1245,7 +1245,7 @@ void XCopy::processState()
 
     if (_xcopyState == debuggingEraseFlash)
     {
-        XCopyDebug *_debug = new XCopyDebug(&_graphics, &_audio, PIN_SDCS, PIN_FLASHCS, PIN_CARDDETECT);
+        XCopyDebug *_debug = new XCopyDebug(&_graphics, &_audio, PIN_FLASHCS, PIN_CARDDETECT);
         _debug->debugEraseFlash();
         delete _debug;
 
@@ -1256,7 +1256,7 @@ void XCopy::processState()
     if (_xcopyState == debuggingCompareFlashToSDCard)
     {
         _graphics.clearScreen();
-        XCopyDebug *_debug = new XCopyDebug(&_graphics, &_audio, PIN_SDCS, PIN_FLASHCS, PIN_CARDDETECT);
+        XCopyDebug *_debug = new XCopyDebug(&_graphics, &_audio, PIN_FLASHCS, PIN_CARDDETECT);
         _debug->debugCompare();
         delete _debug;
 
@@ -1266,7 +1266,7 @@ void XCopy::processState()
 
     if (_xcopyState == debuggingFlashDetails)
     {
-        XCopyDebug *_debug = new XCopyDebug(&_graphics, &_audio, PIN_SDCS, PIN_FLASHCS, PIN_CARDDETECT);
+        XCopyDebug *_debug = new XCopyDebug(&_graphics, &_audio, PIN_FLASHCS, PIN_CARDDETECT);
         _debug->debugFlashDetails();
         delete _debug;
 

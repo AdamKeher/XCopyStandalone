@@ -300,7 +300,7 @@ void XCopyCommandLine::doCommand(String command)
         const char *name = param.c_str();
 
         XCopyADFLib *_adfLib = new XCopyADFLib();
-        _adfLib->begin(PIN_SDCS);
+        _adfLib->begin();
         _adfLib->mount(name);
 
         if (_adfLib->getDevice())

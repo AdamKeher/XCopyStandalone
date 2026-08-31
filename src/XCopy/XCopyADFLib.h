@@ -9,7 +9,8 @@
 class XCopyADFLib
 {
 public:
-  void begin(uint8_t sdCSPin);
+  // No SD CS pin: the card is owned by XCopySdFat, which knows its own pin.
+  void begin();
   Device *mount(const char *filename);
   Volume *openVolume(Device *device);
   String printDevice(Device *device);
@@ -26,7 +27,6 @@ public:
 private:
   String printEntry(struct Volume *vol, struct Entry *entry, const char *path, bool sect, bool comment);
 
-  uint8_t _sdCSPin;
   struct Device *_dev;
   struct Volume *_vol;
   String _filename;

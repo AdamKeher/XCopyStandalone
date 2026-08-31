@@ -1,9 +1,7 @@
 #include "XCopySDCard.h"
 
 bool XCopySDCard::begin() {
-    // Initialize at the highest speed supported by the board that is
-    // not over 50 MHz. Try a lower speed if SPI errors occur.
-    if (!_sd.begin(PIN_SDCS, SD_SCK_MHZ(50))) {
+    if (!xcopySdBegin()) {
         _error = F("SDCard failed to initialise");
         return false;
     }

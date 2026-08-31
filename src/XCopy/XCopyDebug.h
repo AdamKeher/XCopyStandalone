@@ -9,6 +9,7 @@
 #include "XCopyAudio.h"
 #include "XCopyGraphics.h"
 #include "XCopyConsole.h"
+#include "XCopySdFat.h"
 
 enum state
 {
@@ -21,7 +22,8 @@ enum state
 class XCopyDebug
 {
   public:
-    XCopyDebug(XCopyGraphics *graphics, XCopyAudio *audio, uint8_t sdCSPin, uint8_t flashCSPin, uint8_t cardDetectPin);
+    // No SD CS pin: the card is owned by XCopySdFat, which knows its own pin.
+    XCopyDebug(XCopyGraphics *graphics, XCopyAudio *audio, uint8_t flashCSPin, uint8_t cardDetectPin);
 
     void debugCompareFile(FatFile sdFile, SerialFlashFile flashFile);
     void debugCompareTempFile();
@@ -51,7 +53,6 @@ class XCopyDebug
     XCopyAudio *_audio;
     XCopyGraphics *_graphics;
 
-    uint8_t _sdCSPin;
     uint8_t _flashCSPin;
     uint8_t _cardDetectPin;
 
@@ -65,7 +66,6 @@ class XCopyDebug
     bool _cardInit = false;
     
     state _mode = both;
-    SdFat SD;
 
     const char* debugVersion = "v0.6";
     const char* debugYear = "2022";
