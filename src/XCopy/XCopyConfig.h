@@ -26,6 +26,8 @@ public:
   String getPassword() { return _password; }
   uint16_t getDiskDelay() { return _diskDelay; }
   int getTimeZone() { return _timeZone; }
+  uint8_t getScpRevolutions() { return _scpRevolutions; }
+  uint8_t getScpEndCylinder() { return _scpEndCylinder; }
 
   void setVerify(bool value);
   void setRetryCount(int value);
@@ -34,6 +36,8 @@ public:
   void setPassword(String value);
   void setDiskDelay(uint16_t delayMs);
   void setTimeZone(int timeZone);
+  void setScpRevolutions(uint8_t revolutions);
+  void setScpEndCylinder(uint8_t cylinder);
 
 private:
   String _config;
@@ -44,6 +48,13 @@ private:
   String _password;
   uint16_t _diskDelay = 200;
   int _timeZone = 0;
+  // Three revolutions is the preservation standard: enough to tell a weak bit from a
+  // clean one, and to pick a good revolution when they disagree.
+  uint8_t _scpRevolutions = 3;
+  // Last cylinder an SCP capture reads. AmigaDOS ends at 79; the cylinders past it
+  // are where long track and out of band protections live, but not every drive can
+  // reach them, so going further is opt in.
+  uint8_t _scpEndCylinder = 79;
 };
 
 #endif // XCOPYCONFIG_H

@@ -14,6 +14,7 @@ class XCopyFile
     String time = "";
     unsigned long size = 0;
     bool isADF = false;
+    bool isSCP = false;
     bool isDirectory = false;
 };
 

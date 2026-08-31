@@ -2,6 +2,7 @@
 #define XCOPYGRAPHICS_H
 
 #include <Arduino.h>
+#include "XCopyGeometry.h"
 #include <Streaming.h>
 #include <SerialFlash.h>
 #include <TFT_ST7735.h>

@@ -109,10 +109,22 @@ private:
   XCopyMenuItem *passwordMenuItem;
   XCopyMenuItem *diskDelayMenuItem;
   XCopyMenuItem *timeZoneMenuItem;
+  XCopyMenuItem *scpRevolutionsMenuItem;
+  XCopyMenuItem *scpCylindersMenuItem;
 
   // Destination for the next disk to ADF read. Empty means diskToADF() picks the
   // name from the disk label and the clock.
   String _adfFilePath;
+
+  // Same for the next disk to SCP capture, plus the range and revolution count the
+  // CLI may override for one run. Zero cylinders means "use the configured range".
+  String _scpFilePath;
+  uint8_t _scpStartCylinder = 0;
+  uint8_t _scpEndCylinder = 0;
+  uint8_t _scpRevolutions = 0;
+  // Separate from the values because "0-0" - capture cylinder 0 alone - is a
+  // legitimate range that a zero end cylinder cannot be told apart from.
+  bool _scpRangeGiven = false;
 
   bool _drawnOnce = false;
   // True while the passthrough loop is servicing ESP *programming* mode, where

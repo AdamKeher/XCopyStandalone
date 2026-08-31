@@ -27,6 +27,7 @@ enum class XCopyAction : uint8_t {
   // Start an operation, and leave the machine in the matching XCopyState.
   copyADFToDisk,
   copyDiskToADF,
+  copyDiskToSCP,
   copyDiskToDisk,
   copyDiskToFlash,
   copyFlashToDisk,
@@ -55,6 +56,8 @@ enum class XCopyAction : uint8_t {
   setRetry,
   setVolume,
   setDiskDelay,
+  setScpRevolutions,
+  setScpCylinders,
   setTimeZone,
   setSSID,
   setPassword,

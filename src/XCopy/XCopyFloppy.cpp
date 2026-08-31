@@ -30,6 +30,37 @@ volatile unsigned int bitCount;
 volatile byte sectorCnt;
 int streamLen = streamSizeDD;
 
+// --- raw flux capture, for SCP imaging ---------------------------------------
+// Written by ftm0_flux_isr and read by the main loop. Same file-scope, external
+// linkage reasoning as the MFM state above.
+//
+// The counter is NOT reset per capture here, unlike ftm0_isr: it free-runs at
+// MOD 0xffff and the interval is a subtraction. Resetting the counter silently
+// drops however long the CPU took to enter the ISR from every interval, which is
+// harmless when the value only picks a threshold bucket and a systematic bias
+// when the value IS the artefact being preserved.
+uint16_t *fluxRing;                       // caller supplied, see beginFluxCapture
+volatile uint32_t fluxRingSize;           // in samples
+volatile uint32_t fluxWriteIdx;           // producer, ISR only
+volatile uint32_t fluxReadIdx;            // consumer, main loop only
+volatile boolean fluxOverrun;
+volatile boolean fluxCapturing;           // past the first index, storing samples
+volatile boolean fluxArmed;               // spinning up, waiting for the first index
+volatile uint8_t fluxRevsWanted;
+volatile uint8_t fluxRevsSeen;
+volatile uint32_t fluxTofTotal;           // FTM0 overflows since capture started
+volatile uint32_t fluxLast32;             // absolute tick of the previous transition
+volatile uint32_t fluxSamples;            // samples stored this capture
+volatile uint32_t fluxRevTick[SCP_MAX_REVS + 1];   // absolute tick at each index edge
+volatile uint32_t fluxRevSample[SCP_MAX_REVS + 1]; // sample count at each index edge
+volatile uint8_t fluxIndexLevel;          // previous index pin level, for edge detect
+// On KINETISK portInputRegister() is a bit-band alias, one byte per pin reading 0 or
+// 1, and digitalPinToBitMask() is 1. Caching it turns the ISR's index sample into a
+// single byte load; digitalRead() on a variable pin would cost an order of magnitude
+// more, every 5us.
+volatile uint8_t *fluxIndexReg;           // index pin input register, cached
+uint8_t fluxIndexMask;                    // index pin bit, cached
+
 // read timings, defaults are for DD disks
 byte low2 = 30;
 byte high2 = 115;
@@ -60,6 +91,8 @@ void motorTimeout();
 void diskWrite();
 void diskChangeIRQ();
 void bitCounter();
+extern "C" void ftm0_isr(void);
+extern "C" void ftm0_flux_isr(void);
 void readIndexISR();
 unsigned char reverse(unsigned char b);
 unsigned long oddLong(unsigned long odd);
@@ -849,6 +882,288 @@ extern "C" void ftm0_isr(void)
         recordOn = false;
         FTM0_SC = 0x00; // Timer off
     }
+}
+
+/*
+   Configures FTM0 for raw flux capture.
+
+   Same input capture on the same pin as setupFTM0(), with two differences that
+   matter: the timer overflow interrupt is enabled so intervals longer than 65535
+   ticks can still be measured, and ftm0_flux_isr leaves FTM0_CNT alone so the
+   counter free-runs and every interval is a subtraction of two absolute times.
+*/
+void XCopyFloppy::setupFTM0Flux()
+{
+    FTM0_FILTER = filterSetting;
+    FTM0_MODE = 0x05;
+
+    FTM0_SC = 0x00;
+    FTM0_CNT = 0x0000;
+    FTM0_MOD = 0xFFFF;
+    (*(volatile uint32_t *)FTStatusControlRegister) = 0x48; // CHF=0 CHIE=1, input
+                                                            // capture, falling edge
+    NVIC_SET_PRIORITY(IRQ_FTM0, 0);
+    NVIC_ENABLE_IRQ(IRQ_FTM0);
+    (*(volatile uint32_t *)FTPinMuxPort) = 0x403;
+}
+
+/*
+   Interrupt Service Routine for raw flux capture.
+
+   FTM0 raises the channel event and the timer overflow on the same vector, so this
+   handler owns both and neither can preempt the other - which is what makes the
+   overflow accounting below sound rather than merely likely.
+
+   The index pin is sampled here rather than from its own interrupt so that a
+   revolution boundary and the sample counter can never disagree. Resolution is one
+   flux interval, about 5us out of a 200ms revolution.
+*/
+extern "C" void ftm0_flux_isr(void)
+{
+    volatile uint32_t *csc = (volatile uint32_t *)FTStatusControlRegister;
+    uint32_t status = *csc;
+
+    if (status & 0x80) // CHF: a flux transition was captured
+    {
+        uint16_t capture = (uint16_t)(*(volatile uint32_t *)FTChannelValue);
+        *csc = status & ~0x80;
+
+        // An overflow that has fired but not yet been serviced belongs before this
+        // capture if the counter has already wrapped past it. Anything in the low
+        // half of the range after a pending overflow is on the far side of the wrap.
+        uint32_t tof = fluxTofTotal;
+        if ((FTM0_SC & 0x80) && (capture < 0x8000))
+            tof++;
+
+        uint32_t now = (tof << 16) | capture;
+        uint32_t delta = now - fluxLast32;
+        fluxLast32 = now;
+
+        // index edge, sampled in step with the samples it delimits
+        uint8_t level = (*fluxIndexReg & fluxIndexMask) ? 1 : 0;
+        uint8_t edge = (fluxIndexLevel && !level);
+        fluxIndexLevel = level;
+
+        if (edge)
+        {
+            if (fluxArmed)
+            {
+                // first index: everything before this was spin-up and a partial
+                // revolution, so the capture starts here and is honestly index cued
+                fluxArmed = false;
+                fluxCapturing = true;
+                fluxSamples = 0;
+                fluxWriteIdx = 0;
+                fluxReadIdx = 0;
+                fluxRevsSeen = 0;
+                fluxRevTick[0] = now;
+                fluxRevSample[0] = 0;
+                return; // the interval spanning the index belongs to neither side
+            }
+
+            fluxRevsSeen++;
+            fluxRevTick[fluxRevsSeen] = now;
+            fluxRevSample[fluxRevsSeen] = fluxSamples;
+
+            if (fluxRevsSeen >= fluxRevsWanted)
+            {
+                fluxCapturing = false;
+                FTM0_SC = 0x00; // timer off
+                return;
+            }
+        }
+
+        if (!fluxCapturing)
+            return;
+
+        // keep the histogram fed so drawFlux() has something to draw
+        if (delta < 256)
+            hist[delta]++;
+
+        /*
+           Everything is kept, including intervals ftm0_isr would discard as noise or
+           as gap. Those out of band intervals are exactly what a protection scheme is
+           made of, and dropping them is how a flux imager quietly stops being one.
+
+           A gap too long for one 16 bit sample is split across several rather than
+           clamped, so the samples still add up to the revolution that contains them.
+           Only an unformatted or erased region gets that far, and by then nothing has
+           happened for 2.7ms, so the loop has all the time in the world.
+        */
+        while (fluxCapturing)
+        {
+            uint32_t next = fluxWriteIdx + 1;
+            if (next >= fluxRingSize)
+                next = 0;
+
+            if (next == fluxReadIdx)
+            {
+                // The SD card could not keep up. The track is now full of holes, so
+                // stop and let the caller retry rather than write a plausible lie.
+                fluxOverrun = true;
+                fluxCapturing = false;
+                FTM0_SC = 0x00;
+                return;
+            }
+
+            fluxRing[fluxWriteIdx] = (delta > 0xFFFF) ? 0xFFFF : (uint16_t)delta;
+            fluxWriteIdx = next;
+            fluxSamples++;
+
+            if (delta <= 0xFFFF)
+                return;
+
+            delta -= 0xFFFF;
+        }
+    }
+
+    if (FTM0_SC & 0x80) // TOF: clear by reading SC while set, then writing the bit low
+    {
+        FTM0_SC &= ~0x80;
+        fluxTofTotal++;
+    }
+}
+
+/*
+   Starts a raw flux capture of @p revolutions revolutions into @p ring.
+
+   The caller owns the ring. In practice it is always getStream() - the MFM stream
+   buffer is the only block of RAM on a 64KB part big enough to absorb an SD write
+   stall, and it is completely idle during a capture. That does mean flux capture and
+   readTrack() alias the same memory: they can never overlap, and nothing may rely on
+   the decoded stream surviving a capture.
+
+   Sizing: a DD revolution is around 37,700 transitions, so a full revolution cannot
+   be buffered and the caller must drain to SD as it goes. 26.5KB of ring is 13,253
+   samples, roughly 70ms of DD flux, which is the margin available for an SD card to
+   stall before fluxOverran() goes true.
+
+   Returns false if the arguments are unusable.
+*/
+bool XCopyFloppy::beginFluxCapture(uint16_t *ring, size_t ringSamples, uint8_t revolutions)
+{
+    if (ring == NULL || ringSamples < 2 || revolutions < 1 || revolutions > SCP_MAX_REVS)
+        return false;
+
+    motorOn();
+
+    fluxRing = ring;
+    fluxRingSize = ringSamples;
+    fluxWriteIdx = 0;
+    fluxReadIdx = 0;
+    fluxSamples = 0;
+    fluxOverrun = false;
+    fluxRevsWanted = revolutions;
+    fluxRevsSeen = 0;
+    fluxTofTotal = 0;
+    fluxLast32 = 0;
+
+    for (uint8_t i = 0; i <= SCP_MAX_REVS; i++)
+    {
+        fluxRevTick[i] = 0;
+        fluxRevSample[i] = 0;
+    }
+
+    fluxIndexReg = portInputRegister(digitalPinToPort(_index));
+    fluxIndexMask = digitalPinToBitMask(_index);
+    fluxIndexLevel = (*fluxIndexReg & fluxIndexMask) ? 1 : 0;
+
+    // the ISR keeps feeding this so drawFlux() has something to draw during a
+    // capture, exactly as initRead() does for an MFM read
+    for (int i = 0; i < 256; i++)
+        hist[i] = 0;
+
+    fluxArmed = true;
+    fluxCapturing = false;
+
+    // Vector first: setupFTM0Flux() is what enables the NVIC line, and until the
+    // swap has happened any interrupt it lets through would land in ftm0_isr, which
+    // resets FTM0_CNT and would corrupt the first interval.
+    attachInterruptVector(IRQ_FTM0, ftm0_flux_isr);
+    setupFTM0Flux();
+
+    FTM0_CNT = 0x0000;
+    FTM0_SC = timerMode | 0x40; // clock source and prescaler as set by setMode(),
+                                // plus TOIE so long intervals can still be measured
+    return true;
+}
+
+/*
+   Stops a capture and gives FTM0 back to the MFM read path.
+
+   Safe to call more than once and on every exit path, including cancellation and
+   error - leaving the flux vector installed would break the next ADF read in a way
+   that looks like a drive fault.
+*/
+void XCopyFloppy::endFluxCapture()
+{
+    FTM0_SC = 0x00;
+    fluxCapturing = false;
+    fluxArmed = false;
+    attachInterruptVector(IRQ_FTM0, ftm0_isr);
+    fluxRing = NULL;
+}
+
+/*
+   Longest run of captured samples available without wrapping the ring.
+
+   Zero copy: the caller writes straight out of the ring and then calls
+   fluxConsume(). Single producer in the ISR, single consumer here, both indices
+   32-bit aligned and so atomic on this part, which is what lets this work without
+   disabling interrupts on a path that runs every few hundred microseconds.
+*/
+size_t XCopyFloppy::fluxPeek(const uint16_t **samples)
+{
+    uint32_t write = fluxWriteIdx;
+    uint32_t read = fluxReadIdx;
+
+    *samples = &fluxRing[read];
+
+    if (write >= read)
+        return write - read;
+
+    return fluxRingSize - read; // wrapped: this pass returns the tail only
+}
+
+void XCopyFloppy::fluxConsume(size_t count)
+{
+    uint32_t read = fluxReadIdx + count;
+    if (read >= fluxRingSize)
+        read -= fluxRingSize;
+    fluxReadIdx = read;
+}
+
+/*
+   True once every requested revolution has been seen. The ring may still hold
+   samples the caller has not drained.
+*/
+bool XCopyFloppy::fluxCaptureDone()
+{
+    return !fluxArmed && !fluxCapturing;
+}
+
+bool XCopyFloppy::fluxOverran()
+{
+    return fluxOverrun;
+}
+
+uint8_t XCopyFloppy::fluxRevolutionsCaptured()
+{
+    return fluxRevsSeen;
+}
+
+uint32_t XCopyFloppy::fluxRevolutionTicks(uint8_t rev)
+{
+    if (rev >= SCP_MAX_REVS)
+        return 0;
+    return fluxRevTick[rev + 1] - fluxRevTick[rev];
+}
+
+uint32_t XCopyFloppy::fluxRevolutionSamples(uint8_t rev)
+{
+    if (rev >= SCP_MAX_REVS)
+        return 0;
+    return fluxRevSample[rev + 1] - fluxRevSample[rev];
 }
 
 /*

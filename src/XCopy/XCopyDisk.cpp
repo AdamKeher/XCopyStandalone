@@ -730,6 +730,408 @@ bool XCopyDisk::diskToADF(String ADFFileName, bool verify, uint8_t retryCount, A
 }
 
 /**
+ * @brief Generated SCP filename in format: /<SD_SCP_PATH>/<DATETIME> <DISKNAME>.scp
+ *
+ * @param diskname diskname used in SCP filename
+ *
+ * @result generated SCP file name
+ */
+String XCopyDisk::generateSCPFileName(String diskname) {
+    String path = String(SD_SCP_PATH);
+    char dtBuffer[32];
+    sprintf(dtBuffer, "%04d%02d%02d %02d%02d", year(), month(), day(), hour(), minute());
+    String datetime = String(dtBuffer);
+    return "/" + path + "/" + datetime + " " + diskname + ".scp";
+}
+
+/**
+ * @brief Captures one track of raw flux and streams it into an open SCP image.
+ *
+ * The counterpart of readDiskTrack() for flux, and it paints the same three surfaces
+ * in the same order with the same colours. What it does not have is a notion of a
+ * good or a bad read: there is nothing to checksum, so the only failure a capture can
+ * detect is the SD card falling behind the drive, which fluxOverran() reports and a
+ * retry fixes.
+ *
+ * @param trackNum logical track number, which is also the SCP track number
+ * @param writer image to stream into, already positioned by the caller
+ * @param revolutions revolutions to store
+ * @param retryCount retries allowed before the track is abandoned
+ *
+ * @result number of retries required. -1 is error.
+ */
+int XCopyDisk::captureDiskTrack(uint8_t trackNum, XCopySCPWriter *writer,
+                                uint8_t revolutions, uint8_t retryCount) {
+    int retries = 0;
+
+    // A revolution is 200ms; the drive may need to spin up and the first index can be
+    // a full revolution away. Generous, because the alternative to a timeout here is
+    // hanging forever on a drive with no disk in it.
+    const uint32_t captureTimeout = 2000 + ((uint32_t)revolutions * 400);
+
+    while (retries <= retryCount) {
+        _graphics->drawTrack(trackNum / 2, trackNum % 2, true, retries > 0, retries, false, ST7735_WHITE);
+        _trackMap.setTrack(trackNum, trackBusy);
+        _esp->setTrack(trackNum, "white", retries > 0 ? String(retries) : "");
+
+        _floppy->gotoLogicTrack(trackNum);
+
+        if (!writer->beginTrack(trackNum)) return -1;
+
+        // The capture ring is the MFM stream buffer. It is the only block of RAM big
+        // enough to ride out an SD write stall and it is idle here - but that does
+        // mean nothing may decode a track until endFluxCapture() has returned.
+        uint16_t *ring = (uint16_t *)_floppy->getStream();
+        size_t ringSamples = _floppy->getStreamSize() / sizeof(uint16_t);
+
+        if (!_floppy->beginFluxCapture(ring, ringSamples, revolutions)) {
+            writer->abortTrack();
+            return -1;
+        }
+
+        bool ok = writer->beginRevolution();
+        uint8_t rev = 0;
+        uint32_t drained = 0;   // raw samples handed to the writer
+        uint32_t revStart = 0;  // drained at the start of the revolution in progress
+        uint32_t boundary = 0;  // drained value that ends it, once the ISR knows
+        bool haveBoundary = false;
+        bool overran = false;
+        bool incomplete = false;
+        uint32_t started = millis();
+
+        while (ok && rev < revolutions) {
+            if (_cancelOperation) break;
+
+            if (_floppy->fluxOverran()) { overran = true; break; }
+
+            if (millis() - started > captureTimeout) { incomplete = true; break; }
+
+            // The boundary of the revolution being written becomes knowable the
+            // moment the ISR closes it, and it always closes it before storing a
+            // sample beyond it - so a boundary can never be missed by draining past.
+            if (!haveBoundary && _floppy->fluxRevolutionsCaptured() > rev) {
+                boundary = revStart + _floppy->fluxRevolutionSamples(rev);
+                haveBoundary = true;
+            }
+
+            const uint16_t *samples;
+            size_t avail = _floppy->fluxPeek(&samples);
+
+            if (avail == 0) {
+                // nothing left and nothing more coming: the capture ended early
+                if (_floppy->fluxCaptureDone() && !haveBoundary) { incomplete = true; break; }
+                continue;
+            }
+
+            size_t take = avail;
+            if (haveBoundary && (drained + take) > boundary) take = boundary - drained;
+
+            if (take > 0) {
+                ok = writer->writeFlux(samples, take);
+                _floppy->fluxConsume(take);
+                drained += take;
+            }
+
+            if (haveBoundary && drained == boundary) {
+                ok = ok && writer->endRevolution(_floppy->fluxRevolutionTicks(rev));
+                rev++;
+                revStart = boundary;
+                haveBoundary = false;
+                if (rev < revolutions) ok = ok && writer->beginRevolution();
+            }
+        }
+
+        _floppy->endFluxCapture();
+
+        // Rewind before leaving, so a cancelled track does not strand its
+        // placeholder header in the image - beginTrack() wrote one, and only
+        // endTrack() or abortTrack() accounts for it.
+        if (_cancelOperation) {
+            writer->abortTrack();
+            return -1;
+        }
+
+        if (ok && !overran && !incomplete && rev == revolutions) {
+            if (!writer->endTrack()) return -1;
+
+            if (retries > 0) {
+                _graphics->drawTrack(trackNum / 2, trackNum % 2, true, false, 0, false, ST7735_ORANGE);
+                _trackMap.setTrack(trackNum, trackRetried, retries);
+                _esp->setTrack(trackNum, "orange", String(retries));
+            }
+            else {
+                _graphics->drawTrack(trackNum / 2, trackNum % 2, true, false, 0, false, ST7735_GREEN);
+                _trackMap.setTrack(trackNum, trackOK);
+                _esp->setTrack(trackNum, "green");
+            }
+            return retries;
+        }
+
+        if (writer->failed()) return -1;
+
+        // Rewind before retrying, so the partial capture is overwritten rather than
+        // left in the image as unreferenced dead weight.
+        if (!writer->abortTrack()) return -1;
+
+        retries++;
+        _graphics->drawTrack(trackNum / 2, trackNum % 2, true, true, retries, false, ST7735_RED);
+        _trackMap.setTrack(trackNum, trackError, retries);
+        _esp->setTrack(trackNum, "red", String(retries));
+        _audio->playBong(false);
+    }
+
+    return -1;
+}
+
+/**
+ * @brief Reads a floppy disk to a SuperCard Pro flux image on the SD card.
+ *
+ * Unlike diskToADF() this decodes nothing. Every flux transition the drive reports is
+ * written out as it arrives, which is the whole point: copy protection, custom track
+ * formats, long tracks and weak bits are exactly the things an ADF cannot represent,
+ * and they are all still here.
+ *
+ * @param SCPFileName path of the SCP file on the SD card, or "" to generate one
+ * @param revolutions revolutions stored per track, 1..SCP_MAX_REVS
+ * @param startCylinder first cylinder to capture
+ * @param endCylinder last cylinder to capture, inclusive. May exceed ADF_CYLINDERS -
+ *        the extra cylinders are where out of band protections hide - but few drives
+ *        reach MAX_CYLINDERS and none are obliged to.
+ * @param retryCount retries per track before it is abandoned
+ * @param setEsp set mode and state for WebUI
+ */
+bool XCopyDisk::diskToSCP(String SCPFileName, uint8_t revolutions, uint8_t startCylinder,
+                          uint8_t endCylinder, uint8_t retryCount, bool setEsp) {
+    _cancelOperation = false;
+    String statusText = "";
+    String diskName = "";
+    int badTracks = 0;
+    int retriedTracks = 0;
+
+    File SCPFile;
+    File SCPLogFile;
+    XCopySCPWriter writer;
+
+    if (revolutions < 1) revolutions = 1;
+    if (revolutions > SCP_MAX_REVS) revolutions = SCP_MAX_REVS;
+    if (endCylinder >= MAX_CYLINDERS) endCylinder = MAX_CYLINDERS - 1;
+    if (startCylinder > endCylinder) startCylinder = endCylinder;
+
+    const uint8_t startTrack = startCylinder * 2;
+    const uint8_t endTrack = (endCylinder * 2) + 1;
+    const uint8_t trackCount = endTrack - startTrack + 1;
+
+    // setup TFT and WebUI
+    _graphics->bmpDraw("XCPYLOGO.BMP", 0, 87);
+    _graphics->drawDiskName("");
+    _graphics->drawDisk();
+
+    if (setEsp) {
+        _esp->setMode("Copy Disk to SCP");
+        _esp->setState(copyDiskToSCP);
+    }
+    _esp->resetDisk();
+    _esp->setTab("diskcopy");
+
+    if (!_floppy->diskChange()) {
+        _graphics->drawText(0, 10, ST7735_RED, "No Disk Inserted");
+        Log << XCopyConsole::error("No Disk Inserted") << "\r\n";
+        _esp->setStatus("No disk inserted");
+        _audio->playBong(false);
+        return false;
+    }
+
+    /*
+       The volume name is read through the normal MFM path, before any flux capture
+       starts. It is only ever a label for the file, so a disk that cannot be decoded -
+       which is most of what this feature exists for - falls back to a generic name
+       rather than refusing to be imaged.
+    */
+    diskName = _floppy->getName();
+    diskName.trim();
+    if (diskName == "") diskName = "Unnamed";
+    _graphics->drawDiskName(diskName);
+    _esp->setDiskName(diskName);
+
+    String fullPath = SCPFileName == "" ? generateSCPFileName(diskName) : SCPFileName;
+    String logfileName = fullPath.substring(0, fullPath.length() - 4).append(".log");
+
+    statusText = String("Capturing floppy disk flux to '") + fullPath + "' on SD card";
+    _esp->setStatus(statusText);
+
+    XCopySDCard _sdcard;
+
+    if (!_sdcard.cardDetect()) {
+        _graphics->drawText(0, 10, ST7735_RED, "No SDCard detected");
+        Log << XCopyConsole::error("No SDCard detected") << "\r\n";
+        _esp->setStatus("SD card not inserted");
+        _audio->playBong(false);
+        return false;
+    }
+
+    if (!_sdcard.begin()) {
+        _graphics->drawText(0, 10, ST7735_RED, "SD Init Failed");
+        Log << XCopyConsole::error("SD Init Failed") << "\r\n";
+        _esp->setStatus("SD card initialisation failed");
+        _audio->playBong(false);
+        return false;
+    }
+
+    if (!_sdcard.fileExists(SD_SCP_PATH)) _sdcard.makeDirectory(SD_SCP_PATH);
+
+    if (_sdcard.fileExists(fullPath)) _sdcard.deleteFile(fullPath.c_str());
+    if (_sdcard.fileExists(logfileName)) _sdcard.deleteFile(logfileName.c_str());
+
+    SdFile::dateTimeCallback(dateTime);
+    SCPFile = _sdcard.getSdFat().open(fullPath.c_str(), FILE_WRITE);
+    SCPLogFile = _sdcard.getSdFat().open(logfileName.c_str(), FILE_WRITE);
+    SdFile::dateTimeCallbackCancel();
+
+    if (!SCPFile) {
+        SCPFile.close();
+        SCPLogFile.close();
+        _graphics->drawText(0, 10, ST7735_RED, "SD SCP File Open Failed");
+        Log << XCopyConsole::error("SD SCP File Open Failed") << "\r\n";
+        _esp->setStatus("File '" + fullPath + "' failed to open on the SD card");
+        _audio->playBong(false);
+        return false;
+    }
+
+    if (!SCPLogFile) {
+        SCPFile.close();
+        SCPLogFile.close();
+        _graphics->drawText(0, 10, ST7735_RED, "SD Log File Open Failed");
+        Log << XCopyConsole::error("SD Log File Open Failed") << "\r\n";
+        _esp->setStatus("File '" + logfileName + "' failed to open on the SD card");
+        _audio->playBong(false);
+        return false;
+    }
+
+    /*
+       SCP capture runs at DD timings. Amiga 3.5" disks are DD, and the HD prescaler
+       halves the tick and so doubles the sustained SD write to around 754KB/s, which
+       has not been measured on this hardware. XCopySCPWriter already converts either,
+       so enabling HD here is a one line change once the throughput is known.
+    */
+    _floppy->setAutoDensity(false);
+    _floppy->setMode(DD);
+    const bool hd = false;
+
+    if (!writer.begin(&SCPFile, startTrack, endTrack, revolutions, hd)) {
+        SCPFile.close();
+        SCPLogFile.close();
+        _graphics->drawText(0, 10, ST7735_RED, "SCP Header Write Failed");
+        Log << XCopyConsole::error("SCP Header Write Failed") << "\r\n";
+        _esp->setStatus("Could not start the SCP image");
+        _audio->playBong(false);
+        return false;
+    }
+
+    SCPLogFile.println("{");
+    SCPLogFile.println("\t\"volume\": \"" + diskName + "\",");
+    char buffer[256];
+    sprintf(buffer, "%04d-%02d-%02d %02d:%02d:%02d", year(), month(), day(), hour(), minute(), second());
+    SCPLogFile.println("\t\"date\": \"" + String(buffer) + "\",");
+    SCPLogFile.println("\t\"origin\": \"XCopy Standalone\",");
+    SCPLogFile.println("\t\"format\": \"scp\",");
+    SCPLogFile.println("\t\"revolutions\": " + String(revolutions) + ",");
+    SCPLogFile.println("\t\"startTrack\": " + String(startTrack) + ",");
+    SCPLogFile.println("\t\"endTrack\": " + String(endTrack) + ",");
+    SCPLogFile.println("\t\"timestamp\": " + String(now()) + ",");
+    SCPLogFile.println("\t\"tracks\": [");
+
+    // clear XCopy logo for flux
+    _graphics->getTFT()->fillRect(0, 85, _graphics->getTFT()->width(), _graphics->getTFT()->height()-85, ST7735_BLACK);
+    _graphics->getTFT()->drawFastHLine(0, 85, _graphics->getTFT()->width(), ST7735_GREEN);
+
+    _trackMap.begin("READ DISK TO SCP", diskName);
+
+    _floppy->motorOn();
+    _floppy->seek0();
+    delay(100);
+
+    for (int trackNum = startTrack; trackNum <= endTrack; trackNum++) {
+        if (_cancelOperation) {
+            OperationCancelled(trackNum);
+
+            // Finish the image rather than abandoning it. Every track captured so
+            // far is complete and referenced by the offset table, so end() turns
+            // what is already on the card into a valid SCP of a partial disk.
+            writer.end();
+
+            // Closed off properly so the partial log is still parseable JSON.
+            SCPLogFile.println("");
+            SCPLogFile.println("\t],");
+            SCPLogFile.println("\t\"cancelled\": true");
+            SCPLogFile.println("}");
+            SCPLogFile.close();
+            SCPFile.close();
+            return false;
+        }
+
+        int result = captureDiskTrack(trackNum, &writer, revolutions, retryCount);
+
+        // the capture ISR keeps the histogram fed, so this draws the same as a read
+        _floppy->analyseHist(true);
+        drawFlux(trackNum, 6, 85);
+
+        if (result < 0) badTracks++;
+        else if (result > 0) retriedTracks++;
+
+        // One entry per track, not per cylinder as the ADF log does: a flux capture
+        // has no per-cylinder quantity to report, and the two sides can differ.
+        // The separator leads rather than trails, so the array stays valid JSON.
+        SCPLogFile.print(trackNum == startTrack ? "\t\t" : ",\r\n\t\t");
+        SCPLogFile.print("{ \"track\": " + String(trackNum));
+        SCPLogFile.print(", \"cylinder\": " + String(trackNum / 2));
+        SCPLogFile.print(", \"side\": " + String(trackNum % 2));
+        SCPLogFile.print(", \"bytes\": " + String(writer.trackBytes()));
+        SCPLogFile.print(", \"retries\": " + String(result < 0 ? retryCount : result));
+        SCPLogFile.print(", \"captured\": " + String(result < 0 ? "false" : "true") + " }");
+
+        if (writer.failed()) {
+            _trackMap.end("FAILED - SD card write error");
+            Log << XCopyConsole::error("SD card write failed - the image is incomplete") << "\r\n";
+            _esp->setStatus("SD card write failed, the image is incomplete");
+            SCPLogFile.println("");
+            SCPLogFile.println("\t],");
+            SCPLogFile.println("\t\"writeFailed\": true");
+            SCPLogFile.println("}");
+            SCPLogFile.close();
+            SCPFile.close();
+            _audio->playBong(false);
+            return false;
+        }
+    }
+
+    bool finished = writer.end();
+
+    _trackMap.end(String("COMPLETE - ") + badTracks + " bad, " + retriedTracks +
+                  " retried of " + trackCount + " tracks");
+    Log << (badTracks ? XCopyConsole::error("Capture errors on " + String(badTracks) + " track(s)")
+                      : XCopyConsole::success("All " + String(trackCount) + " tracks captured")) << "\r\n";
+    Log << "Revolutions: " << revolutions << "  Cylinders: " << startCylinder << "-" << endCylinder << "\r\n";
+
+    SCPLogFile.println("");
+    SCPLogFile.println("\t],");
+    SCPLogFile.println("\t\"badTracks\": " + String(badTracks) + ",");
+    SCPLogFile.println("\t\"retriedTracks\": " + String(retriedTracks) + ",");
+    SCPLogFile.println("\t\"complete\": " + String(finished ? "true" : "false"));
+    SCPLogFile.println("}");
+
+    SCPFile.close();
+    SCPLogFile.close();
+    _audio->playBoing(false);
+
+    statusText = String("Completed capturing floppy disk flux to '<a href=\"/sdcard") + fullPath +
+                 "\">" + fullPath + "</a>' on SD card. <a target=\"_blank\" href=\"/sdcard" +
+                 logfileName + "\">Log File</a>";
+    _esp->setStatus(statusText);
+
+    return finished;
+}
+
+/**
  * @brief Write ADF file to floppy disk from ADF file on SDCard or Flash
  * 
  * @param ADFFileName path of ADF file on SDCard

@@ -2,6 +2,7 @@
 #define XCOPYDISK_H
 
 #define SD_ADF_PATH "XCopy ADF Files"
+#define SD_SCP_PATH "XCopy SCP Files"
 
 #include <Arduino.h>
 #include <Streaming.h>
@@ -22,6 +23,8 @@
 #include "XCopyConsole.h"
 #include "XCopyModFile.h"
 #include "XCopyTrackMap.h"
+#include "XCopySCP.h"
+#include "XCopyGeometry.h"
 #include "MD5.h"
 
 enum ADFFileSource
@@ -111,6 +114,7 @@ class XCopyDisk
     static void dateTime(uint16_t *date, uint16_t *time);
     String getADFVolumeName(String ADFFileName, ADFFileSource = _sdCard);
     String generateADFFileName(String diskname);
+    String generateSCPFileName(String diskname);
 
     // Cancel
     void cancelOperation();
@@ -119,11 +123,16 @@ class XCopyDisk
     // Read & Write tracks
     int readDiskTrack(uint8_t trackNum, bool verify, uint8_t retryCount, bool silent = false);
     int writeDiskTrack(uint8_t trackNum, uint8_t retryCount);
+    int captureDiskTrack(uint8_t trackNum, XCopySCPWriter *writer, uint8_t revolutions, uint8_t retryCount);
 
     // ADF Disk
     bool diskToADF(String ADFFileName, bool verify, uint8_t retryCount, ADFFileSource destination, bool setEsp = true);
     void adfToDisk(String ADFFileName, bool verify, uint8_t retryCount, ADFFileSource source, bool setEsp = true);
     void diskToDisk(bool verify, uint8_t retryCount);
+
+    // SCP flux image
+    bool diskToSCP(String SCPFileName, uint8_t revolutions, uint8_t startCylinder,
+                   uint8_t endCylinder, uint8_t retryCount, bool setEsp = true);
     void diskFlux();
     void testDiskette(uint8_t retryCount);
     void scanEmptyBlocks(uint8_t retryCount);

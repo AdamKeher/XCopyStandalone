@@ -71,6 +71,8 @@ bool XCopySDCard::next() {
     int nameLen = _xfile.filename.length();
     _xfile.isADF = nameLen >= 4 &&
                    strcasecmp(_xfile.filename.c_str() + nameLen - 4, ".adf") == 0;
+    _xfile.isSCP = nameLen >= 4 &&
+                   strcasecmp(_xfile.filename.c_str() + nameLen - 4, ".scp") == 0;
 
     _file.close();
 
