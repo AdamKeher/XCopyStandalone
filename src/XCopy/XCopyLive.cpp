@@ -170,6 +170,42 @@ void XCopyLive::pumpUsb()
         _txTail = (_txTail + (uint32_t)written) & XCL_TX_MASK;
         _bytesOut += (uint32_t)written;
     }
+
+    /*
+       The pacing flush, and the whole reason XCL_CFG_TX_FLUSH_US exists.
+
+       Everything above hands bytes to the USB core, which sends them as full
+       64-byte bulk packets - and at ~63 KB/s the stream fills every packet
+       exactly, so a short packet never occurs on its own. The host's serial
+       driver (usbser.sys measured, but the behaviour is generic) completes the
+       application's read only when the read buffer fills or a short packet
+       terminates the transfer, so a stream of nothing but full packets reaches
+       the application in read-buffer-sized bursts, 15-30ms apart, however
+       promptly the device produced it. That burst is the floor under the host's
+       live-serving lead, and 15-30ms of lead is 8-15 sectors of never-captured
+       angle after every landing.
+
+       usb_serial_flush_output() queues the partial packet immediately - or a
+       zero-length packet if the boundary happened to land on a multiple of 64 -
+       and either one completes the host's read NOW. It never blocks; that is
+       what the send_now() alias in the core is for. One short packet per
+       millisecond costs under 2% of full-speed bulk bandwidth and bounds
+       delivery latency to about the flush interval.
+
+       Gated on bytes actually written since the last flush so an idle session
+       does not spend packet-pool entries on empty ZLPs.
+    */
+    if (_txFlushUs && _bytesOut != _bytesAtLastFlush &&
+        (uint32_t)(micros() - _lastFlushUs) >= _txFlushUs)
+        flushNow();
+}
+
+//! Forces whatever the USB core is holding onto the wire as a short packet.
+void XCopyLive::flushNow()
+{
+    usb_serial_flush_output();
+    _bytesAtLastFlush = _bytesOut;
+    _lastFlushUs = micros();
 }
 
 uint8_t XCopyLive::driveStatusBits() const
@@ -241,7 +277,7 @@ void XCopyLive::emitHello()
     addU32(_tickHz);
     addU32(liveRingSamples * 2);
     addU16(XCL_MAX_PAYLOAD);
-    addU16(0x0716); // XCOPYVERSION "v716.26"
+    addU16(0x0717); // XCOPYVERSION "v717.26"
     static const char ident[16] = {'X', 'C', 'o', 'p', 'y', 'S', 't', 'a',
                                    'n', 'd', 'a', 'l', 'o', 'n', 'e', 0};
     for (uint8_t i = 0; i < 16; i++)
@@ -338,6 +374,24 @@ void XCopyLive::pollCommands()
             else
             {
                 emitAck(_rxCmd, XCL_RESULT_BAD_CRC);
+            }
+
+            /*
+               The answer leaves NOW, not at the next pacing flush. The response to
+               a command is a handful of bytes into a stream of full packets, and
+               without a short packet behind it, it sits in the host driver's read
+               buffer with the data - which is where most of the measured 15-31ms
+               "seek written -> ACK" went. The handler has already queued the ACK
+               into the ring; push it into the USB core and force it out.
+
+               Gated on the config key with the pacing flush, so that key = 0
+               reproduces the pre-v717 behaviour exactly and the two can be
+               measured against each other from the host.
+            */
+            if (_txFlushUs)
+            {
+                pumpUsb();
+                flushNow();
             }
             _rxState = 0;
             break;
@@ -438,7 +492,10 @@ void XCopyLive::handleCommand()
         if (_rxPayload[0])
         {
             _selftest = true;
+            _selftestPaced = (_rxLen >= 2 && _rxPayload[1] != 0);
             _selftestSeq = 0;
+            _selftestTick0 = XCopyLiveCapture::tickNow();
+            _selftestTicks = 0;
         }
         else
         {
@@ -555,6 +612,15 @@ uint8_t XCopyLive::applyConfig(uint8_t key, uint32_t value)
         _watchdogMs = value;
         return XCL_RESULT_OK;
 
+    case XCL_CFG_TX_FLUSH_US:
+        // 0 turns the pacing flush off entirely - the pre-0x0C batching
+        // behaviour, kept reachable so the two can be measured against each
+        // other from the host without reflashing.
+        if (value > 100000)
+            return XCL_RESULT_BAD_PARAM;
+        _txFlushUs = value;
+        return XCL_RESULT_OK;
+
     default:
         return XCL_RESULT_UNSUPPORTED;
     }
@@ -663,6 +729,8 @@ void XCopyLive::streamStop()
     uint32_t start = millis();
     while (txUsed() && millis() - start < 5)
         pumpUsb();
+    if (_txFlushUs)
+        flushNow(); // the tail would otherwise sit on the core's 5ms auto-flush timer
 }
 
 /*
@@ -1169,11 +1237,35 @@ void XCopyLive::freeRunCells()
 */
 void XCopyLive::drainSelftest()
 {
-    uint32_t count = 256;
+    /*
+       Paced mode mimics the MFM stream's exact shape - a 128 byte record (1024
+       cells) every ~2ms, ~63KB/s - so a host can measure DELIVERY latency under
+       the load the real decode path produces. Full rate saturates the link and
+       measures THROUGHPUT; at saturation every USB packet is full and the packet
+       pool runs dry, so the pacing flush has nothing to force out and delivery
+       batching cannot be observed there at all. Both are needed; neither can
+       stand in for the other.
+    */
+    uint32_t count = _selftestPaced ? 128 : 256;
     if (txFree() < sizeof(XclRecordHeader) + count + 2)
         return;
 
-    uint32_t ticks = count * _cellTicks;
+    uint32_t ticks = _selftestPaced ? count * 8 * _cellTicks : count * _cellTicks;
+
+    if (_selftestPaced)
+    {
+        /*
+           A record is released only once the platter-equivalent time it spans
+           has really passed. Anchored on its own clock, started when the
+           selftest was switched on - gating on _tickIndex would let the stream
+           burst at full rate until it had "caught up" every tick that passed
+           before the selftest began.
+        */
+        uint32_t elapsed = XCopyLiveCapture::tickNow() - _selftestTick0;
+        if ((int32_t)(elapsed - (_selftestTicks + ticks)) < 0)
+            return;
+        _selftestTicks += ticks;
+    }
 
     startRecord(XCL_REC_TEST, 0, (uint16_t)count,
                 (uint16_t)(ticks > 0xFFFF ? 0xFFFF : ticks), _cellIndex);

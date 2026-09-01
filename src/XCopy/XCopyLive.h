@@ -147,6 +147,9 @@ private:
 
     uint32_t _recLen = 0;
 
+    uint32_t _lastFlushUs = 0;       //!< when flushNow() last forced a short packet
+    uint32_t _bytesAtLastFlush = 0;  //!< _bytesOut at that moment
+
     inline uint32_t txUsed() const { return (_txHead - _txTail) & XCL_TX_MASK; }
     inline uint32_t txFree() const { return XCL_TX_MASK - txUsed(); }
 
@@ -157,6 +160,7 @@ private:
     //! Seals the record with its CRC and queues it. False if the ring had no room.
     bool finishRecord();
     void pumpUsb();
+    void flushNow();
 
     void emitEvent(uint8_t event, uint32_t arg, uint32_t arg2 = 0);
     void emitAck(uint8_t command, uint8_t result, uint16_t detail = 0);
@@ -179,6 +183,9 @@ private:
     // --- stream -------------------------------------------------------------------
     bool _streaming = false;
     bool _selftest = false;
+    bool _selftestPaced = false;  //!< platter-paced records, not USB saturation
+    uint32_t _selftestTick0 = 0;  //!< pacing anchor, set when the selftest starts
+    uint32_t _selftestTicks = 0;  //!< platter-equivalent ticks already emitted
     uint8_t _mode = XCL_MODE_MFM;
 
     /*
@@ -280,6 +287,7 @@ private:
     uint32_t _recordCells = 1024;
     uint32_t _fluxSamples = 256;
     uint32_t _watchdogMs = 5000;
+    uint32_t _txFlushUs = 1000; //!< XCL_CFG_TX_FLUSH_US. 0 = never force a short packet
 
     void recomputeTiming();
 

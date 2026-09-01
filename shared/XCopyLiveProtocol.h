@@ -80,7 +80,13 @@ enum XclCommand {
     XCL_CMD_STREAM_STOP = 0x06,  /* last byte out within 5 ms                    */
     XCL_CMD_STATUS = 0x07,       /* -> XCL_REC_STATUS. VALID MID-STREAM.         */
     XCL_CMD_CONFIG = 0x08,       /* p0: XCL_CFG_*, p1..p4: uint32 value          */
-    XCL_CMD_SELFTEST = 0x09,     /* p0: 0 = off, 1 = on. Synthetic data, no disk */
+    XCL_CMD_SELFTEST = 0x09,     /* p0: 0 = off, 1 = on. Synthetic data, no disk.
+                                    p1 (optional): 1 = platter-paced - a 128-byte
+                                    record every ~2 ms, the MFM stream's exact
+                                    shape, for measuring DELIVERY latency; 0 or
+                                    absent = full rate, for measuring THROUGHPUT.
+                                    At saturation every packet is full, so
+                                    delivery batching is only visible paced.     */
     XCL_CMD_PING = 0x0A,         /* -> XCL_REC_ACK. Also the host keepalive.     */
     XCL_CMD_WRITE_TRACK = 0x0B,  /* RESERVED - replies XCL_REC_NAK/UNSUPPORTED   */
     XCL_CMD_BYE = 0x7F           /* leave binary mode, return to the console     */
@@ -107,7 +113,20 @@ enum XclConfigKey {
     XCL_CFG_PLL_MODE = 0x08,          /* 0 = adaptive PLL, 1 = fixed window     */
     XCL_CFG_RECORD_CELLS = 0x09,      /* cells per MFM record. default 1024     */
     XCL_CFG_DENSITY = 0x0A,           /* 0 = auto, 1 = DD, 2 = HD               */
-    XCL_CFG_WATCHDOG_MS = 0x0B        /* host silence -> motor off + leave      */
+    XCL_CFG_WATCHDOG_MS = 0x0B,       /* host silence -> motor off + leave      */
+
+    /* How often the device forces a SHORT USB packet out, in microseconds.
+       0 = never (the pre-0x0C behaviour). Default 1000.
+
+       This is a latency key, not a throughput one. A full-speed CDC stream at
+       ~63 KB/s fills every 64-byte bulk packet exactly, and a host serial driver
+       (usbser.sys in particular) completes the application's read only when the
+       read buffer fills OR a short packet arrives - so a stream of nothing but
+       full packets is delivered to the application in bursts the size of its
+       read buffer, 15-30 ms apart, however fast the device is producing. One
+       short packet per interval bounds delivery latency to about the interval,
+       and costs a fraction of a packet's bandwidth at these rates. */
+    XCL_CFG_TX_FLUSH_US = 0x0C
 };
 
 /* ------------------------------------------------------------------------ */
