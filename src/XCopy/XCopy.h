@@ -1,7 +1,7 @@
 #ifndef XCOPY_H
 #define XCOPY_H
 
-#define XCOPYVERSION "v714.2026"
+#define XCOPYVERSION "v716.26"
 // #define XCOPY_DEBUG = 1
 
 // #define PCBVERSION 1 // expensive adafruit screen and joystick
@@ -65,6 +65,8 @@ public:
   void navigateRight();
   void processState();
   void intro();
+  // Draws the top level menu, with the firmware version bottom right.
+  void drawMenuScreen();
   void cancelOperation();
   bool detectCancelPin();
   void setBusy(bool busy);

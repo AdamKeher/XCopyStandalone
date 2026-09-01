@@ -241,7 +241,7 @@ void XCopyLive::emitHello()
     addU32(_tickHz);
     addU32(liveRingSamples * 2);
     addU16(XCL_MAX_PAYLOAD);
-    addU16(0x0714); // XCOPYVERSION "v714.2026"
+    addU16(0x0716); // XCOPYVERSION "v716.26"
     static const char ident[16] = {'X', 'C', 'o', 'p', 'y', 'S', 't', 'a',
                                    'n', 'd', 'a', 'l', 'o', 'n', 'e', 0};
     for (uint8_t i = 0; i < 16; i++)
@@ -766,9 +766,46 @@ __attribute__((optimize("O2"))) uint32_t XCopyLive::nextInterval()
 
     if (_syntheticTicks)
     {
-        uint32_t take = (interval < _syntheticTicks) ? interval : _syntheticTicks;
-        interval -= take;
-        _syntheticTicks -= take;
+        if (_capture.usingDma())
+        {
+            /*
+               THE INTERVAL THAT ENDS A GAP DOES NOT CONTAIN THE GAP ON THIS BACK END.
+
+               next() says so in its own comment: the DMA ring holds absolute 16 bit
+               captures, so any interval longer than 2.73ms at DD comes back modulo the
+               counter, and that is a documented limitation of the back end rather than
+               something to work around here. A head move is 98 to 223ms.
+
+               So subtracting the invented span from the interval that follows removes time
+               the stream never carried, and it removes it permanently. That matters because
+               streamTicksConsumed() is not bookkeeping: it is the clock that releases
+               XCL_EV_TRACK_CHANGE and XCL_EV_INDEX, both of which are deliberately held
+               back until the decoder reaches the sample they belong to.
+
+               Measured from the host before this change - the seek ACK is emitted
+               immediately, TRACK_CHANGE is gated on this clock, and the device reports its
+               own head-move time, so the difference is the lag with nothing host-side able
+               to influence it: 162, 256, 356, 477, 566, 660, 757ms over seven 223ms seeks,
+               never recovering, while short 39ms moves did not accumulate at all. A guest
+               waited 2.2 to 2.7 seconds after every seek for a track it could read, and a
+               whole-disk sweep of three reads per track scored 7 of 60.
+
+               The invented span is therefore the only record of the gap and it stands. At
+               most one counter period, 2.73ms, ends up counted twice.
+            */
+            _syntheticTicks = 0;
+        }
+        else
+        {
+            /*
+               The interrupt back end splits a long gap into a run of 0xffff entries and
+               next() sums them back into one interval, so there the interval really does
+               span the gap and the invented part has to come off or it is counted twice.
+            */
+            uint32_t take = (interval < _syntheticTicks) ? interval : _syntheticTicks;
+            interval -= take;
+            _syntheticTicks -= take;
+        }
     }
 
     /*
@@ -1097,7 +1134,18 @@ void XCopyLive::freeRunCells()
         return;
 
     uint32_t elapsed = XCopyLiveCapture::tickNow() - _tick0;
-    uint32_t behind = elapsed - streamTicksConsumed() - _syntheticTicks;
+
+    /*
+       _syntheticTicks is deliberately NOT subtracted here, and subtracting it was a bug.
+
+       Everything invented so far has already been added to _tickIndex, so it is inside
+       streamTicksConsumed() before this line runs. Taking it off a second time makes the
+       first pass through a gap look as though the decoder has caught up, and the free run
+       stops after one chunk. Measured on the host: a 223ms head move was clocked on by
+       roughly half its length, so the cell index - which XCL_CAP_SEEK_PHASE promises keeps
+       advancing at the platter rate across a move - came out short on every seek.
+    */
+    uint32_t behind = elapsed - streamTicksConsumed();
 
     // Past the point where ordinary buffering explains it, and past a cell so there is
     // something whole to clock.
@@ -1373,6 +1421,15 @@ void XCopyLive::pollDrive()
     {
         _lastDiskPresent = present;
         emitEvent(XCL_EV_DISK_CHANGE, present ? 1 : 0);
+
+        /*
+           A disk has just been put in. Make sure the drive is actually turning
+           before the host is told there is media to read: the motor should still
+           be on, but if anything did stop it, this is the point at which nothing
+           else would ever start it again.
+        */
+        if (present)
+            _floppy->motorOn();
     }
 
     bool wp = _floppy->getWriteProtect();
@@ -1414,6 +1471,24 @@ void XCopyLive::run(volatile bool *cancel)
        when that ends. Restored on the way out.
     */
     _floppy->setMotorIdleOff(false);
+
+    /*
+       And do not let a disk change stop it either. diskChangeIRQ() kills the motor
+       on the /DSKCHG falling edge, which is right for a copier - the operation is
+       over - and wrong here: an eject would stop the drive, and the motor would
+       still be off when a disk was put back, so no index pulses would be produced
+       and the host could never see the new media. Restored on the way out with
+       the idle timeout.
+    */
+    _floppy->setDiskChangeStopsMotor(false);
+
+    /*
+       And hold drive select for the whole session. A deselected drive lets its
+       status lines float to the ribbon pull-ups, where /DSKCHG reads as "disk
+       present" - so with the motor parked, which is what a guest does whenever it
+       is not reading, an ejected disk still answered "inserted".
+    */
+    _floppy->setKeepDriveSelected(true);
     _floppy->motorOn();
 
     _cylinder = (_floppy->getCurrentTrack() >= 0) ? (uint8_t)_floppy->getCurrentTrack() : 0;
@@ -1451,6 +1526,17 @@ void XCopyLive::run(volatile bool *cancel)
     if (!captureOk)
         emitEvent(XCL_EV_ERROR, XCL_RESULT_NO_DRIVE);
 
+    /*
+       State the media state once, unprompted, before the first command.
+
+       pollDrive() only emits XCL_EV_DISK_CHANGE on a CHANGE, and _lastDiskPresent
+       was just latched above - so a session that opens with an empty drive never
+       emits anything, and a host that assumes a disk until told otherwise keeps
+       assuming one. Saying it up front costs one record and removes the need for
+       the host to infer it.
+    */
+    emitEvent(XCL_EV_DISK_CHANGE, _lastDiskPresent ? 1 : 0);
+
     while (_running)
     {
         pumpUsb();
@@ -1473,6 +1559,8 @@ void XCopyLive::run(volatile bool *cancel)
     streamStop();
     _capture.end();
 
+    _floppy->setKeepDriveSelected(false);
+    _floppy->setDiskChangeStopsMotor(true);
     _floppy->motorOff();
     _floppy->setMotorIdleOff(true);
 

@@ -171,6 +171,10 @@ class XCopyFloppy
     //! Reads the drive lines without moving anything. diskChange() steps the head.
     bool readTrack0Line();
     bool readDiskChangeLine();
+    // Lets a caller keep the motor across a disk change - see diskChangeIRQ().
+    void setDiskChangeStopsMotor(bool enabled);
+    // Holds drive select, so the status lines stay valid with the motor stopped.
+    void setKeepDriveSelected(bool enabled);
 
     int getCurrentTrack() const { return _currentTrack; }
     int getCurrentSide() const { return _floppyPos.side; }

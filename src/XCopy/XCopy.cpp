@@ -242,7 +242,7 @@ void XCopy::begin()
     Log << F("\r\nType 'help' for a list of commands.\r\n");
     _command->printPrompt();
 
-    _menu.drawMenu(_menu.getRoot());
+    drawMenuScreen();
 }
 
 void XCopy::refreshTimeNtp() {
@@ -257,6 +257,53 @@ void XCopy::refreshTimeNtp() {
 void XCopy::setBusy(bool busy)
 {
     digitalWrite(PIN_BUSYPIN, busy);
+}
+
+/*
+   The top level menu, plus the firmware version in the bottom right corner.
+
+   Right aligned against the panel width rather than a fixed column, so it stays
+   in the corner whatever the version string says and whichever landscape
+   orientation the panel is in.
+
+   The width has to be MEASURED, not assumed. defaultFont is
+   RLE_proportional - every glyph is its own width - so a fixed pixels-per-
+   character guess is wrong by however much the particular characters differ from
+   it, and guessing low pushes the last character off the right hand edge. The
+   driver keeps its string measuring private, but the cursor is readable: draw the
+   string in the background colour, where it cannot be seen, and read back how far
+   the cursor moved.
+
+   That throwaway pass happens BEFORE the menu is drawn, on purpose. It writes
+   black pixels across the bottom row, which is also where the last menu entry
+   sits, and drawMenu() then paints that entry back over the top.
+*/
+void XCopy::drawMenuScreen()
+{
+    TFT_ST7735 *tft = _graphics.getTFT();
+    const String version = XCOPYVERSION;
+    const uint16_t panelW = tft->width();
+    const uint16_t panelH = tft->height();
+    const uint8_t y = (panelH > 10) ? (uint8_t)(panelH - 10) : 0;
+
+    int16_t startX = 0, startY = 0, endX = 0, endY = 0;
+    tft->setCursor(0, y);
+    tft->getCursor(startX, startY);
+    tft->setTextColor(ST7735_BLACK);
+    tft->print(version);
+    tft->getCursor(endX, endY);
+
+    const int16_t measured = endX - startX;
+    // Fall back to a deliberately generous estimate if the cursor told us nothing,
+    // since erring wide only costs a few pixels of margin while erring narrow
+    // truncates.
+    const uint16_t textW =
+        (measured > 0) ? (uint16_t)measured : (uint16_t)(version.length() * 8);
+
+    const uint8_t x = (panelW > textW + 4) ? (uint8_t)(panelW - textW - 4) : 0;
+
+    _menu.drawMenu(_menu.getRoot());
+    _graphics.drawText(x, y, ST7735_MAGENTA, version);
 }
 
 void XCopy::intro()
@@ -670,7 +717,7 @@ void XCopy::navigateDown()
         if (_menu.down())
         {
             _audio.playClick(false);
-            _menu.drawMenu(_menu.getRoot());
+            drawMenuScreen();
         }
     }
 
@@ -691,7 +738,7 @@ void XCopy::navigateUp()
         if (_menu.up())
         {
             _audio.playClick(false);
-            _menu.drawMenu(_menu.getRoot());
+            drawMenuScreen();
         }
     }
 
@@ -1351,7 +1398,7 @@ void XCopy::processState()
         {
             _graphics.clearScreen();
             _graphics.drawHeader();
-            _menu.drawMenu(_menu.getRoot());
+            drawMenuScreen();
             _xcopyState = idle;
             break;
         }

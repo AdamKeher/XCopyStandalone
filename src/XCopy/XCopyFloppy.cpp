@@ -14,6 +14,37 @@
 
 // pins, assigned by registerSetup()
 int _dens, _index, _drivesel, _motor, _dir, _step, _writedata, _writeen, _track0, _wprot, _readdata, _side, _diskChange;
+
+/*
+   Whether a disk change is allowed to stop the motor.
+
+   True for every UI and console path, where an eject means the operation is over
+   and the drive should stop. False for a live session, where the HOST owns the
+   motor - the same reason the session turns off the idle timeout. Letting the
+   interrupt stop it there means an eject kills the drive, and the motor is then
+   still off when a disk is put back, so no index pulses are produced, the host
+   cannot see the new media, and the drive never recovers.
+
+   Defined here rather than beside diskChangeIRQ() because setDiskChangeStopsMotor()
+   is above that point in the file and would not see it.
+*/
+volatile bool diskChangeStopsMotor = true;
+
+/*
+   Whether the drive may be deselected.
+
+   A deselected drive stops driving its status lines and the ribbon pull-ups take
+   over, so /DSKCHG, /TRK0 and /WPT all read HIGH - which for /DSKCHG means "disk
+   present". motorOff() deselects, and a guest parks the motor whenever it is not
+   reading, so an eject at the Kickstart insert-disk screen was invisible: the
+   drive had been deselected, the line floated high, and the answer was "disk
+   inserted" no matter what was actually in there.
+
+   For a live session the host owns the drive for the whole session, so it stays
+   selected and the lines mean something whenever they are read. False everywhere
+   else, where select is asserted per operation as before.
+*/
+volatile bool keepDriveSelected = false;
 uint32_t FTChannelValue, FTStatusControlRegister, FTPinMuxPort;
 
 // flux capture
@@ -417,6 +448,9 @@ void driveSelect()
 
 void driveDeselect()
 {
+    // The caller owns the drive for the duration - see keepDriveSelected.
+    if (keepDriveSelected)
+        return;
     digitalWriteFast(_drivesel, HIGH);
     delayMicroseconds(5);
 }
@@ -474,21 +508,61 @@ int XCopyFloppy::diskChangePin() const { return _diskChange; }
 /*
    measures time for one rotation of the disk, returns milliseconds
 */
+/*
+   Waits for the index line to leave a level, but not forever.
+
+   The unbounded spins this replaces are why the board hung when a live session
+   was started with no disk in the drive. XCopyLive::run() calls motorOn(), which
+   on an auto-density drive calls initDrive() -> densityDetect() -> indexTimer(),
+   and an empty drive never produces an index pulse. The banner had already gone
+   out, so the host saw a device that greeted it and then answered nothing, and
+   the session's own watchdog could not help: it lives in the command loop that
+   was never reached. Only a reset recovered it.
+
+   A revolution is ~200 ms, so half a second is comfortably longer than any real
+   wait and short enough that an empty drive is noticed promptly.
+*/
+static const uint32_t indexWaitTimeoutMs = 500;
+
+static bool waitIndexLevel(int pin, int level)
+{
+    const uint32_t start = millis();
+    while (digitalRead(pin) == level)
+    {
+        // Unsigned subtraction, so this stays correct across the millis() wrap.
+        if (millis() - start > indexWaitTimeoutMs)
+            return false;
+    }
+    return true;
+}
+
+/*
+   Returned when no index pulse arrived. Deliberately LARGE rather than 0 or -1:
+   hdDisk() reads this as "rotTimer < 180 means HD", so a small value would have
+   an empty drive report itself as high density. Large means DD, which is both
+   the safe default and what densityDetect() concludes from a bitCount of 0.
+*/
+const int indexTimerNoIndex = 9999;
+
 int XCopyFloppy::indexTimer()
 {
     motorOn();
     attachInterrupt(_readdata, bitCounter, FALLING);
-    while (digitalRead(_index) == 1)
-        ;
-    while (digitalRead(_index) == 0)
-        ;
+    if (!waitIndexLevel(_index, 1) || !waitIndexLevel(_index, 0))
+    {
+        detachInterrupt(_readdata);
+        bitCount = 0;
+        return indexTimerNoIndex;
+    }
     long tRead = micros();
     bitCount = 0;
     delay(5);
-    while (digitalRead(_index) == 1)
-        ;
-    while (digitalRead(_index) == 0)
-        ;
+    if (!waitIndexLevel(_index, 1) || !waitIndexLevel(_index, 0))
+    {
+        detachInterrupt(_readdata);
+        bitCount = 0;
+        return indexTimerNoIndex;
+    }
     detachInterrupt(_readdata);
     tRead = micros() - tRead;
     return (tRead / 1000);
@@ -600,10 +674,11 @@ void XCopyFloppy::initDrive()
 void XCopyFloppy::waitForIndex()
 {
     motorOn();
-    while (digitalRead(_index) == 1)
-        ;
-    while (digitalRead(_index) == 0)
-        ;
+    // Bounded for the same reason as indexTimer(): an empty drive must not wedge
+    // the board. Callers already cope with a read that finds nothing.
+    if (!waitIndexLevel(_index, 1))
+        return;
+    waitIndexLevel(_index, 0);
 }
 
 /*
@@ -1475,6 +1550,22 @@ bool XCopyFloppy::readTrack0Line() { return digitalRead(_track0) == 0; }
 */
 bool XCopyFloppy::readDiskChangeLine() { return digitalRead(_diskChange) == 1; }
 
+/*
+   Hands motor ownership to the caller across a disk change. See diskChangeIRQ().
+*/
+void XCopyFloppy::setDiskChangeStopsMotor(bool enabled) { diskChangeStopsMotor = enabled; }
+
+/*
+   Holds drive select for the caller, so the drive keeps driving its status lines
+   even with the motor stopped. See keepDriveSelected.
+*/
+void XCopyFloppy::setKeepDriveSelected(bool enabled)
+{
+    keepDriveSelected = enabled;
+    if (enabled)
+        driveSelect();
+}
+
 void XCopyFloppy::setTrackPosition(int cylinder)
 {
     _currentTrack = cylinder;
@@ -2196,7 +2287,7 @@ void XCopyFloppy::setMode(int density)
 void diskChangeIRQ()
 {
     digitalWrite(13, HIGH);
-    if (motor == true)
+    if (motor == true && diskChangeStopsMotor)
         motorOffRaw();
 }
 
