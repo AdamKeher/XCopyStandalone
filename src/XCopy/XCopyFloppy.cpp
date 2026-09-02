@@ -1542,6 +1542,26 @@ void XCopyFloppy::stepPulse()
 bool XCopyFloppy::readTrack0Line() { return digitalRead(_track0) == 0; }
 
 /*
+   The "no click" disk-change probe every buffered host driver relies on.
+
+   A drive latches /DSKCHG when a disk is removed and clears it only on a step pulse.
+   Stepping outward while already at track 0 is the one step the mechanism refuses to
+   act on, so the line is re-sampled and the head stays put. The track counter is
+   restored because stepPulse() has no idea the drive ignored it.
+*/
+bool XCopyFloppy::noClickStep()
+{
+    if (!readTrack0Line())
+        return false;
+
+    setDirFast(0);
+    delayMicroseconds(10); // direction must be stable before the step edge (spec: 1us)
+    stepPulse();
+    setTrackPosition(0);
+    return true;
+}
+
+/*
    The disk change line as it stands, with nothing moved to find out.
 
    diskChange() steps the head to make the drive update the line, which is right when

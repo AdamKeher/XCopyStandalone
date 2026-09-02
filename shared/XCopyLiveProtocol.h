@@ -89,7 +89,45 @@ enum XclCommand {
                                     delivery batching is only visible paced.     */
     XCL_CMD_PING = 0x0A,         /* -> XCL_REC_ACK. Also the host keepalive.     */
     XCL_CMD_WRITE_TRACK = 0x0B,  /* RESERVED - replies XCL_REC_NAK/UNSUPPORTED   */
+
+    /* A BOUNDED capture, for a host that works the way the buffered FloppyBridge
+       drivers do: ask for a track, receive it, hand it to a rotation extractor,
+       serve the guest from a cache. Nothing about the continuous stream above
+       changes; this is the same capture, decoder and records with an end condition.
+
+         p0       XCL_MODE_*
+         p1       maxIndex   - stop this many index pulses after the start, then
+                               linger. 0 = ignore the index entirely.
+         p2..p3   lingerMs   - uint16. How long to keep capturing after the
+                               maxIndex-th pulse.
+         p4..p7   maxTicks   - uint32. Hard cap on the capture, in device ticks,
+                               from the start. 0 = none. Whichever of the two
+                               conditions is met first ends the capture.
+
+       Emits XCL_EV_STREAM_START, then ordinary MFM/FLUX records and XCL_EV_INDEX
+       events, then XCL_EV_READ_DONE after the last flushed record. The counters
+       are zeroed at the start exactly as for XCL_CMD_STREAM_START.
+       XCL_CMD_STREAM_STOP ends it early (READ_DONE, reason aborted) - the one
+       thing a Greaseweazle read cannot do. NAK BUSY while a stream or a seek is
+       running. Firmware 0x0718 and later; older firmware answers UNSUPPORTED.   */
+    XCL_CMD_READ_TRACK = 0x0C,
+
+    /* One step pulse OUTWARD while already at cylinder 0. The head does not move
+       but the drive re-samples its /DSKCHG latch, which is what a host needs to
+       find out whether a disk has been inserted without clicking the head off
+       track 0. NAK BAD_PARAM if the track 0 line is not asserted, BUSY mid-seek.
+       Firmware 0x0718 and later.                                                 */
+    XCL_CMD_NOCLICK = 0x0E,
+
     XCL_CMD_BYE = 0x7F           /* leave binary mode, return to the console     */
+};
+
+/* XCL_EV_READ_DONE::arg */
+enum XclReadDoneReason {
+    XCL_RD_COMPLETE = 0, /* the bound was reached                                */
+    XCL_RD_ABORTED = 1,  /* XCL_CMD_STREAM_STOP arrived first                    */
+    XCL_RD_NO_INDEX = 2, /* maxIndex was set and fewer pulses than that arrived  */
+    XCL_RD_OVERRUN = 3   /* reserved                                             */
 };
 
 /* Stream modes. Selectable at XCL_CMD_STREAM_START and switchable mid-stream
@@ -194,7 +232,10 @@ enum XclEvent {
     XCL_EV_STREAM_START = 0x09, /* arg = XclStreamMode                           */
     XCL_EV_STREAM_STOP = 0x0A,
     XCL_EV_MOTOR = 0x0B,        /* arg = 1 running                               */
-    XCL_EV_ERROR = 0x0C         /* arg = XCL_RESULT_*                            */
+    XCL_EV_ERROR = 0x0C,        /* arg = XCL_RESULT_*                            */
+    XCL_EV_READ_DONE = 0x0D     /* XCL_CMD_READ_TRACK finished. arg = XCL_RD_*,
+                                   arg2 = index pulses seen, cellIndex = cells
+                                   delivered. Always after the last data record. */
 };
 
 typedef struct {

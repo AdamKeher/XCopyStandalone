@@ -236,6 +236,27 @@ private:
     uint32_t _indexAtTick = 0;
     uint32_t _indexPeriod = 0;
 
+    /*
+       A bounded read (XCL_CMD_READ_TRACK): the ordinary stream with an end condition.
+
+       The end is judged on the DECODER's clock, streamTicksConsumed(), not on wall
+       time: the records for the cells before the cut have to be out before READ_DONE
+       is, and the decoder clock is exactly "what has been turned into records". Wall
+       time is only the backstop for a drive producing no flux at all (no disk, erased
+       surface), where the decoder clock does not advance.
+    */
+    bool _boundActive = false;
+    uint8_t _boundMaxIndex = 0;
+    uint8_t _boundIndexSeen = 0;
+    uint32_t _boundLingerTicks = 0;
+    uint32_t _boundMaxTicks = 0;
+    bool _boundLingerArmed = false;
+    uint32_t _boundLingerEnd = 0; //!< consumed ticks at which the linger runs out
+
+    void beginBoundedRead(uint8_t mode, uint8_t maxIndex, uint32_t lingerMs, uint32_t maxTicks);
+    void checkBound();
+    void endBoundedRead(uint8_t reason);
+
     void streamStart(uint8_t mode);
     void streamStop();
     void drain();

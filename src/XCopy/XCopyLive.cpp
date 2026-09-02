@@ -277,7 +277,7 @@ void XCopyLive::emitHello()
     addU32(_tickHz);
     addU32(liveRingSamples * 2);
     addU16(XCL_MAX_PAYLOAD);
-    addU16(0x0717); // XCOPYVERSION "v717.26"
+    addU16(0x0718); // XCOPYVERSION "v718.26" - READ_TRACK, NOCLICK, READ_DONE
     static const char ident[16] = {'X', 'C', 'o', 'p', 'y', 'S', 't', 'a',
                                    'n', 'd', 'a', 'l', 'o', 'n', 'e', 0};
     for (uint8_t i = 0; i < 16; i++)
@@ -464,8 +464,38 @@ void XCopyLive::handleCommand()
         break;
 
     case XCL_CMD_STREAM_STOP:
-        streamStop();
+        if (_boundActive)
+            endBoundedRead(XCL_RD_ABORTED);
+        else
+            streamStop();
         emitAck(_rxCmd, XCL_RESULT_OK);
+        break;
+
+    case XCL_CMD_READ_TRACK:
+        if (_rxLen < 8 || _rxPayload[0] > XCL_MODE_FLUX)
+            emitAck(_rxCmd, XCL_RESULT_BAD_PARAM);
+        else if (_streaming || _seekState != seekIdle || _trackChangePending || _selftest)
+            emitAck(_rxCmd, XCL_RESULT_BUSY);
+        else
+        {
+            uint32_t lingerMs = (uint32_t)_rxPayload[2] | ((uint32_t)_rxPayload[3] << 8);
+            uint32_t maxTicks = (uint32_t)_rxPayload[4] | ((uint32_t)_rxPayload[5] << 8) |
+                                ((uint32_t)_rxPayload[6] << 16) | ((uint32_t)_rxPayload[7] << 24);
+            emitAck(_rxCmd, XCL_RESULT_OK);
+            beginBoundedRead(_rxPayload[0], _rxPayload[1], lingerMs, maxTicks);
+        }
+        break;
+
+    case XCL_CMD_NOCLICK:
+        if (_seekState != seekIdle || _trackChangePending)
+            emitAck(_rxCmd, XCL_RESULT_BUSY);
+        else if (!_floppy->noClickStep())
+            emitAck(_rxCmd, XCL_RESULT_BAD_PARAM);
+        else
+        {
+            _cylinder = 0;
+            emitAck(_rxCmd, XCL_RESULT_OK);
+        }
         break;
 
     case XCL_CMD_STATUS:
@@ -716,6 +746,10 @@ void XCopyLive::streamStop()
     if (!_streaming)
         return;
 
+    // A bounded read that ends by any other route than endBoundedRead() - BYE, the
+    // watchdog, the session ending - is simply over. Nothing waits on READ_DONE then.
+    _boundActive = false;
+
     // Whatever is half built goes out now rather than being dropped, so the last record
     // the host sees is the last one that was actually decoded.
     flushPartialRecord();
@@ -731,6 +765,85 @@ void XCopyLive::streamStop()
         pumpUsb();
     if (_txFlushUs)
         flushNow(); // the tail would otherwise sit on the core's 5ms auto-flush timer
+}
+
+// --- bounded read -----------------------------------------------------------------
+
+void XCopyLive::beginBoundedRead(uint8_t mode, uint8_t maxIndex, uint32_t lingerMs,
+                                 uint32_t maxTicks)
+{
+    _boundMaxIndex = maxIndex;
+    _boundIndexSeen = 0;
+    _boundLingerTicks = (uint32_t)(((uint64_t)lingerMs * _tickHz) / 1000u);
+    _boundMaxTicks = maxTicks;
+    _boundLingerArmed = false;
+    _boundLingerEnd = 0;
+
+    // streamStart() zeroes the counters and discards the ring to now, so consumed
+    // ticks below are measured from this moment.
+    streamStart(mode);
+    _boundActive = true;
+}
+
+/*
+   Ends the capture if its bound has been met.
+
+   Called after the drain has had its turn, so the record holding the cells up to the
+   cut has been built; streamStop() flushes it. Two clocks, deliberately: the decoder's
+   for the ordinary case, so READ_DONE never overtakes the data it announces, and wall
+   time as a backstop for a surface that produces no flux, where the decoder clock
+   stands still and the host would otherwise wait forever for a READ_DONE.
+*/
+void XCopyLive::checkBound()
+{
+    if (!_boundActive)
+        return;
+
+    uint32_t consumed = streamTicksConsumed();
+    uint32_t wall = XCopyLiveCapture::tickNow() - _tick0;
+    // Half a revolution of slack before wall time is allowed to decide.
+    const uint32_t wallSlack = _tickHz / 10;
+
+    bool lingerDone = _boundLingerArmed &&
+                      ((int32_t)(consumed - _boundLingerEnd) >= 0 ||
+                       (int32_t)(wall - (_boundLingerEnd + wallSlack)) >= 0);
+    bool capDone = _boundMaxTicks &&
+                   ((int32_t)(consumed - _boundMaxTicks) >= 0 ||
+                    (int32_t)(wall - (_boundMaxTicks + wallSlack)) >= 0);
+
+    // An index-bounded read with no cap of its own still has to end on an empty
+    // drive: 600ms is three revolutions, so a turning platter cannot fail to show up.
+    bool noIndexDone = false;
+    if (_boundMaxIndex && !_boundMaxTicks && !_boundLingerArmed)
+        noIndexDone = (int32_t)(wall - (_tickHz * 6 / 10)) >= 0;
+
+    if (!lingerDone && !capDone && !noIndexDone)
+        return;
+
+    uint8_t reason = XCL_RD_COMPLETE;
+    if (_boundMaxIndex && _boundIndexSeen < _boundMaxIndex)
+        reason = XCL_RD_NO_INDEX;
+    endBoundedRead(reason);
+}
+
+void XCopyLive::endBoundedRead(uint8_t reason)
+{
+    if (!_boundActive)
+        return;
+    _boundActive = false;
+
+    // Flushes the part-built record, says STREAM_STOP, pushes the tail out.
+    streamStop();
+
+    // The cellIndex field of the event is the cell counter as it stands, which after
+    // the flush above is exactly the number of cells the host was given.
+    emitEvent(XCL_EV_READ_DONE, reason, _boundIndexSeen);
+
+    uint32_t start = millis();
+    while (txUsed() && millis() - start < 5)
+        pumpUsb();
+    if (_txFlushUs)
+        flushNow();
 }
 
 /*
@@ -783,6 +896,20 @@ void XCopyLive::drain()
         // live rotational phase the moment the host attaches. Until STREAM_START the
         // samples are thrown away rather than left to wrap the ring.
         _capture.discardToNow();
+
+        /*
+           A seek that completes with no stream running still owes its TRACK_CHANGE.
+           There is no decoder clock to hold it against - nothing is being decoded -
+           so it goes out the moment the head has settled. A host doing bounded reads
+           (XCL_CMD_READ_TRACK) seeks between reads, with no stream up, and waits on
+           exactly this event; before it was handled here the pending flag stayed set
+           for the rest of the session and every bounded read was refused as BUSY.
+        */
+        if (_trackChangePending)
+        {
+            emitEvent(XCL_EV_TRACK_CHANGE, ((uint32_t)_cylinder << 8) | _side, _seekTicks);
+            _trackChangePending = false;
+        }
         return;
     }
 
@@ -802,6 +929,8 @@ void XCopyLive::drain()
         drainMfm();
     else
         drainFlux();
+
+    checkBound();
 }
 
 /*
@@ -1368,6 +1497,17 @@ void XCopyLive::checkIndex()
 
         emitEvent(XCL_EV_INDEX, _indexPeriod, _lastRevCells);
         _indexPending = _capture.nextIndex(&_indexAtTick, &_indexPeriod);
+
+        // A bounded read counts pulses here, on the decoder's clock, so the linger
+        // starts from the cell the pulse actually fell on.
+        if (_boundActive && _boundMaxIndex && !_boundLingerArmed)
+        {
+            if (++_boundIndexSeen >= _boundMaxIndex)
+            {
+                _boundLingerArmed = true;
+                _boundLingerEnd = streamTicksConsumed() + _boundLingerTicks;
+            }
+        }
     }
 }
 

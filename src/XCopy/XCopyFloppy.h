@@ -167,6 +167,9 @@ class XCopyFloppy
     void setDirFast(int dir);
     void setSideFast(int side);
     void stepPulse();
+    //! One outward step at track 0: no movement, but the drive re-arms /DSKCHG.
+    //! False if the track 0 line is not asserted, in which case nothing is pulsed.
+    bool noClickStep();
 
     //! Reads the drive lines without moving anything. diskChange() steps the head.
     bool readTrack0Line();
