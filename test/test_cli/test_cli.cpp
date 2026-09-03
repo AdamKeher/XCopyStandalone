@@ -21,6 +21,7 @@
 #include "XCopyArgs.h"
 #include "XCopyLineEditor.h"
 #include "XCopyComplete.h"
+#include "XCopyAdfPath.h"
 
 // THE FAKE WORLD
 
@@ -46,6 +47,16 @@ static const FakeEntry FAKE_TREE[] = {
     {"/adf/", "Deluxe Paint.adf", false},
     {"/adf/", "games", true},
     {"/adf/games/", "Lemmings.adf", false},
+
+    // A mounted image, so completion of a device qualified path is covered. The
+    // real lister routes on the device prefix and reads the volume; here it is one
+    // more directory name, which is exactly the point - the completer does not
+    // know there are two kinds of place a path can lead.
+    {"ADF0:", "c", true},
+    {"ADF0:", "devs", true},
+    {"ADF0:", "startup.txt", false},
+    {"ADF0:c/", "list", false},
+    {"ADF0:c/", "loadwb", false},
 };
 
 static void fakeLister(const String &directory, XCopyDirVisit visit, void *context)
@@ -497,9 +508,165 @@ static void test_editor_redraw_is_one_write(void)
     TEST_ASSERT_TRUE(captured.find("\033[12G") != std::string::npos);
 }
 
+
+// PATH GRAMMAR
+//
+// One grammar covers the card and the mounted images, and it is the thing standing
+// between a typed path and the wrong file being opened. Every shape it can take is
+// cheap to check here and expensive to check anywhere else.
+
+static void split(const char *text, XCopyPath &out)
+{
+    TEST_ASSERT_TRUE_MESSAGE(xcopySplitPath(String(text), out), text);
+}
+
+void test_path_without_a_device_is_the_card(void)
+{
+    XCopyPath p;
+    split("/adfs/workbench.adf", p);
+    TEST_ASSERT_FALSE(p.qualified);
+    TEST_ASSERT_TRUE(p.isCard());
+    TEST_ASSERT_EQUAL_STRING("/adfs/workbench.adf", p.rest.str().c_str());
+}
+
+void test_path_with_a_device(void)
+{
+    XCopyPath p;
+    split("ADF0:c/list", p);
+    TEST_ASSERT_TRUE(p.qualified);
+    TEST_ASSERT_FALSE(p.isCard());
+    TEST_ASSERT_EQUAL_STRING("ADF0", p.device.str().c_str());
+    TEST_ASSERT_EQUAL_STRING("c/list", p.rest.str().c_str());
+}
+
+void test_device_name_is_upper_cased(void)
+{
+    XCopyPath p;
+    split("adf1:s/startup-sequence", p);
+    TEST_ASSERT_EQUAL_STRING("ADF1", p.device.str().c_str());
+    TEST_ASSERT_EQUAL_STRING("s/startup-sequence", p.rest.str().c_str());
+}
+
+void test_bare_device_has_an_empty_path(void)
+{
+    XCopyPath p;
+    split("ADF0:", p);
+    TEST_ASSERT_TRUE(p.qualified);
+    TEST_ASSERT_EQUAL_STRING("", p.rest.str().c_str());
+}
+
+void test_sd_is_a_device_that_means_the_card(void)
+{
+    XCopyPath p;
+    split("SD:/adfs", p);
+    TEST_ASSERT_TRUE(p.qualified);
+    TEST_ASSERT_TRUE(p.isCard());
+    TEST_ASSERT_EQUAL_STRING("/adfs", p.rest.str().c_str());
+}
+
+void test_a_colon_in_a_filename_is_not_a_device(void)
+{
+    // A FAT name can hold a colon where a device name cannot, so anything that is
+    // not letters and digits before the colon leaves the whole string a card path.
+    XCopyPath p;
+    split("my notes:draft/x.txt", p);
+    TEST_ASSERT_FALSE(p.qualified);
+    TEST_ASSERT_EQUAL_STRING("my notes:draft/x.txt", p.rest.str().c_str());
+}
+
+void test_a_leading_colon_names_nothing(void)
+{
+    XCopyPath p;
+    TEST_ASSERT_FALSE(xcopySplitPath(String(":oops"), p));
+}
+
+void test_components_come_off_one_at_a_time(void)
+{
+    String path = "c/utilities/more";
+    String component;
+
+    TEST_ASSERT_TRUE(xcopyNextComponent(path, component));
+    TEST_ASSERT_EQUAL_STRING("c", component.str().c_str());
+    TEST_ASSERT_TRUE(xcopyNextComponent(path, component));
+    TEST_ASSERT_EQUAL_STRING("utilities", component.str().c_str());
+    TEST_ASSERT_TRUE(xcopyNextComponent(path, component));
+    TEST_ASSERT_EQUAL_STRING("more", component.str().c_str());
+    TEST_ASSERT_FALSE(xcopyNextComponent(path, component));
+}
+
+void test_repeated_separators_are_skipped(void)
+{
+    String path = "//c//list//";
+    String component;
+
+    TEST_ASSERT_TRUE(xcopyNextComponent(path, component));
+    TEST_ASSERT_EQUAL_STRING("c", component.str().c_str());
+    TEST_ASSERT_TRUE(xcopyNextComponent(path, component));
+    TEST_ASSERT_EQUAL_STRING("list", component.str().c_str());
+    TEST_ASSERT_FALSE(xcopyNextComponent(path, component));
+}
+
+void test_leaf_splits_off_the_last_component(void)
+{
+    String directory, leaf;
+
+    xcopySplitLeaf(String("c/list"), directory, leaf);
+    TEST_ASSERT_EQUAL_STRING("c", directory.str().c_str());
+    TEST_ASSERT_EQUAL_STRING("list", leaf.str().c_str());
+
+    // No slash: the whole thing is the leaf, in the root.
+    xcopySplitLeaf(String("list"), directory, leaf);
+    TEST_ASSERT_EQUAL_STRING("", directory.str().c_str());
+    TEST_ASSERT_EQUAL_STRING("list", leaf.str().c_str());
+
+    // A trailing slash means the whole thing was a directory. "dir ADF0:c" relies
+    // on this to list c rather than to look for c in the root.
+    xcopySplitLeaf(String("c/"), directory, leaf);
+    TEST_ASSERT_EQUAL_STRING("c", directory.str().c_str());
+    TEST_ASSERT_EQUAL_STRING("", leaf.str().c_str());
+
+    xcopySplitLeaf(String(""), directory, leaf);
+    TEST_ASSERT_EQUAL_STRING("", directory.str().c_str());
+    TEST_ASSERT_EQUAL_STRING("", leaf.str().c_str());
+}
+
+
+void test_completion_splits_a_device_from_its_path(void)
+{
+    // Without the colon counting as a separator this asks the card's root for
+    // names beginning "ADF0:d" and finds nothing.
+    TEST_ASSERT_EQUAL_STRING("cat ADF0:devs/", complete("cat ADF0:d").c_str());
+}
+
+void test_completion_inside_a_mounted_image(void)
+{
+    // A unique match is finished off with a space, as any other would be.
+    TEST_ASSERT_EQUAL_STRING("cat ADF0:c/list ", complete("cat ADF0:c/li").c_str());
+}
+
+void test_completion_folds_a_device_path_to_its_common_prefix(void)
+{
+    // "list" and "loadwb" share only the l, so one Tab gets that far and stops.
+    TEST_ASSERT_EQUAL_STRING("cat ADF0:c/l", complete("cat ADF0:c/l").c_str());
+}
+
 int main(int, char **)
 {
     UNITY_BEGIN();
+
+    RUN_TEST(test_completion_splits_a_device_from_its_path);
+    RUN_TEST(test_completion_inside_a_mounted_image);
+    RUN_TEST(test_completion_folds_a_device_path_to_its_common_prefix);
+    RUN_TEST(test_path_without_a_device_is_the_card);
+    RUN_TEST(test_path_with_a_device);
+    RUN_TEST(test_device_name_is_upper_cased);
+    RUN_TEST(test_bare_device_has_an_empty_path);
+    RUN_TEST(test_sd_is_a_device_that_means_the_card);
+    RUN_TEST(test_a_colon_in_a_filename_is_not_a_device);
+    RUN_TEST(test_a_leading_colon_names_nothing);
+    RUN_TEST(test_components_come_off_one_at_a_time);
+    RUN_TEST(test_repeated_separators_are_skipped);
+    RUN_TEST(test_leaf_splits_off_the_last_component);
 
     RUN_TEST(test_every_command_is_reachable_by_name);
     RUN_TEST(test_command_lookup_ignores_case);

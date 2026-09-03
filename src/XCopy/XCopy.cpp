@@ -126,9 +126,9 @@ void XCopy::begin()
         Log << XCopyConsole::error("ERROR\r\n");
         Log << XCopyConsole::error(F("Floppy cable insererted incorrectly. Possibly upside down. Fix & reset.\r\n"));
         _graphics.bmpDraw("XCPYLOGO.BMP", 0, 30);
-        _graphics.drawText(47, 75, ST7735_RED, "Floppy Cable", TRUE);
-        _graphics.drawText(45, 85, ST7735_RED, "Upside Down!", TRUE);
-        _graphics.drawText(44, 95, ST7735_RED, "Fix and Reset",TRUE);
+        _graphics.drawText(47, 75, ST7735_RED, "Floppy Cable", true);
+        _graphics.drawText(45, 85, ST7735_RED, "Upside Down!", true);
+        _graphics.drawText(44, 95, ST7735_RED, "Fix and Reset", true);
         _audio.playChime(true);
         delay(5000);
     }

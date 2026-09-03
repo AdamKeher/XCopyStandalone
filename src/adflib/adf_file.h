@@ -1,65 +1,124 @@
-#ifndef ADF_FILE_H
-#define ADF_FILE_H 1
-
 /*
- *  ADF Library. (C) 1997-2002 Laurent Clevy
+ *  adf_file.h - file I/O
  *
- *  adf_file.h
- *
- *  $Id$
+ *  Copyright (C) 1997-2022 Laurent Clevy
+ *                2023-2026 Tomasz Wolak
  *
  *  This file is part of ADFLib.
  *
- *  ADFLib is free software; you can redistribute it and/or modify
+ *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
  *  the Free Software Foundation; either version 2 of the License, or
  *  (at your option) any later version.
  *
- *  ADFLib is distributed in the hope that it will be useful,
+ *  This program is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
  *
- *  You should have received a copy of the GNU General Public License
- *  along with Foobar; if not, write to the Free Software
- *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *  You should have received a copy of the GNU General Public License along
+ *  with this program; if not, see <https://www.gnu.org/licenses/>.
  *
  */
-#ifdef __cplusplus
-extern "C" {
-#endif /* __cplusplus */
 
-#include"prefix.h"
+#ifndef ADF_FILE_H
+#define ADF_FILE_H
 
-#include"adf_str.h"
+#include "adf_blk.h"
+#include "adf_vector.h"
+#include "adf_vol.h"
 
-RETCODE adfGetFileBlocks(struct Volume* vol, struct bFileHeaderBlock* entry,
-    struct FileBlocks* );
-RETCODE adfFreeFileBlocks(struct Volume* vol, struct bFileHeaderBlock *entry);
-PREFIX int32_t adfFileRealSize(uint32_t size, int blockSize, int32_t *dataN, int32_t *extN);
 
-int32_t adfPos2DataBlock(int32_t pos, int blockSize, int *posInExtBlk, int *posInDataBlk, int32_t *curDataN );
+/* ----- FILE ----- */
 
-RETCODE adfWriteFileHdrBlock(struct Volume *vol, SECTNUM nSect, struct bFileHeaderBlock* fhdr);
+struct AdfFile {
+    struct AdfVolume          *volume;
+    struct AdfFileHeaderBlock *fileHdr;
+    void                      *currentData;
+    struct AdfFileExtBlock    *currentExt;
 
-RETCODE adfReadDataBlock(struct Volume *vol, SECTNUM nSect, void *data);
-RETCODE adfWriteDataBlock(struct Volume *vol, SECTNUM nSect, void *data);
-RETCODE adfReadFileExtBlock(struct Volume *vol, SECTNUM nSect, struct bFileExtBlock* fext);
-RETCODE adfWriteFileExtBlock(struct Volume *vol, SECTNUM nSect, struct bFileExtBlock* fext);
+    unsigned     nDataBlock;  /* current data block number */
+    ADF_SECTNUM  curDataPtr;  /* sector number of current data block;
+                                 if == 0 -> data in the buffer (currentData) is
+                                            invalid (eg. block not read correctly) */
+    uint32_t     pos;
 
-PREFIX struct AFile* adfOpenFile(struct Volume *vol, char* name, char *mode);
-PREFIX void adfCloseFile(struct AFile *file);
-PREFIX int32_t adfReadFile(struct AFile* file, int32_t n, uint8_t *buffer);
-PREFIX BOOL adfEndOfFile(struct AFile* file);
-PREFIX void adfFileSeek(struct AFile *file, uint32_t pos);		/* BV */
-RETCODE adfReadNextFileBlock(struct AFile* file);
-PREFIX int32_t adfWriteFile(struct AFile *file, int32_t n, uint8_t *buffer);
-SECTNUM adfCreateNextFileBlock(struct AFile* file);
-PREFIX void adfFlushFile(struct AFile *file);
+    unsigned     posInDataBlk;
+    unsigned     posInExtBlk;
 
-#ifdef __cplusplus
+    bool         modeRead,
+                 modeWrite;
+
+    bool         currentDataBlockChanged;
+};
+
+
+typedef enum {
+    ADF_FILE_MODE_READ      = 0x01,   /* 01 */
+    ADF_FILE_MODE_WRITE     = 0x02,   /* 10 */
+    //ADF_FILE_MODE_READWRITE = 0x03    /* 11 */
+} AdfFileMode;
+
+
+/*****************************************************************************
+ * Basic high-level adfFile API
+ *****************************************************************************/
+
+ADF_PREFIX struct AdfFile * adfFileOpen( struct AdfVolume * const  vol,
+                                         const char * const        name,
+                                         const AdfFileMode         mode );
+
+ADF_PREFIX void adfFileClose( struct AdfFile * const  file );
+
+ADF_PREFIX uint32_t adfFileRead( struct AdfFile * const  file,
+                                 const uint32_t          n,
+                                 uint8_t * const         buffer );
+
+ADF_PREFIX uint32_t adfFileWrite( struct AdfFile * const  file,
+                                  const uint32_t          n,
+                                  const uint8_t * const   buffer );
+
+static inline uint32_t adfFileGetPos( const struct AdfFile * const  file ) {
+    return file->pos;
 }
-#endif
 
-#endif /* ADF_FILE_H */
+static inline uint32_t adfFileGetSize( const struct AdfFile * const  file ) {
+    return file->fileHdr->byteSize;
+}
 
+static inline bool adfFileAtEOF( const struct AdfFile * const  file ) {
+    return ( file->pos == file->fileHdr->byteSize );
+}
+
+ADF_PREFIX ADF_RETCODE adfFileSeek( struct AdfFile * const file,
+                                    const uint32_t         pos );
+
+static inline ADF_RETCODE adfFileSeekStart( struct AdfFile * const  file ) {
+    return adfFileSeek( file, 0 );
+}
+
+static inline ADF_RETCODE adfFileSeekEOF( struct AdfFile * const  file ) {
+    return adfFileSeek( file, adfFileGetSize( file ) );
+}
+
+ADF_PREFIX ADF_RETCODE adfFileTruncate( struct AdfFile * const  file,
+                                        const uint32_t          fileSizeNew );
+
+ADF_PREFIX ADF_RETCODE adfFileFlush( struct AdfFile * const  file );
+
+
+/*****************************************************************************
+ * Low-level API
+ *****************************************************************************/
+
+ADF_PREFIX ADF_RETCODE adfFileReadExtBlockN(
+    const struct AdfFile * const    file,
+    const int32_t                   extBlock,
+    struct AdfFileExtBlock * const  fext );
+
+ADF_PREFIX ADF_RETCODE adfFileTruncateGetBlocksToRemove(
+    const struct AdfFile * const     file,
+    const uint32_t                   fileSizeNew,
+    struct AdfVectorSectors * const  blocksToRemove );
+
+#endif  /* ADF_FILE_H */

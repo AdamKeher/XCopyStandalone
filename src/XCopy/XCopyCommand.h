@@ -7,7 +7,11 @@
 #include "GenericList.h"
 #include "XCopyPins.h"
 #include "XCopyLog.h"
-#include "XCopyADFLib.h"
+#include "XCopyAdfHost.h"
+#include "XCopyAdfView.h"
+#include "XCopyAdfMount.h"
+#include "XCopyAdfWalk.h"
+#include "XCopyAdfFloppyDriver.h"
 #include "XCopyESP8266.h"
 #include "XCopyConfig.h"
 #include "XCopyTime.h"
@@ -102,6 +106,13 @@ private:
   void cmdCat(const XCopyArgs &args);
   void cmdRm(const XCopyArgs &args);
   void cmdMd5(const XCopyArgs &args);
+  void cmdMount(const XCopyArgs &args);
+  void cmdUnmount(const XCopyArgs &args);
+
+  //! "dir" when the path named a mounted image rather than the card.
+  void listVolume(XCopyAdfMount::Slot &slot, const String &within);
+  //! "cat" likewise.
+  void catVolume(XCopyAdfMount::Slot &slot, const String &within);
 
   void cmdReadAdf(const XCopyArgs &args);
   void cmdWriteAdf(const XCopyArgs &args);
@@ -123,6 +134,9 @@ private:
   void cmdPrint();
   void cmdRead(const XCopyArgs &args);
   void cmdDump(const XCopyArgs &args);
+  void cmdVol(const XCopyArgs &args);
+  //! Open and mount an image read only, printing what it is. nullptr on failure.
+  struct AdfDevice *openImageForReading(const String &path);
   void cmdWeak();
 
   void cmdTime();

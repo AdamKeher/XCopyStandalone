@@ -273,13 +273,22 @@ void XCopyCompleter::enumeratePaths(const String &prefix, XCopyCandidates &sink)
         return;
 
     /*
-       Split at the last slash. The directory half is what gets opened and the leaf
-       is what is matched, but the candidate offered is the whole path - replacing
-       the whole token is what lets a name with a space in it come back quoted.
+       Split at the last separator. The directory half is what gets opened and the
+       leaf is what is matched, but the candidate offered is the whole path -
+       replacing the whole token is what lets a name with a space in it come back
+       quoted.
+
+       A colon counts as a separator as well as a slash, because a path can name a
+       mounted image: in "ADF0:li" the part to open is "ADF0:" and the part to match
+       is "li". Splitting on the slash alone would ask for the card's root and then
+       match every name in it against "ADF0:li", which finds nothing and looks like
+       the completer is broken rather than like the path is.
     */
     const int slash = prefix.lastIndexOf('/');
-    const String directory = slash < 0 ? String("/") : prefix.substring(0, slash + 1);
-    const String leaf = slash < 0 ? prefix : prefix.substring(slash + 1);
+    const int colon = prefix.lastIndexOf(':');
+    const int cut = slash > colon ? slash : colon;
+    const String directory = cut < 0 ? String("/") : prefix.substring(0, cut + 1);
+    const String leaf = cut < 0 ? prefix : prefix.substring(cut + 1);
 
     /*
        What is offered has to begin with what was typed, or the sink will reject
@@ -289,7 +298,7 @@ void XCopyCompleter::enumeratePaths(const String &prefix, XCopyCandidates &sink)
        against the volume root - and echoing back what the operator typed is the
        less surprising of the two.
     */
-    const String stem = slash < 0 ? String("") : directory;
+    const String stem = cut < 0 ? String("") : directory;
 
     PathVisit visit = {&sink, &stem, &leaf};
     _lister(directory, onPathEntry, &visit);

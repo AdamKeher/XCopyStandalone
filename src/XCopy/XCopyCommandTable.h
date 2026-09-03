@@ -79,6 +79,8 @@ enum class XCopyCmd : uint8_t
     cat,
     rm,
     md5,
+    mount,
+    unmount,
 
     readadf,
     writeadf,
@@ -100,6 +102,7 @@ enum class XCopyCmd : uint8_t
     print,
     read,
     dump,
+    vol,
     weak,
 
     time,
