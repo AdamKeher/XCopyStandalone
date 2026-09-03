@@ -101,7 +101,18 @@ Once the ESP is on your network it can be updated over Wi-Fi instead, using the
 ```shell
 pio run -e d1_mini_ota -t upload      # firmware
 pio run -e d1_mini_ota -t uploadfs    # web interface
+pio run -e d1_mini_ota -t uploadall   # both, firmware first
 ```
+
+`uploadall` is a task of this project rather than of PlatformIO, and it waits
+between the two because each upload reboots the ESP.
+
+Use `uploadfs` for the web assets, not `uploadfsota`. The platform decides
+whether espota is offering a sketch or a filesystem image by matching the target
+name exactly, and `uploadfsota` misses that test - so the image goes over as a
+sketch, is measured against the 1MB sketch region instead of its own 2MB
+partition, and is refused with `ERROR[4]: Not Enough Space`. `scripts/
+espota_fs_flag.py` puts the missing flag back, so both targets now work.
 
 The device calls itself `xcopy` to the DHCP server, to mDNS and to OTA, so it is
 reachable by whichever name your network gives it. `upload_port` in
