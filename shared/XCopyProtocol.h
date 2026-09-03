@@ -5,10 +5,8 @@
    The Teensy <-> ESP8266 link contract.
 
    This header is the single definition of the serial link between the two firmware
-   trees and is compiled into both of them:
-
-     Teensy  (platformio.ini)          -I shared
-     ESP8266 (esp8266/platformio.ini)  -I ../shared
+   trees and is compiled into both of them. They are two environments of the one
+   PlatformIO project now, so both reach it by the same -I shared.
 
    Nothing here may be redefined locally in either tree. Values that used to be
    duplicated with a "must match" comment now live here only.
@@ -54,7 +52,7 @@
 
 // Serial1 drops to this while the ESP is flashed through the Teensy passthrough, so
 // the data-link rate stays independent of what esptool has to cope with. Must match
-// upload_speed in esp8266/platformio.ini.
+// upload_speed on the d1_mini environment in platformio.ini.
 #define ESPProgBaudRate 115200
 
 // Arduino Stream default, restored after a transfer raises it. The pinned Teensy core

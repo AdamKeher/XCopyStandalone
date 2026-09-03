@@ -2,10 +2,6 @@
 	"folders": [
 		{
 			"path": "."
-		},
-		{
-			"name": "esp8266",
-			"path": "esp8266"
 		}
 	],
 	"settings": {
