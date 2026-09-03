@@ -99,7 +99,8 @@ const XCopyCommandDef XCOPY_COMMANDS[] = {
     {XCopyCmd::name, "name", nullptr, XCopyCat::analysis, NOOPTS, XCopyArgKind::none, nullptr, 0, "read track 80 and return the disk label in ascii"},
     {XCopyCmd::print, "print", nullptr, XCopyCat::analysis, NOOPTS, XCopyArgKind::none, nullptr, 0, "print the amiga track with its header"},
     {XCopyCmd::read, "read", nullptr, XCopyCat::analysis, OPTS(OPT_READ), XCopyArgKind::number, "track", 0, "read a logical track into the buffer"},
-    {XCopyCmd::dump, "dump", nullptr, XCopyCat::analysis, NOOPTS, XCopyArgKind::path, "file", XCOPY_NEEDS_SD | XCOPY_SUBJECT_REQUIRED, "dump ADF file system information"},
+    {XCopyCmd::dump, "dump", nullptr, XCopyCat::analysis, NOOPTS, XCopyArgKind::path, "file", XCOPY_NEEDS_SD | XCOPY_SUBJECT_REQUIRED, "describe an ADF image and list its root directory"},
+    {XCopyCmd::vol, "vol", nullptr, XCopyCat::analysis, NOOPTS, XCopyArgKind::path, "file", XCOPY_NEEDS_SD | XCOPY_SUBJECT_REQUIRED, "describe an ADF image without listing it"},
     {XCopyCmd::weak, "weak", nullptr, XCopyCat::analysis, NOOPTS, XCopyArgKind::none, nullptr, 0, "retry number for the last read, in binary"},
 
     {XCopyCmd::time, "time", nullptr, XCopyCat::time, NOOPTS, XCopyArgKind::none, nullptr, 0, "show the current date and time"},

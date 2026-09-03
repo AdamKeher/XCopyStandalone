@@ -100,6 +100,7 @@ enum class XCopyCmd : uint8_t
     print,
     read,
     dump,
+    vol,
     weak,
 
     time,

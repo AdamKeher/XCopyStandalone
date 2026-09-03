@@ -1,7 +1,7 @@
 #ifndef XCOPY_H
 #define XCOPY_H
 
-#define XCOPYVERSION "v728.26"
+#define XCOPYVERSION "v729.26"
 // #define XCOPY_DEBUG = 1
 
 // #define PCBVERSION 1 // expensive adafruit screen and joystick
@@ -39,7 +39,6 @@
 #include "XCopyGraphics.h"
 #include "XCopyDebug.h"
 #include "XCopyTime.h"
-#include "XCopyADFLib.h"
 #include "XCopyESP8266.h"
 #include "XCopyFloppy.h"
 #include "XCopyHeadCalibration.h"

@@ -1,127 +1,84 @@
-#ifndef ADFLIB_H
-#define ADFLIB_H 1
-
 /*
- *  ADF Library. (C) 1997-2002 Laurent Clevy
+ *  adflib.h - main include file
  *
- * adflib.h
- *
- *  $Id$
- *
- * general include file
+ *  Copyright (C) 1997-2022 Laurent Clevy
+ *                2023-2026 Tomasz Wolak
  *
  *  This file is part of ADFLib.
  *
- *  ADFLib is free software; you can redistribute it and/or modify
+ *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
  *  the Free Software Foundation; either version 2 of the License, or
  *  (at your option) any later version.
  *
- *  ADFLib is distributed in the hope that it will be useful,
+ *  This program is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
  *
- *  You should have received a copy of the GNU General Public License
- *  along with Foobar; if not, write to the Free Software
- *  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *  You should have received a copy of the GNU General Public License along
+ *  with this program; if not, see <https://www.gnu.org/licenses/>.
  *
  */
+
+#ifndef ADFLIB_H
+#define ADFLIB_H
 
 #ifdef __cplusplus
 extern "C" {
 #endif /* __cplusplus */
 
+/* Windows - a DLL-specific function declaration prefix (to import/export library symbols) */
+#include "adf_prefix.h"
 
-/* Visual C++ DLL specific, define  WIN32DLL or not in the makefile */
+#include "adf_limits.h"
+#include "adf_types.h"
+#include "adf_version.h"
+#include "adf_err.h"
 
-#ifdef WIN32DLL
-#define PREFIX __declspec(dllimport)
-#else
-#define PREFIX 
-#endif /* WIN32DLL */
+ADF_PREFIX char * adfGetVersionNumber(void);
+ADF_PREFIX char * adfGetVersionDate(void);
 
-#include "adf_defs.h"
-#include "adf_str.h"
+ADF_PREFIX ADF_RETCODE adfLibInit(void);
+ADF_PREFIX void adfLibCleanUp(void);
 
 /* util */
-PREFIX struct List* newCell(struct List* list, void* content);
-PREFIX void freeList(struct List* list);
+//#include "adf_util.h"
 
 /* dir */
-PREFIX RETCODE adfToRootDir(struct Volume *vol);
-PREFIX RETCODE adfCreateDir(struct Volume* vol, SECTNUM parent, char* name);
-PREFIX RETCODE adfChangeDir(struct Volume* vol, char *name);
-PREFIX RETCODE adfParentDir(struct Volume* vol);
-PREFIX RETCODE adfRemoveEntry(struct Volume *vol, SECTNUM pSect, char *name);
-PREFIX struct List* adfGetDirEnt(struct Volume* vol, SECTNUM nSect );
-PREFIX struct List* adfGetRDirEnt(struct Volume* vol, SECTNUM nSect, BOOL recurs );
-PREFIX void printEntry(struct Entry* entry);
-PREFIX void adfFreeDirList(struct List* list);
-PREFIX void adfFreeEntry(struct Entry *);
-PREFIX RETCODE adfRenameEntry(struct Volume *vol, SECTNUM, char *old,SECTNUM,char *pNew);	/* BV */
-PREFIX RETCODE adfSetEntryAccess(struct Volume*, SECTNUM, char*, int32_t);
-PREFIX RETCODE adfSetEntryComment(struct Volume*, SECTNUM, char*, char*);
+#include "adf_dir.h"
 
 /* file */
-PREFIX int32_t adfFileRealSize(uint32_t size, int blockSize, int32_t *dataN, int32_t *extN);
-PREFIX struct AFile* adfOpenFile(struct Volume *vol, char* name, char *mode);
-PREFIX void adfCloseFile(struct AFile *file);
-PREFIX int32_t adfReadFile(struct AFile* file, int32_t n, uint8_t *buffer);
-PREFIX BOOL adfEndOfFile(struct AFile* file);
-PREFIX int32_t adfWriteFile(struct AFile *file, int32_t n, uint8_t *buffer);
-PREFIX void adfFlushFile(struct AFile *file);
-PREFIX void adfFileSeek(struct AFile *file, uint32_t pos);
+#include "adf_file.h"
+#include "adf_file_block.h"
 
 /* volume */
-PREFIX RETCODE adfInstallBootBlock(struct Volume *vol,uint8_t*);
-PREFIX struct Volume* adfMount( struct Device *dev, int nPart, BOOL readOnly );
-PREFIX void adfUnMount(struct Volume *vol);
-PREFIX void adfVolumeInfo(struct Volume *vol);
+#include "adf_vol.h"
 
 /* device */
-PREFIX void adfDeviceInfo(struct Device *dev);
-PREFIX struct Device* adfMountDev( char* filename,BOOL ro);
-PREFIX void adfUnMountDev( struct Device* dev);
-PREFIX RETCODE adfCreateHd(struct Device* dev, int n, struct Partition** partList );
-PREFIX RETCODE adfCreateFlop(struct Device* dev, char* volName, int volType );
-PREFIX RETCODE adfCreateHdFile(struct Device* dev, char* volName, int volType);
+#include "adf_dev.h"
+#include "adf_dev_flop.h"
+#include "adf_dev_hd.h"
+#include "adf_dev_hdfile.h"
 
-/* dump device */
-PREFIX struct Device* adfCreateDumpDevice(char* filename, int32_t cyl, int32_t heads, int32_t sec);
+/* device drivers */
+#include "adf_dev_drivers.h"
 
 /* env */
-PREFIX void adfEnvInitDefault();
-PREFIX void adfEnvCleanUp();
-PREFIX void adfChgEnvProp(int prop, void *pNew);											/* BV */
-PREFIX const char* adfGetVersionNumber();
-PREFIX const char* adfGetVersionDate();
-/* obsolete */
-PREFIX void adfSetEnvFct( void(*e)(char*), void(*w)(char*), void(*v)(char*), void(*n)(SECTNUM,int) );
-
-/* link */
-PREFIX RETCODE adfBlockPtr2EntryName(struct Volume *, SECTNUM, SECTNUM,char **, int32_t *);
+#include "adf_env.h"
 
 /* salv */
-PREFIX struct List* adfGetDelEnt(struct Volume *vol);
-PREFIX RETCODE adfUndelEntry(struct Volume* vol, SECTNUM parent, SECTNUM nSect);
-PREFIX void adfFreeDelList(struct List* list);
-PREFIX RETCODE adfCheckEntry(struct Volume* vol, SECTNUM nSect, int level);
+#include "adf_salv.h"
 
 /* middle level API */
 
-PREFIX BOOL isSectNumValid(struct Volume *vol, SECTNUM nSect);
-
 /* low level API */
 
-PREFIX RETCODE adfReadBlock(struct Volume* , int32_t nSect, uint8_t* buf);
-PREFIX RETCODE adfWriteBlock(struct Volume* , int32_t nSect, uint8_t* buf);
-PREFIX int32_t adfCountFreeBlocks(struct Volume* vol);
-
+#include "adf_bitm.h"
+#include "adf_raw.h"
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* ADFLIB_H */
-/*##########################################################################*/
+#endif  /* ADFLIB_H */

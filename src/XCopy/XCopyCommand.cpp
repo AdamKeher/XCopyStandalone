@@ -221,6 +221,7 @@ void XCopyCommandLine::dispatch(const XCopyCommandDef *command, const XCopyArgs 
     case XCopyCmd::print:      cmdPrint();          break;
     case XCopyCmd::read:       cmdRead(args);       break;
     case XCopyCmd::dump:       cmdDump(args);       break;
+    case XCopyCmd::vol:        cmdVol(args);        break;
     case XCopyCmd::weak:       cmdWeak();           break;
 
     case XCopyCmd::time:       cmdTime();           break;
@@ -871,31 +872,99 @@ void XCopyCommandLine::cmdRead(const XCopyArgs &args)
     }
 }
 
+/*
+   Open an image, describe it, and hand back the open device.
+
+   Shared by "vol" and "dump", which differ only in whether they go on to list the
+   root directory. Both open read only: neither changes anything, and an image
+   opened read only cannot be damaged by a mistake in either.
+
+   @result an open, mounted device the caller must adfDevClose(), or nullptr - in
+           which case the reason has already been printed.
+*/
+struct AdfDevice *XCopyCommandLine::openImageForReading(const String &path)
+{
+    XCopyAdf::begin();
+    XCopyAdf::clearErrors();
+
+    // adfDevOpenWithDriver rather than adfDevOpen: the driver that can read a file
+    // off the card is known here, and letting the library guess from the path would
+    // only give it a chance to guess wrong.
+    struct AdfDevice *dev = adfDevOpenWithDriver("sd", path.c_str(),
+                                                 ADF_ACCESS_MODE_READONLY);
+    if (dev == NULL)
+    {
+        Log << XCopyConsole::error("unable to open '" + path + "'") << F("\r\n");
+        return nullptr;
+    }
+
+    XCopyAdfView::printDevice(dev);
+
+    if (adfDevMount(dev) != ADF_RC_OK)
+    {
+        // A device that will not mount is still worth describing, which is why
+        // printDevice() ran first: "1760 blocks, unknown type" answers most of the
+        // questions somebody asks of a file that will not open.
+        Log << XCopyConsole::error("no filesystem found on '" + path + "'") << F("\r\n");
+        adfDevClose(dev);
+        return nullptr;
+    }
+
+    return dev;
+}
+
+void XCopyCommandLine::cmdVol(const XCopyArgs &args)
+{
+    const String path = args.subject();
+
+    struct AdfDevice *dev = openImageForReading(path);
+    if (dev == nullptr)
+        return;
+
+    for (int i = 0; i < dev->nVol; i++)
+    {
+        struct AdfVolume *vol = adfVolMount(dev, i, ADF_ACCESS_MODE_READONLY);
+        if (vol == NULL)
+        {
+            Log << XCopyConsole::error("unable to mount volume " + String(i)) << F("\r\n");
+            continue;
+        }
+
+        XCopyAdfView::printVolume(vol);
+        adfVolUnMount(vol);
+    }
+
+    adfDevClose(dev);
+}
+
 void XCopyCommandLine::cmdDump(const XCopyArgs &args)
 {
-    const char *name = args.subject().c_str();
+    const String path = args.subject();
 
-    XCopyADFLib *_adfLib = new XCopyADFLib();
-    _adfLib->begin();
-    _adfLib->mount(name);
+    struct AdfDevice *dev = openImageForReading(path);
+    if (dev == nullptr)
+        return;
 
-    if (_adfLib->getDevice())
+    for (int i = 0; i < dev->nVol; i++)
     {
-        Log << _adfLib->printDevice(_adfLib->getDevice());
-        _adfLib->openVolume(_adfLib->getDevice());
-        if (_adfLib->getVolume())
+        struct AdfVolume *vol = adfVolMount(dev, i, ADF_ACCESS_MODE_READONLY);
+        if (vol == NULL)
         {
-            Log << _adfLib->printVolume(_adfLib->getVolume());
-            Log << _adfLib->printDirectory(_adfLib->getVolume());
+            Log << XCopyConsole::error("unable to mount volume " + String(i)) << F("\r\n");
+            continue;
         }
-        else
-            Log << F("Error: Failed to open volume '") << name << F("'\r\n");
-    }
-    else
-        Log << F("Error: Failed to open device '") << name << F("'\r\n");
 
-    _adfLib->unmount();
-    delete _adfLib;
+        XCopyAdfView::printVolume(vol);
+        Log << F("Directory:\r\n");
+        XCopyAdfView::printListHeader();
+
+        const uint16_t listed = XCopyAdfView::printDirectory(vol, vol->rootBlock);
+        Log << listed << (listed == 1 ? F(" entry\r\n") : F(" entries\r\n"));
+
+        adfVolUnMount(vol);
+    }
+
+    adfDevClose(dev);
 }
 
 void XCopyCommandLine::cmdWeak()

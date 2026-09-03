@@ -7,7 +7,8 @@
 #include "GenericList.h"
 #include "XCopyPins.h"
 #include "XCopyLog.h"
-#include "XCopyADFLib.h"
+#include "XCopyAdfHost.h"
+#include "XCopyAdfView.h"
 #include "XCopyESP8266.h"
 #include "XCopyConfig.h"
 #include "XCopyTime.h"
@@ -123,6 +124,9 @@ private:
   void cmdPrint();
   void cmdRead(const XCopyArgs &args);
   void cmdDump(const XCopyArgs &args);
+  void cmdVol(const XCopyArgs &args);
+  //! Open and mount an image read only, printing what it is. nullptr on failure.
+  struct AdfDevice *openImageForReading(const String &path);
   void cmdWeak();
 
   void cmdTime();
