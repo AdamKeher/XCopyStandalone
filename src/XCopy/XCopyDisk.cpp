@@ -1,4 +1,5 @@
 #include "XCopyDisk.h"
+#include "XCopyScratch.h"
 
 // #define XCOPY_DEBUG 1
 
@@ -17,6 +18,11 @@ void XCopyDisk::begin(XCopyGraphics *graphics, XCopyAudio *audio, XCopyESP8266 *
     _floppy = floppy;
 
     _floppy->setupDrive();
+
+    // setupDrive() is what malloc's the track buffer, so the scratch arena cannot be
+    // offered to anyone before this point. See XCopyScratch.h for why the buffer is
+    // shared rather than each caller keeping its own.
+    XCopyScratch::attach(_floppy);
 }
 
 // UI
@@ -764,6 +770,12 @@ int XCopyDisk::captureDiskTrack(uint8_t trackNum, XCopySCPWriter *writer,
                                 uint8_t revolutions, uint8_t retryCount) {
     int retries = 0;
 
+    // Held for the whole track, retries included, and released however this returns.
+    // The ring is the MFM stream buffer; nothing may decode a track or run a transfer
+    // until it is given back.
+    XCopyScratch::Guard scratch("disk.captureDiskTrack", sizeof(uint16_t));
+    if (!scratch.valid()) return -1;
+
     // A revolution is 200ms; the drive may need to spin up and the first index can be
     // a full revolution away. Generous, because the alternative to a timeout here is
     // hanging forever on a drive with no disk in it.
@@ -778,11 +790,10 @@ int XCopyDisk::captureDiskTrack(uint8_t trackNum, XCopySCPWriter *writer,
 
         if (!writer->beginTrack(trackNum)) return -1;
 
-        // The capture ring is the MFM stream buffer. It is the only block of RAM big
-        // enough to ride out an SD write stall and it is idle here - but that does
-        // mean nothing may decode a track until endFluxCapture() has returned.
-        uint16_t *ring = (uint16_t *)_floppy->getStream();
-        size_t ringSamples = _floppy->getStreamSize() / sizeof(uint16_t);
+        // The capture ring is the MFM stream buffer, claimed by the guard above. It is
+        // the only block of RAM big enough to ride out an SD write stall.
+        uint16_t *ring = (uint16_t *)scratch.get();
+        size_t ringSamples = XCopyScratch::capacity() / sizeof(uint16_t);
 
         if (!_floppy->beginFluxCapture(ring, ringSamples, revolutions)) {
             writer->abortTrack();
@@ -2178,17 +2189,30 @@ String XCopyDisk::adfToMD5(String ADFFileName) {
             return "";
         }
 
-        size_t bufferSize = 2048;
-        char buffer[bufferSize];
-        size_t readsize = 0;
+        const size_t bufferSize = 2048;
+        char *buffer = (char *)XCopyScratch::borrow("disk.adfToMD5", bufferSize);
+        if (buffer == nullptr) {
+            file.close();
+            return "";
+        }
 
         MD5_CTX ctx;
         MD5::MD5Init(&ctx);
-        do {
-            readsize = file.read(buffer, bufferSize);            
+
+        // read() returns -1 on error, and readsize was a size_t: a failed read became
+        // MD5Update(..., SIZE_MAX) and a loop that never ended, because the (size_t)-1
+        // also tested > 0. Same shape as the bug already fixed in
+        // XCopyTransfer::sendFile().
+        int readsize = 0;
+        while ((readsize = file.read(buffer, bufferSize)) > 0) {
             MD5::MD5Update(&ctx, buffer, readsize);
-        } while (readsize > 0);
-        
+        }
+
+        XCopyScratch::release((const uint8_t *)buffer);
+        file.close();
+
+        if (readsize < 0) return "";
+
         return ctxToMD5(&ctx);
 }
 

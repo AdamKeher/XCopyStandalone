@@ -1,4 +1,5 @@
 #include "XCopyLive.h"
+#include "XCopyScratch.h"
 #include "XCopyGeometry.h"
 
 /*
@@ -1735,8 +1736,17 @@ void XCopyLive::run(volatile bool *cancel)
        ring the tail. Nothing decodes a track while a session is running, so the whole
        block is ours, and neither ring has to come out of bss.
     */
-    uint8_t *block = _floppy->getStream();
-    size_t blockSize = _floppy->getStreamSize();
+    // Registered rather than just taken: the block is shared with the transfer, MD5
+    // and dump paths now, and a session that overlapped one of those would corrupt
+    // both silently. A session wants all of it - capture ring at the front, transmit
+    // ring at the tail - so it asks for the whole block. See XCopyScratch.h.
+    uint8_t *block = XCopyScratch::borrow("live.run", XCopyScratch::capacity());
+    if (block == nullptr) {
+        showScreen("Live Stream", "buffer busy");
+        delay(1500);
+        return;
+    }
+    size_t blockSize = XCopyScratch::capacity();
 
     liveTx = block + blockSize - XCL_TX_RING;
 
@@ -1804,4 +1814,5 @@ void XCopyLive::run(volatile bool *cancel)
     _txHead = _txTail = 0;
     _rxState = 0;
     liveTx = NULL;
+    XCopyScratch::release(block);
 }

@@ -6,7 +6,11 @@ XCopyAudio::XCopyAudio()
 
 void XCopyAudio::begin(float gain)
 {
-    AudioMemory(8);
+    // 5 blocks, not 8: the graph is player -> mixer -> DAC, and the DAC holds two
+    // blocks for its double buffer while one more is in transit, so three are live in
+    // steady state. Five leaves a block of slack; each one costs 256 bytes of a
+    // 64KB part. Running out only drops a UI chime, it does not fault.
+    AudioMemory(5);
     setGain(0, gain);
 }
 

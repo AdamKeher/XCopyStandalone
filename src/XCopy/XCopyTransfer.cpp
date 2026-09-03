@@ -1,4 +1,5 @@
 #include "XCopyTransfer.h"
+#include "XCopyScratch.h"
 #include "XCopySDCard.h"
 #include "../FastCRC/FastCRC.h"
 #include <Streaming.h>
@@ -50,12 +51,18 @@ bool XCopyTransfer::sendFile(const String &path)
     _link->print(size);
     _link->print("\n");
 
-    // Stack, not static. This buffer is live only for the duration of a transfer,
-    // whereas a static costs the 2KB for the whole runtime -- and RAM headroom, not
-    // stack depth, is the binding constraint on this part. Making it static was
-    // enough on its own to push the console directory listing into a collision.
+    // Neither static nor stack: both come out of the same ~6KB left between the top
+    // of the heap and _estack, so the earlier back and forth between them only moved
+    // which end ran out first. The idle track buffer costs nothing from it. See
+    // XCopyScratch.h.
     const size_t bufferSize = 2048;
-    char buffer[bufferSize];
+    char *buffer = (char *)XCopyScratch::borrow("transfer.sendFile", bufferSize);
+    if (buffer == nullptr) {
+        _link->print(XFER_REPLY_ERROR);
+        Serial << "Track buffer busy, cannot send now";
+        file.close();
+        return false;
+    }
     int readsize = 0;
 
     unsigned long time = millis();
@@ -74,6 +81,7 @@ bool XCopyTransfer::sendFile(const String &path)
     file.printName();
     Serial << "': " << file.fileSize() << " in " << (millis() - time) / 1000.0f << "s\r\n";
 
+    XCopyScratch::release((const uint8_t *)buffer);
     file.close();
 
     Serial.println("Done");
@@ -110,7 +118,12 @@ bool XCopyTransfer::getFile(const String &path, size_t filesize, bool overwrite)
         _graphics->drawText(42, 85, ST7735_GREEN, "Receiving File", true);
     }
 
-    static uint8_t buffer[XFER_CHUNK];
+    // Borrowed, not static: a permanent 1KB is 1KB off the gap the stack grows into.
+    uint8_t *buffer = XCopyScratch::borrow("transfer.getFile", XFER_CHUNK);
+    if (buffer == nullptr) {
+        file.close();
+        return fail(XFER_ERR_OPEN);
+    }
     FastCRC32 CRC32;
     uint32_t crc = 0;
     bool firstChunk = true;
@@ -155,6 +168,7 @@ bool XCopyTransfer::getFile(const String &path, size_t filesize, bool overwrite)
 
     file.sync();
     file.close();
+    XCopyScratch::release(buffer);
 
     // Receipt. The byte count and CRC32 are what actually verify the transfer -- the
     // per-chunk ACK above is flow control only.
