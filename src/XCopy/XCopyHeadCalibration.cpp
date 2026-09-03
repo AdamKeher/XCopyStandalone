@@ -14,12 +14,14 @@ static const uint8_t ROW_SIGNAL_TEXT = 10;
 static const uint8_t ROW_TITLE = 22;
 static const uint8_t ROW_SETTINGS1 = 34;
 static const uint8_t ROW_SETTINGS2 = 44;
-static const uint8_t ROW_HEAD0 = 58;
-static const uint8_t ROW_HEAD1 = 68;
-static const uint8_t ROW_PASS = 80;
-static const uint8_t ROW_HELP1 = 92;
-static const uint8_t ROW_HELP2 = 102;
-static const uint8_t ROW_STATUS = 114;
+static const uint8_t ROW_SETTINGS3 = 54;
+static const uint8_t ROW_HEAD0 = 64;
+static const uint8_t ROW_HEAD1 = 74;
+static const uint8_t ROW_PASS = 86;
+static const uint8_t ROW_HELP1 = 96;
+static const uint8_t ROW_HELP2 = 106;
+//! Last row that fits: the panel is 128 tall and a text row is 10.
+static const uint8_t ROW_STATUS = 118;
 
 //! Sector glyphs sit on a fixed pitch. The font is proportional, so a printed run
 //! of them would neither line up under each other nor be repaintable one at a time.
@@ -32,6 +34,18 @@ static const uint8_t SIGNAL_X[SIGNAL_COUNT] = {0, 25, 50, 75, 100, 125};
 static const uint8_t SIGNAL_W = 20;
 static const uint8_t SIGNAL_H = 8;
 static const char *const SIGNAL_LABEL[SIGNAL_COUNT] = {"SEL", "MOT", "IDX", "CHG", "WP", "T0"};
+
+// Console colours, paired one to one with the TFT glyph colours below so the
+// panel and the screen describe the same pass in the same language. Same set
+// XCopyTrackMap uses, for the same reason.
+#define HC_RESET   "\033[0m"
+#define HC_GREY    "\033[0;90m"
+#define HC_WHITE   "\033[1;37m"
+#define HC_GREEN   "\033[0;32m"
+#define HC_YELLOW  "\033[0;33m"
+#define HC_RED     "\033[1;31m"
+#define HC_MAGENTA "\033[0;35m"
+#define HC_CYAN    "\033[0;36m"
 
 static const char SPINNER[4] = {'\\', '|', '/', '-'};
 
@@ -53,6 +67,7 @@ static const FieldSlot FIELD_SLOT[] = {
     {70, 108, ROW_SETTINGS1, 30, "Stp:"}, // Field::step
     {0, 32, ROW_SETTINGS2, 44, "Hed:"},   // Field::head
     {80, 116, ROW_SETTINGS2, 34, "Aut:"}, // Field::autoReseek
+    {0, 32, ROW_SETTINGS3, 44, "Snd:"},   // Field::sound
 };
 
 void XCopyHeadCalibration::begin(XCopyGraphics *graphics, XCopyAudio *audio, XCopyESP8266 *esp,
@@ -71,13 +86,16 @@ void XCopyHeadCalibration::begin(XCopyGraphics *graphics, XCopyAudio *audio, XCo
     _phase = Phase::settle;
     _passes = 0;
     _spinner = 0;
-    _sinceConsole = 0;
     _recalPending = true;
     _resultValid[0] = false;
     _resultValid[1] = false;
     _dirty = true;
     _drawnStatic = false;
     _nextStepMs = millis();
+
+    // The tally is the session, so it starts empty every time the screen is opened.
+    memset(_tally, 0, sizeof(_tally));
+    _markedCylinder = 0xff;
 
     /*
        Put the density thresholds back where setMode() left them. An earlier read
@@ -195,6 +213,23 @@ void XCopyHeadCalibration::readSide(uint8_t side)
 
     _results[side] = result;
     _resultValid[side] = true;
+
+    /*
+       Accumulate. Saturating rather than wrapping: the four states the grid shows
+       only care whether errors is none, some or all of passes, and a count that
+       rolled over at 256 would turn a cylinder that has failed every read into one
+       that looks perfect.
+    */
+    const uint16_t track = (_cylinder * 2) + side;
+    if (track < MAX_TRACKS)
+    {
+        TrackTally &t = _tally[track];
+        if (t.passes < 255)
+            t.passes++;
+        if (result.valid != result.sectorCount && t.errors < 255)
+            t.errors++;
+        paintTallyCell(_cylinder, side);
+    }
 }
 
 void XCopyHeadCalibration::publish()
@@ -218,35 +253,60 @@ void XCopyHeadCalibration::publish()
     _graphics->getTFT()->fillRect(90, ROW_PASS, 70, 10, ST7735_BLACK);
     _graphics->drawText(90, ROW_PASS, ST7735_WHITE, line);
 
-    _sinceConsole++;
-    if (_dirty || _sinceConsole >= kConsoleHeartbeat)
-    {
-        printResults();
+    /*
+       The console panel is repainted every pass rather than only when something
+       changed. It is a fixed table updated in place, so a repaint costs a few
+       cursor moves and scrolls nothing - and the pass counter, the speed and the
+       spinner move every pass anyway, which is what says the drive is still being
+       read while the operator waits for a number to change.
+    */
+    paintSettings();
+    paintSignals();
+    paintHead(0);
+    paintHead(1);
+    paintStatus();
+
+    // The browser is told the glyphs only when they actually moved, but the pass
+    // counter has to keep ticking there too or the panel looks stalled.
+    if (_dirty)
         sendResults();
-        _sinceConsole = 0;
-    }
+    else
+        sendConfig();
 
     _dirty = false;
+
+    // Last, so the redraws above are finished with the SPI bus before a sample
+    // starts streaming off the flash on it.
+    playFeedback();
 }
 
 // SIGNALS
 
+/*
+   Six drive lines, sampled rather than latched from edges. The version this
+   replaces toggled a flag on every CHANGE and painted the parity of it, which
+   shows the right answer only if no edge is ever missed. Three of its six boxes
+   did not work at all: the index interrupt was commented out, and write protect
+   and the sixth box were painted white unconditionally.
+
+   Read in one place because the TFT strip and the console panel both show them
+   and must agree. The drive stays selected all session, so the status lines are
+   genuinely driven rather than floating on the ribbon pull-ups.
+*/
+void XCopyHeadCalibration::readSignals(bool *out) const
+{
+    out[0] = digitalRead(_floppy->driveSelectPin()) == LOW; // active low
+    out[1] = _floppy->getMotorStatus();
+    out[2] = _floppy->readRPM() > 0.0f;                     // index pulses arriving
+    out[3] = _floppy->readDiskChangeLine();                 // a disk is present
+    out[4] = _floppy->getWriteProtect();
+    out[5] = _floppy->readTrack0Line();
+}
+
 void XCopyHeadCalibration::drawSignals()
 {
-    /*
-       Six drive lines, sampled rather than latched from edges. The version this
-       replaces toggled a flag on every CHANGE and painted the parity of it, which
-       shows the right answer only if no edge is ever missed. Three of its six
-       boxes did not work at all: the index interrupt was commented out, and write
-       protect and the sixth box were painted white unconditionally.
-    */
     bool state[SIGNAL_COUNT];
-    state[0] = digitalRead(_floppy->driveSelectPin()) == LOW; // active low
-    state[1] = _floppy->getMotorStatus();
-    state[2] = _floppy->readRPM() > 0.0f;                     // index pulses arriving
-    state[3] = _floppy->readDiskChangeLine();                 // a disk is present
-    state[4] = _floppy->getWriteProtect();
-    state[5] = _floppy->readTrack0Line();
+    readSignals(state);
 
     for (uint8_t i = 0; i < SIGNAL_COUNT; i++)
     {
@@ -301,8 +361,11 @@ void XCopyHeadCalibration::drawSettings()
         case Field::head:
             snprintf(value, sizeof(value), "%s", headName());
             break;
-        default:
+        case Field::autoReseek:
             snprintf(value, sizeof(value), "%s", _autoReseek ? "On" : "Off");
+            break;
+        default:
+            snprintf(value, sizeof(value), "%s", _sound ? "On" : "Off");
             break;
         }
 
@@ -347,6 +410,26 @@ static uint16_t glyphColour(uint8_t verdict)
         return ST7735_WHITE;
     default:
         return ST7735_RED;
+    }
+}
+
+//! The console half of the pair above. Kept immediately beside it so the panel
+//! and the screen cannot end up colouring the same verdict differently.
+static const char *glyphConsoleColour(uint8_t verdict)
+{
+    switch (verdict)
+    {
+    case sectorOK:
+        return HC_GREEN;
+    case sectorCylLow:
+    case sectorCylHigh:
+        return HC_YELLOW;
+    case sectorHeadWrong:
+        return HC_MAGENTA;
+    case sectorBadCheck:
+        return HC_WHITE;
+    default:
+        return HC_RED;
     }
 }
 
@@ -395,53 +478,65 @@ void XCopyHeadCalibration::drawResults()
     }
 }
 
+/*
+   The one status sentence, written once and rendered twice.
+
+   The TFT and the console panel are two views of the same pass; letting each
+   compose its own wording is how they end up disagreeing about a drive somebody
+   is in the middle of adjusting.
+*/
+const char *XCopyHeadCalibration::statusText(char *out, size_t size, uint16_t &tftColour) const
+{
+    if (!_diskPresent)
+    {
+        snprintf(out, size, "No disk in drive");
+        tftColour = ST7735_RED;
+        return HC_RED;
+    }
+
+    // The most useful single line of the lot: the head is somewhere else
+    // entirely, and this says where.
+    int8_t seen = -1;
+    for (uint8_t side = 0; side < 2; side++)
+        if (_resultValid[side] && _results[side].cylinderSeen >= 0)
+            seen = _results[side].cylinderSeen;
+
+    bool allGood = true;
+    bool any = false;
+    for (uint8_t side = 0; side < 2; side++)
+    {
+        bool wanted = (side == 0) ? (_head != HeadSel::upper) : (_head != HeadSel::lower);
+        if (!wanted)
+            continue;
+        any = true;
+        if (!_resultValid[side] || _results[side].valid != _results[side].sectorCount)
+            allGood = false;
+    }
+
+    if (seen >= 0 && seen != (int8_t)_cylinder)
+    {
+        snprintf(out, size, "Cyl %d seen as %d", _cylinder, seen);
+        tftColour = ST7735_YELLOW;
+        return HC_YELLOW;
+    }
+
+    if (any && allGood)
+    {
+        snprintf(out, size, "Aligned, all sectors okay");
+        tftColour = ST7735_GREEN;
+        return HC_GREEN;
+    }
+
+    snprintf(out, size, "Adjust for all sectors okay");
+    tftColour = ST7735_WHITE;
+    return HC_WHITE;
+}
+
 void XCopyHeadCalibration::drawStatusLine()
 {
     char text[40];
     uint16_t colour = ST7735_WHITE;
-
-    if (!_diskPresent)
-    {
-        snprintf(text, sizeof(text), "No disk in drive");
-        colour = ST7735_RED;
-    }
-    else
-    {
-        // The most useful single line on the screen: the head is somewhere else
-        // entirely, and this says where.
-        int8_t seen = -1;
-        for (uint8_t side = 0; side < 2; side++)
-            if (_resultValid[side] && _results[side].cylinderSeen >= 0)
-                seen = _results[side].cylinderSeen;
-
-        bool allGood = true;
-        bool any = false;
-        for (uint8_t side = 0; side < 2; side++)
-        {
-            bool wanted = (side == 0) ? (_head != HeadSel::upper) : (_head != HeadSel::lower);
-            if (!wanted)
-                continue;
-            any = true;
-            if (!_resultValid[side] || _results[side].valid != _results[side].sectorCount)
-                allGood = false;
-        }
-
-        if (seen >= 0 && seen != (int8_t)_cylinder)
-        {
-            snprintf(text, sizeof(text), "Cyl %d seen as %d", _cylinder, seen);
-            colour = ST7735_YELLOW;
-        }
-        else if (any && allGood)
-        {
-            snprintf(text, sizeof(text), "Aligned, all sectors okay");
-            colour = ST7735_GREEN;
-        }
-        else
-        {
-            snprintf(text, sizeof(text), "Adjust for all sectors okay");
-        }
-    }
-
+    statusText(text, sizeof(text), colour);
     _graphics->drawText(0, ROW_STATUS, colour, text, true);
 }
 
@@ -474,6 +569,10 @@ void XCopyHeadCalibration::settingsChanged()
         drawSettings();
         drawResults();
     }
+    paintSettings();
+    paintHead(0);
+    paintHead(1);
+    paintStatus();
     sendConfig();
 }
 
@@ -486,10 +585,18 @@ void XCopyHeadCalibration::setCylinder(int cylinder)
     if ((uint8_t)cylinder == _cylinder)
         return;
 
+    const uint8_t previous = _cylinder;
     _cylinder = (uint8_t)cylinder;
     // The results on screen describe somewhere the head no longer is.
     _resultValid[0] = false;
     _resultValid[1] = false;
+
+    // Only the two cells that gained or lost the marker are repainted.
+    if (_markedCylinder != 0xff)
+        paintTallyCylinder(previous);
+    paintTallyCylinder(_cylinder);
+    _markedCylinder = _cylinder;
+
     settingsChanged();
 }
 
@@ -527,10 +634,75 @@ void XCopyHeadCalibration::setAutoReseek(bool on)
     _dirty = true;
     if (_drawnStatic)
         drawSettings();
+    paintSettings();
     sendConfig();
 }
 
 void XCopyHeadCalibration::toggleAutoReseek() { setAutoReseek(!_autoReseek); }
+
+void XCopyHeadCalibration::setSound(bool on)
+{
+    if (on == _sound)
+        return;
+    _sound = on;
+    _dirty = true;
+    if (_drawnStatic)
+        drawSettings();
+    paintSettings();
+    sendConfig();
+}
+
+void XCopyHeadCalibration::toggleSound() { setSound(!_sound); }
+
+/*
+   One short sample a pass, describing the pass.
+
+   Blocking, and knowingly so: playFile() forces its wait flag and returns only
+   when the sample has finished, because the samples are read from SerialFlash on
+   the same SPI bus the TFT sits on. It is called at the end of publish() for that
+   reason - every redraw this pass is already done, so nothing is competing for
+   the bus, and the capture for the next pass has not started.
+
+   Three outcomes rather than two, because "reading the wrong cylinder entirely"
+   and "reading this one badly" want different actions from whoever is holding the
+   screwdriver.
+*/
+void XCopyHeadCalibration::playFeedback()
+{
+    if (!_sound || _audio == nullptr)
+        return;
+
+    if (!_diskPresent)
+        return;
+
+    bool anyRead = false;
+    bool allClean = true;
+    bool wrongCylinder = false;
+
+    for (uint8_t side = 0; side < 2; side++)
+    {
+        bool wanted = (side == 0) ? (_head != HeadSel::upper) : (_head != HeadSel::lower);
+        if (!wanted)
+            continue;
+        if (!_resultValid[side])
+        {
+            allClean = false;
+            continue;
+        }
+        anyRead = true;
+        if (_results[side].valid != _results[side].sectorCount)
+            allClean = false;
+        if (_results[side].cylinderSeen >= 0 && _results[side].cylinderSeen != (int8_t)_cylinder)
+            wrongCylinder = true;
+    }
+
+    if (wrongCylinder)
+        _audio->playBoing(false);
+    else if (anyRead && allClean)
+        _audio->playClick(false);
+    else
+        _audio->playBong(false);
+}
 
 void XCopyHeadCalibration::setStepSize(uint8_t size)
 {
@@ -544,6 +716,7 @@ void XCopyHeadCalibration::setStepSize(uint8_t size)
     _dirty = true;
     if (_drawnStatic)
         drawSettings();
+    paintSettings();
     sendConfig();
 }
 
@@ -555,6 +728,9 @@ void XCopyHeadCalibration::reseek()
     _dirty = true;
     if (_drawnStatic)
         drawResults();
+    paintHead(0);
+    paintHead(1);
+    paintStatus();
 }
 
 void XCopyHeadCalibration::nextField()
@@ -580,8 +756,11 @@ void XCopyHeadCalibration::adjustField(int direction)
     case Field::head:
         cycleHead();
         break;
-    default:
+    case Field::autoReseek:
         toggleAutoReseek();
+        break;
+    default:
+        toggleSound();
         break;
     }
 }
@@ -622,6 +801,10 @@ bool XCopyHeadCalibration::handleKey(char key)
     case 'A':
         toggleAutoReseek();
         break;
+    case 's':
+    case 'S':
+        toggleSound();
+        break;
     case 'q':
     case 'Q':
     case 0x1B: // Esc
@@ -633,67 +816,462 @@ bool XCopyHeadCalibration::handleKey(char key)
     return true;
 }
 
-// CONSOLE
+// CONSOLE PANEL
+//
+// Everything below writes straight to Serial, never through Log. Log mirrors each
+// write to the browser and sleeps 6ms doing it, and copies the whole String on the
+// way; a panel repainted twice a second for as long as somebody is adjusting a
+// drive would be a permanent tax on both the loop and the few KB of heap left. The
+// browser gets structured websocket messages instead, so nothing is lost - and it
+// would only see the escape sequences anyway.
 
-void XCopyHeadCalibration::printBanner()
+void XCopyHeadCalibration::repeat(char character, uint8_t count)
 {
-    Serial.print("\r\n-- Continuous Head Calibration Test --\r\n");
-    Serial.print(" r:re-seek  +/-:1  [ ]:10  { }:40  h:head  a:auto  q:quit\r\n");
-    Serial.print(" Use an AmigaDOS disk written by a well calibrated drive.\r\n");
-    Serial.print(" Adjust the drive until every sector is found on both sides.\r\n");
-    Serial.print("   (.:okay  X:missing  -:cyl-low  +:cyl-high  h:wrong-side  c:bad-checksum)\r\n\r\n");
+    for (uint8_t i = 0; i < count; i++)
+        Serial.write(character);
 }
 
-void XCopyHeadCalibration::printResults()
+void XCopyHeadCalibration::solidRow(char left, char right)
 {
-    /*
-       Written straight to Serial from a fixed buffer, not through Log. Log mirrors
-       every write to the browser and sleeps 6ms doing it, and copies the whole
-       String on the way; at two lines a pass for as long as somebody is adjusting a
-       drive that is a permanent tax on both the loop and the few KB of heap left.
-       The browser gets a structured websocket message instead, so nothing is lost.
-    */
-    char glyphs[24];
-    char line[96];
+    Serial.write(left);
+    repeat('-', INNER);
+    Serial.write(right);
+    Serial.print("\r\n");
+}
 
-    if (!_diskPresent)
-    {
-        Serial.print("  No disk in drive\r\n");
+void XCopyHeadCalibration::joinRow()
+{
+    Serial.write('|');
+    repeat('-', LABELWIDTH);
+    Serial.write('+');
+    repeat('-', SIDEWIDTH);
+    Serial.write('+');
+    repeat('-', SIDEWIDTH);
+    Serial.write('|');
+    Serial.print("\r\n");
+}
+
+void XCopyHeadCalibration::textRow(const char *text)
+{
+    char buffer[TEXT + 1];
+    snprintf(buffer, sizeof(buffer), "%-*.*s", (int)TEXT, (int)TEXT, text);
+    Serial.print("| ");
+    Serial.print(buffer);
+    Serial.print(" |\r\n");
+}
+
+char XCopyHeadCalibration::columnLabel(uint8_t col)
+{
+    return (col < 10) ? (char)('0' + col) : (char)('A' + (col - 10));
+}
+
+/**
+ * @brief Park the cursor on a panel cell.
+ *
+ * Moves are relative (cursor up) so they survive the terminal scrolling when the
+ * panel is printed at the bottom of the window; the column is absolute.
+ *
+ * @param line line number within the panel, 0 being the top border
+ * @param column 1 based terminal column
+ */
+void XCopyHeadCalibration::moveTo(uint8_t line, uint8_t column)
+{
+    char buffer[24];
+    snprintf(buffer, sizeof(buffer), "\033[s\033[%uA\033[%uG", (unsigned)(LINES - line), (unsigned)column);
+    Serial.print(buffer);
+}
+
+void XCopyHeadCalibration::restore()
+{
+    Serial.print("\033[u");
+}
+
+//! One full width field, moved to and restored from as a pair.
+//!
+//! moveTo() saves the cursor as its first act, so a second one before the restore
+//! overwrites the saved position with a spot inside the table - and everything
+//! printed afterwards, the prompt included, lands in the middle of the panel.
+//! Pairing them is what keeps the cursor parked below the frame.
+void XCopyHeadCalibration::paintTextRow(uint8_t line, const char *colour, const char *text)
+{
+    moveTo(line, 3);
+    Serial.print(colour);
+    Serial.printf("%-*.*s", (int)TEXT, (int)TEXT, text);
+    Serial.print(HC_RESET);
+    restore();
+}
+
+void XCopyHeadCalibration::paintSettings()
+{
+    if (!_panelActive)
         return;
+
+    char buffer[TEXT + 1];
+    char rpmText[16];
+
+    float rpm = _floppy->readRPM();
+    if (rpm > 0.0f)
+        snprintf(rpmText, sizeof(rpmText), "%d.%d RPM", (int)rpm, ((int)(rpm * 10)) % 10);
+    else
+        snprintf(rpmText, sizeof(rpmText), "no index");
+
+    snprintf(buffer, sizeof(buffer), "CYLINDER  : %-8d STEP  : %d", _cylinder, _stepSize);
+    paintTextRow(LINE_SETTINGS, HC_WHITE, buffer);
+
+    snprintf(buffer, sizeof(buffer), "HEAD(S)   : %-8s AUTO  : %-4s SOUND : %s",
+             headName(), _autoReseek ? "On" : "Off", _sound ? "On" : "Off");
+    paintTextRow(LINE_SETTINGS + 1, HC_WHITE, buffer);
+
+    snprintf(buffer, sizeof(buffer), "PASS      : %-8lu SPEED : %s",
+             (unsigned long)_passes, rpmText);
+    paintTextRow(LINE_SETTINGS + 2, HC_WHITE, buffer);
+}
+
+void XCopyHeadCalibration::paintSignals()
+{
+    if (!_panelActive)
+        return;
+
+    bool state[SIGNAL_COUNT];
+    readSignals(state);
+
+    moveTo(LINE_SIGNALS, 3);
+
+    // The visible width is accumulated alongside the coloured output, because the
+    // escapes are not printing characters and would otherwise throw the padding out.
+    uint8_t visible = 0;
+    Serial.print(HC_WHITE);
+    Serial.print("SIGNALS   : ");
+    visible += 12;
+
+    for (uint8_t i = 0; i < SIGNAL_COUNT; i++)
+    {
+        if (i > 0)
+        {
+            Serial.write(' ');
+            visible++;
+        }
+        // Write protect is a fact about the disk rather than a fault, so it does
+        // not get the same red as a line that should be asserted and is not.
+        Serial.print(state[i] ? (i == 4 ? HC_YELLOW : HC_GREEN) : HC_GREY);
+        Serial.print(SIGNAL_LABEL[i]);
+        visible += strlen(SIGNAL_LABEL[i]);
     }
 
+    Serial.print(HC_RESET);
+    if (visible < TEXT)
+        repeat(' ', TEXT - visible);
+    restore();
+}
+
+/*
+   The realtime half: what the head is reading this revolution.
+
+   Kept beside the accumulated grid rather than replaced by it, because the two
+   answer different questions. This one says which sectors are being missed right
+   now, and moves the instant the drive is touched; the grid below says whether a
+   cylinder has ever been read cleanly, which is what tells a misaligned head from
+   a marginal one.
+*/
+void XCopyHeadCalibration::paintHead(uint8_t side)
+{
+    if (!_panelActive || side > 1)
+        return;
+
+    const uint8_t line = LINE_HEAD + side;
+    bool wanted = (side == 0) ? (_head != HeadSel::upper) : (_head != HeadSel::lower);
+
+    char prefix[HEADPREFIX + 8];
+    snprintf(prefix, sizeof(prefix), "%d (%s)", side, side == 0 ? "Lower" : "Upper");
+    moveTo(line, 3);
+    Serial.print(HC_WHITE);
+    Serial.printf("%-*.*s", (int)HEADPREFIX, (int)HEADPREFIX, prefix);
+    Serial.print(HC_RESET);
+    restore();
+
+    // Glyph field. Eleven sectors on a two column pitch is exactly GLYPHFIELD; an
+    // HD track is capped there rather than reflowing the panel for a disk almost
+    // nobody has, and the count beside it still reports the whole track.
+    moveTo(line, 3 + HEADPREFIX);
+    uint8_t visible = 0;
+    if (!wanted || !_resultValid[side])
+    {
+        const char *text = !wanted ? "not selected" : (_diskPresent ? "no read" : "no disk");
+        Serial.print(!wanted ? HC_GREY : HC_RED);
+        Serial.print(text);
+        Serial.print(HC_RESET);
+        visible = strlen(text);
+    }
+    else
+    {
+        const CalibrationResult &r = _results[side];
+        for (uint8_t i = 0; i < r.sectorCount && visible + 1 <= GLYPHFIELD; i++)
+        {
+            if (i > 0)
+            {
+                if (visible + 2 > GLYPHFIELD)
+                    break;
+                Serial.write(' ');
+                visible++;
+            }
+            Serial.print(glyphConsoleColour(r.status[i]));
+            Serial.write(glyph(r.status[i]));
+            visible++;
+        }
+        Serial.print(HC_RESET);
+    }
+    if (visible < GLYPHFIELD)
+        repeat(' ', GLYPHFIELD - visible);
+    restore();
+
+    moveTo(line, 3 + HEADPREFIX + GLYPHFIELD + 1);
+    char result[RESULTFIELD + 1];
+    if (!wanted || !_resultValid[side])
+        snprintf(result, sizeof(result), "%s", "-");
+    else
+        // Right aligned, so the two heads stack and a count that drops by one is
+        // seen as a digit changing rather than the whole field shifting.
+        snprintf(result, sizeof(result), "%2d/%d okay", _results[side].valid, _results[side].sectorCount);
+
+    if (wanted && _resultValid[side] && _results[side].valid == _results[side].sectorCount)
+        Serial.print(HC_GREEN);
+    else if (wanted && _resultValid[side])
+        Serial.print(HC_YELLOW);
+    else
+        Serial.print(HC_GREY);
+    Serial.printf("%-*.*s", (int)RESULTFIELD, (int)RESULTFIELD, result);
+    Serial.print(HC_RESET);
+    restore();
+}
+
+void XCopyHeadCalibration::paintStatus()
+{
+    if (!_panelActive)
+        return;
+
+    char text[TEXT + 1];
+    uint16_t ignored = 0;
+    const char *colour = statusText(text, sizeof(text), ignored);
+
+    // The spinner rides on the status row, so a panel with nothing changing on it
+    // still shows that the drive is being read.
+    char line[TEXT + 1];
+    snprintf(line, sizeof(line), "%c %s", SPINNER[_spinner], text);
+    paintTextRow(LINE_STATUS, colour, line);
+}
+
+// ACCUMULATED TALLY
+
+XCopyHeadCalibration::TallyState XCopyHeadCalibration::tallyState(uint8_t cylinder, uint8_t side) const
+{
+    const uint16_t track = (cylinder * 2) + side;
+    if (track >= MAX_TRACKS)
+        return TallyState::untested;
+
+    const TrackTally &t = _tally[track];
+    if (t.passes == 0)
+        return TallyState::untested;
+    if (t.errors == 0)
+        return TallyState::clean;
+    if (t.errors >= t.passes)
+        return TallyState::failing;
+    return TallyState::intermittent;
+}
+
+static char tallyGlyph(uint8_t state)
+{
+    switch (state)
+    {
+    case 1:
+        return '#'; // clean
+    case 2:
+        return '~'; // intermittent
+    case 3:
+        return 'X'; // failing
+    default:
+        return '.'; // untested
+    }
+}
+
+static const char *tallyColour(uint8_t state)
+{
+    switch (state)
+    {
+    case 1:
+        return HC_GREEN;
+    case 2:
+        return HC_YELLOW;
+    case 3:
+        return HC_RED;
+    default:
+        return HC_GREY;
+    }
+}
+
+void XCopyHeadCalibration::paintTallyCell(uint8_t cylinder, uint8_t side)
+{
+    if (!_panelActive || cylinder >= MAX_CYLINDERS || side > 1)
+        return;
+
+    // Column 1 is the left border, 2 to LABELWIDTH+1 the row label and LABELWIDTH+2
+    // its separator, so the first cell sits one past the pad space that follows it.
+    // Identical arithmetic to XCopyTrackMap::paintCell, because it is the same grid.
+    const uint8_t column = (side == 0 ? LABELWIDTH + 4 : LABELWIDTH + SIDEWIDTH + 5) +
+                           ((cylinder % COLS) * 2);
+
+    moveTo(LINE_TALLY + (cylinder / COLS), column);
+    const uint8_t state = (uint8_t)tallyState(cylinder, side);
+    // Reverse video marks where the head actually is, so the cylinder being
+    // adjusted can be picked out of the grid without counting columns.
+    if (cylinder == _cylinder)
+        Serial.print("\033[7m");
+    Serial.print(tallyColour(state));
+    Serial.write(tallyGlyph(state));
+    Serial.print(HC_RESET);
+    restore();
+}
+
+void XCopyHeadCalibration::paintTallyCylinder(uint8_t cylinder)
+{
+    paintTallyCell(cylinder, 0);
+    paintTallyCell(cylinder, 1);
+}
+
+void XCopyHeadCalibration::panelBegin()
+{
+    char buffer[TEXT + 1];
+
+    _panelActive = true;
+
+    Serial.print("\r\n");
+
+    solidRow('.', '.');
+    textRow("CONTINUOUS HEAD CALIBRATION TEST");
+    textRow("Use an AmigaDOS disk from a calibrated drive.");
+    solidRow('|', '|');
+
+    // Placeholders. Every one of these is overwritten in place by the painters
+    // before the first pass finishes.
+    textRow("");
+    textRow("");
+    textRow("");
+    textRow("");
+    solidRow('|', '|');
+    textRow("");
+    textRow("");
+    textRow("");
+    solidRow('|', '|');
+
+    // Sector legend, then the keys. The two things an operator needs while their
+    // hands are on the drive and their eyes are not on the manual.
+    Serial.print("| ");
+    static const uint8_t legend[] = {sectorOK, sectorMissing, sectorCylLow, sectorCylHigh,
+                                     sectorHeadWrong, sectorBadCheck};
+    // Short names on purpose: the six have to fit one row of TEXT, and the padding
+    // below is unsigned, so a name long enough to overflow would wrap the
+    // subtraction and paint most of a screen of spaces through the frame.
+    static const char *const legendName[] = {"ok", "miss", "low", "high", "side", "chk"};
+    uint8_t visible = 0;
+    for (uint8_t i = 0; i < sizeof(legend) / sizeof(legend[0]); i++)
+    {
+        const uint8_t width = 4 + strlen(legendName[i]);
+        if (visible + width > TEXT)
+            break;
+        Serial.print(glyphConsoleColour(legend[i]));
+        Serial.write(glyph(legend[i]));
+        Serial.print(HC_RESET);
+        Serial.write(' ');
+        Serial.print(legendName[i]);
+        Serial.print("  ");
+        visible += width;
+    }
+    repeat(' ', TEXT - visible);
+    Serial.print(" |\r\n");
+
+    textRow("r seek +/-1 []10 {}40 h head a auto s snd q quit");
+    solidRow('|', '|');
+    textRow("SESSION TALLY - all passes, every cylinder");
+    joinRow();
+
+    // Side headings, then the column labels. Generated rather than written out:
+    // a stale hand written row is a silent lie about which cylinder a cell is.
+    snprintf(buffer, sizeof(buffer), "%-*s", (int)LABELWIDTH, " TRK");
+    Serial.write('|');
+    Serial.print(buffer);
     for (uint8_t side = 0; side < 2; side++)
     {
-        bool wanted = (side == 0) ? (_head != HeadSel::upper) : (_head != HeadSel::lower);
-        if (!wanted)
-            continue;
-
-        if (!_resultValid[side])
-        {
-            snprintf(line, sizeof(line), "%c Cyl %d Head %d (%s): read failed\r\n",
-                     SPINNER[_spinner], _cylinder, side, side == 0 ? "Lower" : "Upper");
-            Serial.print(line);
-            continue;
-        }
-
-        const CalibrationResult &r = _results[side];
-        uint8_t cap = (uint8_t)(sizeof(glyphs) - 1);
-        uint8_t n = r.sectorCount > cap ? cap : r.sectorCount;
-        for (uint8_t i = 0; i < n; i++)
-            glyphs[i] = glyph(r.status[i]);
-        glyphs[n] = 0;
-
-        snprintf(line, sizeof(line), "%c Cyl %d Head %d (%s): %s  (%d/%d okay)\r\n",
-                 SPINNER[_spinner], _cylinder, side, side == 0 ? "Lower" : "Upper",
-                 glyphs, r.valid, r.sectorCount);
-        Serial.print(line);
-
-        if (r.cylinderSeen >= 0 && r.cylinderSeen != (int8_t)_cylinder)
-        {
-            snprintf(line, sizeof(line), "    head is reading cylinder %d\r\n", r.cylinderSeen);
-            Serial.print(line);
-        }
+        snprintf(buffer, sizeof(buffer), " SIDE %u (%s)", (unsigned)side, side == 0 ? "LOWER" : "UPPER");
+        Serial.write('|');
+        Serial.printf("%-*.*s", (int)SIDEWIDTH, (int)SIDEWIDTH, buffer);
     }
+    Serial.print("|\r\n");
+
+    Serial.write('|');
+    repeat(' ', LABELWIDTH);
+    for (uint8_t side = 0; side < 2; side++)
+    {
+        Serial.print("| ");
+        for (uint8_t col = 0; col < COLS; col++)
+        {
+            if (col > 0)
+                Serial.write(' ');
+            Serial.write(columnLabel(col));
+        }
+        Serial.write(' ');
+    }
+    Serial.print("|\r\n");
+
+    joinRow();
+
+    for (uint8_t row = 0; row < ROWS; row++)
+    {
+        // The row label is the first cylinder in the row - 0, 10, 20 ... 80 - not
+        // the row index, so a cylinder is read off as label plus column.
+        snprintf(buffer, sizeof(buffer), "  %02u  ", (unsigned)(row * COLS));
+        Serial.write('|');
+        Serial.print(buffer);
+        for (uint8_t side = 0; side < 2; side++)
+        {
+            Serial.print("| ");
+            Serial.print(HC_GREY);
+            for (uint8_t col = 0; col < COLS; col++)
+            {
+                if (col > 0)
+                    Serial.write(' ');
+                // The last row is short: MAX_CYLINDERS is not a multiple of COLS.
+                // Blank rather than an untested glyph, or the grid would promise
+                // cylinders 84 to 89 and then never fill them in.
+                const uint8_t cylinder = (row * COLS) + col;
+                Serial.write(cylinder < MAX_CYLINDERS ? tallyGlyph(0) : ' ');
+            }
+            Serial.print(HC_RESET);
+            Serial.write(' ');
+        }
+        Serial.print("|\r\n");
+    }
+
+    joinRow();
+    textRow(". untested  # all ok  ~ intermittent  X all fail");
+    solidRow('`', '\'');
+
+    paintSettings();
+    paintSignals();
+    paintHead(0);
+    paintHead(1);
+    paintStatus();
+    paintTallyCylinder(_cylinder);
+    _markedCylinder = _cylinder;
+}
+
+void XCopyHeadCalibration::panelEnd()
+{
+    if (!_panelActive)
+        return;
+
+    _panelActive = false;
+    // The cursor has been parked below the bottom border all along, so a prompt
+    // printed after this lands clear of the panel rather than inside it.
+    Serial.print("\r\n");
 }
 
 // WEB
@@ -704,9 +1282,9 @@ void XCopyHeadCalibration::sendConfig()
         return;
 
     char message[80];
-    snprintf(message, sizeof(message), "broadcast headCalConfig,%d,%d,%d,%d,%d,%lu\r\n",
+    snprintf(message, sizeof(message), "broadcast headCalConfig,%d,%d,%d,%d,%d,%lu,%d\r\n",
              _cylinder, _stepSize, (int)_head, _autoReseek ? 1 : 0, _active ? 1 : 0,
-             (unsigned long)_passes);
+             (unsigned long)_passes, _sound ? 1 : 0);
     _esp->print(message);
 }
 
@@ -714,7 +1292,7 @@ void XCopyHeadCalibration::sendClosed()
 {
     if (_esp == nullptr)
         return;
-    _esp->print("broadcast headCalConfig,0,1,2,0,0,0\r\n");
+    _esp->print("broadcast headCalConfig,0,1,2,0,0,0,0\r\n");
 }
 
 void XCopyHeadCalibration::sendResults()
@@ -732,7 +1310,7 @@ void XCopyHeadCalibration::sendResults()
         bool wanted = (side == 0) ? (_head != HeadSel::upper) : (_head != HeadSel::lower);
         if (!wanted || !_resultValid[side])
         {
-            snprintf(message, sizeof(message), "broadcast headCal,%d,%d,0,0,-\r\n", _cylinder, side);
+            snprintf(message, sizeof(message), "broadcast headCal,%d,%d,0,0,-,0,0\r\n", _cylinder, side);
             _esp->print(message);
             continue;
         }
@@ -744,8 +1322,13 @@ void XCopyHeadCalibration::sendResults()
             glyphs[i] = glyph(r.status[i]);
         glyphs[n] = 0;
 
-        snprintf(message, sizeof(message), "broadcast headCal,%d,%d,%d,%d,%s\r\n",
-                 _cylinder, side, r.valid, r.sectorCount, glyphs);
+        // The accumulated counts ride along with the realtime row rather than
+        // going out as a message of their own: the browser needs both to redraw
+        // one cylinder, and they are always produced together.
+        const uint16_t track = (_cylinder * 2) + side;
+        const TrackTally &t = _tally[track < MAX_TRACKS ? track : 0];
+        snprintf(message, sizeof(message), "broadcast headCal,%d,%d,%d,%d,%s,%d,%d\r\n",
+                 _cylinder, side, r.valid, r.sectorCount, glyphs, t.passes, t.errors);
         _esp->print(message);
     }
 

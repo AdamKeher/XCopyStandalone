@@ -427,11 +427,11 @@ function onWebSocketMessage(msg) {
   }
 
   if (res[0] == "headCal") {
-    headCalResult(res[1], res[2], res[3], res[4], res[5]);
+    headCalResult(res[1], res[2], res[3], res[4], res[5], res[6], res[7]);
   }
 
   if (res[0] == "headCalConfig") {
-    headCalConfig(res[1], res[2], res[3], res[4], res[5], res[6]);
+    headCalConfig(res[1], res[2], res[3], res[4], res[5], res[6], res[7]);
   }
 
   if (res[0] == "setState") {

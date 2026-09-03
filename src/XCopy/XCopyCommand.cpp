@@ -73,7 +73,7 @@ void XCopyCommandLine::doCommand(String command)
         Log << F("| hist                           | prints histogram of track in ascii                  |\r\n");
         Log << F("| rpm <ms>                       | drive speed from index pulses, every <ms>           |\r\n");
         Log << F("| headcal | hc [<cyl>]           | continuous head calibration test, ATK style         |\r\n");
-        Log << F("|                                | r:reseek +/-:1 []:10 {}:40 h:head a:auto q:quit     |\r\n");
+        Log << F("|                                | r:reseek +/-:1 []:10 {}:40 h:head a:auto s:sound    |\r\n");
         Log << F("| name                           | reads track 80 an returns disklabel in ascii        |\r\n");
         Log << F("| print                          | prints amiga track with header                      |\r\n");
         Log << F("| read <n>                       | read logical track #n from disk                     |\r\n");

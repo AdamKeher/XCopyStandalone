@@ -431,6 +431,7 @@ void XCopy::exitHeadCalibration()
         return;
 
     _command->setRawKeys(nullptr, nullptr);
+    _headCal.panelEnd();
     _headCal.end();
     _headCal.sendClosed();
     _audio.playBack(false);
@@ -606,6 +607,9 @@ void XCopy::onWebCommand(void* obj, const String command)
         }
         else if (command.startsWith("headCalAuto")) {
             xcopy->_headCal.setAutoReseek(param.toInt() != 0);
+        }
+        else if (command.startsWith("headCalSound")) {
+            xcopy->_headCal.setSound(param.toInt() != 0);
         }
         else if (command.startsWith("headCalStep")) {
             xcopy->_headCal.setStepSize((uint8_t)param.toInt());
@@ -1685,7 +1689,7 @@ void XCopy::processState()
             {
                 _headCal.begin(&_graphics, &_audio, _esp, &_floppy, _headCalCylinder);
                 _headCal.drawStatic();
-                _headCal.printBanner();
+                _headCal.panelBegin();
                 _headCal.sendConfig();
                 _esp->setTab("headcal");
                 // Both the USB console and the browser terminal funnel through

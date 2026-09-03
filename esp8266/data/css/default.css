@@ -448,3 +448,41 @@ body {
 .hcSector.high    { color: #e0b040; }
 .hcSector.side    { color: #c060c0; }
 .hcSector.chk     { color: #ffffff; }
+
+/* Session tally grid. Four states, matching the console panel exactly: a colour
+   carries the verdict and the passes/errors text carries the detail behind it. */
+
+.headcalGrid {
+  border-collapse: separate;
+  border-spacing: 2px;
+  font-size: 0.72em;
+  font-family: monospace;
+  margin-bottom: 12px;
+}
+
+.headcalGrid th {
+  color: #9a9a9a;
+  font-weight: normal;
+  text-align: center;
+  padding: 0 3px;
+}
+
+.hcTrack {
+  width: 34px;
+  height: 18px;
+  text-align: center;
+  border-radius: 2px;
+  color: #1e1e1e;
+}
+
+.hcTrack.untested    { background: #3a3a3a; }
+.hcTrack.clean       { background: #4caf50; }
+.hcTrack.intermittent{ background: #e0b040; }
+.hcTrack.failing     { background: #e04b4b; }
+
+/* Drawn as an outline rather than another fill, so it says where the head is
+   without hiding what that cylinder has been doing. */
+.hcTrack.current {
+  outline: 2px solid #ffffff;
+  outline-offset: -2px;
+}
