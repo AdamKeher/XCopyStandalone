@@ -1,7 +1,7 @@
 #ifndef XCOPY_H
 #define XCOPY_H
 
-#define XCOPYVERSION "v727.26"
+#define XCOPYVERSION "v728.26"
 // #define XCOPY_DEBUG = 1
 
 // #define PCBVERSION 1 // expensive adafruit screen and joystick
@@ -78,7 +78,7 @@ public:
   //! Work out where it starts. Destructive, and a no-op after the first call.
   void measureVersion();
   //! The row it sits on, which is also the last menu row of a long level.
-  uint8_t versionRow() const;
+  uint8_t versionRow();
   //! Not yet measured. See measureVersion().
   static const uint8_t kVersionXUnknown = 0xff;
   uint8_t _versionX = kVersionXUnknown;

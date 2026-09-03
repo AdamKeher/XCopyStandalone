@@ -15,6 +15,10 @@
 #include "XCopyConsole.h"
 #include "XCopyDisk.h"
 #include "XCopyBrainFile.h"
+#include "XCopyCommandTable.h"
+#include "XCopyArgs.h"
+#include "XCopyLineEditor.h"
+#include "XCopyComplete.h"
 #include <TimeLib.h>
 #include <MD5.h>
 
@@ -32,7 +36,6 @@ class XCopyCommandLine
 public:
   XCopyCommandLine(String version, XCopyESP8266 *esp, XCopyConfig *config, XCopyDisk* disk, XCopyFloppy* floppy);
   void doCommand(String command);
-  String getCommand() { return _command; }
   void printPrompt();
   bool printDirectory(String directory, bool color = true);
   void processKey(char key);
@@ -53,7 +56,6 @@ public:
   void setRawKeys(void* caller, OnRawKey function);
 
 private:
-  String _command;
   String _version;
   XCopyESP8266 *_esp;
   XCopyConfig *_config;
@@ -66,6 +68,84 @@ private:
   void* _rawCaller = nullptr;
   OnRawKey _rawKeys = nullptr;
   void setBusy(bool state);
+
+  /*
+     The line being typed, and what Tab does with it. Both entry points - the USB
+     console through Update() and the browser through processKeys() - hand their
+     keys to the same editor, so a line started in one terminal can be finished in
+     the other, which was already true and is now true of the cursor too.
+  */
+  XCopyLineEditor _editor;
+  XCopyCompleter _completer;
+
+  //! The editor calls back through these; C function pointers, so they are static.
+  static void onEditorLine(void *caller, const String &line);
+  static void onEditorComplete(void *caller, uint8_t presses);
+
+  /*
+     One handler per command, in table order, each taking its arguments already
+     parsed and validated against XCOPY_COMMANDS. What is not here any more is
+     what every one of them used to open with: the four line SD card preamble and
+     the "Disk not inserted into floppy" check, which doCommand() now does once
+     from the command's XCOPY_NEEDS_ flags.
+  */
+  void dispatch(const XCopyCommandDef *command, const XCopyArgs &args);
+
+  void cmdHelp(const XCopyArgs &args);
+  void cmdVersion();
+  void cmdClear();
+  void cmdReboot();
+  void cmdConfig();
+  void cmdMem();
+
+  void cmdDir(const XCopyArgs &args);
+  void cmdCat(const XCopyArgs &args);
+  void cmdRm(const XCopyArgs &args);
+  void cmdMd5(const XCopyArgs &args);
+
+  void cmdReadAdf(const XCopyArgs &args);
+  void cmdWriteAdf(const XCopyArgs &args);
+  void cmdReadScp(const XCopyArgs &args);
+  void cmdWriteFlash();
+  void cmdWriteBin(const XCopyArgs &args);
+  void cmdLive();
+  void cmdTestDisk();
+  void cmdScanBlocks();
+  void cmdSearch(const XCopyArgs &args);
+  void cmdModSearch();
+  void cmdModRip(const XCopyArgs &args);
+
+  void cmdBoot(const XCopyArgs &args);
+  void cmdHist();
+  void cmdRpm(const XCopyArgs &args);
+  void cmdHeadCal(const XCopyArgs &args);
+  void cmdName();
+  void cmdPrint();
+  void cmdRead(const XCopyArgs &args);
+  void cmdDump(const XCopyArgs &args);
+  void cmdWeak();
+
+  void cmdTime();
+  void cmdSetTime(const XCopyArgs &args);
+  void cmdTimeZone(const XCopyArgs &args);
+
+  void cmdConnect(const XCopyArgs &args);
+  void cmdClearWifi();
+  void cmdScan();
+  void cmdWebsocket(const XCopyArgs &args);
+  void cmdPass();
+
+  //! The four commands that are one round trip to the ESP and a printed answer.
+  void espQuery(const char *command, uint32_t timeout = 0);
+
+  //! Read eleven sectors of a logical track out of the flash disk image.
+  void readTrackFromFlash(uint16_t track);
+
+  // Help, generated from the table rather than written out beside it.
+  void printHelp();
+  void printCommandHelp(const XCopyCommandDef *command);
+  //! One entry as it appears in the command column: name, alias and subject.
+  static String helpSignature(const XCopyCommandDef *command);
 };
 
 #endif // XCOPYCOMMAND

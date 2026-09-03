@@ -308,7 +308,7 @@ void XCopy::setBusy(bool busy)
    black pixels across the bottom row, which is also where the last menu entry
    sits, and drawMenu() then paints that entry back over the top.
 */
-uint8_t XCopy::versionRow() const
+uint8_t XCopy::versionRow()
 {
     const uint16_t panelH = _graphics.getTFT()->height();
     return (panelH > 10) ? (uint8_t)(panelH - 10) : 0;
