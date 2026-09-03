@@ -241,12 +241,23 @@ void XCopyGraphics::rawDraw(const char *filename, uint16_t x, uint16_t y)
         return;
     }
 
-    // Parse BMP header
+    /*
+       Parse BMP header.
+
+       Every read here has to happen even where the value is thrown away: read16()
+       and read32() walk a shared file offset, so a field that is not read is not
+       skipped either - it is simply handed to whatever is read next. Dropping the
+       DIB header size is what broke this. It went with the unused local that held
+       it, which moved the width into it, the height into the width and the low
+       half of the height into the plane count; 128 is not 1, so the parse bailed
+       and every flash thumbnail reported "565 format not recognized".
+    */
     if (read16(bmpFile) == 0x4D42)
     { // BMP signature
-        read32(bmpFile); // fileSize
-        (void)read32(bmpFile);            // Read & ignore creator bytes
-        read32(bmpFile); // bmpImageoffset - Start of image data
+        read32(bmpFile);       // fileSize
+        (void)read32(bmpFile); // Read & ignore creator bytes
+        uint32_t bmpImageoffset = read32(bmpFile);
+        (void)read32(bmpFile); // DIB header size - read to skip it, see above
         bmpWidth = read32(bmpFile);
         bmpHeight = read32(bmpFile);
         if (read16(bmpFile) == 1)
@@ -276,7 +287,9 @@ void XCopyGraphics::rawDraw(const char *filename, uint16_t x, uint16_t y)
 
                     uint16_t buffer[BUFFPIXELCOUNT]; // pixel buffer
 
-                    bmpFile.seek(54); //skip header
+                    // The offset the header gave, rather than the 54 a 40 byte DIB
+                    // header happens to put it at.
+                    bmpFile.seek(bmpImageoffset);
                     uint32_t totalPixels = (uint32_t)bmpWidth * (uint32_t)bmpHeight;
                     uint16_t numFullBufferRuns = totalPixels / BUFFPIXELCOUNT;
 
@@ -291,13 +304,18 @@ void XCopyGraphics::rawDraw(const char *filename, uint16_t x, uint16_t y)
                         }
                     }
 
-                    // render any remaining pixels that did not fully fit the buffer
+                    // Render any remaining pixels that did not fill the buffer. The
+                    // loop runs to remainingPixels, not to BUFFPIXELCOUNT: only that
+                    // many were read, and the rest of the buffer is the previous run
+                    // still sitting in it. An image whose pixel count is a multiple
+                    // of BUFFPIXELCOUNT never gets here, which is why every built in
+                    // thumbnail - 160 x 128, twenty full runs - hid it.
                     uint32_t remainingPixels = totalPixels % BUFFPIXELCOUNT;
                     if (remainingPixels > 0)
                     {
                         bmpFile.read(buffer, 2 * remainingPixels);
-                        for (int i = 0; i < BUFFPIXELCOUNT; i++)
-                        {                            
+                        for (uint32_t i = 0; i < remainingPixels; i++)
+                        {
                             _tft->pushColor(buffer[i]);
                         }
                     }
