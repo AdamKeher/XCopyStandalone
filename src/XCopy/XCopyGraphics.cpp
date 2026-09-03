@@ -12,8 +12,10 @@ void XCopyGraphics::drawHeader()
 
 void XCopyGraphics::drawTrack(uint8_t track, uint8_t side, bool drawText, bool retry, int retryCount, bool verify, uint16_t color)
 {
-    // 5px blocks, not 6: GRID_COLS of them plus the gap between the two sides has to
-    // fit a 160px panel, and at 6px a 12 column row is 183px wide.
+    // 5px blocks, not 6. Ten columns would fit at 6px across - two sides of them plus
+    // the gap is 155 of the panel's 160 - but GRID_ROWS is 9 now, and 25 + 9 * 7 puts
+    // the bottom row at 88. diskToADF() clears from y 85 down for the status text, so
+    // the last row of a copy would be wiped as it was drawn. At 5px it ends at 79.
     const uint8_t blockSize = 5;
     if (drawText)
     {

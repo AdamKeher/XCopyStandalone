@@ -154,7 +154,11 @@ void XCopyTrackMap::gridRow(uint8_t row)
         for (uint8_t col = 0; col < COLS; col++)
         {
             if (col > 0) Serial.write(' ');
-            Serial.write(glyph(trackPending, 0));
+            // The last row is short: MAX_CYLINDERS is not a multiple of COLS. Blank,
+            // not a pending glyph, or the map would promise cylinders 84 to 89 and
+            // then never fill them in.
+            const uint8_t cylinder = (row * COLS) + col;
+            Serial.write(cylinder < MAX_CYLINDERS ? glyph(trackPending, 0) : ' ');
         }
         Serial.print(MAP_RESET);
         Serial.write(' ');
