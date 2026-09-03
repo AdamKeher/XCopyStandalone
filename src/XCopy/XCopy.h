@@ -1,7 +1,7 @@
 #ifndef XCOPY_H
 #define XCOPY_H
 
-#define XCOPYVERSION "v726.26"
+#define XCOPYVERSION "v727.26"
 // #define XCOPY_DEBUG = 1
 
 // #define PCBVERSION 1 // expensive adafruit screen and joystick
@@ -62,6 +62,9 @@ public:
   void navigateUp(bool repeat = false);
   void navigateDown(bool repeat = false);
   void navigateSelect();
+
+  //! Restart the Teensy. Does not return. See the note on it.
+  void reboot();
   void navigateLeft();
   void navigateRight();
   void processState();

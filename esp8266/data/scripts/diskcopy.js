@@ -220,6 +220,20 @@ function diskcopyCancel() {
     // disableInterface(false);
 }
 
+/*
+   Restarts the Teensy, not the radio. The ESP stays up and so does this page, so
+   the connection banner never appears and the only sign of it is the device going
+   quiet for a second and the status line coming back from the boot.
+
+   Asked first. It sits one item below Format Disk in the same menu, and it
+   abandons whatever the drive is in the middle of.
+*/
+function rebootDevice() {
+    if (!confirm('Reboot the XCopy device now? Anything in progress will be abandoned.')) return;
+    setStatus('Rebooting ...');
+    wsSend('rebootDevice');
+}
+
 function writeADFFile(path) {
     $('#staticBackdrop').modal('hide');
     wsSend("writeADFFile," + path);

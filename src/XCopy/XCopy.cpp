@@ -31,10 +31,40 @@ void XCopy::begin()
     // implement is in shared/XCopyProtocol.h.
     _transfer.begin(&ESPSerial, &_graphics);
 
+    /*
+       A solid block of purple, so all three rows have to come out exactly the same
+       width or it has a bite taken out of the corner. The middle row carries the
+       version string, and that is not a fixed length: the gap after it was counted
+       by hand for a version two characters longer than the current one, and the
+       block has been two short on the right ever since. Measured now, so it cannot
+       drift again the next time the format changes.
+    */
+    static const uint8_t bannerWidth = 74;
+    static const char *const bannerLeft = " X-Copy Standalone ";
+    static const char *const bannerRight = "(c)2022 Adam Keher ";
+
+    char blank[bannerWidth + 1];
+    memset(blank, ' ', bannerWidth);
+    blank[bannerWidth] = 0;
+
+    /*
+       Written into a row of spaces rather than assembled with a padding format:
+       the title and version go in from the left, the copyright is placed against
+       the right hand edge, and the row is the width it is regardless. A version
+       long enough to reach across would overlap the copyright rather than push the
+       row wider, which is the right way round - the block staying square is what
+       matters here, and a version string that long is a different problem.
+    */
+    char banner[bannerWidth + 1];
+    memcpy(banner, blank, sizeof(blank));
+    memcpy(banner, bannerLeft, strlen(bannerLeft));
+    memcpy(banner + strlen(bannerLeft), XCOPYVERSION, strlen(XCOPYVERSION));
+    memcpy(banner + bannerWidth - strlen(bannerRight), bannerRight, strlen(bannerRight));
+
     Log << XCopyConsole::clearscreen() << XCopyConsole::home() << XCopyConsole::background_purple() << XCopyConsole::high_yellow();
-    Log << F("                                                                          \r\n");
-    Log << F(" X-Copy Standalone ") << XCOPYVERSION <<  F("                           (c)2022 Adam Keher \r\n");
-    Log << F("                                                                          \r\n");
+    Log << blank << F("\r\n");
+    Log << banner << F("\r\n");
+    Log << blank << F("\r\n");
     Log << XCopyConsole::reset() << XCopyConsole::echo() << F("\r\n");
 
     // Init Serial Flash
@@ -363,6 +393,48 @@ void XCopy::drawMenuSelection(XCopyMenuItem *previous)
     drawVersion();
 }
 
+/**
+ * @brief Restart the Teensy. Does not return.
+ *
+ * Two routes, tried in that order. Pin 28 pulled low resets the board exactly the
+ * way the button does, but only on a Teensy that has been jumpered to the RST pad,
+ * which is an optional modification and most boards do not have it. All the old
+ * code did was pulse the pin and then print a line saying that if you are reading
+ * this, it was not wired.
+ *
+ * So if the board is still running a moment later, the core is asked to reset
+ * itself: SYSRESETREQ, the vector key in the top half of AIRCR and the request in
+ * the bottom, which needs no wire at all. The difference between the two is what
+ * else on the board sees the reset - nothing here hangs off the RST pad, and the
+ * ESP has its own reset line and is deliberately left running, so the browser
+ * keeps its connection and simply watches the device go quiet for a second.
+ */
+void XCopy::reboot()
+{
+    // Said before the reset rather than after it: whichever route works, nothing
+    // below that point runs. The delay is for the ESP, which has to get the line
+    // out over the serial link and into the websocket before the far end stops
+    // talking to it.
+    Log << F("Rebooting ...\r\n");
+    if (_esp != nullptr)
+        _esp->setStatus("Rebooting ...");
+    Serial.flush();
+    delay(50);
+
+    // The jumpered route.
+    pinMode(PIN_TEENSYRESETPIN, OUTPUT);
+    pinMode(PIN_TEENSYRESETPIN, OUTPUT_OPENDRAIN);
+    digitalWriteFast(PIN_TEENSYRESETPIN, LOW);
+    delay(10);
+
+    // Not jumpered.
+    SCB_AIRCR = 0x05FA0004;
+
+    while (true)
+    {
+    }
+}
+
 void XCopy::intro()
 {
     _graphics.clearScreen();
@@ -539,6 +611,15 @@ void XCopy::onWebCommand(void* obj, const String command)
     }
     else if (command == "testDisk") {
         xcopy->startFunction(XCopyAction::testDisk);
+    }
+    /*
+       Not through startFunction(). Every other command here queues an action for the
+       state machine to pick up on the next pass of the loop, and there is no next
+       pass after this one - so it is called where it can still say something first.
+       Sent by the browser's Tools menu and by the console's "reboot".
+    */
+    else if (command == "rebootDevice") {
+        xcopy->reboot();
     }
     // Only ever sent by the serial console's "live" command. The web UI has no button
     // for it: a live session stops servicing the ESP link for its whole duration, so
@@ -1429,10 +1510,7 @@ void XCopy::navigateSelect()
         }
         case XCopyAction::resetDevice:
         {
-            Serial << "Resetting ...";
-            pinMode(28, OUTPUT);
-            pinMode(28, OUTPUT_OPENDRAIN);
-            Serial << " Looks like pin 28 has not been jumpered to the RST pad on your Teensy 3.2\r\n";
+            reboot();
             break;
         }
 

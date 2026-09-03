@@ -99,6 +99,7 @@ void XCopyCommandLine::doCommand(String command)
         Log << F("|--------------------------------+-----------------------------------------------------|\r\n");
         Log << F("| config                         | show config settings                                |\r\n");
         Log << F("| mem                            | show memory stats                                   |\r\n");
+        Log << F("| reboot                         | restart the device                                  |\r\n");
         Log << F("`--------------------------------'-----------------------------------------------------'\r\n");
         /*
         Log << F("| write <n>       | write logical track #n                                    |\r\n");
@@ -117,6 +118,14 @@ void XCopyCommandLine::doCommand(String command)
         Log << F("| dskcng          | returns disk change signal in binary                      |\r\n");
         Log << F("`-----------------'-----------------------------------------------------------'\r\n");
         */
+        return;
+    }
+
+    // Same reboot the TFT settings menu and the browser's Tools menu ask for, so
+    // there is one of them rather than three that have to agree.
+    if (cmd == F("reboot"))
+    {
+        _callback(_caller, "rebootDevice");
         return;
     }
 
