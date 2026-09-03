@@ -17,16 +17,16 @@ FivePosNavigation navigation = FivePosNavigation(PIN_NAVIGATION_UP_PIN, PIN_NAVI
 XCopy xcopy = XCopy(&tft);
 XCopyLog Log = XCopyLog();
 
-void navigationCallBack(uint8_t change_mask, FivePosNavigationState state, uint32_t duration) {
+void navigationCallBack(uint8_t change_mask, FivePosNavigationState state, uint32_t duration, bool repeat) {
   if ((change_mask & FIVEPOSNAVIGATION_DOWN) && state.down)
   { 
-    xcopy.navigateDown();
+    xcopy.navigateDown(repeat);
     // Serial.println("Down");
   }
   if ((change_mask & FIVEPOSNAVIGATION_UP) && state.up)
   { 
     // Serial.println("Up");
-    xcopy.navigateUp();
+    xcopy.navigateUp(repeat);
   }
   if ((change_mask & FIVEPOSNAVIGATION_PUSH) && state.push)
   { 
@@ -81,6 +81,14 @@ void setup() {
   Serial.begin(115200);
 
   navigation.begin(10, INPUT_PULLUP, navigationCallBack);
+  /*
+     Auto repeat on up and down. Long enough before it starts that a deliberate
+     single step is never doubled, fast enough once it does that a hundred file SD
+     card is a couple of seconds of holding rather than a hundred clicks. The click
+     sample is 7ms, so the rate is set by how fast the screen can follow and not by
+     the audio.
+  */
+  navigation.setRepeat(450, 90);
   xcopy.begin();
   #if PCBVERSION == 1
   attachInterrupt(PIN_NAVIGATION_LEFT_PIN, ISR_CANCEL, FALLING);
