@@ -126,24 +126,66 @@ XCopyMenuItem *XCopyMenu::getLast(XCopyMenuItem *item)
     return item;
 }
 
+/*
+   One entry, at the row drawMenu() would have put it on.
+
+   Deliberately identical to the body of drawMenu()'s loop rather than similar to
+   it: the two have to lay down the same pixels or a repainted row would sit a
+   character to the side of the one it replaced. Nothing is cleared first - the
+   string is the same string, only its colour changes, so overprinting it lands on
+   exactly the pixels it is replacing.
+*/
+void XCopyMenu::drawItem(XCopyMenuItem *item, uint8_t row)
+{
+    _graphics->setCursor(ROW_X, ROW_TOP + (row * ROW_HEIGHT));
+    if (item->firstChild != NULL)
+    {
+        _graphics->drawText(ST7735_YELLOW, ">> ");
+    }
+
+    uint16_t color = isCurrentItem(item) ? ST7735_GREEN : ST7735_WHITE;
+    _graphics->setTextWrap(false);
+    _graphics->drawText(color, item->text);
+}
+
 void XCopyMenu::drawMenu(XCopyMenuItem *item)
 {
     uint8_t count = 0;
     while (item != NULL)
     {
-        _graphics->setCursor(5, 45 + (count * 10));
-        if (item->firstChild != NULL)
-        {
-            _graphics->drawText(ST7735_YELLOW, ">> ");
-        }
-
-        uint16_t color = isCurrentItem(item) ? ST7735_GREEN : ST7735_WHITE;
-        _graphics->setTextWrap(false);
-        _graphics->drawText(color, item->text);
-
+        drawItem(item, count);
         item = item->next;
         count++;
     }
+}
+
+int16_t XCopyMenu::rowOf(XCopyMenuItem *item)
+{
+    int16_t row = 0;
+    for (XCopyMenuItem *walk = _root; walk != NULL; walk = walk->next, row++)
+        if (walk == item)
+            return row;
+
+    return -1;
+}
+
+bool XCopyMenu::redrawSelection(XCopyMenuItem *previous)
+{
+    if (previous == NULL || _currentItem == NULL)
+        return false;
+
+    const int16_t previousRow = rowOf(previous);
+    const int16_t currentRow = rowOf(_currentItem);
+    if (previousRow < 0 || currentRow < 0)
+        return false;
+
+    // The outgoing entry first, so a level of one - where the two are the same
+    // entry - still ends up drawn as the current one.
+    if (previous != _currentItem)
+        drawItem(previous, (uint8_t)previousRow);
+    drawItem(_currentItem, (uint8_t)currentRow);
+
+    return true;
 }
 
 void XCopyMenu::printItem(XCopyMenuItem *item)

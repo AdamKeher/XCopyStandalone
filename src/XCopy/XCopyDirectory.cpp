@@ -351,65 +351,121 @@ void XCopyDirectory::printItems(XCopyDirectoryEntry *item)
     }
 }
 
-void XCopyDirectory::drawDirectory(bool clearScreen)
+/*
+   One entry, at the row drawDirectory() would have put it on.
+
+   Deliberately identical to the body of drawDirectory()'s loop rather than similar
+   to it: the two have to lay down the same pixels, or a repainted row would sit a
+   character to the side of the one it replaced. Nothing is cleared first - the
+   string is the same string and only its colour changes, so overprinting it lands
+   on exactly the pixels it is replacing.
+
+   Returns whether the entry painted a full screen thumbnail over the listing, which
+   is the one thing a caller cannot repair by repainting a single row.
+*/
+bool XCopyDirectory::drawItem(XCopyDirectoryEntry *item, uint8_t row)
 {
-    if (clearScreen)
-        _graphics->clearScreen();
+    _graphics->setCursor(ROW_X, ROW_TOP + (row * ROW_HEIGHT));
+    if (item->isDirectory())
+    {
+        if (item->source == _flashMemory)
+            _graphics->drawText(ST7735_CYAN, ">> ");
+        else
+            _graphics->drawText(ST7735_YELLOW, ">> ");
+    }
+
+    uint16_t color = isCurrentItem(item) ? ST7735_GREEN : ST7735_WHITE;
+    if (item->isIncorrectSize)
+        color = ST7735_RED;
+
+    _graphics->setTextWrap(false);
+    _graphics->drawText(color, item->longName);
+
+    // Flash entries carry a cover image beside the ADF. It is drawn over the whole
+    // panel, so it is only ever drawn for the entry the cursor is on.
+    if (item->source == _flashMemory && isCurrentItem(item))
+    {
+        String imageName = item->longName.substring(0, item->longName.lastIndexOf(".")) + ".565";
+        if (SerialFlash.exists(imageName.c_str()))
+        {
+            _graphics->rawDraw(imageName.c_str(), 0, 0);
+            return true;
+        }
+    }
+
+    return false;
+}
+
+void XCopyDirectory::drawDirectory()
+{
+    _graphics->clearScreen();
+    _graphics->setCharSpacing(1);
+    _graphics->setTextScale(0);
+
+    // Walk to the top of the window. The list is longer than the screen, so this is
+    // the first entry that is actually visible rather than the head of the list.
+    XCopyDirectoryEntry *item = getRoot();
+    for (uint16_t skip = windowTop(); skip > 0 && item != NULL; skip--)
+        item = item->next;
+
+    for (uint16_t count = 0; item != NULL && count < ITEMSPERSCREEN; count++)
+    {
+        // A thumbnail covers the rows below it, so there is nothing left to draw.
+        if (drawItem(item, (uint8_t)count))
+            break;
+        item = item->next;
+    }
+
+    _graphics->setCharSpacing(2);
+}
+
+/*
+   Moving the cursor is two entries changing colour, not a new screen.
+
+   The listing was cleared and reprinted for every click of the stick - up to twelve
+   filenames blitted over identical copies of themselves, down the same SPI bus the
+   flash sits on. Two rows change; two rows are drawn.
+
+   Anything that changes more than the two rows hands back false and takes the full
+   redraw: the window scrolling, and either entry being a flash one, since those
+   paint a cover image over the whole listing and only a full redraw puts it back.
+*/
+bool XCopyDirectory::redrawSelection(XCopyDirectoryEntry *previous, uint16_t previousTop)
+{
+    if (previous == NULL || _currentItem == NULL)
+        return false;
+
+    if (previousTop != windowTop())
+        return false;
+
+    if (previous->source == _flashMemory || _currentItem->source == _flashMemory)
+        return false;
+
+    /*
+       The window is placed from _index, so the rows are read off _index too. The
+       outgoing entry has to be exactly one step from it - up() and down() move by
+       one and skip nothing - and if it is not, then _index and the list have come
+       apart and the only safe thing to draw is all of it.
+    */
+    const uint16_t top = windowTop();
+    const uint16_t previousIndex = getItemIndex(previous);
+    if (previousIndex + 1 != _index && _index + 1 != previousIndex)
+        return false;
+    if (previousIndex < top || previousIndex >= top + ITEMSPERSCREEN)
+        return false;
+    if (_index < top || _index >= top + ITEMSPERSCREEN)
+        return false;
 
     _graphics->setCharSpacing(1);
     _graphics->setTextScale(0);
 
-    // seclect current item
-    XCopyDirectoryEntry *item = getRoot();
-
-    // skip ahead for scrolling
-    if (getIndex() + 1 >= ITEMSPERSCREEN)
-    {
-        for (int i = 0; i < getIndex() + 1 - ITEMSPERSCREEN; i++)
-        {
-            item = item->next;
-        }
-
-        _graphics->clearScreen();
-    }
-
-    uint16_t count = 0;
-
-    _graphics->clearScreen();
-
-    while (item != NULL && count < ITEMSPERSCREEN)
-    {
-        _graphics->setCursor(5, 0 + (count * 10));
-        if (item->isDirectory())
-        {
-            if (item->source == _flashMemory)
-                _graphics->drawText(ST7735_CYAN, ">> ");
-            else
-                _graphics->drawText(ST7735_YELLOW, ">> ");
-        }
-
-        uint16_t color = isCurrentItem(item) ? ST7735_GREEN : ST7735_WHITE;
-        if (item->isIncorrectSize) color = ST7735_RED;
-
-        _graphics->setTextWrap(false);
-        _graphics->drawText(color, item->longName);
-
-        // draw fullscreen thumbnail or information footer
-        if (item->source == _flashMemory && isCurrentItem(item))
-        {
-            String imageName = item->longName.substring(0, item->longName.lastIndexOf(".")) + ".565";
-            if (SerialFlash.exists(imageName.c_str()))
-            {
-                _graphics->rawDraw(imageName.c_str(), 0, 0);
-                break;
-            }
-        } 
-
-        item = item->next;
-        count++;
-    }
+    if (previous != _currentItem)
+        drawItem(previous, (uint8_t)(previousIndex - top));
+    drawItem(_currentItem, (uint8_t)(_index - top));
 
     _graphics->setCharSpacing(2);
+
+    return true;
 }
 
 XCopyDirectoryEntry::XCopyDirectoryEntry()

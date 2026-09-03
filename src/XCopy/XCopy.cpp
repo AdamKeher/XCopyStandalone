@@ -278,16 +278,38 @@ void XCopy::setBusy(bool busy)
    black pixels across the bottom row, which is also where the last menu entry
    sits, and drawMenu() then paints that entry back over the top.
 */
-void XCopy::drawMenuScreen()
+uint8_t XCopy::versionRow() const
 {
+    const uint16_t panelH = _graphics.getTFT()->height();
+    return (panelH > 10) ? (uint8_t)(panelH - 10) : 0;
+}
+
+/*
+   Where the version string starts, worked out once and remembered.
+
+   Measuring is the expensive half and it is also the destructive half: it prints
+   the string in black across the bottom row and reads the cursor back, because the
+   font is RLE_proportional and the driver keeps its string measuring private. Every
+   character is its own width, so a fixed pixels-per-character guess is wrong by
+   however much the particular characters differ from it, and guessing low pushes
+   the last character off the right hand edge.
+
+   It has to happen BEFORE the menu is drawn: those black pixels land on the bottom
+   row, which is also where the last entry of a long level sits, and drawMenu()
+   paints that entry back over the top. The answer cannot change while the firmware
+   is running, so after the first screen this costs nothing and touches nothing.
+*/
+void XCopy::measureVersion()
+{
+    if (_versionX != kVersionXUnknown)
+        return;
+
     TFT_ST7735 *tft = _graphics.getTFT();
     const String version = XCOPYVERSION;
     const uint16_t panelW = tft->width();
-    const uint16_t panelH = tft->height();
-    const uint8_t y = (panelH > 10) ? (uint8_t)(panelH - 10) : 0;
 
     int16_t startX = 0, startY = 0, endX = 0, endY = 0;
-    tft->setCursor(0, y);
+    tft->setCursor(0, versionRow());
     tft->getCursor(startX, startY);
     tft->setTextColor(ST7735_BLACK);
     tft->print(version);
@@ -300,10 +322,45 @@ void XCopy::drawMenuScreen()
     const uint16_t textW =
         (measured > 0) ? (uint16_t)measured : (uint16_t)(version.length() * 8);
 
-    const uint8_t x = (panelW > textW + 4) ? (uint8_t)(panelW - textW - 4) : 0;
+    _versionX = (panelW > textW + 4) ? (uint8_t)(panelW - textW - 4) : 0;
+}
 
+void XCopy::drawVersion()
+{
+    _graphics.drawText(_versionX, versionRow(), ST7735_MAGENTA, XCOPYVERSION);
+}
+
+void XCopy::drawMenuScreen()
+{
+    measureVersion();
     _menu.drawMenu(_menu.getRoot());
-    _graphics.drawText(x, y, ST7735_MAGENTA, version);
+    // After the list: the bottom entry of a long level and this share a line, and
+    // whichever is drawn last is the one that survives the overlap.
+    drawVersion();
+}
+
+/*
+   Moving the cursor is two entries changing colour, not a new screen.
+
+   drawMenuScreen() was called for every click of the stick, which reprinted every
+   entry in the level over an identical copy of itself and re-measured the version
+   string to put it back on top. redrawSelection() touches the two rows that
+   actually changed and says so; when it cannot - the list itself moved, not the
+   cursor in it - the full draw is still there behind it.
+*/
+void XCopy::drawMenuSelection(XCopyMenuItem *previous)
+{
+    // Nothing has drawn a full menu screen yet, so there is no measurement to reuse
+    // and nowhere safe to take one. Draw the lot.
+    if (_versionX == kVersionXUnknown || !_menu.redrawSelection(previous))
+    {
+        drawMenuScreen();
+        return;
+    }
+
+    // The bottom entry of a long level runs under the version string, so it is put
+    // back over whichever of the two rows was just repainted.
+    drawVersion();
 }
 
 void XCopy::intro()
@@ -812,10 +869,15 @@ void XCopy::startCopyADFtoDisk(String path) {
 
 // NAVIGATION
 
-void XCopy::navigateDown()
+void XCopy::navigateDown(bool repeat)
 {
     if (_xcopyState == headCalibration)
     {
+        // Not on a repeat. Up and down are the field adjusters here, so holding the
+        // stick would cycle the head selection or toggle the sound over and over
+        // rather than walk down a list.
+        if (repeat)
+            return;
         _headCal.adjustField(-1);
         _audio.playClick(false);
         return;
@@ -823,27 +885,34 @@ void XCopy::navigateDown()
 
     if (_xcopyState == menus || _xcopyState == idle)
     {
+        XCopyMenuItem *previous = _menu.getCurrentItem();
         if (_menu.down())
         {
             _audio.playClick(false);
-            drawMenuScreen();
+            drawMenuSelection(previous);
         }
     }
 
     if (_xcopyState == directorySelection)
     {
+        XCopyDirectoryEntry *previous = _directory.getCurrentItem();
+        const uint16_t previousTop = _directory.windowTop();
         if (_directory.down())
         {
             _audio.playClick(false);
-            _directory.drawDirectory();
+            if (!_directory.redrawSelection(previous, previousTop))
+                _directory.drawDirectory();
         }
     }
 }
 
-void XCopy::navigateUp()
+void XCopy::navigateUp(bool repeat)
 {
     if (_xcopyState == headCalibration)
     {
+        // See navigateDown().
+        if (repeat)
+            return;
         _headCal.adjustField(+1);
         _audio.playClick(false);
         return;
@@ -851,19 +920,23 @@ void XCopy::navigateUp()
 
     if (_xcopyState == menus || _xcopyState == idle)
     {
+        XCopyMenuItem *previous = _menu.getCurrentItem();
         if (_menu.up())
         {
             _audio.playClick(false);
-            drawMenuScreen();
+            drawMenuSelection(previous);
         }
     }
 
     if (_xcopyState == directorySelection)
     {
+        XCopyDirectoryEntry *previous = _directory.getCurrentItem();
+        const uint16_t previousTop = _directory.windowTop();
         if (_directory.up())
         {
             _audio.playClick(false);
-            _directory.drawDirectory();
+            if (!_directory.redrawSelection(previous, previousTop))
+                _directory.drawDirectory();
         }
     }
 }
@@ -894,7 +967,7 @@ void XCopy::navigateLeft()
         _xcopyState = directorySelection;
         // _drawnOnce = false;
         _audio.playBack(false);
-        _directory.drawDirectory(true);
+        _directory.drawDirectory();
 
         return;
     }
@@ -918,7 +991,7 @@ void XCopy::navigateLeft()
             _directory.setIndex(_directory.getItemIndex(item));
 
             _audio.playBack(false);
-            _directory.drawDirectory(true);
+            _directory.drawDirectory();
 
             return;
         }
@@ -980,13 +1053,13 @@ void XCopy::navigateSelect()
             String directory = _directory.getCurrentPath() + item->longName + "/";
             _audio.playBack(false);
             _directory.getDirectory(directory, &_disk, ".adf");
-            _directory.drawDirectory(true);
+            _directory.drawDirectory();
         }
         else if (item->isDirectory() && item->source == _flashMemory)
         {
             _audio.playBack(false);
             _directory.getDirectoryFlash(false, &_disk, ".adf");
-            _directory.drawDirectory(true);
+            _directory.drawDirectory();
         }
         else if (lowerName.endsWith(".adf"))
         {

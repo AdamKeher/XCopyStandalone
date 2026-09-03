@@ -62,7 +62,35 @@ public:
   void printCurrentItem() { printItem(_currentItem); }
   void printAll() { printItems(_root); }
 
+  /*
+     Row geometry. The list starts below the header logo and every entry is one
+     text line tall. Shared with drawItem() so a single row repaint lands exactly
+     where drawMenu() put it - a targeted repaint that is one pixel out is worse
+     than no targeted repaint at all.
+  */
+  static const uint8_t ROW_TOP = 45;
+  static const uint8_t ROW_HEIGHT = 10;
+  static const uint8_t ROW_X = 5;
+
   void drawMenu(XCopyMenuItem *item);
+  //! One entry, drawn exactly as drawMenu() draws it.
+  void drawItem(XCopyMenuItem *item, uint8_t row);
+  //! Which row of the level on screen an item sits on, or -1 if it is not in it.
+  int16_t rowOf(XCopyMenuItem *item);
+
+  /**
+   * @brief Repaint only the two entries whose colour changed.
+   *
+   * Moving the cursor changes two pixels' worth of meaning and nothing else, but
+   * the whole level was being reprinted for it - every string blitted over an
+   * identical copy of itself, down a 15MHz SPI bus, on every click of the stick.
+   *
+   * Returns false if either entry is not in the level being drawn, which is the
+   * caller's cue to draw the whole thing: descending, backing out and any jump
+   * from the console or the browser all change the list itself, not the cursor
+   * in it.
+   */
+  bool redrawSelection(XCopyMenuItem *previous);
   void redraw() {
     _graphics->clearScreen();
     _graphics->drawHeader();

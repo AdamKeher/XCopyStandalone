@@ -43,6 +43,13 @@ void FivePosNavigation::setInterval(int interval)
     this->pushButton.interval(interval);
 }
 
+void FivePosNavigation::setRepeat(uint16_t delayMs, uint16_t rateMs)
+{
+    _repeatDelayMs = delayMs;
+    _repeatRateMs = rateMs;
+    _repeatMask = 0;
+}
+
 void FivePosNavigation::update()
 {
     prev_state = state;
@@ -123,8 +130,37 @@ void FivePosNavigation::update()
         duration = this->pushButton.held();
     }
 
+    /*
+       Re-arm the repeat from what is held right now rather than from the edge that
+       was just seen. Pressing, releasing and swapping direction all fall out of the
+       same comparison, and the timer is only ever restarted when the answer changes
+       - so the delay is measured from the press, not from the last poll.
+
+       Down wins if both somehow read as held, which a stick cannot do but a shorted
+       pin can; the point is that this is total.
+    */
+    const uint8_t heldMask = this->state.down ? FIVEPOSNAVIGATION_DOWN
+                                              : (this->state.up ? FIVEPOSNAVIGATION_UP : 0);
+    if (heldMask != _repeatMask)
+    {
+        _repeatMask = heldMask;
+        _repeatNextMs = millis() + _repeatDelayMs;
+    }
+
     if (this->changeCallBack && change_mask)
     {
-        this->changeCallBack(change_mask, this->state, duration);
+        this->changeCallBack(change_mask, this->state, duration, false);
+        return;
     }
+
+    // A repeat is never delivered in the same pass as a real edge, so the press that
+    // starts a hold can never be doubled by the repeat it arms.
+    if (_repeatMask == 0 || _repeatRateMs == 0 || this->changeCallBack == NULL)
+        return;
+
+    if ((int32_t)(millis() - _repeatNextMs) < 0)
+        return;
+
+    _repeatNextMs = millis() + _repeatRateMs;
+    this->changeCallBack(_repeatMask, this->state, 0, true);
 }

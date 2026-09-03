@@ -1,7 +1,7 @@
 #ifndef XCOPY_H
 #define XCOPY_H
 
-#define XCOPYVERSION "v725.26"
+#define XCOPYVERSION "v726.26"
 // #define XCOPY_DEBUG = 1
 
 // #define PCBVERSION 1 // expensive adafruit screen and joystick
@@ -58,8 +58,9 @@ public:
 
   void begin();
   void update();
-  void navigateUp();
-  void navigateDown();
+  //! @param repeat true when the joystick is being held rather than pressed.
+  void navigateUp(bool repeat = false);
+  void navigateDown(bool repeat = false);
   void navigateSelect();
   void navigateLeft();
   void navigateRight();
@@ -67,6 +68,17 @@ public:
   void intro();
   // Draws the top level menu, with the firmware version bottom right.
   void drawMenuScreen();
+  //! Repaint only the two entries whose colour changed. See the note on it.
+  void drawMenuSelection(XCopyMenuItem *previous);
+  //! The version string, bottom right.
+  void drawVersion();
+  //! Work out where it starts. Destructive, and a no-op after the first call.
+  void measureVersion();
+  //! The row it sits on, which is also the last menu row of a long level.
+  uint8_t versionRow() const;
+  //! Not yet measured. See measureVersion().
+  static const uint8_t kVersionXUnknown = 0xff;
+  uint8_t _versionX = kVersionXUnknown;
   void cancelOperation();
   bool detectCancelPin();
   void setBusy(bool busy);
