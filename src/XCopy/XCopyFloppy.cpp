@@ -847,6 +847,158 @@ int XCopyFloppy::readTrack(boolean silent)
 }
 
 /*
+   Odd/even MFM unpack of one longword.
+
+   Amiga MFM stores a longword as two halves: the even data bits in the first four
+   raw bytes and the odd bits in the next four, each interleaved with clock bits
+   that the 0x5555 mask strips. decodeSector() spells this out three separate
+   times; naming it once means calibrationRead() cannot get the arithmetic subtly
+   different from the decoder it has to agree with.
+*/
+unsigned long XCopyFloppy::decodeLongword(long p)
+{
+    unsigned int even0 = ((stream[p + 0] << 8) + stream[p + 1]) & 0x5555;
+    unsigned int even1 = ((stream[p + 2] << 8) + stream[p + 3]) & 0x5555;
+    unsigned int odd0 = ((stream[p + 4] << 8) + stream[p + 5]) & 0x5555;
+    unsigned int odd1 = ((stream[p + 6] << 8) + stream[p + 7]) & 0x5555;
+
+    return (((unsigned long)((even0 << 1) | odd0) << 16) | ((even1 << 1) | odd1));
+}
+
+/*
+   One pass of the head calibration test.
+
+   Why this is not readTrack(): that retries up to six times, calls adjustTimings()
+   between attempts - which moves the density thresholds and so makes consecutive
+   passes incomparable - and at :788 turns "the header does not name the track I
+   asked for" into a hard error. That last one is the whole signal here. An
+   operator adjusting a head needs to see the drive reading its neighbour, not be
+   told the read failed. Lowering _retries would not help either: readTrack()
+   opens with setMode(), which puts _retries back to maxRetries.
+
+   Everything is judged from sectorTable[] and the raw stream rather than from
+   _track[], for two reasons. initRead() does not clear _track[], so a sector left
+   over from the previous pass would read as present this pass. And decodeSector()
+   records data checksum failures into a bit that a 32 bit shift throws away, so
+   its verdict on a sector's data cannot be trusted. Both checksums are recomputed
+   here from the bytes actually captured.
+*/
+bool XCopyFloppy::calibrationRead(uint8_t cylinder, uint8_t head, bool recal, CalibrationResult &out)
+{
+    // Forgetting the position forces gotoTrack() through seek0(), so a drive that
+    // cannot find a cylinder reliably fails again rather than being let off by the
+    // head already happening to sit in the right place.
+    if (recal)
+        _currentTrack = -1;
+
+    motorOn();
+    gotoLogicTrack((cylinder * 2) + head);
+
+    for (int i = 0; i < 256; i++)
+        hist[i] = 0;
+
+    initRead();
+    startFTM0();
+    unsigned long started = millis();
+    while (recordOn)
+    {
+        // Same guard readTrack() uses. Unlike readTrack() this does not record an
+        // error: a timeout means there was no pass, not that the pass was bad.
+        if ((millis() - started) > 300)
+        {
+            stopFTM0();
+            return false;
+        }
+    }
+
+    memset(&out, 0, sizeof(out));
+    out.cylinder = cylinder;
+    out.head = head;
+    out.sectorCount = sectors;
+    out.syncs = sectorCnt;
+    out.cylinderSeen = -1;
+    // sectorMissing is zero, so the memset above has already set every slot.
+
+    for (int i = 0; i < sectorCnt; i++)
+    {
+        unsigned long bytePos = sectorTable[i].bytePos;
+
+        // decodeSector() has no such check and will read past the buffer on a sync
+        // mark found near the end of the capture.
+        if (bytePos + 1088 > (unsigned long)streamLen)
+        {
+            out.truncated++;
+            continue;
+        }
+
+        long base = (long)bytePos + 8; // skip the sync and magic words
+        unsigned long info = decodeLongword(base);
+
+        /*
+           The header checksum is checked before anything in the header is
+           believed, and not as one more way of failing at the end.
+
+           Which cylinder a sector claims to come from is the entire output of
+           this test, and that claim lives in the header. Reading the track byte
+           out of a header that did not checksum and then reporting the drive as
+           one cylinder low would be inventing the very diagnostic the operator
+           is about to act on.
+        */
+        if (calcChkSum(base, 0, 40) != decodeLongword(base + 40) || (info >> 24) != 0xff)
+        {
+            out.strays++;
+            continue;
+        }
+
+        uint8_t headerTrack = (info >> 16) & 0xff;
+        uint8_t headerSector = (info >> 8) & 0xff;
+
+        if (headerSector >= out.sectorCount)
+        {
+            out.strays++;
+            continue;
+        }
+
+        if (out.status[headerSector] != sectorMissing)
+            out.duplicates++;
+
+        /*
+           The header carries the LOGICAL track, cylinder * 2 + side, so one
+           cylinder of head misplacement is a difference of two here. Getting this
+           wrong reads every side 1 sector as a cylinder high.
+        */
+        uint8_t headerCylinder = headerTrack / 2;
+        uint8_t headerHead = headerTrack & 1;
+
+        if (out.cylinderSeen < 0)
+            out.cylinderSeen = (int8_t)headerCylinder;
+
+        uint8_t verdict;
+        if (headerCylinder < cylinder)
+            verdict = sectorCylLow;
+        else if (headerCylinder > cylinder)
+            verdict = sectorCylHigh;
+        else if (headerHead != head)
+            verdict = sectorHeadWrong;
+        else if (calcChkSum(base, 56, 1024) != decodeLongword(base + 48))
+            verdict = sectorBadCheck;
+        else
+            verdict = sectorOK;
+
+        // A second sync mark for a sector already read cleanly never downgrades it.
+        // Both copies are on the disk; one of them being good is what matters.
+        if (out.status[headerSector] != sectorOK)
+            out.status[headerSector] = verdict;
+    }
+
+    for (int i = 0; i < out.sectorCount; i++)
+        if (out.status[i] == sectorOK)
+            out.valid++;
+
+    return true;
+}
+
+/*
    read Diskname from Track 80
 */
 String XCopyFloppy::getName()

@@ -66,6 +66,50 @@ struct Sector
 };
 
 /*
+   Head calibration.
+
+   The verdict on one sector from one pass of the head calibration test, and the
+   whole of one pass. This is a separate vocabulary from the _errors bitmask the
+   copy path uses because it answers a different question: not "can this track be
+   read" but "is the head over the cylinder it was told to go to". A sector that
+   decodes perfectly but carries a neighbouring cylinder in its header is a clean
+   read and an alignment fault at the same time, and only one of those two is
+   interesting here.
+*/
+enum XCopySectorVerdict : uint8_t
+{
+    sectorMissing = 0, //!< no sync mark decoded carrying this sector number
+    sectorOK,          //!< header and data checksums good, header names this cyl/head
+    sectorCylLow,      //!< header names a LOWER cylinder than the one asked for
+    sectorCylHigh,     //!< header names a HIGHER cylinder
+    sectorHeadWrong,   //!< right cylinder, wrong side in the header
+    sectorBadCheck     //!< right cylinder and head, but a checksum failed
+};
+
+/*
+   One pass over one cylinder and one head.
+
+   Deliberately fixed size and POD: two of these live for the whole of a
+   calibration session on a part with roughly 6KB free, so nothing here may grow
+   or allocate. status[] is sized for HD's 22 sectors; sectorCount says how much
+   of it means anything for the density actually in the drive.
+*/
+struct CalibrationResult
+{
+    uint8_t cylinder;     //!< cylinder that was asked for
+    uint8_t head;         //!< side that was asked for
+    uint8_t sectorCount;  //!< 11 (DD) or 22 (HD): meaningful extent of status[]
+    uint8_t valid;        //!< entries of status[] that are sectorOK
+    uint8_t syncs;        //!< sync marks the capture ISR saw, before any decoding
+    uint8_t strays;       //!< sync marks whose header could not be trusted:
+                          //!< a failed header checksum or a sector number out of range
+    uint8_t duplicates;   //!< sector numbers that appeared more than once
+    uint8_t truncated;    //!< sectors whose 1088 bytes ran off the end of the capture
+    int8_t cylinderSeen;  //!< cylinder the first readable header named, -1 if none did
+    uint8_t status[22];   //!< XCopySectorVerdict, indexed by sector number
+};
+
+/*
    returns c if printable, else returns delim
 */
 char byte2char(byte c, char delim = '.');
@@ -186,6 +230,31 @@ class XCopyFloppy
 
     // track transfer
     int readTrack(boolean silent);
+
+    /**
+     * @brief One capture pass over @p cylinder / @p head, classified for alignment.
+     *
+     * Deliberately not readTrack(). That one retries six times, calls
+     * adjustTimings() between attempts, and turns a header naming the wrong
+     * cylinder into a hard error - which is the single thing this test exists to
+     * show the operator rather than hide from them. This does exactly one capture
+     * with the density thresholds left alone, so consecutive passes are
+     * comparable and a screw being turned shows up as the numbers changing.
+     *
+     * Headers and both checksums are read straight out of the raw stream via the
+     * sync mark table, so this is unaffected by the data checksum bug in
+     * decodeSector(). Neither _track[] nor _weakTracks[]/_trackLog[] is touched,
+     * so a calibration session cannot disturb a later disk read.
+     *
+     * @param cylinder physical cylinder, 0 to MAX_CYLINDERS-1
+     * @param head 0 (lower) or 1 (upper)
+     * @param recal forget the head position first, so the seek goes through
+     *        seek0() and a positioning fault reappears instead of being masked
+     * @param out filled in on success, untouched on failure
+     * @result false only when no capture happened at all - no disk, or the
+     *         capture timed out. "0 of 11 valid" is a successful pass.
+     */
+    bool calibrationRead(uint8_t cylinder, uint8_t head, bool recal, CalibrationResult &out);
     int writeTrack();
     void floppyTrackMfmEncode(unsigned long track, byte *src, byte *dst);
 
@@ -273,6 +342,9 @@ class XCopyFloppy
     // mfm decode
     void decodeSector(long secPtr, int index);
     unsigned long calcChkSum(long secPtr, int pos, int b);
+    //! Odd/even MFM unpack of the longword at @p p. decodeSector() open codes this
+    //! three times over; calibrationRead() uses it by name.
+    unsigned long decodeLongword(long p);
     void decodeTrack(boolean silent);
     int findMinima(int start);
     void adjustTimings();

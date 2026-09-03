@@ -426,6 +426,14 @@ function onWebSocketMessage(msg) {
     drawFlux(res[1], res[2]);
   }
 
+  if (res[0] == "headCal") {
+    headCalResult(res[1], res[2], res[3], res[4], res[5]);
+  }
+
+  if (res[0] == "headCalConfig") {
+    headCalConfig(res[1], res[2], res[3], res[4], res[5], res[6]);
+  }
+
   if (res[0] == "setState") {
     switch (res[1]) {
       case '3':
@@ -454,6 +462,13 @@ function onWebSocketMessage(msg) {
         break;
       case '19':
         setState('copyFlashToDisk');
+        break;
+      // setTab rather than setState: the calibration panel has no button for
+      // diskcopy.js to highlight and no diskname for it to hide, so the browser
+      // simply follows the device onto the tab.
+      case '44':
+        setTab('headcal');
+        break;
     }
   }
 

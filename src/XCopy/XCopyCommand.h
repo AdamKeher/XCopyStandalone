@@ -20,6 +20,13 @@
 
 typedef void (*OnWebCommand)(void* obj, const String command);
 
+/*
+   A sink for single keystrokes, for a screen that is driven by keys rather than
+   by typed lines. doCommand() only fires on Enter, which is no use to something
+   the operator is adjusting live.
+*/
+typedef void (*OnRawKey)(void* caller, char key);
+
 class XCopyCommandLine
 {
 public:
@@ -34,6 +41,17 @@ public:
 
   void setCallBack(void* caller, OnWebCommand function);
 
+  /**
+   * @brief Divert every keystroke to @p function instead of the line editor.
+   *
+   * Both entry points funnel through processKey(): the USB console via Update()
+   * and the browser terminal via processKeys(), so one hook serves both and a
+   * key screen is drivable from either without knowing which it is talking to.
+   *
+   * @param function nullptr restores normal line editing.
+   */
+  void setRawKeys(void* caller, OnRawKey function);
+
 private:
   String _command;
   String _version;
@@ -44,6 +62,9 @@ private:
 
   void* _caller;
   OnWebCommand _callback;
+
+  void* _rawCaller = nullptr;
+  OnRawKey _rawKeys = nullptr;
   void setBusy(bool state);
 };
 

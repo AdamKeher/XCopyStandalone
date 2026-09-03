@@ -37,6 +37,7 @@ function onLoad() {
 
   onLoad_DiskMon();
   onLoad_DiskInfo();
+  onLoad_HeadCal();
 
   // Last: the message dispatch writes to term and to the tab DOM, so the socket
   // must not be able to deliver anything before both exist.
@@ -53,10 +54,18 @@ function setTab(tabName) {
 // UI
 // --------------------------------------------------------
 
+/*
+   Buttons carrying .live-action are exempt from both arms below.
+
+   The busy sweep exists so a second operation cannot be started underneath a
+   running one, and that is still what we want - but the head calibration panel
+   is interactive for as long as it is busy, and greying its own controls out
+   would leave it with nothing but the tab. headcal.js owns those instead.
+*/
 function disableInterface(isBusy) {
   if (isBusy) {
-    $('button:not(.connection-action)').prop('disabled', true);
-    $('button:not(.connection-action)').addClass('disabled');
+    $('button:not(.connection-action):not(.live-action)').prop('disabled', true);
+    $('button:not(.connection-action):not(.live-action)').addClass('disabled');
     $('#diskcopy_cancel').prop('disabled', false);
     $('#diskcopy_cancel').removeClass('disabled');
     $('#diskmon_cancel').prop('disabled', false);
@@ -69,8 +78,8 @@ function disableInterface(isBusy) {
     $('#copyDiskToDisk').removeClass('btn-light').addClass('btn-primary');
     $('#copyDiskToFlash').removeClass('btn-light').addClass('btn-primary');
     $('#copyFlashToDisk').removeClass('btn-light').addClass('btn-primary');
-    $('button:not(.connection-action)').prop('disabled', false);
-    $('button:not(.connection-action)').removeClass('disabled');
+    $('button:not(.connection-action):not(.live-action)').prop('disabled', false);
+    $('button:not(.connection-action):not(.live-action)').removeClass('disabled');
     $('#diskcopy_cancel').prop('disabled', true);
     $('#diskcopy_cancel').addClass('disabled');
     $('#diskmon_cancel').prop('disabled', true);
