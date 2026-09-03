@@ -52,7 +52,7 @@ bool XCopyMenu::back()
 {
     if (_currentItem->parent != NULL)
     {
-        setRoot(getFirst(_currentItem->parent));
+        // setCurrentItem() moves _root to the parent's level with it.
         setCurrentItem(_currentItem->parent);
         return true;
     }
@@ -174,15 +174,52 @@ void XCopyMenu::printItems(XCopyMenuItem *item)
     }
 }
 
+/*
+   The one place _root moves with _currentItem.
+
+   _root is the level being drawn and _currentItem is the highlighted entry in it, so
+   the second has to be inside the first or drawMenu() paints a list that contains no
+   current item and highlights nothing. Every navigation path used to maintain that by
+   hand and setCurrentItem(XCopyAction) did not, which is how a web started action left
+   the cursor down in a submenu while the screen showed the top level: audio on every
+   keypress, no highlight anywhere, and select firing whatever the invisible cursor had
+   landed on.
+*/
 void XCopyMenu::setCurrentItem(XCopyMenuItem *item) {
+    if (item == NULL)
+        return;
+
     _currentItem = item;
+    _root = getFirst(item);
 }
 
 void XCopyMenu::setCurrentItem(XCopyAction action) {
-    XCopyMenuItem *item = findItem(action, _root);
+    // From the top of the tree, not from _root. _root is only the level on screen, so
+    // searching it finds nothing whenever the action lives in a different branch to
+    // the one being displayed - a console or web command issued while the user sat in
+    // some other submenu silently failed to move the cursor at all.
+    XCopyMenuItem *item = findItem(action, topItem());
     if (item != nullptr) {
         setCurrentItem(item);
     }
+}
+
+/*
+   First item of the top level, found by walking up. There is no preserved pointer to
+   it: addItem() seeds _root with it, but _root is moved every time the user descends
+   or backs out.
+*/
+XCopyMenuItem *XCopyMenu::topItem()
+{
+    XCopyMenuItem *item = (_currentItem != NULL) ? _currentItem : _root;
+
+    if (item == NULL)
+        return NULL;
+
+    while (item->parent != NULL)
+        item = item->parent;
+
+    return getFirst(item);
 }
 
 XCopyMenuItem* XCopyMenu::findItem(XCopyAction action, XCopyMenuItem *item) {

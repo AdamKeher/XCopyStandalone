@@ -869,7 +869,7 @@ void XCopy::navigateSelect()
 
         if (item->firstChild != NULL)
         {
-            _menu.setRoot(item->firstChild);
+            // setCurrentItem() takes _root down to the child level with it.
             _menu.setCurrentItem(item->firstChild);
             _audio.playBack(false);
             _xcopyState = menus;
