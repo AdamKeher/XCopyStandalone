@@ -103,10 +103,13 @@ pio run -e d1_mini_ota -t upload      # firmware
 pio run -e d1_mini_ota -t uploadfs    # web interface
 ```
 
-It uploads to `esp8266.local`; set `upload_port` in `platformio.ini` to the IP
-address instead if mDNS is not resolvable from your machine. The serial
-passthrough above is unchanged and remains the way back in if an update ever
-leaves the ESP unable to join a network.
+The device calls itself `xcopy` to the DHCP server, to mDNS and to OTA, so it is
+reachable by whichever name your network gives it. `upload_port` in
+`platformio.ini` is set to `xcopy.lab` - change it to `xcopy.local` to go via
+mDNS instead, or to a bare IP address if neither resolves from your machine.
+
+The serial passthrough above is unchanged and remains the way back in if an
+update ever leaves the ESP unable to join a network.
 5. Select "Debugging >> ESP >> Reset ESP"
 6. Open a serial terminal
 7. Connect to your wireless access point using the connect command
