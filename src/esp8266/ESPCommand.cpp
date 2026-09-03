@@ -38,6 +38,7 @@ void ESPCommandLine::doCommand(String command)
         Serial << "| scan                 | list wifi networks                                   |\r\n";
         Serial << "| gettime              | get time from NTP server                             |\r\n";
         Serial << "| connect <ssid> <pwd> | connect to wireless network                          |\r\n";
+        Serial << "| forget               | clear the stored wireless network                    |\r\n";
         Serial << "| status               | show status                                          |\r\n";
         Serial << "| ip                   | show ip address                                      |\r\n";
         Serial << "| mac                  | show mac address                                     |\r\n";
@@ -274,9 +275,39 @@ void ESPCommandLine::doCommand(String command)
             return;
         }
 
-        WiFi.disconnect();
-        WiFi.mode(WIFI_STA);
-        WiFi.begin(ssid, password);
+        /*
+           Store the credentials, so an ESP reset comes back on its own.
+
+           This is the whole reason resetting the ESP - which is what flashing it
+           does - used to leave it off the network until the entire device was
+           power cycled. ESP8266 core 3.x defaults WiFi.persistent() to false, so
+           what arrives here reached RAM and never flash, and the radio had
+           nothing to reconnect with. Turned on around the call that sets the
+           credentials and off again afterwards, so a flash write happens when
+           somebody changes the network and not on every association.
+
+           Only when they have actually changed, though. The Teensy sends this on
+           every one of its boots, and SSID()/psk() read back the stored
+           configuration whether or not the radio has associated yet - so a boot
+           that is merely slower than the Teensy does not rewrite flash with what
+           is already in it.
+
+           No disconnect() first any more: with persistence on it would erase the
+           stored configuration before the replacement is known to work, and
+           begin() re-associates without help.
+        */
+        if (WiFi.SSID() != ssid || WiFi.psk() != password)
+        {
+            WiFi.persistent(true);
+            WiFi.mode(WIFI_STA);
+            WiFi.begin(ssid, password);
+            WiFi.persistent(false);
+        }
+        else if (WiFi.status() != WL_CONNECTED)
+        {
+            // Right network already stored, just not associated yet.
+            WiFi.begin();
+        }
 
         // Wait for connection
         uint32_t timeout = 20000;
@@ -299,6 +330,29 @@ void ESPCommandLine::doCommand(String command)
             Serial << "Error connecting to: " << ssid << "\r\n"
                    << ER_EOC;
 
+        return;
+    }
+
+    if (cmd == "forget")
+    {
+        /*
+           Forget the stored network.
+
+           The counterpart to connect storing one. Until the credentials were
+           persisted this had nothing to do - an ESP reset forgot the network by
+           itself, so clearing the setting on the Teensy was the whole job. Now
+           that the radio remembers, the Teensy clearing its own copy would
+           otherwise leave this one still reconnecting to it after every reset.
+
+           disconnect() erases the stored configuration only while persistence
+           is on, which is the one case it is wanted.
+        */
+        WiFi.persistent(true);
+        WiFi.disconnect();
+        WiFi.persistent(false);
+
+        Serial << "WiFi credentials cleared\r\n"
+               << OK_EOC;
         return;
     }
 
