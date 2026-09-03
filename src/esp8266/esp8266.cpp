@@ -16,6 +16,13 @@
 
 ESP8266WebServer server(80);
 WebSocketsServer webSocket(81);
+/*
+   One name, used for DHCP, for mDNS and for over the air updates, so the device
+   is called the same thing by the router, by a browser looking for xcopy.local
+   and by an upload aimed at it.
+*/
+#define DEVICE_HOSTNAME "xcopy"
+
 const int led = 2;
 const int busyPin = 4;
 const int cancelPin = 13;
@@ -410,9 +417,9 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t lenght)
 */
 void setupOTA()
 {
-  // Same name MDNS.begin() above announces, so the device answers to one hostname
-  // whichever way it is reached: esp8266.local for the web interface and for OTA.
-  ArduinoOTA.setHostname("esp8266");
+  // Same name MDNS.begin() announces, so the device answers to one hostname
+  // whichever way it is reached: the web interface and OTA are both xcopy.
+  ArduinoOTA.setHostname(DEVICE_HOSTNAME);
 
   ArduinoOTA.onStart([]() {
     if (ArduinoOTA.getCommand() == U_FS)
@@ -473,6 +480,22 @@ void setupOTA()
 
 void setup(void)
 {
+  /*
+     First, before anything that takes time.
+
+     This is the name handed to the DHCP server, which is where a DNS server that
+     learns its records from DHCP gets them - so it is what makes the device
+     resolve as itself rather than as an ESP_XXXXXX derived from its MAC, and
+     what an over the air upload is aimed at.
+
+     The SDK starts re-associating with a saved network at boot, on its own,
+     before setup() runs. Association and the DHCP request that follows it take a
+     second or two, so setting the name here beats them - but only just, which is
+     why nothing slower is allowed above it. If the name ever does turn up stale,
+     a power cycle settles it.
+  */
+  WiFi.hostname(DEVICE_HOSTNAME);
+
   pinMode(led, OUTPUT);
   digitalWrite(led, 1);
   pinMode(busyPin, INPUT);
@@ -486,7 +509,7 @@ void setup(void)
   Serial.setRxBufferSize(2048);
   Serial.begin(ESPBaudRate);
 
-  if (MDNS.begin("esp8266"))
+  if (MDNS.begin(DEVICE_HOSTNAME))
     Serial.println("MDNS responder started");
   else
     Serial.println("MDNS responder failed to start");
