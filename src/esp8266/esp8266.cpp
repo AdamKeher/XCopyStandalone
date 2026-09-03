@@ -496,6 +496,29 @@ void setup(void)
   */
   WiFi.hostname(DEVICE_HOSTNAME);
 
+  /*
+     Come back on our own after a reset.
+
+     The Teensy pushes the network credentials over on its own boot, and for a
+     long time that was the only thing that ever connected this radio - so
+     resetting the ESP alone, which is exactly what flashing it does, left it off
+     the network until the whole device was power cycled.
+
+     The reason it could not reconnect by itself is that ESP8266 core 3.x
+     defaults WiFi.persistent() to false, so the credentials the Teensy sends
+     reach RAM and never flash. On the 2.x cores this project was written against
+     the default was true, which is why the arrangement used to appear to work.
+     The connect handler now stores them deliberately rather than by default, and
+     this asks the radio to use what was stored.
+
+     begin() with no arguments connects with the saved configuration, so the
+     Teensy is the place the network is *configured* and no longer the thing that
+     has to be running for the ESP to be *on* it.
+  */
+  WiFi.mode(WIFI_STA);
+  WiFi.setAutoReconnect(true);
+  WiFi.begin();
+
   pinMode(led, OUTPUT);
   digitalWrite(led, 1);
   pinMode(busyPin, INPUT);

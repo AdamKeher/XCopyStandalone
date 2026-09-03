@@ -189,6 +189,10 @@ void XCopyCommandLine::doCommand(String command)
         _config->setPassword("");
         _config->writeConfig();
         _config->dumpConfig();
+        // The ESP keeps its own copy now, so that it can rejoin the network after
+        // a reset without the Teensy. Clearing only this side would leave it
+        // reconnecting to a network the device no longer thinks it has.
+        _esp->sendCommand("forget", true);
         Log << "WiFi settings cleared\r\n";
         return;
     }
