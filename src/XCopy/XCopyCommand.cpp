@@ -1,4 +1,5 @@
 #include "XCopyCommand.h"
+#include "XCopyScratch.h"
 #include <Streaming.h>
 #include <SerialFlash.h>
 
@@ -271,14 +272,12 @@ void XCopyCommandLine::doCommand(String command)
 
         for (uint8_t i = 0; i < 11; i++)
         {
-            byte sectorData[512]; // = new byte[512*11];
-            flashFile.read(sectorData, sizeof(sectorData));
-
+            // Straight into the sector. The old code read into a 512 byte local and
+            // then byte copied it across, which cost a frame this deep in doCommand()
+            // and bought nothing - the destination is already contiguous and exactly
+            // this size.
             struct Sector *aSec = (Sector *)&_floppy->getTrack()[i].sector[0];
-            for (uint16_t i2 = 0; i2 < 512; i2++)
-            {
-                aSec->data[i2] = sectorData[i2];
-            }
+            flashFile.read(aSec->data, sizeof(aSec->data));
         }
         _floppy->setSectorCnt(11);
         return;
@@ -350,14 +349,9 @@ void XCopyCommandLine::doCommand(String command)
 
             for (uint8_t i = 0; i < 11; i++)
             {
-                byte sectorData[512]; // = new byte[512*11];
-                flashFile.read(sectorData, sizeof(sectorData));
-
+                // Straight into the sector, as in "readflash" above.
                 struct Sector *aSec = (Sector *)&_floppy->getTrack()[i].sector[0];
-                for (uint16_t i2 = 0; i2 < 512; i2++)
-                {
-                    aSec->data[i2] = sectorData[i2];
-                }
+                flashFile.read(aSec->data, sizeof(aSec->data));
             }
             _floppy->setSectorCnt(11);
         }
@@ -524,19 +518,26 @@ void XCopyCommandLine::doCommand(String command)
             return;
         }
 
-        size_t bufferSize = 512;
-        char buffer[bufferSize];
-        int readsize = 0;
+        const size_t bufferSize = 512;
+        XCopyScratch::Guard scratch("command.dump", bufferSize);
+        if (!scratch.valid()) {
+            Log << F("track buffer busy\r\n");
+            file.close();
+            delete _sdcard;
+            return;
+        }
+        char *buffer = (char *)scratch.get();
 
-        do {
+        // read() returns -1 on error; the old loop tested readsize only after using
+        // it, so a failed read appended garbage and then looped forever on (size_t)-1.
+        int readsize = 0;
+        while ((readsize = file.read(buffer, bufferSize)) > 0) {
             String line = "";
-            readsize = file.read(buffer, bufferSize);            
-            for(int i = 0; i < readsize; i++) {
+            for (int i = 0; i < readsize; i++) {
                 line.append(buffer[i]);
             }
             Log << line;
-            // Serial.write(buffer, readsize);
-        } while (readsize > 0);
+        }
 
         file.close();
         delete _sdcard;
