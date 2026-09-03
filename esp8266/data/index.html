@@ -452,7 +452,9 @@
                     <p>
                         <div class="btn-toolbar" role="toolbar" aria-label="Head calibration controls">
                             <div class="btn-group me-1" role="group" aria-label="Session">
-                                <button type="button" id="headCalStart" class="btn btn-success live-action" onclick="headCalStart();"><i class="fa-solid fa-play"></i> Start</button>
+                                <!-- Start, Pause and Resume in one button - see headCalToggleRun(). It carries
+                                     .live-action so the busy state cannot grey out the only way to pause. -->
+                                <button type="button" id="headCalStart" class="btn btn-success live-action" onclick="headCalToggleRun();"><i class="fa-solid fa-play"></i> Start</button>
                                 <!-- Its own exit, not the shared Cancel button: that works by pulsing the
                                      device cancel pin, which on this PCB is also the joystick up line, so
                                      here it would nudge a control instead of leaving. -->
@@ -481,6 +483,8 @@
                     <p class="headcalHelp">
                         Use an AmigaDOS disk written by a well calibrated drive.
                         Adjust the drive until every sector is found on both sides.
+                        Pause holds the session open with the drive still spinning, so the
+                        rows below stop moving while you read them or work on the drive.
                     </p>
                     <div class="headcalRows">
                         <div class="headcalRow">
@@ -502,23 +506,58 @@
                         <span class="hcSector side">h</span> wrong side
                         <span class="hcSector chk">c</span> bad checksum
                     </p>
-                    <p class="headcalStatus" id="headCalStatus">Not running.</p>
+                    <p class="headcalStatus"><span id="headCalStatus">Not running.</span>
+                        <span id="headCalRpm" class="headcalRpm"></span></p>
                     <p><hr/></p>
                     <p>
                         <strong>Session tally</strong> &mdash; passes and errors for every cylinder
                         visited, as the head is moved around. The sector row above is this
-                        revolution; this is the accumulated history.
+                        revolution; this is the accumulated history. Click any cell to seek
+                        the head to that cylinder.
                         <button type="button" class="btn btn-sm btn-secondary live-action" onclick="headCalClearTally();"><i class="fa-solid fa-eraser"></i> Clear</button>
                     </p>
-                    <table class="headcalGrid">
-                        <tbody id="headCalGrid"></tbody>
-                    </table>
-                    <p class="headcalLegend">
-                        <span class="hcTrack untested">&nbsp;</span> untested
-                        <span class="hcTrack clean">&nbsp;</span> ok on all reads
-                        <span class="hcTrack intermittent">&nbsp;</span> intermittent
-                        <span class="hcTrack failing">&nbsp;</span> failed every read
-                        <span class="hcTrack current">&nbsp;</span> head is here
+                    <p>
+                        <table class="table-sm table-dark">
+                            <tbody id="headCalGrid"><!-- built by buildHeadCalGrid() in headcal.js -->
+                            </tbody>
+                        </table>
+                    </p>
+                    <p>
+                        <table class="table table-dark">
+                            <thead>
+                                <tr>
+                                    <th><i class="fa-solid fa-key"></i> Session Tally Key</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>
+                                        <div class="container float-start key">
+                                            <div class="row">
+                                                <div class="col-1">
+                                                    <div class="size track"></div>
+                                                    <div class="size track green"></div>
+                                                    <div class="size track yellow"></div>
+                                                </div>
+                                                <div class="col-5">
+                                                    <div class="text">Untested</div>
+                                                    <div class="text">OK on all reads</div>
+                                                    <div class="text">Intermittent</div>
+                                                </div>
+                                                <div class="col-1">
+                                                    <div class="size track red"></div>
+                                                    <div class="size track current"></div>
+                                                </div>
+                                                <div class="col-5">
+                                                    <div class="text">Failed every read</div>
+                                                    <div class="text">Head is here</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </p>
                 </div>
             </div>

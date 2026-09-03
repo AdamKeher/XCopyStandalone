@@ -48,6 +48,7 @@ public:
         head,
         autoReseek,
         sound,
+        paused,
         count
     };
 
@@ -72,6 +73,17 @@ public:
     void toggleAutoReseek();
     void setSound(bool on);
     void toggleSound();
+    /**
+     * @brief Stop and restart the passes without leaving the session.
+     *
+     * The drive keeps spinning and the screen keeps its last pass, so this is a
+     * pause rather than a stop: the operator gets a still picture to read, or a
+     * quiet drive to put a screwdriver into, and picks up where they left off.
+     * Resuming re-seeks, because the head has had a chance to be moved by hand
+     * since the last read and a pass that assumed otherwise would lie.
+     */
+    void setPaused(bool on);
+    void togglePause();
     void setStepSize(uint8_t size);
     //! Re-seek the current cylinder now, ATK's F1.
     void reseek();
@@ -90,6 +102,7 @@ public:
     HeadSel head() const { return _head; }
     bool autoReseek() const { return _autoReseek; }
     bool sound() const { return _sound; }
+    bool paused() const { return _paused; }
     Field field() const { return _field; }
     uint32_t passes() const { return _passes; }
 
@@ -140,6 +153,9 @@ private:
     void drawSettings();
     void drawResults();
     void drawStatusLine();
+    //! The pass counter, the spinner and the speed. Its own painter because a
+    //! paused session still has a speed to show, but no new pass to show it with.
+    void drawPassLine();
     void sendResults();
     void settingsChanged();
     //! One short sample per pass describing how it went, if sound is on.
@@ -183,13 +199,14 @@ private:
 
     // panelBegin() prints, in order: top border, two text rows, a rule, three
     // settings rows, the signals row, a rule, two head rows, the status row, a
-    // rule, two legend rows, a rule, the tally caption, a join, two header rows,
-    // a join, ROWS grid rows, a join, the tally legend and the bottom border.
+    // rule, the sector legend, three key rows, a rule, the tally caption, a join,
+    // two header rows, a join, ROWS grid rows, a join, the tally legend and the
+    // bottom border.
     static const uint8_t LINE_SETTINGS = 4;
     static const uint8_t LINE_SIGNALS = 7;
     static const uint8_t LINE_HEAD = 9;
     static const uint8_t LINE_STATUS = 11;
-    static const uint8_t LINE_TALLY = 21;                //!< first row of cylinders
+    static const uint8_t LINE_TALLY = 23;                //!< first row of cylinders
     //! Grid rows, then a join, the tally legend and the bottom border.
     static const uint8_t LINES = LINE_TALLY + ROWS + 3;
 
@@ -240,6 +257,11 @@ private:
        A pass therefore costs a sample length more while this is on.
     */
     bool _sound = false;
+    /*
+       Set by any of the three interfaces. The session stays open and the drive
+       stays spinning; only the passes stop. See setPaused().
+    */
+    bool _paused = false;
     Field _field = Field::cylinder;
 
     Phase _phase = Phase::settle;
@@ -257,8 +279,6 @@ private:
 
     CalibrationResult _results[2];
     bool _resultValid[2] = {false, false};
-    //! Set when something worth telling the operator about changed.
-    bool _dirty = true;
 
     /*
        The accumulated half of the display.
@@ -303,6 +323,9 @@ private:
     static const uint32_t kPassGapMs = 120;
     //! How long to wait before looking again when the drive is empty.
     static const uint32_t kNoDiskGapMs = 400;
+    //! And between refreshes while paused. Nothing is being read, so this only
+    //! paces the drive lines, the speed readout and the browser heartbeat.
+    static const uint32_t kPausedGapMs = 250;
 };
 
 #endif // XCOPYHEADCALIBRATION_H

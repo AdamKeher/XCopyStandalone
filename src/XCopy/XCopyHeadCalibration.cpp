@@ -68,6 +68,7 @@ static const FieldSlot FIELD_SLOT[] = {
     {0, 32, ROW_SETTINGS2, 44, "Hed:"},   // Field::head
     {80, 116, ROW_SETTINGS2, 34, "Aut:"}, // Field::autoReseek
     {0, 32, ROW_SETTINGS3, 44, "Snd:"},   // Field::sound
+    {80, 116, ROW_SETTINGS3, 34, "Pse:"}, // Field::paused
 };
 
 void XCopyHeadCalibration::begin(XCopyGraphics *graphics, XCopyAudio *audio, XCopyESP8266 *esp,
@@ -82,6 +83,7 @@ void XCopyHeadCalibration::begin(XCopyGraphics *graphics, XCopyAudio *audio, XCo
     _stepSize = 1;
     _head = HeadSel::both;
     _autoReseek = false;
+    _paused = false;
     _field = Field::cylinder;
     _phase = Phase::settle;
     _passes = 0;
@@ -89,7 +91,6 @@ void XCopyHeadCalibration::begin(XCopyGraphics *graphics, XCopyAudio *audio, XCo
     _recalPending = true;
     _resultValid[0] = false;
     _resultValid[1] = false;
-    _dirty = true;
     _drawnStatic = false;
     _nextStepMs = millis();
 
@@ -147,7 +148,37 @@ void XCopyHeadCalibration::update()
         _diskPresent = present;
         _resultValid[0] = false;
         _resultValid[1] = false;
-        _dirty = true;
+    }
+
+    /*
+       Paused. No pass is taken, so the sector rows and the tally keep describing
+       the last one - which is the point, a still picture to read or a quiet drive
+       to work on - but the surfaces are not frozen with them. The drive lines, the
+       speed and the disk-present check are what say the drive is still there, and
+       a panel that stopped moving altogether would read as a crash rather than as
+       a pause.
+
+       Checked ahead of the empty drive case, so a pause is the same pause whether
+       or not there is a disk in the drive - and so nothing plays a pass tone for a
+       pass that never happened.
+
+       Only these are repainted, not the whole of publish(): the sector rows have
+       not changed, and repainting them four times a second would flicker to say
+       nothing. sendConfig() goes out at the same pace so a browser that connects
+       mid pause still learns what it has walked into.
+    */
+    if (_paused)
+    {
+        _nextStepMs = millis() + kPausedGapMs;
+        _phase = Phase::settle;
+        drawSignals();
+        drawStatusLine();
+        drawPassLine();
+        paintSettings();
+        paintSignals();
+        paintStatus();
+        sendConfig();
+        return;
     }
 
     if (!present)
@@ -197,18 +228,8 @@ void XCopyHeadCalibration::readSide(uint8_t side)
 
     if (!ok)
     {
-        if (_resultValid[side])
-            _dirty = true;
         _resultValid[side] = false;
         return;
-    }
-
-    if (!_resultValid[side] ||
-        _results[side].valid != result.valid ||
-        _results[side].cylinderSeen != result.cylinderSeen ||
-        memcmp(_results[side].status, result.status, sizeof(result.status)) != 0)
-    {
-        _dirty = true;
     }
 
     _results[side] = result;
@@ -237,21 +258,7 @@ void XCopyHeadCalibration::publish()
     drawSignals();
     drawResults();
     drawStatusLine();
-
-    // The pass counter and the spinner move every pass whether or not anything the
-    // operator cares about changed, so they are drawn here rather than gated.
-    char line[32];
-    snprintf(line, sizeof(line), "%c pass %lu", SPINNER[_spinner], (unsigned long)_passes);
-    _graphics->getTFT()->fillRect(0, ROW_PASS, 88, 10, ST7735_BLACK);
-    _graphics->drawText(0, ROW_PASS, ST7735_WHITE, line);
-
-    float rpm = _floppy->readRPM();
-    if (rpm > 0.0f)
-        snprintf(line, sizeof(line), "%d.%d RPM", (int)rpm, ((int)(rpm * 10)) % 10);
-    else
-        snprintf(line, sizeof(line), "-- RPM");
-    _graphics->getTFT()->fillRect(90, ROW_PASS, 70, 10, ST7735_BLACK);
-    _graphics->drawText(90, ROW_PASS, ST7735_WHITE, line);
+    drawPassLine();
 
     /*
        The console panel is repainted every pass rather than only when something
@@ -266,14 +273,16 @@ void XCopyHeadCalibration::publish()
     paintHead(1);
     paintStatus();
 
-    // The browser is told the glyphs only when they actually moved, but the pass
-    // counter has to keep ticking there too or the panel looks stalled.
-    if (_dirty)
-        sendResults();
-    else
-        sendConfig();
-
-    _dirty = false;
+    /*
+       Every pass, unconditionally. This used to go out only when the glyphs had
+       moved, on the reasoning that an unchanged reading is nothing to say - but the
+       accumulated counts ride out with the glyphs, and those move on every single
+       pass. On a disk that reads the same way twice running, which is what a well
+       adjusted drive looks like, the browser's tally froze at whatever it held when
+       the reading last changed, and sat there reading "1/0" for the rest of the
+       session while the TFT and the console counted up beside it.
+    */
+    sendResults();
 
     // Last, so the redraws above are finished with the SPI bus before a sample
     // starts streaming off the flash on it.
@@ -364,8 +373,11 @@ void XCopyHeadCalibration::drawSettings()
         case Field::autoReseek:
             snprintf(value, sizeof(value), "%s", _autoReseek ? "On" : "Off");
             break;
-        default:
+        case Field::sound:
             snprintf(value, sizeof(value), "%s", _sound ? "On" : "Off");
+            break;
+        default:
+            snprintf(value, sizeof(value), "%s", _paused ? "On" : "Off");
             break;
         }
 
@@ -487,6 +499,13 @@ void XCopyHeadCalibration::drawResults()
 */
 const char *XCopyHeadCalibration::statusText(char *out, size_t size, uint16_t &tftColour) const
 {
+    if (_paused)
+    {
+        snprintf(out, size, "Paused - nothing is being read");
+        tftColour = ST7735_CYAN;
+        return HC_CYAN;
+    }
+
     if (!_diskPresent)
     {
         snprintf(out, size, "No disk in drive");
@@ -532,6 +551,33 @@ const char *XCopyHeadCalibration::statusText(char *out, size_t size, uint16_t &t
     return HC_WHITE;
 }
 
+/*
+   The pass counter, the spinner and the speed.
+
+   Split out of publish() because the two do not always go together: a paused
+   session takes no passes but the disk is still turning, and a speed readout that
+   froze with the counter would be reporting a number that is no longer true.
+*/
+void XCopyHeadCalibration::drawPassLine()
+{
+    // The counter and the spinner move every pass whether or not anything the
+    // operator cares about changed, so they are drawn rather than gated.
+    char line[32];
+    snprintf(line, sizeof(line), "%c pass %lu", SPINNER[_spinner], (unsigned long)_passes);
+    _graphics->getTFT()->fillRect(0, ROW_PASS, 88, 10, ST7735_BLACK);
+    _graphics->drawText(0, ROW_PASS, ST7735_WHITE, line);
+
+    // Formatted by hand: printf() on this core has no float support linked in, so
+    // "%.1f" prints nothing at all.
+    float rpm = _floppy->readRPM();
+    if (rpm > 0.0f)
+        snprintf(line, sizeof(line), "%d.%d RPM", (int)rpm, ((int)(rpm * 10)) % 10);
+    else
+        snprintf(line, sizeof(line), "-- RPM");
+    _graphics->getTFT()->fillRect(90, ROW_PASS, 70, 10, ST7735_BLACK);
+    _graphics->drawText(90, ROW_PASS, ST7735_WHITE, line);
+}
+
 void XCopyHeadCalibration::drawStatusLine()
 {
     char text[40];
@@ -563,7 +609,6 @@ void XCopyHeadCalibration::drawStatic()
 void XCopyHeadCalibration::settingsChanged()
 {
     _recalPending = true;
-    _dirty = true;
     if (_drawnStatic)
     {
         drawSettings();
@@ -631,7 +676,6 @@ void XCopyHeadCalibration::setAutoReseek(bool on)
     if (on == _autoReseek)
         return;
     _autoReseek = on;
-    _dirty = true;
     if (_drawnStatic)
         drawSettings();
     paintSettings();
@@ -645,7 +689,6 @@ void XCopyHeadCalibration::setSound(bool on)
     if (on == _sound)
         return;
     _sound = on;
-    _dirty = true;
     if (_drawnStatic)
         drawSettings();
     paintSettings();
@@ -653,6 +696,42 @@ void XCopyHeadCalibration::setSound(bool on)
 }
 
 void XCopyHeadCalibration::toggleSound() { setSound(!_sound); }
+
+void XCopyHeadCalibration::setPaused(bool on)
+{
+    if (on == _paused)
+        return;
+    _paused = on;
+
+    /*
+       Resuming re-seeks and throws away the rows on screen. The head has had as
+       long as the pause lasted to be moved by hand - that is usually why it was
+       paused - so the first pass after it has to go and find the cylinder again
+       rather than assume the last read left the head where it thinks.
+    */
+    if (!_paused)
+    {
+        _recalPending = true;
+        _resultValid[0] = false;
+        _resultValid[1] = false;
+        _phase = Phase::settle;
+        _nextStepMs = millis();
+    }
+
+    if (_drawnStatic)
+    {
+        drawSettings();
+        drawResults();
+        drawStatusLine();
+    }
+    paintSettings();
+    paintHead(0);
+    paintHead(1);
+    paintStatus();
+    sendConfig();
+}
+
+void XCopyHeadCalibration::togglePause() { setPaused(!_paused); }
 
 /*
    One short sample a pass, describing the pass.
@@ -713,7 +792,6 @@ void XCopyHeadCalibration::setStepSize(uint8_t size)
     if (size == _stepSize)
         return;
     _stepSize = size;
-    _dirty = true;
     if (_drawnStatic)
         drawSettings();
     paintSettings();
@@ -725,7 +803,6 @@ void XCopyHeadCalibration::reseek()
     _recalPending = true;
     _resultValid[0] = false;
     _resultValid[1] = false;
-    _dirty = true;
     if (_drawnStatic)
         drawResults();
     paintHead(0);
@@ -759,8 +836,11 @@ void XCopyHeadCalibration::adjustField(int direction)
     case Field::autoReseek:
         toggleAutoReseek();
         break;
-    default:
+    case Field::sound:
         toggleSound();
+        break;
+    default:
+        togglePause();
         break;
     }
 }
@@ -804,6 +884,10 @@ bool XCopyHeadCalibration::handleKey(char key)
     case 's':
     case 'S':
         toggleSound();
+        break;
+    case 'p':
+    case 'P':
+        togglePause();
         break;
     case 'q':
     case 'Q':
@@ -1188,7 +1272,21 @@ void XCopyHeadCalibration::panelBegin()
     repeat(' ', TEXT - visible);
     Serial.print(" |\r\n");
 
-    textRow("r seek +/-1 []10 {}40 h head a auto s snd q quit");
+    /*
+       Two rows rather than one. The single row this replaces read
+
+           r seek +/-1 []10 {}40 h head a auto s snd q quit
+
+       which is every key and no hint: the one thing an operator does constantly is
+       step the head, and "+/-1 []10 {}40" does not say that is what those are for.
+       Stepping gets a row of its own, spelled out, and the rest follow on the next.
+
+       Both are sized to TEXT - see textRow(), which truncates rather than wraps, so
+       a row that outgrows the frame loses its tail silently.
+    */
+    textRow("STEP  -/+ one cyl   [/] ten   {/} forty");
+    textRow("KEYS  p pause   r re-seek   h head");
+    textRow("      a auto    s sound     q quit");
     solidRow('|', '|');
     textRow("SESSION TALLY - all passes, every cylinder");
     joinRow();
@@ -1281,10 +1379,20 @@ void XCopyHeadCalibration::sendConfig()
     if (_esp == nullptr)
         return;
 
-    char message[80];
-    snprintf(message, sizeof(message), "broadcast headCalConfig,%d,%d,%d,%d,%d,%lu,%d\r\n",
+    /*
+       Speed goes out in tenths of an RPM rather than as text. printf() on this
+       core has no float support linked in, so "%.1f" would print nothing at all -
+       which is why the two panels above format it by hand - and an integer is the
+       one shape that survives the trip and can still be laid out by the browser.
+       Zero means no index pulses, the same thing "-- RPM" says on the TFT.
+    */
+    const float rpm = _floppy->readRPM();
+    const int rpmTenths = rpm > 0.0f ? (int)((rpm * 10.0f) + 0.5f) : 0;
+
+    char message[96];
+    snprintf(message, sizeof(message), "broadcast headCalConfig,%d,%d,%d,%d,%d,%lu,%d,%d,%d\r\n",
              _cylinder, _stepSize, (int)_head, _autoReseek ? 1 : 0, _active ? 1 : 0,
-             (unsigned long)_passes, _sound ? 1 : 0);
+             (unsigned long)_passes, _sound ? 1 : 0, _paused ? 1 : 0, rpmTenths);
     _esp->print(message);
 }
 
@@ -1292,7 +1400,7 @@ void XCopyHeadCalibration::sendClosed()
 {
     if (_esp == nullptr)
         return;
-    _esp->print("broadcast headCalConfig,0,1,2,0,0,0,0\r\n");
+    _esp->print("broadcast headCalConfig,0,1,2,0,0,0,0,0,0\r\n");
 }
 
 void XCopyHeadCalibration::sendResults()
@@ -1307,10 +1415,20 @@ void XCopyHeadCalibration::sendResults()
     // drawFlux() uses them: this goes out a few times a second, all session.
     for (uint8_t side = 0; side < 2; side++)
     {
+        // The accumulated counts ride along with the realtime row rather than going
+        // out as a message of their own: the browser needs both to redraw one
+        // cylinder, and they are always produced together.
+        const uint16_t track = (_cylinder * 2) + side;
+        const TrackTally &t = _tally[track < MAX_TRACKS ? track : 0];
+
         bool wanted = (side == 0) ? (_head != HeadSel::upper) : (_head != HeadSel::lower);
         if (!wanted || !_resultValid[side])
         {
-            snprintf(message, sizeof(message), "broadcast headCal,%d,%d,0,0,-,0,0\r\n", _cylinder, side);
+            // Carries the tally even so. Sending zeroes here told the browser the
+            // cylinder had never been tested, so selecting one head wiped from the
+            // grid the very history it exists to keep for the other.
+            snprintf(message, sizeof(message), "broadcast headCal,%d,%d,0,0,-,%d,%d\r\n",
+                     _cylinder, side, t.passes, t.errors);
             _esp->print(message);
             continue;
         }
@@ -1322,11 +1440,6 @@ void XCopyHeadCalibration::sendResults()
             glyphs[i] = glyph(r.status[i]);
         glyphs[n] = 0;
 
-        // The accumulated counts ride along with the realtime row rather than
-        // going out as a message of their own: the browser needs both to redraw
-        // one cylinder, and they are always produced together.
-        const uint16_t track = (_cylinder * 2) + side;
-        const TrackTally &t = _tally[track < MAX_TRACKS ? track : 0];
         snprintf(message, sizeof(message), "broadcast headCal,%d,%d,%d,%d,%s,%d,%d\r\n",
                  _cylinder, side, r.valid, r.sectorCount, glyphs, t.passes, t.errors);
         _esp->print(message);

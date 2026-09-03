@@ -65,21 +65,39 @@ function trackIconCells(row) {
     }
 }
 
-function buildTrackGrid() {
-    var body = $('#trackGrid');
+// Built once here and used by both grids on the page. The disk copy / test disk
+// map and the head calibration session tally are the same map of the same disk, so
+// they are drawn by the same function rather than by two that have to be kept
+// looking alike. Head cal used to build its own table, with its own cell size and
+// its own header row, and it read as a different device.
+//
+//   leadWidth   how many table columns the left hand block occupies, 0 for none
+//   leadHeader  what sits in that block on the column label row
+//   leadCells   function(row) -> the cells of that block, for grid rows
+//   sideLabel   function(side) -> the heading over that side
+//   cellId      function(cylinder, side) -> the id of one track cell
+//   cellTitle   function(cylinder, side) -> its tooltip, optional
+function buildCylinderGrid(body, options) {
     if (body.length == 0) return;
 
-    // 3 icon columns and a spacer, then per side a label column, TRACK_COLS cells
-    // and a trailing spacer.
-    var columns = 4 + ((TRACK_COLS + 2) * 2);
+    var leadWidth = options.leadWidth || 0;
+    // The lead block, then per side a label column, TRACK_COLS cells and a
+    // trailing spacer.
+    var columns = leadWidth + ((TRACK_COLS + 2) * 2);
     var html = '';
-    var side, row, col, cylinder;
+    var side, row, col, cylinder, id, title;
 
-    html += '<tr><td colspan=4></td>';
-    html += '<td colspan=' + (TRACK_COLS + 1) + '>Upper Side</td><td></td>';
-    html += '<td colspan=' + (TRACK_COLS + 1) + '>Lower Side</td><td></td></tr>';
+    function lead(content) {
+        return leadWidth > 0 ? '<td colspan=' + leadWidth + '>' + content + '</td>' : '';
+    }
 
-    html += '<tr><td colspan=4>Source</td>';
+    html += '<tr>' + lead('');
+    for (side = 0; side < 2; side++) {
+        html += '<td colspan=' + (TRACK_COLS + 1) + '>' + options.sideLabel(side) + '</td><td></td>';
+    }
+    html += '</tr>';
+
+    html += '<tr>' + lead(options.leadHeader || '');
     for (side = 0; side < 2; side++) {
         html += '<td></td>';
         for (col = 0; col < TRACK_COLS; col++) html += '<td>' + trackColumnLabel(col) + '</td>';
@@ -88,7 +106,7 @@ function buildTrackGrid() {
     html += '</tr>';
 
     for (row = 0; row < TRACK_ROWS; row++) {
-        html += '<tr>' + trackIconCells(row);
+        html += '<tr>' + (options.leadCells ? options.leadCells(row) : lead(''));
         for (side = 0; side < 2; side++) {
             // The row label is the first cylinder in the row - 0, 10, 20 ... 80 - not
             // the row index. Labelling the rows 0-6 was what left the grid reading as a
@@ -100,7 +118,9 @@ function buildTrackGrid() {
                     html += '<td></td>';
                     continue;
                 }
-                html += '<td class="track" id="track' + ((cylinder * 2) + side) + '"></td>';
+                id = options.cellId(cylinder, side);
+                title = options.cellTitle ? ' title="' + options.cellTitle(cylinder, side) + '"' : '';
+                html += '<td class="track" id="' + id + '"' + title + '></td>';
             }
             html += '<td></td>';
         }
@@ -110,6 +130,16 @@ function buildTrackGrid() {
     html += '<tr><td colspan="' + columns + '"></td></tr>';
 
     body.html(html);
+}
+
+function buildTrackGrid() {
+    buildCylinderGrid($('#trackGrid'), {
+        leadWidth: 4,
+        leadHeader: 'Source',
+        leadCells: trackIconCells,
+        sideLabel: function (side) { return side == 0 ? 'Upper Side' : 'Lower Side'; },
+        cellId: function (cylinder, side) { return 'track' + ((cylinder * 2) + side); }
+    });
 }
 
 // UI

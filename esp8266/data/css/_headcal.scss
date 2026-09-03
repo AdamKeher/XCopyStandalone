@@ -52,6 +52,15 @@
   color: $textColor;
 }
 
+/* The drive speed, beside the status sentence. Dimmer than the sentence: it is a
+   number to glance at while adjusting, not the thing being said. */
+
+.headcalRpm {
+  color: #9a9a9a;
+  font-family: monospace;
+  margin-left: 8px;
+}
+
 .hcSector {
   display: inline-block;
   width: 18px;
@@ -69,40 +78,28 @@
 .hcSector.side    { color: #c060c0; }
 .hcSector.chk     { color: #ffffff; }
 
-/* Session tally grid. Four states, matching the console panel exactly: a colour
-   carries the verdict and the passes/errors text carries the detail behind it. */
+/* Session tally grid. The cells are the disk copy grid's .track cells, drawn by the
+   same builder and coloured out of the same key - green, yellow and red carry the
+   verdict and the passes/errors text carries the detail behind it. Only the head
+   marker is new, so only the head marker is styled here.
 
-.headcalGrid {
-  border-collapse: separate;
-  border-spacing: 2px;
-  font-size: 0.72em;
-  font-family: monospace;
-  margin-bottom: 12px;
+   Drawn as an inset outline rather than another fill, so it says where the head is
+   without hiding what that cylinder has been doing. Blue rather than white: a track
+   cell already has a white border, and a white outline over it says nothing. */
+
+.track.current {
+  outline: 3px solid deepskyblue;
+  outline-offset: -3px;
 }
 
-.headcalGrid th {
-  color: #9a9a9a;
-  font-weight: normal;
-  text-align: center;
-  padding: 0 3px;
+/* Clicking a cell seeks the head to that cylinder. The pointer and the highlight
+   are only offered while a session is running, so the grid never advertises a
+   click that would go nowhere. */
+
+#headCalGrid.seekable td.track {
+  cursor: pointer;
 }
 
-.hcTrack {
-  width: 34px;
-  height: 18px;
-  text-align: center;
-  border-radius: 2px;
-  color: #1e1e1e;
-}
-
-.hcTrack.untested    { background: #3a3a3a; }
-.hcTrack.clean       { background: #4caf50; }
-.hcTrack.intermittent{ background: #e0b040; }
-.hcTrack.failing     { background: #e04b4b; }
-
-/* Drawn as an outline rather than another fill, so it says where the head is
-   without hiding what that cylinder has been doing. */
-.hcTrack.current {
-  outline: 2px solid #ffffff;
-  outline-offset: -2px;
+#headCalGrid.seekable td.track:hover {
+  border-color: deepskyblue;
 }
