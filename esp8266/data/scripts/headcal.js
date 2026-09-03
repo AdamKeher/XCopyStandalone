@@ -6,6 +6,7 @@
 // so a cylinder changed on the TFT and one changed here land in the same place.
 
 var headCalRunning = false;
+var headCalPaused = false;
 var headCalHead = 2; // 0 lower, 1 upper, 2 both
 var headCalAuto = false;
 var headCalSound = false;
@@ -24,59 +25,50 @@ var HEADCAL_CLASS = {
 // Session tally grid
 // --------------------------------------------------------
 //
-// Same shape as the disk copy grid and the console panel: MAX_CYLINDERS laid out
-// TRACK_COLS to a row, both sides side by side. It is the accumulated half of the
-// display - the sector row above is one revolution, this is every pass the session
-// has made over every cylinder the head has been moved to.
+// The same grid the Disk Copy and Test Disk tabs draw, built by the same function
+// in diskcopy.js and wearing the same .track classes, so the two tabs read as one
+// device. It used to be a table of its own with its own cell size, its own header
+// row and its own colour names, which is why it looked like it belonged to some
+// other program.
 //
-// Geometry comes from diskcopy.js so the three surfaces cannot drift apart. See
-// the note there and in XCopyGeometry.h.
+// It is the accumulated half of the display - the sector row above is one
+// revolution, this is every pass the session has made over every cylinder the head
+// has been moved to.
+//
+// Geometry comes from diskcopy.js so the three surfaces cannot drift apart. See the
+// note there and in XCopyGeometry.h.
 
 var headCalCurrent = -1;
 
+// The four states share the disk copy key's vocabulary rather than inventing three
+// more colours: green read clean, yellow needed a retry, red never read. Untested
+// is the bare cell, the same colour an untouched track has during a copy.
+var HEADCAL_TALLY_CLASS = ['', 'green', 'yellow', 'red'];
+
 function buildHeadCalGrid() {
-  var body = $('#headCalGrid');
-  if (body.length == 0) return;
+  buildCylinderGrid($('#headCalGrid'), {
+    // No icon column: nothing is being copied from anywhere, so the grid starts at
+    // the row labels.
+    leadWidth: 0,
+    sideLabel: function (side) { return 'Side ' + side + (side == 0 ? ' (Lower)' : ' (Upper)'); },
+    cellId: function (cylinder, side) { return 'hcTrack' + ((cylinder * 2) + side); },
+    cellTitle: function (cylinder, side) { return 'Cylinder ' + cylinder + ', side ' + side + ' - click to seek here'; }
+  });
+}
 
-  var html = '';
-  var side, row, col, cylinder;
-
-  html += '<tr><th></th>';
-  for (side = 0; side < 2; side++) {
-    html += '<th colspan="' + TRACK_COLS + '">Side ' + side +
-            (side == 0 ? ' (Lower)' : ' (Upper)') + '</th><th></th>';
-  }
-  html += '</tr>';
-
-  html += '<tr><th></th>';
-  for (side = 0; side < 2; side++) {
-    for (col = 0; col < TRACK_COLS; col++) html += '<th>' + trackColumnLabel(col) + '</th>';
-    html += '<th></th>';
-  }
-  html += '</tr>';
-
-  for (row = 0; row < TRACK_ROWS; row++) {
-    html += '<tr><th>' + (row * TRACK_COLS) + '</th>';
-    for (side = 0; side < 2; side++) {
-      for (col = 0; col < TRACK_COLS; col++) {
-        cylinder = (row * TRACK_COLS) + col;
-        // Cylinders past MAX_CYLINDERS are left empty rather than drawn as cells
-        // that will never fill in - the last row is deliberately short.
-        if (cylinder >= MAX_CYLINDERS) { html += '<td></td>'; continue; }
-        html += '<td class="hcTrack untested" id="hcTrack' + ((cylinder * 2) + side) +
-                '" title="Cylinder ' + cylinder + ', side ' + side + '"></td>';
-      }
-      html += '<td></td>';
-    }
-    html += '</tr>';
-  }
-
-  body.html(html);
+// Rewrites the class rather than adding and removing the four state names, but
+// carries the head marker across: it says where the drive is, not how a cylinder
+// has behaved, and clearing the tally must not move it.
+function headCalPaint(cell, state) {
+  var current = cell.hasClass('current') ? ' current' : '';
+  cell.attr('class', 'track' + (state ? ' ' + state : '') + current);
 }
 
 function headCalClearTally() {
-  $('#headCalGrid td.hcTrack').removeClass('clean intermittent failing')
-                              .addClass('untested').html('');
+  $('#headCalGrid td.track').each(function () {
+    headCalPaint($(this), '');
+    $(this).html('');
+  });
 }
 
 // Four states, the same ones the console panel paints: never visited, clean on
@@ -87,14 +79,10 @@ function headCalTally(cylinder, side, passes, errors) {
   var cell = $('#hcTrack' + ((cylinder * 2) + side));
   if (cell.length == 0) return;
 
-  var state = 'untested';
-  if (passes > 0) {
-    if (errors == 0) state = 'clean';
-    else if (errors >= passes) state = 'failing';
-    else state = 'intermittent';
-  }
+  var state = 0;
+  if (passes > 0) state = (errors == 0) ? 1 : (errors >= passes ? 3 : 2);
 
-  cell.removeClass('untested clean intermittent failing').addClass(state);
+  headCalPaint(cell, HEADCAL_TALLY_CLASS[state]);
   cell.html(passes > 0 ? (passes + '/' + errors) : '');
 }
 
@@ -111,9 +99,29 @@ function headCalMark(cylinder) {
   $('#hcTrack' + ((cylinder * 2) + 1)).addClass('current');
 }
 
+// Clicking a cell seeks there. The grid is already the map of the disk the operator
+// is reading the fault off, so it is also the fastest way to say "go and look at
+// that one" - quicker than nudging in tens and ones, and it needs no counting.
+//
+// Delegated from the tbody rather than bound per cell: there are 168 of them, and
+// they are rebuilt whenever the grid is.
+function headCalSeekFromCell(cell) {
+  if (!headCalRunning) return;
+  var id = cell.attr('id');
+  if (!id) return;
+  // Cells are ids, not data attributes, so the id is the logical track and the
+  // cylinder is half of it. Both sides of a cylinder seek to the same place.
+  var cylinder = Math.floor(parseInt(id.substring('hcTrack'.length), 10) / 2);
+  if (!isNaN(cylinder)) wsSend('headCalCyl,' + cylinder);
+}
+
 function onLoad_HeadCal() {
   buildHeadCalGrid();
   headCalSetRunning(false);
+
+  $('#headCalGrid').on('click', 'td.track', function () {
+    headCalSeekFromCell($(this));
+  });
 
   // Enter on the cylinder box jumps straight there, the one control that is
   // quicker to type than to step to.
@@ -131,12 +139,19 @@ function onLoad_HeadCal() {
 function headCalSetRunning(running) {
   headCalRunning = running;
 
-  $('#headCalStart').prop('disabled', running).toggleClass('disabled', running);
   $('.live-action').not('#headCalStart').prop('disabled', !running)
                    .toggleClass('disabled', !running);
+  headCalPaintRunButton();
+
+  // The grid only offers a pointer while there is a session to seek, so it does
+  // not advertise a click that would go nowhere.
+  $('#headCalGrid').toggleClass('seekable', running);
 
   if (!running) {
+    headCalPaused = false;
+    headCalPaintRunButton();
     $('#headCalStatus').html('Not running.');
+    $('#headCalRpm').html('');
     headCalClearRow(0);
     headCalClearRow(1);
   } else {
@@ -154,9 +169,41 @@ function headCalClearRow(side) {
 // Controls
 // --------------------------------------------------------
 
-function headCalStart() {
-  var value = parseInt($('#headCalCyl').val(), 10);
-  wsSend('headCalibration' + (isNaN(value) ? '' : ',' + value));
+/*
+   Start, Pause and Resume are one button, because they are one question - is the
+   drive reading right now - and a session that is running has no use for a Start
+   button beside it. The device owns the answer: this only sends the command, and
+   the button is relabelled when the config that comes back says it happened.
+*/
+function headCalToggleRun() {
+  if (!headCalRunning) {
+    var value = parseInt($('#headCalCyl').val(), 10);
+    wsSend('headCalibration' + (isNaN(value) ? '' : ',' + value));
+    return;
+  }
+  wsSend('headCalPause,' + (headCalPaused ? 0 : 1));
+}
+
+function headCalPaintRunButton() {
+  var button = $('#headCalStart');
+  var label, style;
+
+  if (!headCalRunning) {
+    label = '<i class="fa-solid fa-play"></i> Start';
+    style = 'btn-success';
+  } else if (headCalPaused) {
+    label = '<i class="fa-solid fa-play"></i> Resume';
+    style = 'btn-success';
+  } else {
+    label = '<i class="fa-solid fa-pause"></i> Pause';
+    style = 'btn-warning';
+  }
+
+  // Never disabled now: there is always something for it to do.
+  button.prop('disabled', false)
+        .removeClass('disabled btn-success btn-warning')
+        .addClass(style)
+        .html(label);
 }
 
 // Not diskcopyCancel(): that pulses the device cancel pin, which on this PCB is
@@ -173,13 +220,22 @@ function headCalToggleSound() { wsSend('headCalSound,' + (headCalSound ? 0 : 1))
 // Inbound
 // --------------------------------------------------------
 
-function headCalConfig(cyl, step, head, auto, active, passes, snd) {
+function headCalRpmText(tenths) {
+  var value = parseInt(tenths, 10);
+  if (isNaN(value) || value <= 0) return '-- RPM';
+  return (Math.floor(value / 10) + '.' + (value % 10) + ' RPM');
+}
+
+function headCalConfig(cyl, step, head, auto, active, passes, snd, paused, rpm) {
   headCalHead = parseInt(head, 10);
   headCalAuto = (parseInt(auto, 10) !== 0);
   headCalSound = (parseInt(snd, 10) !== 0);
   var running = (parseInt(active, 10) !== 0);
+  var wasPaused = headCalPaused;
+  headCalPaused = (parseInt(paused, 10) !== 0);
 
   if (running !== headCalRunning) headCalSetRunning(running);
+  else if (headCalPaused !== wasPaused) headCalPaintRunButton();
   if (!running) return;
 
   // Left alone while it has focus, so a number being typed is not overwritten
@@ -192,7 +248,11 @@ function headCalConfig(cyl, step, head, auto, active, passes, snd) {
   $('#headCalSoundBtn').html('<i class="fa-solid fa-volume-' +
                              (headCalSound ? 'high' : 'xmark') + '"></i> Sound: ' +
                              (headCalSound ? 'On' : 'Off'));
-  $('#headCalStatus').html('Cylinder ' + cyl + ', step ' + step + ', pass ' + passes);
+  $('#headCalStatus').html('Cylinder ' + cyl + ', step ' + step + ', pass ' + passes +
+                           (headCalPaused ? ' - paused' : ''));
+  // The speed the drive is actually turning at, which the TFT and the console have
+  // shown all along and the browser had no way to see.
+  $('#headCalRpm').html(headCalRpmText(rpm));
 
   // A side that is no longer selected keeps stale glyphs otherwise.
   if (headCalHead === 0) headCalClearRow(1);

@@ -611,6 +611,9 @@ void XCopy::onWebCommand(void* obj, const String command)
         else if (command.startsWith("headCalSound")) {
             xcopy->_headCal.setSound(param.toInt() != 0);
         }
+        else if (command.startsWith("headCalPause")) {
+            xcopy->_headCal.setPaused(param.toInt() != 0);
+        }
         else if (command.startsWith("headCalStep")) {
             xcopy->_headCal.setStepSize((uint8_t)param.toInt());
         }
