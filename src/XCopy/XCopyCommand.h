@@ -11,6 +11,7 @@
 #include "XCopyAdfView.h"
 #include "XCopyAdfMount.h"
 #include "XCopyAdfWalk.h"
+#include "XCopyAdfFloppyDriver.h"
 #include "XCopyESP8266.h"
 #include "XCopyConfig.h"
 #include "XCopyTime.h"

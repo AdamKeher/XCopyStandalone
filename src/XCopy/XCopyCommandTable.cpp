@@ -14,7 +14,7 @@
 */
 
 static const XCopyOption OPT_MOUNT[] = {
-    {"slot", XCopyArgKind::choice, "adf0|adf1", "which slot to use, the first free one otherwise"},
+    {"slot", XCopyArgKind::choice, "adf0|adf1", "which image slot to use, the first free one otherwise"},
     {"rw", XCopyArgKind::flag, nullptr, "allow writing; read only unless asked"},
 };
 
@@ -80,11 +80,17 @@ const XCopyCommandDef XCOPY_COMMANDS[] = {
     {XCopyCmd::config, "config", nullptr, XCopyCat::general, NOOPTS, XCopyArgKind::none, nullptr, 0, "show config settings"},
     {XCopyCmd::mem, "mem", nullptr, XCopyCat::general, NOOPTS, XCopyArgKind::none, nullptr, 0, "show memory stats"},
 
-    {XCopyCmd::dir, "dir", "ls", XCopyCat::files, NOOPTS, XCopyArgKind::path, "directory", XCOPY_NEEDS_SD, "list a directory, on the card or in a mounted image"},
-    {XCopyCmd::cat, "cat", nullptr, XCopyCat::files, NOOPTS, XCopyArgKind::path, "file", XCOPY_NEEDS_SD | XCOPY_SUBJECT_REQUIRED, "write the contents of a file to the terminal"},
+    /*
+       dir, cat and mount lost XCOPY_NEEDS_SD when DF0: arrived: all three now
+       work on a mounted floppy with no card in the machine at all. Nothing is
+       lost by dropping it - each of them fails cleanly and says why, because the
+       SD paths already check the card themselves and the ADF paths do not need it.
+    */
+    {XCopyCmd::dir, "dir", "ls", XCopyCat::files, NOOPTS, XCopyArgKind::path, "directory", 0, "list a directory, on the card or in a mounted image"},
+    {XCopyCmd::cat, "cat", nullptr, XCopyCat::files, NOOPTS, XCopyArgKind::path, "file", XCOPY_SUBJECT_REQUIRED, "write the contents of a file to the terminal"},
     {XCopyCmd::rm, "rm", nullptr, XCopyCat::files, NOOPTS, XCopyArgKind::path, "file", XCOPY_NEEDS_SD | XCOPY_SUBJECT_REQUIRED, "delete a file from the SD card"},
     {XCopyCmd::md5, "md5", nullptr, XCopyCat::files, OPTS(OPT_MD5), XCopyArgKind::path, "file", 0, "md5 hash of a file on the SD card, or of the flash"},
-    {XCopyCmd::mount, "mount", nullptr, XCopyCat::files, OPTS(OPT_MOUNT), XCopyArgKind::path, "file", XCOPY_NEEDS_SD, "mount an ADF image, or list what is mounted"},
+    {XCopyCmd::mount, "mount", nullptr, XCopyCat::files, OPTS(OPT_MOUNT), XCopyArgKind::path, "file", 0, "mount an ADF image or df0:, or list what is mounted"},
     {XCopyCmd::unmount, "unmount", nullptr, XCopyCat::files, NOOPTS, XCopyArgKind::text, "slot", 0, "release a slot, or all of them"},
 
     {XCopyCmd::readadf, "readadf", nullptr, XCopyCat::disk, OPTS(OPT_READADF), XCopyArgKind::none, nullptr, XCOPY_NEEDS_DISK | XCOPY_NEEDS_SD, "read the floppy disk to an ADF file"},

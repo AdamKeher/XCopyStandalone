@@ -7,6 +7,7 @@
 #include "XCopyLog.h"
 #include "XCopySdFat.h"
 #include "XCopyAdfSdDriver.h"
+#include "XCopyAdfFloppyDriver.h"
 
 extern "C"
 {
@@ -126,6 +127,15 @@ void XCopyAdf::begin()
     adfEnvSetFct(onError, onWarning, onVerbose, nullptr);
 
     adfAddDeviceDriver(&xcopyAdfSdDriver);
+
+    /*
+       Registered whether or not a drive has been attached to it. The driver
+       refuses to open until xcopyAdfFloppyAttach() has been called, which is a
+       clean failure at the door rather than a null pointer somewhere inside a
+       directory read - and it means DF0: is in the table for "mount" to list
+       either way.
+    */
+    adfAddDeviceDriver(&xcopyAdfFloppyDriver);
 
     _started = true;
 }

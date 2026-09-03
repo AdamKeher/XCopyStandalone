@@ -3,6 +3,7 @@
 #include "XCopyLog.h"
 #include "XCopyConsole.h"
 #include "XCopyPins.h"
+#include "XCopyAdfFloppyDriver.h"
 
 #include <stdlib.h>
 
@@ -16,8 +17,9 @@ namespace
        mount. Everything a mount actually costs is inside ADFlib.
     */
     XCopyAdfMount::Slot _slots[XCopyAdfMount::kSlots] = {
-        {"ADF0", "", NULL, NULL},
-        {"ADF1", "", NULL, NULL},
+        {"DF0", true, "", NULL, NULL},
+        {"ADF0", false, "", NULL, NULL},
+        {"ADF1", false, "", NULL, NULL},
     };
 
     bool sameName(const char *slot, const String &device)
@@ -50,6 +52,18 @@ namespace
 
 void XCopyAdfMount::begin()
 {
+    /*
+       The disk in the drive can be swapped as freely as the card, and a DF0:
+       mount that outlives its disk would answer with the new disk's blocks laid
+       out to the old one's directory - which reads as a corrupt file system
+       rather than as the mistake it is.
+    */
+    if (_slots[kDriveSlot].mounted() && xcopyAdfFloppyDiskGone())
+    {
+        unmount(_slots[kDriveSlot]);
+        Log << F("disk changed: DF0: released\r\n");
+    }
+
     const bool present = cardPresent();
     if (_cardWasPresent >= 0 && (present ? 1 : 0) != _cardWasPresent)
     {
@@ -74,6 +88,39 @@ XCopyAdfMount::Slot *XCopyAdfMount::find(const String &device)
         if (sameName(_slots[i].name, device))
             return &_slots[i];
     return nullptr;
+}
+
+bool XCopyAdfMount::mountDrive(Slot &slot)
+{
+    begin();
+    unmount(slot);
+
+    XCopyAdf::clearErrors();
+
+    slot.dev = adfDevOpenWithDriver("floppy", "DF0:", ADF_ACCESS_MODE_READONLY);
+    if (slot.dev == NULL)
+    {
+        Log << XCopyConsole::error("cannot read the disk in the drive") << F("\r\n");
+        return false;
+    }
+
+    if (adfDevMount(slot.dev) != ADF_RC_OK)
+    {
+        Log << XCopyConsole::error("no Amiga filesystem on the disk in the drive") << F("\r\n");
+        unmount(slot);
+        return false;
+    }
+
+    slot.vol = adfVolMount(slot.dev, 0, ADF_ACCESS_MODE_READONLY);
+    if (slot.vol == NULL)
+    {
+        Log << XCopyConsole::error("cannot mount a volume on the disk in the drive") << F("\r\n");
+        unmount(slot);
+        return false;
+    }
+
+    slot.path = "";
+    return true;
 }
 
 bool XCopyAdfMount::mount(Slot &slot, const String &path, bool readWrite)

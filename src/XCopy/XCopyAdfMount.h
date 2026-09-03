@@ -29,15 +29,28 @@ extern "C"
 */
 namespace XCopyAdfMount
 {
-    //! Two image slots. Adding one costs ~720 bytes of heap when it is in use.
-    static const uint8_t kSlots = 2;
+    /*
+       The drive and two image slots.
+
+       Each mounted volume costs about 720 bytes of heap, most of it the 512 byte
+       bitmap block ADFlib caches so it can allocate; an open file inside one costs
+       another 1,600. Against roughly 5.4KB of arena that is the budget, so a
+       fourth slot is not free and is not here.
+    */
+    static const uint8_t kSlots = 3;
+
+    //! Index of the live drive in slots(). The image slots follow it.
+    static const uint8_t kDriveSlot = 0;
 
     struct Slot
     {
-        //! "ADF0", without the colon. Static, matched case insensitively.
+        //! "DF0" or "ADF0", without the colon. Static, matched case insensitively.
         const char *name;
 
-        //! The backing file on the card. Empty when nothing is mounted.
+        //! True for the live drive, which has no backing file.
+        bool drive;
+
+        //! The backing file on the card. Empty for the drive, and when unmounted.
         String path;
 
         struct AdfDevice *dev;
@@ -57,6 +70,16 @@ namespace XCopyAdfMount
      * @param device a name without its colon, any case - as XCopyPath reports it.
      */
     Slot *find(const String &device);
+
+    /**
+     * @brief Mount the disk in the drive into the DF0: slot.
+     *
+     * Read only: writing one sector of a floppy means reading a whole track,
+     * replacing 512 bytes and writing all eleven back, and that is its own change.
+     *
+     * @result false with the reason already printed
+     */
+    bool mountDrive(Slot &slot);
 
     /**
      * @brief Mount @p path into @p slot.

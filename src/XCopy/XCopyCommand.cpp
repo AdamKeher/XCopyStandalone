@@ -145,6 +145,11 @@ XCopyCommandLine::XCopyCommandLine(String version, XCopyESP8266 *esp, XCopyConfi
 
     _editor.begin(this, onEditorLine, onEditorComplete, writeConsole);
     _completer.begin(listDirectory);
+
+    // What DF0: reads through. The console is the only thing that mounts it, and
+    // until this is called the floppy driver refuses to open - so a mount with no
+    // drive attached fails at the door rather than through a null pointer.
+    xcopyAdfFloppyAttach(_disk, _floppy, _config->getRetryCount());
 }
 
 void XCopyCommandLine::onEditorLine(void *caller, const String &line)
@@ -183,6 +188,15 @@ static bool mountSdCard()
 
 void XCopyCommandLine::doCommand(String command)
 {
+    /*
+       Anything that moves the head or reads a track leaves the decoded track
+       buffer holding something else, and DF0:'s driver caches which track is in
+       there. One command is one operation, so forgetting between commands keeps
+       the cache correct without giving up what it is for - a directory listing is
+       one command and gets one head pass per track, not eleven.
+    */
+    xcopyAdfFloppyInvalidate();
+
     // Arduino's char/char replace substitutes bytes without changing the length, so
     // the previous replace((char)10, (char)0) pair embedded NULs instead of removing
     // anything. Replacing with an empty String actually shortens it.
@@ -595,12 +609,14 @@ void XCopyCommandLine::cmdMount(const XCopyArgs &args)
             Log << slots[i].name << F(":  ");
             if (!slots[i].mounted())
             {
-                Log << F("-\r\n");
+                Log << (slots[i].drive ? F("-  (the drive)\r\n") : F("-\r\n"));
                 continue;
             }
 
             Log << (slots[i].vol->volName ? slots[i].vol->volName : "?");
-            Log << F("  (") << slots[i].path << F(")");
+            Log << F("  (")
+                << (slots[i].drive ? String("the disk in the drive") : slots[i].path)
+                << F(")");
             Log << (slots[i].dev->readOnly ? F("  read only\r\n") : F("  read write\r\n"));
         }
 
@@ -608,6 +624,51 @@ void XCopyCommandLine::cmdMount(const XCopyArgs &args)
         // for the volume, another 1,600 while a file inside it is open - and this
         // is the number that says whether the next one will fit.
         Log << XCopyAdfMount::freeHeap() << F(" bytes of heap free\r\n");
+        return;
+    }
+
+    /*
+       "mount df0:" is the drive, not a file called df0. It is the one subject that
+       names a device instead of a path, because the drive has no backing file to
+       name - what is in it is whatever the operator put there.
+    */
+    XCopyPath named;
+    xcopySplitPath(args.subject(), named);
+
+    /*
+       The colon is what says "device", but "mount df0" without one is what an
+       Amiga habit produces and refusing it would be pedantry. A bare name is
+       taken as a device only when it matches a drive slot, so a file called
+       "adf0" still mounts; one actually called "df0" can be named SD:df0.
+    */
+    XCopyAdfMount::Slot *bare = named.qualified ? nullptr
+                                                : XCopyAdfMount::find(args.subject());
+    if (bare != nullptr && !bare->drive)
+        bare = nullptr;
+
+    if (bare != nullptr || (named.qualified && !named.isCard()))
+    {
+        const String device = bare != nullptr ? String(bare->name) : named.device;
+        XCopyAdfMount::Slot *drive = bare != nullptr ? bare
+                                                     : XCopyAdfMount::find(named.device);
+        if (drive == nullptr)
+        {
+            Log << XCopyConsole::error("no such device '" + named.device + ":'") << F("\r\n");
+            return;
+        }
+
+        if (!drive->drive)
+        {
+            Log << XCopyConsole::error(named.device + ": needs a file to mount") << F("\r\n");
+            Log << F("try: mount <file> -slot ") << named.device << F("\r\n");
+            return;
+        }
+
+        if (!XCopyAdfMount::mountDrive(*drive))
+            return;
+
+        Log << drive->name << F(": ") << (drive->vol->volName ? drive->vol->volName : "?");
+        Log << F("  (the disk in the drive)  read only\r\n");
         return;
     }
 
@@ -624,9 +685,11 @@ void XCopyCommandLine::cmdMount(const XCopyArgs &args)
     }
     else
     {
-        // First free, so the common case is "mount game.adf" and nothing else.
+        // First free image slot, so the common case is "mount game.adf" and
+        // nothing else. The drive is skipped: it takes no file, and choosing it
+        // for someone who named one would be a surprising way to fail.
         for (uint8_t i = 0; i < XCopyAdfMount::kSlots && slot == nullptr; i++)
-            if (!slots[i].mounted())
+            if (!slots[i].drive && !slots[i].mounted())
                 slot = &slots[i];
 
         if (slot == nullptr)
