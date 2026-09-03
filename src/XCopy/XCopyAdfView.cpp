@@ -1,5 +1,6 @@
 #include "XCopyAdfView.h"
 #include "XCopyLog.h"
+#include "XCopyAdfWalk.h"
 
 extern "C"
 {
@@ -125,98 +126,44 @@ void XCopyAdfView::printEntry(const struct AdfEntry *entry)
     Log << F("\r\n");
 }
 
-bool XCopyAdfView::eachEntry(struct AdfVolume *vol,
-                             ADF_SECTNUM dirSector,
-                             EntryVisit visit,
-                             void *context)
-{
-    if (vol == NULL || visit == NULL)
-        return false;
-
-    /*
-       Two block buffers on the stack, 1KB together.
-
-       They are here rather than static because a listing is transient and static
-       would cost the same bytes permanently - and rather than on the heap because
-       the heap is the scarce one. Console commands run from the main loop with a
-       shallow stack under them, which is where the room for this comes from.
-    */
-    struct AdfEntryBlock parent;
-    struct AdfEntryBlock entryBlk;
-
-    if (adfReadEntryBlock(vol, dirSector, &parent) != ADF_RC_OK)
-        return false;
-
-    for (int i = 0; i < ADF_HT_SIZE; i++)
-    {
-        ADF_SECTNUM sector = parent.hashTable[i];
-
-        while (sector != 0)
-        {
-            struct AdfEntry entry;
-            if (adfEntryRead(vol, sector, &entry, &entryBlk) != ADF_RC_OK)
-                return false;
-
-            visit(context, &entry);
-
-            // adfEntryRead() strdup()s the name and the comment into the entry.
-            // One entry is live at a time, so this is ~90 bytes of heap held for
-            // the length of one visit rather than 6KB held for the whole listing.
-            adfFreeEntry(&entry);
-
-            if (entryBlk.nextSameHash == 0)
-                break;
-
-            /*
-               ADFlib upstream issue #99, carried over from adfGetRDirEntLimited().
-
-               Some disks - it looks deliberate, as a way of stopping people looking
-               at the contents - link an entry's nextSameHash back to itself or to
-               another entry already in the parent's hash table. AmigaOS locks up on
-               those and so would this loop. Both cases end the chain and say so,
-               rather than abandoning the whole listing: everything already printed
-               is real, and the rest of the hash table is usually fine.
-            */
-            if (sector == entryBlk.nextSameHash)
-            {
-                Log << F("adf: warning: entry at block ") << sector
-                    << F(" links to itself; chain truncated\r\n");
-                break;
-            }
-
-            bool loops = false;
-            for (int j = 0; j < ADF_HT_SIZE; j++)
-            {
-                if (parent.hashTable[j] == entryBlk.nextSameHash)
-                {
-                    Log << F("adf: warning: entry at block ") << sector
-                        << F(" links back into the hash table; chain truncated\r\n");
-                    loops = true;
-                    break;
-                }
-            }
-            if (loops)
-                break;
-
-            sector = entryBlk.nextSameHash;
-        }
-    }
-
-    return true;
-}
-
 namespace
 {
-    void countAndPrint(void *context, const struct AdfEntry *entry)
+    struct Listing
+    {
+        uint16_t listed;
+    };
+
+    void onEntry(void *context, const struct AdfEntry *entry)
     {
         XCopyAdfView::printEntry(entry);
-        (*(uint16_t *)context)++;
+        ((Listing *)context)->listed++;
+    }
+
+    void onFault(void *context, ADF_SECTNUM sector, AdfWalkFault fault)
+    {
+        (void)context;
+        Log << F("adf: warning: entry at block ") << sector
+            << (fault == ADF_WALK_SELF_LINK
+                    ? F(" links to itself; chain truncated\r\n")
+                    : F(" links back into the hash table; chain truncated\r\n"));
+        Log << F("adf: warning: repair this volume before writing to it\r\n");
     }
 }
 
 uint16_t XCopyAdfView::printDirectory(struct AdfVolume *vol, ADF_SECTNUM dirSector)
 {
-    uint16_t listed = 0;
-    eachEntry(vol, dirSector, countAndPrint, &listed);
-    return listed;
+    /*
+       The walk's two block buffers, 1KB, on the stack.
+
+       On the stack rather than static because a listing is transient and a static
+       would cost the same bytes out of the malloc arena permanently; and rather
+       than borrowed from XCopyScratch because a listing has to work while a disk
+       operation holds that buffer. A console command runs from the main loop with
+       a shallow stack under it, which is where the room comes from.
+    */
+    struct AdfEntryBlock scratch[2];
+
+    Listing listing = {0};
+    adfWalkDir(vol, dirSector, scratch, onEntry, onFault, &listing);
+    return listing.listed;
 }

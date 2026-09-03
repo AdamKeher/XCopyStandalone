@@ -40,37 +40,17 @@ namespace XCopyAdfView
     void printEntry(const struct AdfEntry *entry);
 
     /**
-     * @brief Called once per entry of a directory. See eachEntry().
+     * @brief List one directory through printEntry(), reporting any corruption.
      *
-     * @p entry is valid only for the duration of the call - its name and comment
-     * are freed as soon as it returns - so a visitor that wants to keep anything
-     * must copy it.
+     * The walk itself is adfWalkDir() in XCopyAdfWalk.h, which knows nothing about
+     * the terminal and is therefore testable on a host. This supplies it with the
+     * two block buffers it needs, prints what it reports, and turns its truncated
+     * chain warnings into console lines.
+     *
+     * @param dirSector the directory's header block; vol->rootBlock for the root,
+     *                  vol->curDirPtr for wherever adfChangeDir() has reached
+     * @result how many entries were listed
      */
-    typedef void (*EntryVisit)(void *context, const struct AdfEntry *entry);
-
-    /**
-     * @brief Walk one directory, reporting each entry as it is read.
-     *
-     * Not recursive, and deliberately so: adfGetRDirEnt() recurses up to 512 levels
-     * and there are 6,252 bytes of stack on this board. A caller that wants a tree
-     * should keep its own explicit list of directories still to visit.
-     *
-     * Carries ADFlib's two nextSameHash sanity checks (upstream issue #99): some
-     * disks link an entry back to itself or into the parent's hash table, which
-     * locks AmigaOS and would spin here. Both are reported and end that chain
-     * rather than the whole listing.
-     *
-     * @param vol       a mounted volume
-     * @param dirSector the directory's header block; vol->curDirPtr for the current
-     *                  one, vol->rootBlock for the root
-     * @result false if the directory block could not be read at all
-     */
-    bool eachEntry(struct AdfVolume *vol,
-                   ADF_SECTNUM dirSector,
-                   EntryVisit visit,
-                   void *context);
-
-    //! eachEntry() + printEntry(), and a count of what was listed.
     uint16_t printDirectory(struct AdfVolume *vol, ADF_SECTNUM dirSector);
 }
 
