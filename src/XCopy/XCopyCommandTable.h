@@ -79,6 +79,8 @@ enum class XCopyCmd : uint8_t
     cat,
     rm,
     md5,
+    cp,
+    mkdir,
     mount,
     unmount,
 

@@ -12,6 +12,7 @@
 #include "XCopyAdfMount.h"
 #include "XCopyAdfWalk.h"
 #include "XCopyAdfFloppyDriver.h"
+#include "XCopyAdfCopy.h"
 #include "XCopyESP8266.h"
 #include "XCopyConfig.h"
 #include "XCopyTime.h"
@@ -106,7 +107,28 @@ private:
   void cmdCat(const XCopyArgs &args);
   void cmdRm(const XCopyArgs &args);
   void cmdMd5(const XCopyArgs &args);
+  void cmdCp(const XCopyArgs &args);
+  void cmdMkdir(const XCopyArgs &args);
   void cmdMount(const XCopyArgs &args);
+
+  //! False, with the reason printed, when a slot is mounted read only.
+  bool writableVolume(XCopyAdfMount::Slot &slot);
+  //! False, with the reason printed, when @p openAdfFiles will not fit the heap.
+  bool heapAllows(uint8_t openAdfFiles);
+
+  /*
+     The three copies that have one foot on the SD card. The fourth - between two
+     mounted volumes - is adfCopyFile() in XCopyAdfCopy.h, which is plain C over
+     ADFlib and is therefore tested on the host.
+  */
+  bool copyCardToVolume(const String &fromPath, XCopyAdfMount::Slot &toSlot,
+                        const String &toDirectory, const String &toLeaf,
+                        uint8_t *buffer, size_t bufferSize, unsigned long &copied);
+  bool copyVolumeToCard(XCopyAdfMount::Slot &fromSlot, const String &fromPath,
+                        const String &fromLeaf, const String &toPath,
+                        uint8_t *buffer, size_t bufferSize, unsigned long &copied);
+  bool copyCardToCard(const String &fromPath, const String &toPath,
+                      uint8_t *buffer, size_t bufferSize, unsigned long &copied);
   void cmdUnmount(const XCopyArgs &args);
 
   //! "dir" when the path named a mounted image rather than the card.
