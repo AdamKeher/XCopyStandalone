@@ -11,20 +11,27 @@
 // block grid (XCopyGraphics::drawTrack). Change one and change all three, or the
 // device stops agreeing with itself about what it is doing.
 
-var TRACK_COLS = 12;
-var TRACK_ROWS = 7;
-var TRACK_COUNT = TRACK_COLS * TRACK_ROWS * 2;
+var MAX_CYLINDERS = 84;
+var TRACK_COLS = 10;
+// Rounded up: 84 is not a multiple of 10, so the last row is short and holds only
+// cylinders 80-83. That is deliberate - see XCopyGeometry.h. Cells past MAX_CYLINDERS
+// are left empty rather than being drawn as tracks that will never fill in.
+var TRACK_ROWS = Math.ceil(MAX_CYLINDERS / TRACK_COLS);
+var TRACK_COUNT = MAX_CYLINDERS * 2;
 
-// Column header labels: 0-9 then A-Z, so a wide grid still fits one character per
-// cell. Same scheme as the console map.
+// Column header labels. Ten columns, so these are simply 0-9 and a cylinder number is
+// read off as row label plus column - 40 plus 7 is cylinder 47. The A-F headings a
+// twelve column grid needed are what made this unreadable. Same scheme as the console
+// map; the fallback past 9 is kept only so a wider grid degrades rather than breaks.
 function trackColumnLabel(col) {
     return col < 10 ? String(col) : String.fromCharCode(65 + col - 10);
 }
 
 // The four icon groups used to be pinned to grid rows by rowspan, over eight rows
-// with two spacers. Seven rows leaves room for one, so the mapping lives here as
-// data rather than being spelled out in markup: source icons, source globes,
-// destination icons, destination globes, and the Target label under them.
+// with two spacers. The mapping lives here as data rather than being spelled out in
+// markup: source icons, source globes, destination icons, destination globes, and the
+// Target label under them. Rows past the Target label get an empty cell - with nine
+// rows the default arm would otherwise repeat "Target" three times down the side.
 function trackIconCells(row) {
     switch (row) {
         case 0:
@@ -51,8 +58,10 @@ function trackIconCells(row) {
                    '<td><img id="dst_sdcard_globe" src="./images/selected.png"></td>' +
                    '<td><img id="dst_flash_globe" src="./images/selected.png"></td>' +
                    '<td></td>';
-        default:
+        case 6:
             return '<td colspan=4>Target</td>';
+        default:
+            return '<td colspan=4></td>';
     }
 }
 
@@ -81,9 +90,16 @@ function buildTrackGrid() {
     for (row = 0; row < TRACK_ROWS; row++) {
         html += '<tr>' + trackIconCells(row);
         for (side = 0; side < 2; side++) {
-            html += '<td>' + row + '</td>';
+            // The row label is the first cylinder in the row - 0, 10, 20 ... 80 - not
+            // the row index. Labelling the rows 0-6 was what left the grid reading as a
+            // 12 x 7 block of nothing in particular.
+            html += '<td>' + (row * TRACK_COLS) + '</td>';
             for (col = 0; col < TRACK_COLS; col++) {
                 cylinder = (row * TRACK_COLS) + col;
+                if (cylinder >= MAX_CYLINDERS) {
+                    html += '<td></td>';
+                    continue;
+                }
                 html += '<td class="track" id="track' + ((cylinder * 2) + side) + '"></td>';
             }
             html += '<td></td>';

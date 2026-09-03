@@ -8,9 +8,11 @@
     td
     {
         height:40px;
-        // 35px, not 40: the grid grew from 28 columns to 32 when SCP capture pushed
-        // it out to 84 cylinders, and 32 x 35 is the width 28 x 40 used to be.
-        width:35px;
+        // Back to 40 with the grid back to ten cylinders a row: that is 28 table
+        // columns again (4 icon and spacer, then a label, ten cells and a spacer per
+        // side), and 28 x 40 is the 1120px this was drawn for. It was briefly 35 to
+        // keep that total while a twelve column grid made it 32 columns wide.
+        width:40px;
         text-align: center;
         // debug borders
         // border: 1px solid red;

@@ -35,11 +35,23 @@ static const uint8_t MAX_TRACKS = MAX_CYLINDERS * 2; // 168
    Progress grid layout, shared by the TFT blocks (XCopyGraphics::drawTrack), the serial
    console map (XCopyTrackMap) and the browser table (diskcopy.js).
 
-   12 x 7 is exactly MAX_CYLINDERS, so the last row is full rather than ragged. The
-   three surfaces are deliberately mirror images of each other - change one and change
-   all three, or the device stops agreeing with itself about what it is doing.
+   Ten to a row, so a row is a group of ten cylinders and the labels down the side read
+   0, 10, 20 ... 80. That is how XCopy itself laid a disk out and how Amiga imaging tools
+   have ever since, and it is the layout a fault pattern can be read off without counting.
+
+   This was briefly 12 x 7, because that is exactly MAX_CYLINDERS and it made the last row
+   full instead of ragged. It also relabelled the columns 0-B and the rows 0-6, which
+   matches nothing anyone recognises. The ragged row is the point rather than a defect:
+   cylinders 80 to 83 are the out of band ones SCP can reach and AmigaDOS cannot, and a
+   short last row is what says so at a glance.
+
+   MAX_CYLINDERS is not a multiple of GRID_COLS, so every surface has to leave cylinders
+   >= MAX_CYLINDERS blank rather than drawing a cell there. The three surfaces are mirror
+   images of each other - change one and change all three, or the device stops agreeing
+   with itself about what it is doing.
 */
-static const uint8_t GRID_COLS = 12;
-static const uint8_t GRID_ROWS = 7;
+static const uint8_t GRID_COLS = 10;
+//! Rounded up, so the last row is short. See above - that is deliberate.
+static const uint8_t GRID_ROWS = (MAX_CYLINDERS + GRID_COLS - 1) / GRID_COLS; // 9
 
 #endif // XCOPYGEOMETRY_H
