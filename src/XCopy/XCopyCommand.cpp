@@ -68,8 +68,61 @@ static void writeConsole(const String &text)
     Log << text;
 }
 
-static void listSdDirectory(const String &directory, XCopyDirVisit visit, void *context)
+/*
+   What Tab offers for a path, which is either the card or a mounted image.
+
+   The completer never learns there are two: it asks for the contents of a
+   directory and gets them, exactly as before. Routing on the device prefix here
+   is what keeps XCopyComplete depending on nothing but String, and therefore
+   keeps it in the host test suite - which is the same reason XCopyConsoleIO.h
+   made this a function pointer in the first place.
+*/
+struct VolumeListing
 {
+    XCopyDirVisit visit;
+    void *context;
+};
+
+static void offerVolumeEntry(void *context, const struct AdfEntry *entry)
+{
+    const VolumeListing *listing = (const VolumeListing *)context;
+
+    if (entry->name == NULL)
+        return;
+
+    // Bare names. The completer puts the device and the directory back on itself,
+    // from the part of the token it split off before asking - the same contract
+    // the SD listing above has always had.
+    listing->visit(listing->context, String(entry->name),
+                   entry->type == ADF_ST_DIR);
+}
+
+static void listDirectory(const String &directory, XCopyDirVisit visit, void *context)
+{
+    XCopyPath path;
+    if (xcopySplitPath(directory, path) && path.qualified && !path.isCard())
+    {
+        XCopyAdfMount::Slot *slot = XCopyAdfMount::find(path.device);
+        if (slot == nullptr || !slot->mounted())
+            return;
+
+        String leaf;
+        // Quietly: a Tab on a path that does not exist yet is a question, not a
+        // mistake, and printing an error into the middle of a line being typed
+        // would be worse than offering nothing.
+        XCopyAdf::setEcho(false);
+        const bool reached = XCopyAdfMount::walkTo(*slot, path.rest, leaf);
+        XCopyAdf::setEcho(true);
+        if (!reached)
+            return;
+
+        struct AdfEntryBlock scratch[2];
+        VolumeListing listing = {visit, context};
+        adfWalkDir(slot->vol, slot->vol->curDirPtr, scratch,
+                   offerVolumeEntry, nullptr, &listing);
+        return;
+    }
+
     XCopySDCard sdcard;
 
     if (!sdcard.cardDetect() || !sdcard.begin() || !sdcard.open(directory))
@@ -91,7 +144,7 @@ XCopyCommandLine::XCopyCommandLine(String version, XCopyESP8266 *esp, XCopyConfi
     _floppy = floppy;
 
     _editor.begin(this, onEditorLine, onEditorComplete, writeConsole);
-    _completer.begin(listSdDirectory);
+    _completer.begin(listDirectory);
 }
 
 void XCopyCommandLine::onEditorLine(void *caller, const String &line)
@@ -200,6 +253,8 @@ void XCopyCommandLine::dispatch(const XCopyCommandDef *command, const XCopyArgs 
     case XCopyCmd::cat:        cmdCat(args);        break;
     case XCopyCmd::rm:         cmdRm(args);         break;
     case XCopyCmd::md5:        cmdMd5(args);        break;
+    case XCopyCmd::mount:      cmdMount(args);      break;
+    case XCopyCmd::unmount:    cmdUnmount(args);    break;
 
     case XCopyCmd::readadf:    cmdReadAdf(args);    break;
     case XCopyCmd::writeadf:   cmdWriteAdf(args);   break;
@@ -413,13 +468,38 @@ void XCopyCommandLine::cmdMem()
 void XCopyCommandLine::cmdDir(const XCopyArgs &args)
 {
     setBusy(true);
-    printDirectory(args.subject());
+
+    /*
+       One command for the card and for a mounted image. The path says which:
+       "dir /adfs" and "dir SD:/adfs" list the card, "dir ADF0:c" lists inside an
+       image. Adding a second command for the second case would have meant two
+       spellings of the same idea and a completer that had to know which was which.
+    */
+    XCopyAdfMount::Slot *slot = nullptr;
+    String within;
+    if (XCopyAdfMount::resolve(args.subject(), slot, within))
+    {
+        if (slot == nullptr)
+            printDirectory(within);
+        else
+            listVolume(*slot, within);
+    }
+
     setBusy(false);
 }
 
 void XCopyCommandLine::cmdCat(const XCopyArgs &args)
 {
-    const String &path = args.subject();
+    XCopyAdfMount::Slot *slot = nullptr;
+    String path;
+    if (!XCopyAdfMount::resolve(args.subject(), slot, path))
+        return;
+
+    if (slot != nullptr)
+    {
+        catVolume(*slot, path);
+        return;
+    }
 
     FatFile file;
     if (!file.open(path.c_str()))
@@ -499,6 +579,182 @@ void XCopyCommandLine::cmdMd5(const XCopyArgs &args)
     }
 
     Log << _disk->adfToMD5(path) + "\r\n";
+}
+
+// MOUNTED IMAGES
+
+void XCopyCommandLine::cmdMount(const XCopyArgs &args)
+{
+    XCopyAdfMount::begin();
+    XCopyAdfMount::Slot *slots = XCopyAdfMount::slots();
+
+    if (!args.hasSubject())
+    {
+        for (uint8_t i = 0; i < XCopyAdfMount::kSlots; i++)
+        {
+            Log << slots[i].name << F(":  ");
+            if (!slots[i].mounted())
+            {
+                Log << F("-\r\n");
+                continue;
+            }
+
+            Log << (slots[i].vol->volName ? slots[i].vol->volName : "?");
+            Log << F("  (") << slots[i].path << F(")");
+            Log << (slots[i].dev->readOnly ? F("  read only\r\n") : F("  read write\r\n"));
+        }
+
+        // Printed with the table because a mount is not free - roughly 720 bytes
+        // for the volume, another 1,600 while a file inside it is open - and this
+        // is the number that says whether the next one will fit.
+        Log << XCopyAdfMount::freeHeap() << F(" bytes of heap free\r\n");
+        return;
+    }
+
+    XCopyAdfMount::Slot *slot = nullptr;
+
+    if (args.has("slot"))
+    {
+        slot = XCopyAdfMount::find(args.text("slot"));
+        if (slot == nullptr)
+        {
+            Log << XCopyConsole::error("no such slot '" + args.text("slot") + "'") << F("\r\n");
+            return;
+        }
+    }
+    else
+    {
+        // First free, so the common case is "mount game.adf" and nothing else.
+        for (uint8_t i = 0; i < XCopyAdfMount::kSlots && slot == nullptr; i++)
+            if (!slots[i].mounted())
+                slot = &slots[i];
+
+        if (slot == nullptr)
+        {
+            Log << XCopyConsole::error("every slot is in use") << F("\r\n");
+            Log << F("unmount one, or say which with -slot\r\n");
+            return;
+        }
+    }
+
+    const String path = args.subject();
+    if (!XCopyAdfMount::mount(*slot, path, args.has("rw")))
+        return;
+
+    Log << slot->name << F(": ") << (slot->vol->volName ? slot->vol->volName : "?");
+    Log << F("  (") << path << F(")");
+    Log << (slot->dev->readOnly ? F("  read only\r\n") : F("  read write\r\n"));
+}
+
+void XCopyCommandLine::cmdUnmount(const XCopyArgs &args)
+{
+    if (!args.hasSubject())
+    {
+        XCopyAdfMount::unmountAll();
+        Log << F("all slots released\r\n");
+        return;
+    }
+
+    // The colon is optional here, because "unmount adf0:" is what anyone who has
+    // just typed a path will reach for and refusing it would be pedantry.
+    XCopyPath path;
+    xcopySplitPath(args.subject(), path);
+    const String name = path.qualified ? path.device : args.subject();
+
+    XCopyAdfMount::Slot *slot = XCopyAdfMount::find(name);
+    if (slot == nullptr)
+    {
+        Log << XCopyConsole::error("no such slot '" + args.subject() + "'") << F("\r\n");
+        return;
+    }
+
+    if (!slot->mounted())
+    {
+        Log << slot->name << F(": already holds nothing\r\n");
+        return;
+    }
+
+    XCopyAdfMount::unmount(*slot);
+    Log << slot->name << F(": released\r\n");
+}
+
+void XCopyCommandLine::listVolume(XCopyAdfMount::Slot &slot, const String &within)
+{
+    /*
+       The whole path is a directory here, not a directory and a leaf: "dir ADF0:c"
+       means list c, not list the root and look for c in it. walkTo() splits off a
+       leaf, so the trailing slash makes the whole of it the directory part.
+    */
+    String leaf;
+    String directory = within;
+    if (directory.length() > 0 && directory.charAt(directory.length() - 1) != '/')
+        directory += "/";
+
+    if (!XCopyAdfMount::walkTo(slot, directory, leaf))
+        return;
+
+    Log << F("Directory: ") << slot.name << F(":") << within << F("\r\n");
+    XCopyAdfView::printListHeader();
+
+    const uint16_t listed = XCopyAdfView::printDirectory(slot.vol, slot.vol->curDirPtr);
+    Log << listed << (listed == 1 ? F(" entry\r\n") : F(" entries\r\n"));
+}
+
+void XCopyCommandLine::catVolume(XCopyAdfMount::Slot &slot, const String &within)
+{
+    String leaf;
+    if (!XCopyAdfMount::walkTo(slot, within, leaf))
+        return;
+
+    if (leaf.length() == 0)
+    {
+        Log << XCopyConsole::error("cat needs a file, not a directory") << F("\r\n");
+        return;
+    }
+
+    XCopyAdf::clearErrors();
+    struct AdfFile *file = adfFileOpen(slot.vol, leaf.c_str(), ADF_FILE_MODE_READ);
+    if (file == NULL)
+    {
+        Log << XCopyConsole::error("unable to open '" + leaf + "' in " +
+                                   String(slot.name) + ":")
+            << F("\r\n");
+        return;
+    }
+
+    /*
+       Read through the track buffer rather than a local.
+
+       An open AdfFile already costs about 1,600 bytes of heap - three block
+       buffers and a handle - and a 512 byte read buffer on top of that is worth
+       borrowing rather than finding. If the buffer is busy, say so and stop:
+       shrinking the read to something that fits on the stack would work and would
+       also mean the one path that is slow is the one nobody notices is slow.
+    */
+    const size_t bufferSize = 512;
+    XCopyScratch::Guard scratch("command.cat", bufferSize);
+    if (!scratch.valid())
+    {
+        Log << F("track buffer busy\r\n");
+        adfFileClose(file);
+        return;
+    }
+    uint8_t *buffer = scratch.get();
+
+    while (!adfFileAtEOF(file))
+    {
+        const uint32_t got = adfFileRead(file, bufferSize, buffer);
+        if (got == 0)
+            break;
+
+        String line = "";
+        for (uint32_t i = 0; i < got; i++)
+            line.append((char)buffer[i]);
+        Log << line;
+    }
+
+    adfFileClose(file);
+    Log << F("[-- eof]\r\n");
 }
 
 // FLOPPY DISK
@@ -915,6 +1171,27 @@ struct AdfDevice *XCopyCommandLine::openImageForReading(const String &path)
 
 void XCopyCommandLine::cmdVol(const XCopyArgs &args)
 {
+    /*
+       Either a slot that is already mounted, or a file to open just for this.
+       "vol ADF0:" asks about what is in a slot, which is the question anyone with
+       something mounted is actually asking; "vol game.adf" asks about a file
+       without disturbing the table.
+    */
+    XCopyPath named;
+    if (xcopySplitPath(args.subject(), named) && named.qualified && !named.isCard())
+    {
+        XCopyAdfMount::Slot *slot = XCopyAdfMount::find(named.device);
+        if (slot == nullptr || !slot->mounted())
+        {
+            Log << XCopyConsole::error(named.device + ": has nothing mounted") << F("\r\n");
+            return;
+        }
+
+        XCopyAdfView::printDevice(slot->dev);
+        XCopyAdfView::printVolume(slot->vol);
+        return;
+    }
+
     const String path = args.subject();
 
     struct AdfDevice *dev = openImageForReading(path);
