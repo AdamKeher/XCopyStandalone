@@ -92,6 +92,21 @@ This project is under heavy development and is in a state of flux with new hardw
 2. Plugin XCopyStandalone device and select "Debugging >> ESP >> ESP Programming Mode"
 3. Set serial port to the Teensy port, the device will passthrough serial data to the ESP8266 program
 4. Upload code, then upload the web assets with the `d1_mini` "Build Filesystem Image" and "Upload Filesystem Image" tasks
+
+### Over the air
+
+Once the ESP is on your network it can be updated over Wi-Fi instead, using the
+`d1_mini_ota` environment - both the firmware and the web assets:
+
+```shell
+pio run -e d1_mini_ota -t upload      # firmware
+pio run -e d1_mini_ota -t uploadfs    # web interface
+```
+
+It uploads to `esp8266.local`; set `upload_port` in `platformio.ini` to the IP
+address instead if mDNS is not resolvable from your machine. The serial
+passthrough above is unchanged and remains the way back in if an update ever
+leaves the ESP unable to join a network.
 5. Select "Debugging >> ESP >> Reset ESP"
 6. Open a serial terminal
 7. Connect to your wireless access point using the connect command
@@ -131,6 +146,9 @@ them in one Project Tasks tree and `pio run` with no arguments builds the pair.
 | `esp8266/data/` | web interface, uploaded to the ESP as a LittleFS image |
 | `shared/` | the Teensy to ESP link contract, compiled into both |
 | `lib/` | libraries for both; `esp8266/lib/` holds the ESP only ones |
+
+Both boards are environments of the one project: `teensy31`, `d1_mini`, and
+`d1_mini_ota` for updating the ESP over Wi-Fi.
 
 Neither firmware is a `.ino` sketch: PlatformIO only converts a sketch sitting at
 the top of the source directory, and with two source trees neither one can be.

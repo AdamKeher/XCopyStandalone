@@ -7,6 +7,7 @@
 #include <FS.h>
 #include <WebSocketsServer.h>
 #include <LITTLEFS.h>
+#include <ArduinoOTA.h>
 
 // Baud rate, timeouts and the file transfer wire format are the Teensy link contract.
 // The same header is compiled into the Teensy tree, so there is nothing to keep in
@@ -24,6 +25,26 @@ ESPCommandLine command;
 
 volatile int busyState = 0;
 volatile bool busyChanged = false;
+
+/*
+   Over the air updates.
+
+   The ESP is otherwise only reachable for flashing through the Teensy serial
+   passthrough - plug in, put the device in ESP Programming Mode, point the upload
+   port at the Teensy. That path stays exactly as it was and is the recovery route
+   when an update goes wrong, so nothing here replaces it.
+
+   Both halves can come over the air: the sketch, and the LittleFS image the whole
+   web interface is served from. PlatformIO picks between them by appending the
+   filesystem flag to espota for the uploadfs target, so the two are one
+   mechanism with two targets rather than two mechanisms.
+
+   Deliberately begun from loop() rather than setup(). Wi-Fi credentials are
+   applied by the "connect" console command and the SDK reconnects to a saved
+   network on its own, so at the end of setup() there is usually no network yet
+   for mDNS to announce on.
+*/
+bool otaStarted = false;
 
 // IRAM_ATTR only places this function in IRAM. String, lwIP and arduinoWebSockets all
 // live in flash, and calling into flash from an interrupt while the SPI flash cache is
@@ -383,6 +404,73 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t lenght)
   }
 }
 
+/*
+   Wires up the over the air handlers. Called from setup(); the listener itself is
+   not opened until loop() sees a network - see otaStarted.
+*/
+void setupOTA()
+{
+  // Same name MDNS.begin() above announces, so the device answers to one hostname
+  // whichever way it is reached: esp8266.local for the web interface and for OTA.
+  ArduinoOTA.setHostname("esp8266");
+
+  ArduinoOTA.onStart([]() {
+    if (ArduinoOTA.getCommand() == U_FS)
+    {
+      /*
+         The filesystem is written in place, straight into its partition, so it
+         has to be unmounted first. Nothing in the core does this for you - the
+         reference example marks this exact spot - and leaving it mounted means
+         overwriting a live filesystem from underneath the handles into it.
+      */
+      Serial.println("OTA: filesystem update, unmounting LittleFS");
+      LittleFS.end();
+    }
+    else
+    {
+      Serial.println("OTA: firmware update");
+    }
+  });
+
+  ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
+    // Every tenth, not every packet. Serial is the Teensy link, and the console
+    // it feeds is the same one a filesystem image would flood with 2MB of dots.
+    static unsigned int lastTenth = 11;
+    if (total == 0)
+      return;
+    unsigned int tenth = (progress / (total / 10 + 1));
+    if (tenth == lastTenth)
+      return;
+    lastTenth = tenth;
+    Serial.printf("OTA: %u%%\r\n", (progress / (total / 100 + 1)));
+  });
+
+  ArduinoOTA.onEnd([]() {
+    Serial.println("OTA: complete, rebooting");
+  });
+
+  ArduinoOTA.onError([](ota_error_t error) {
+    // Named rather than numbered: the number on its own says nothing at the point
+    // somebody is looking at a failed update.
+    const char *reason = "unknown";
+    switch (error)
+    {
+    case OTA_AUTH_ERROR:    reason = "auth failed"; break;
+    case OTA_BEGIN_ERROR:   reason = "begin failed, image too large for the space"; break;
+    case OTA_CONNECT_ERROR: reason = "connect failed"; break;
+    case OTA_RECEIVE_ERROR: reason = "receive failed"; break;
+    case OTA_END_ERROR:     reason = "end failed"; break;
+    }
+    Serial.printf("OTA: error %u, %s\r\n", error, reason);
+
+    // A failed filesystem update left it unmounted, and the web interface is
+    // served out of it. Put it back rather than waiting for a reboot nobody
+    // knows to perform.
+    if (ArduinoOTA.getCommand() == U_FS)
+      LittleFS.begin();
+  });
+}
+
 void setup(void)
 {
   pinMode(led, OUTPUT);
@@ -434,6 +522,8 @@ void setup(void)
   server.begin();
   Serial.println("HTTP server started");
 
+  setupOTA();
+
   command.begin(&webSocket);
 }
 
@@ -443,6 +533,21 @@ void loop(void)
     busyChanged = false;
     sendBusyStatus();
   }
+
+  // Opened the first time there is a network to announce on, not in setup():
+  // the SDK reconnects to a saved network asynchronously and the "connect"
+  // command can bring one up long afterwards.
+  if (!otaStarted && WiFi.status() == WL_CONNECTED)
+  {
+    // false: MDNS.begin() has already run in setup(), and letting ArduinoOTA
+    // call it again restarts the responder the web interface is found by.
+    ArduinoOTA.begin(false);
+    otaStarted = true;
+    Serial.println("OTA ready");
+  }
+
+  if (otaStarted)
+    ArduinoOTA.handle();
 
   webSocket.loop();
   server.handleClient();
