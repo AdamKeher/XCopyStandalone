@@ -47,6 +47,7 @@ public:
         step,
         head,
         autoReseek,
+        sound,
         count
     };
 
@@ -69,6 +70,8 @@ public:
     void cycleHead();
     void setAutoReseek(bool on);
     void toggleAutoReseek();
+    void setSound(bool on);
+    void toggleSound();
     void setStepSize(uint8_t size);
     //! Re-seek the current cylinder now, ATK's F1.
     void reseek();
@@ -86,6 +89,7 @@ public:
     uint8_t stepSize() const { return _stepSize; }
     HeadSel head() const { return _head; }
     bool autoReseek() const { return _autoReseek; }
+    bool sound() const { return _sound; }
     Field field() const { return _field; }
     uint32_t passes() const { return _passes; }
 
@@ -95,8 +99,23 @@ public:
     void sendConfig();
     //! Tell the browser the session has closed.
     void sendClosed();
-    //! The ATK style preamble, printed once to the serial console on entry.
-    void printBanner();
+
+    /**
+     * @brief Draw the console panel and take ownership of the terminal.
+     *
+     * Same table the help screen and the disk map are drawn with, updated in
+     * place by cursor addressing rather than reprinted. A calibration session
+     * runs for as long as somebody is turning a screw, and a scrolling log of
+     * near identical lines is far harder to read a change out of than a fixed
+     * panel with one field moving.
+     *
+     * As with XCopyTrackMap, nothing else may print to Serial while this is up
+     * or the table scrolls out from under the cursor moves. The raw key hook
+     * takes the console for the duration, so nothing echoes.
+     */
+    void panelBegin();
+    //! Park the cursor clear of the table so a prompt lands below it.
+    void panelEnd();
 
     //! '.' okay  'X' missing  '-' cyl-low  '+' cyl-high  'h' wrong side  'c' bad checksum
     static char glyph(uint8_t verdict);
@@ -121,10 +140,80 @@ private:
     void drawSettings();
     void drawResults();
     void drawStatusLine();
-    void printResults();
     void sendResults();
     void settingsChanged();
+    //! One short sample per pass describing how it went, if sound is on.
+    void playFeedback();
     const char *headName() const;
+
+    //! The one status sentence, so the TFT, the console panel and anything else
+    //! that shows it cannot end up saying different things about the same pass.
+    //! Returns the ANSI colour; @p tftColour takes the matching TFT one.
+    const char *statusText(char *out, size_t size, uint16_t &tftColour) const;
+
+    //! Reads the six drive lines into @p out, in SIGNAL_LABEL order.
+    void readSignals(bool *out) const;
+
+    /*
+       Console panel, drawn at exactly XCopyTrackMap's geometry.
+
+       Deliberately the same table the disk map and the help screen are drawn
+       with, down to the column widths, so the tally grid at the bottom is
+       recognisably the same picture of a disk that every other operation paints.
+
+       Drawn once by panelBegin() and then only ever updated in place, so the
+       frame stays put and just the fields move. The line numbers are counted from
+       the top border and have to agree with what panelBegin() actually prints,
+       which is why they live here beside it rather than spread through the
+       painters.
+    */
+    static const uint8_t COLS = GRID_COLS;               //!< cylinders per grid row
+    static const uint8_t ROWS = GRID_ROWS;
+    static const uint8_t LABELWIDTH = 6;
+    static const uint8_t SIDEWIDTH = (COLS * 2) + 1;     //!< one side of the grid
+    static const uint8_t INNER = LABELWIDTH + 1 + SIDEWIDTH + 1 + SIDEWIDTH;
+    static const uint8_t TEXT = INNER - 2;               //!< a full width text row
+
+    // The realtime sector row is a plain text row rather than a grid row: eleven
+    // sectors on a two character pitch is 21 columns, which is the whole of a side
+    // column, leaving nowhere for the count to sit.
+    static const uint8_t HEADPREFIX = 10;                //!< "0 (Lower) "
+    static const uint8_t GLYPHFIELD = 21;                //!< 11 sectors, two apart
+    static const uint8_t RESULTFIELD = TEXT - HEADPREFIX - GLYPHFIELD - 1;
+
+    // panelBegin() prints, in order: top border, two text rows, a rule, three
+    // settings rows, the signals row, a rule, two head rows, the status row, a
+    // rule, two legend rows, a rule, the tally caption, a join, two header rows,
+    // a join, ROWS grid rows, a join, the tally legend and the bottom border.
+    static const uint8_t LINE_SETTINGS = 4;
+    static const uint8_t LINE_SIGNALS = 7;
+    static const uint8_t LINE_HEAD = 9;
+    static const uint8_t LINE_STATUS = 11;
+    static const uint8_t LINE_TALLY = 21;                //!< first row of cylinders
+    //! Grid rows, then a join, the tally legend and the bottom border.
+    static const uint8_t LINES = LINE_TALLY + ROWS + 3;
+
+    // drawing primitives, same shapes XCopyTrackMap uses
+    static void repeat(char character, uint8_t count);
+    static void solidRow(char left, char right);
+    static void joinRow();
+    static void textRow(const char *text);
+    static void moveTo(uint8_t line, uint8_t column);
+    static void restore();
+    static char columnLabel(uint8_t col);
+
+    void paintTextRow(uint8_t line, const char *colour, const char *text);
+    void paintSettings();
+    void paintSignals();
+    void paintHead(uint8_t side);
+    void paintStatus();
+    //! Repaint one cylinder of the accumulated grid, both the glyph and the
+    //! marker showing where the head currently is.
+    void paintTallyCell(uint8_t cylinder, uint8_t side);
+    void paintTallyCylinder(uint8_t cylinder);
+
+    //! True between panelBegin() and panelEnd(), while the table owns the console.
+    bool _panelActive = false;
 
     XCopyGraphics *_graphics = nullptr;
     XCopyAudio *_audio = nullptr;
@@ -136,6 +225,21 @@ private:
     uint8_t _stepSize = 1;
     HeadSel _head = HeadSel::both;
     bool _autoReseek = false;
+    /*
+       Audible feedback, off unless asked for.
+
+       The point of it is that calibration is done with both hands on the drive
+       and both eyes on the screwdriver, not on any of the three screens. A tick
+       that changes as the head comes into alignment is worth more than a display
+       nobody can look at.
+
+       Off by default because it is not free: XCopyAudio::playFile() forces its
+       wait flag true and blocks until the sample finishes. The samples stream
+       from SerialFlash over SPI, which is the same bus the TFT is on, so playing
+       one concurrently with a redraw is the conflict that hack exists to prevent.
+       A pass therefore costs a sample length more while this is on.
+    */
+    bool _sound = false;
     Field _field = Field::cylinder;
 
     Phase _phase = Phase::settle;
@@ -155,9 +259,40 @@ private:
     bool _resultValid[2] = {false, false};
     //! Set when something worth telling the operator about changed.
     bool _dirty = true;
-    //! Passes since the console last printed, so a stable drive still shows a
-    //! sign of life without scrolling.
-    uint8_t _sinceConsole = 0;
+
+    /*
+       The accumulated half of the display.
+
+       The sector row above is one revolution: what the head is reading right now.
+       This is every cylinder the session has visited and how it behaved over all
+       of them, which is the difference between a head that is misaligned and one
+       that is merely marginal - a cylinder that reads clean four times out of
+       five looks perfect in any single pass.
+
+       Two bytes a track, 336 for the disk. That is real on a part with a few KB
+       free, and it is why the counts saturate at 255 rather than widening: the
+       four states below are what gets rendered, and none of them needs more.
+    */
+    struct TrackTally
+    {
+        uint8_t passes;
+        uint8_t errors;
+    };
+    TrackTally _tally[MAX_TRACKS];
+
+    //! Where the head marker currently sits, so moving it repaints two cells
+    //! rather than the whole grid. 0xff before the first pass.
+    uint8_t _markedCylinder = 0xff;
+
+    //! How a cylinder has behaved across the whole session.
+    enum class TallyState : uint8_t
+    {
+        untested,     //!< never visited
+        clean,        //!< every pass read every sector
+        intermittent, //!< some passes failed, some did not
+        failing       //!< no pass has ever read it cleanly
+    };
+    TallyState tallyState(uint8_t cylinder, uint8_t side) const;
 
     // The TFT is repainted in place, so the static furniture is drawn once and
     // these say whether the cells over it have ever been filled in.
@@ -168,8 +303,6 @@ private:
     static const uint32_t kPassGapMs = 120;
     //! How long to wait before looking again when the drive is empty.
     static const uint32_t kNoDiskGapMs = 400;
-    //! Console heartbeat, in passes, when nothing has changed.
-    static const uint8_t kConsoleHeartbeat = 8;
 };
 
 #endif // XCOPYHEADCALIBRATION_H

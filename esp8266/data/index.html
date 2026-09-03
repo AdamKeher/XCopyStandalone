@@ -473,6 +473,7 @@
                             <div class="btn-group me-1" role="group" aria-label="Head">
                                 <button type="button" id="headCalHeadBtn" class="btn btn-secondary live-action" onclick="headCalCycleHead();">Head: Both</button>
                                 <button type="button" id="headCalAutoBtn" class="btn btn-secondary live-action" onclick="headCalToggleAuto();">Auto re-seek: Off</button>
+                                <button type="button" id="headCalSoundBtn" class="btn btn-secondary live-action" onclick="headCalToggleSound();" title="Audible feedback: a tick when every sector reads, a bong when they do not. Costs a sample length per pass."><i class="fa-solid fa-volume-xmark"></i> Sound: Off</button>
                             </div>
                         </div>
                     </p>
@@ -502,6 +503,23 @@
                         <span class="hcSector chk">c</span> bad checksum
                     </p>
                     <p class="headcalStatus" id="headCalStatus">Not running.</p>
+                    <p><hr/></p>
+                    <p>
+                        <strong>Session tally</strong> &mdash; passes and errors for every cylinder
+                        visited, as the head is moved around. The sector row above is this
+                        revolution; this is the accumulated history.
+                        <button type="button" class="btn btn-sm btn-secondary live-action" onclick="headCalClearTally();"><i class="fa-solid fa-eraser"></i> Clear</button>
+                    </p>
+                    <table class="headcalGrid">
+                        <tbody id="headCalGrid"></tbody>
+                    </table>
+                    <p class="headcalLegend">
+                        <span class="hcTrack untested">&nbsp;</span> untested
+                        <span class="hcTrack clean">&nbsp;</span> ok on all reads
+                        <span class="hcTrack intermittent">&nbsp;</span> intermittent
+                        <span class="hcTrack failing">&nbsp;</span> failed every read
+                        <span class="hcTrack current">&nbsp;</span> head is here
+                    </p>
                 </div>
             </div>
             
