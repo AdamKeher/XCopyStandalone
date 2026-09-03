@@ -13,6 +13,10 @@
    and the heap are sharing.
 */
 
+static const XCopyOption OPT_CP[] = {
+    {"to", XCopyArgKind::path, nullptr, "where it goes; a trailing / keeps the name"},
+};
+
 static const XCopyOption OPT_MOUNT[] = {
     {"slot", XCopyArgKind::choice, "adf0|adf1", "which image slot to use, the first free one otherwise"},
     {"rw", XCopyArgKind::flag, nullptr, "allow writing; read only unless asked"},
@@ -88,8 +92,10 @@ const XCopyCommandDef XCOPY_COMMANDS[] = {
     */
     {XCopyCmd::dir, "dir", "ls", XCopyCat::files, NOOPTS, XCopyArgKind::path, "directory", 0, "list a directory, on the card or in a mounted image"},
     {XCopyCmd::cat, "cat", nullptr, XCopyCat::files, NOOPTS, XCopyArgKind::path, "file", XCOPY_SUBJECT_REQUIRED, "write the contents of a file to the terminal"},
-    {XCopyCmd::rm, "rm", nullptr, XCopyCat::files, NOOPTS, XCopyArgKind::path, "file", XCOPY_NEEDS_SD | XCOPY_SUBJECT_REQUIRED, "delete a file from the SD card"},
+    {XCopyCmd::rm, "rm", nullptr, XCopyCat::files, NOOPTS, XCopyArgKind::path, "file", XCOPY_NEEDS_SD | XCOPY_SUBJECT_REQUIRED, "delete a file, from the card or from a mounted image"},
     {XCopyCmd::md5, "md5", nullptr, XCopyCat::files, OPTS(OPT_MD5), XCopyArgKind::path, "file", 0, "md5 hash of a file on the SD card, or of the flash"},
+    {XCopyCmd::cp, "cp", nullptr, XCopyCat::files, OPTS(OPT_CP), XCopyArgKind::path, "file", XCOPY_SUBJECT_REQUIRED, "copy a file, between the card and any mounted image"},
+    {XCopyCmd::mkdir, "mkdir", nullptr, XCopyCat::files, NOOPTS, XCopyArgKind::path, "directory", XCOPY_SUBJECT_REQUIRED, "make a directory, on the card or in a mounted image"},
     {XCopyCmd::mount, "mount", nullptr, XCopyCat::files, OPTS(OPT_MOUNT), XCopyArgKind::path, "file", 0, "mount an ADF image or df0:, or list what is mounted"},
     {XCopyCmd::unmount, "unmount", nullptr, XCopyCat::files, NOOPTS, XCopyArgKind::text, "slot", 0, "release a slot, or all of them"},
 

@@ -23,6 +23,7 @@
 #include "adflib.h"
 #include "adf_dev_driver_dump.h"
 #include "XCopyAdfWalk.h"
+#include "XCopyAdfCopy.h"
 
 /* An 880K DD floppy: what every Amiga ADF is. */
 #define DD_CYLINDERS 80
@@ -483,6 +484,265 @@ static void test_opening_something_that_is_not_an_image_fails(void)
     discardImage();
 }
 
+/* COPYING
+
+   The part that writes, and the only part whose correctness cannot be seen by
+   looking at the device. A copied file that is one block short, or that has the
+   tail of the file it replaced still attached, looks exactly like a copied file
+   until an Amiga tries to use it.
+*/
+
+static const char *const IMAGE2 = "test_scratch2.adf";
+
+//! A second image, so a copy has two volumes to go between.
+static void formatImage2(const char *volName)
+{
+    remove(IMAGE2);
+
+    struct AdfDevice *dev = adfDevCreate("dump", IMAGE2,
+                                         DD_CYLINDERS, DD_HEADS, DD_SECTORS);
+    TEST_ASSERT_NOT_NULL(dev);
+
+    struct AdfVolume *vol = adfVolCreate(dev, 0, DD_CYLINDERS, volName, ADF_DOSFS_FFS);
+    TEST_ASSERT_NOT_NULL(vol);
+
+    adfVolUnMount(vol);
+    free(vol->volName);
+    free(vol);
+    adfDevClose(dev);
+}
+
+static struct AdfDevice *openImage2(struct AdfVolume **volOut)
+{
+    struct AdfDevice *dev = adfDevOpen(IMAGE2, ADF_ACCESS_MODE_READWRITE);
+    TEST_ASSERT_NOT_NULL(dev);
+    TEST_ASSERT_EQUAL_INT(ADF_RC_OK, adfDevMount(dev));
+    struct AdfVolume *vol = adfVolMount(dev, 0, ADF_ACCESS_MODE_READWRITE);
+    TEST_ASSERT_NOT_NULL(vol);
+    *volOut = vol;
+    return dev;
+}
+
+static void fill(uint8_t *buf, uint32_t length)
+{
+    for (uint32_t i = 0; i < length; i++)
+        buf[i] = (uint8_t)((i * 31) ^ (i >> 5));
+}
+
+static void test_copy_between_two_volumes_is_byte_for_byte(void)
+{
+    /* Deliberately not a round number of blocks, and big enough to need an
+       extension block: the last partial block and the extension walk are the two
+       places a copy loop goes wrong and still looks like it worked. */
+    const uint32_t length = 9000;
+    uint8_t *written = malloc(length);
+    uint8_t *readBack = malloc(length);
+    uint8_t buffer[512];
+    TEST_ASSERT_NOT_NULL(written);
+    TEST_ASSERT_NOT_NULL(readBack);
+    fill(written, length);
+
+    struct AdfVolume *from = NULL, *to = NULL;
+    struct AdfDevice *devFrom = freshImage("Source", ADF_DOSFS_FFS, &from);
+    formatImage2("Dest");
+    struct AdfDevice *devTo = openImage2(&to);
+
+    writeFile(from, "payload.dat", written, length);
+
+    unsigned long copied = 0;
+    TEST_ASSERT_EQUAL_INT(ADF_COPY_OK,
+                          adfCopyFile(from, "payload.dat", to, "payload.dat",
+                                      buffer, sizeof(buffer), &copied));
+    TEST_ASSERT_EQUAL_UINT32(length, copied);
+
+    closeImage(devFrom, from);
+    closeImage(devTo, to);
+
+    /* Reopened, so this is a test that the bytes reached the second image and not
+       that they reached its cache. */
+    devTo = openImage2(&to);
+    struct AdfFile *file = adfFileOpen(to, "payload.dat", ADF_FILE_MODE_READ);
+    TEST_ASSERT_NOT_NULL(file);
+    TEST_ASSERT_EQUAL_UINT32(length, adfFileGetSize(file));
+    TEST_ASSERT_EQUAL_UINT32(length, adfFileRead(file, length, readBack));
+    adfFileClose(file);
+    TEST_ASSERT_EQUAL_UINT8_ARRAY(written, readBack, length);
+
+    closeImage(devTo, to);
+    remove(IMAGE2);
+    discardImage();
+    free(written);
+    free(readBack);
+}
+
+static void test_copy_refuses_to_overwrite(void)
+{
+    /* adfFileOpen() in write mode opens an existing file at position zero without
+       truncating, so a short file copied over a long one would keep the long
+       one tail. Refusing is the only one of the three answers that cannot lose
+       anything. */
+    uint8_t buffer[512];
+    uint8_t original[600];
+    uint8_t readBack[600];
+    memset(original, 0xC3, sizeof(original));
+
+    struct AdfVolume *vol = NULL;
+    struct AdfDevice *dev = freshImage("Test", ADF_DOSFS_FFS, &vol);
+
+    writeFile(vol, "keep.dat", original, sizeof(original));
+    static const uint8_t small[4] = {1, 2, 3, 4};
+    writeFile(vol, "small.dat", small, sizeof(small));
+
+    unsigned long copied = 0;
+    TEST_ASSERT_EQUAL_INT(ADF_COPY_EXISTS,
+                          adfCopyFile(vol, "small.dat", vol, "keep.dat",
+                                      buffer, sizeof(buffer), &copied));
+    TEST_ASSERT_EQUAL_UINT32(0, copied);
+
+    /* And the file it refused to touch is exactly as it was. */
+    struct AdfFile *file = adfFileOpen(vol, "keep.dat", ADF_FILE_MODE_READ);
+    TEST_ASSERT_NOT_NULL(file);
+    TEST_ASSERT_EQUAL_UINT32(sizeof(original), adfFileGetSize(file));
+    TEST_ASSERT_EQUAL_UINT32(sizeof(original),
+                             adfFileRead(file, sizeof(readBack), readBack));
+    adfFileClose(file);
+    TEST_ASSERT_EQUAL_UINT8_ARRAY(original, readBack, sizeof(original));
+
+    closeImage(dev, vol);
+    discardImage();
+}
+
+static void test_copy_within_one_volume_under_a_new_name(void)
+{
+    uint8_t buffer[512];
+    uint8_t payload[1500];
+    fill(payload, sizeof(payload));
+
+    struct AdfVolume *vol = NULL;
+    struct AdfDevice *dev = freshImage("Test", ADF_DOSFS_FFS, &vol);
+    writeFile(vol, "original.dat", payload, sizeof(payload));
+
+    unsigned long copied = 0;
+    TEST_ASSERT_EQUAL_INT(ADF_COPY_OK,
+                          adfCopyFile(vol, "original.dat", vol, "duplicate.dat",
+                                      buffer, sizeof(buffer), &copied));
+    TEST_ASSERT_EQUAL_UINT32(sizeof(payload), copied);
+
+    struct AdfEntryBlock scratch[2];
+    TEST_ASSERT_EQUAL_INT(2, adfWalkCount(vol, vol->rootBlock, scratch));
+
+    closeImage(dev, vol);
+    discardImage();
+}
+
+static void test_copy_to_a_read_only_volume_is_refused(void)
+{
+    uint8_t buffer[512];
+    static const uint8_t payload[64] = {0};
+
+    struct AdfVolume *vol = NULL;
+    struct AdfDevice *dev = freshImage("Test", ADF_DOSFS_FFS, &vol);
+    writeFile(vol, "source.dat", payload, sizeof(payload));
+    closeImage(dev, vol);
+
+    dev = openImage(ADF_ACCESS_MODE_READONLY, &vol);
+    unsigned long copied = 0;
+    TEST_ASSERT_EQUAL_INT(ADF_COPY_READ_ONLY,
+                          adfCopyFile(vol, "source.dat", vol, "copy.dat",
+                                      buffer, sizeof(buffer), &copied));
+
+    closeImage(dev, vol);
+    discardImage();
+}
+
+static void test_copy_of_something_that_is_not_there(void)
+{
+    uint8_t buffer[512];
+    struct AdfVolume *vol = NULL;
+    struct AdfDevice *dev = freshImage("Test", ADF_DOSFS_FFS, &vol);
+
+    unsigned long copied = 0;
+    TEST_ASSERT_EQUAL_INT(ADF_COPY_NO_SOURCE,
+                          adfCopyFile(vol, "absent.dat", vol, "copy.dat",
+                                      buffer, sizeof(buffer), &copied));
+
+    /* Nothing created for the destination either. */
+    struct AdfEntryBlock scratch[2];
+    TEST_ASSERT_EQUAL_INT(0, adfWalkCount(vol, vol->rootBlock, scratch));
+
+    closeImage(dev, vol);
+    discardImage();
+}
+
+static void test_a_full_disk_stops_the_copy_rather_than_lying(void)
+{
+    /* An 880K volume with one 700K file in it does not have room for a second, so
+       the copy has to stop and say so - and say how far it got, since that is what
+       tells the operator the destination now holds a partial file. */
+    uint8_t buffer[512];
+    const uint32_t length = 700u * 1024u;
+    uint8_t *payload = malloc(length);
+    TEST_ASSERT_NOT_NULL(payload);
+    memset(payload, 0x77, length);
+
+    struct AdfVolume *vol = NULL;
+    struct AdfDevice *dev = freshImage("Small", ADF_DOSFS_FFS, &vol);
+    writeFile(vol, "big.dat", payload, length);
+
+    unsigned long copied = 0;
+    const AdfCopyResult result = adfCopyFile(vol, "big.dat", vol, "big2.dat",
+                                             buffer, sizeof(buffer), &copied);
+    TEST_ASSERT_EQUAL_INT(ADF_COPY_WRITE_FAILED, result);
+    TEST_ASSERT_TRUE(copied < length);
+
+    closeImage(dev, vol);
+    discardImage();
+    free(payload);
+}
+
+static void test_copy_honours_the_destination_directory(void)
+{
+    /* adfFileOpen() resolves a name against vol->curDirPtr, so a copy into a
+       subdirectory is expressed by moving the volume there first - which is
+       exactly what XCopyAdfMount::walkTo() does on the device. Copying between
+       two directories of one volume means moving it twice, so this checks the
+       destination lands where the volume was pointing and the root is untouched
+       apart from what was already there. */
+    uint8_t buffer[512];
+    uint8_t payload[300];
+    fill(payload, sizeof(payload));
+
+    struct AdfVolume *vol = NULL;
+    struct AdfDevice *dev = freshImage("Test", ADF_DOSFS_FFS, &vol);
+
+    writeFile(vol, "list", payload, sizeof(payload));
+    TEST_ASSERT_EQUAL_INT(ADF_RC_OK, adfCreateDir(vol, vol->rootBlock, "c"));
+
+    const ADF_SECTNUM root = vol->rootBlock;
+    TEST_ASSERT_EQUAL_INT(ADF_RC_OK, adfChangeDir(vol, "c"));
+    const ADF_SECTNUM inC = vol->curDirPtr;
+
+    vol->curDirPtr = root;
+    struct AdfFile *in = adfFileOpen(vol, "list", ADF_FILE_MODE_READ);
+    TEST_ASSERT_NOT_NULL(in);
+    const uint32_t got = adfFileRead(in, sizeof(payload), buffer);
+    adfFileClose(in);
+    TEST_ASSERT_EQUAL_UINT32(sizeof(payload), got);
+
+    vol->curDirPtr = inC;
+    struct AdfFile *out = adfFileOpen(vol, "list", ADF_FILE_MODE_WRITE);
+    TEST_ASSERT_NOT_NULL(out);
+    TEST_ASSERT_EQUAL_UINT32(got, adfFileWrite(out, got, buffer));
+    adfFileClose(out);
+
+    struct AdfEntryBlock scratch[2];
+    TEST_ASSERT_EQUAL_INT(1, adfWalkCount(vol, inC, scratch));
+    TEST_ASSERT_EQUAL_INT(2, adfWalkCount(vol, root, scratch));
+
+    closeImage(dev, vol);
+    discardImage();
+}
+
 void setUp(void) {}
 void tearDown(void) { discardImage(); }
 
@@ -522,6 +782,14 @@ int main(void)
     RUN_TEST(test_read_only_volume_refuses_a_write);
     RUN_TEST(test_opening_a_file_that_is_not_there_fails);
     RUN_TEST(test_opening_something_that_is_not_an_image_fails);
+
+    RUN_TEST(test_copy_between_two_volumes_is_byte_for_byte);
+    RUN_TEST(test_copy_within_one_volume_under_a_new_name);
+    RUN_TEST(test_copy_refuses_to_overwrite);
+    RUN_TEST(test_copy_to_a_read_only_volume_is_refused);
+    RUN_TEST(test_copy_of_something_that_is_not_there);
+    RUN_TEST(test_a_full_disk_stops_the_copy_rather_than_lying);
+    RUN_TEST(test_copy_honours_the_destination_directory);
 
     const int failures = UNITY_END();
     adfLibCleanUp();

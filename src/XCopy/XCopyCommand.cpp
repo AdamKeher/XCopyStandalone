@@ -267,6 +267,8 @@ void XCopyCommandLine::dispatch(const XCopyCommandDef *command, const XCopyArgs 
     case XCopyCmd::cat:        cmdCat(args);        break;
     case XCopyCmd::rm:         cmdRm(args);         break;
     case XCopyCmd::md5:        cmdMd5(args);        break;
+    case XCopyCmd::cp:         cmdCp(args);         break;
+    case XCopyCmd::mkdir:      cmdMkdir(args);      break;
     case XCopyCmd::mount:      cmdMount(args);      break;
     case XCopyCmd::unmount:    cmdUnmount(args);    break;
 
@@ -552,13 +554,49 @@ void XCopyCommandLine::cmdCat(const XCopyArgs &args)
 
 void XCopyCommandLine::cmdRm(const XCopyArgs &args)
 {
-    XCopySDCard sdcard;
-    const String &path = args.subject();
+    XCopyAdfMount::Slot *slot = nullptr;
+    String path;
+    if (!XCopyAdfMount::resolve(args.subject(), slot, path))
+        return;
 
-    if (sdcard.deleteFile(path))
-        Log << "'" + path + F("' deleted\r\n");
-    else
-        Log << F("unable to delete: '") + path + F("'\r\n");
+    if (slot == nullptr)
+    {
+        XCopySDCard sdcard;
+        if (sdcard.deleteFile(path))
+            Log << "'" + path + F("' deleted\r\n");
+        else
+            Log << F("unable to delete: '") + path + F("'\r\n");
+        return;
+    }
+
+    if (!writableVolume(*slot))
+        return;
+
+    String leaf;
+    if (!XCopyAdfMount::walkTo(*slot, path, leaf))
+        return;
+
+    if (leaf.length() == 0)
+    {
+        Log << XCopyConsole::error("rm needs a name") << F("\r\n");
+        return;
+    }
+
+    /*
+       adfRemoveEntry() refuses a directory that is not empty, which is the
+       behaviour to want: there is no undo on a floppy, and a recursive delete that
+       went wrong would take the disk with it.
+    */
+    XCopyAdf::clearErrors();
+    if (adfRemoveEntry(slot->vol, slot->vol->curDirPtr, leaf.c_str()) != ADF_RC_OK)
+    {
+        Log << XCopyConsole::error("unable to delete '" + leaf + "' from " +
+                                   String(slot->name) + ":")
+            << F("\r\n");
+        return;
+    }
+
+    Log << slot->name << F(":") << path << F(" deleted\r\n");
 }
 
 void XCopyCommandLine::cmdMd5(const XCopyArgs &args)
@@ -593,6 +631,418 @@ void XCopyCommandLine::cmdMd5(const XCopyArgs &args)
     }
 
     Log << _disk->adfToMD5(path) + "\r\n";
+}
+
+// FILE MANAGEMENT
+
+/*
+   How much malloc arena a copy needs before it should be started.
+
+   An open AdfFile is about 1,600 bytes - a file header block, a data block, an
+   extension block and the handle - and a copy between two mounted volumes has two
+   of them open at once. Finding that out half way through means a failed
+   allocation inside adfFileWrite(), which leaves a partial file and a bitmap that
+   has already been changed.
+
+   Checking first turns that into a refusal. The number is per open ADF file plus
+   a few hundred bytes for the Strings the console builds while it reports.
+*/
+static const uint32_t kHeapPerOpenFile = 1700;
+static const uint32_t kHeapSlack = 600;
+
+bool XCopyCommandLine::heapAllows(uint8_t openAdfFiles)
+{
+    const uint32_t need = (uint32_t)openAdfFiles * kHeapPerOpenFile + kHeapSlack;
+    const uint32_t have = XCopyAdfMount::freeHeap();
+
+    if (have >= need)
+        return true;
+
+    Log << XCopyConsole::error("not enough memory: " + String(have) +
+                               " bytes free, " + String(need) + " needed")
+        << F("\r\n");
+    Log << F("unmount a slot and try again\r\n");
+    return false;
+}
+
+/*
+   Where a copy is going, worked out once for both kinds of destination.
+
+   A destination that ends in a slash, or is nothing at all, is a directory and the
+   file keeps the name it had. Anything else names the file itself. That is the one
+   rule, and it is the rule because guessing - looking to see whether the last
+   component happens to be an existing directory - makes "cp a -to b" mean two
+   different things depending on what is already there.
+*/
+static void copyDestination(const String &given, const String &sourceLeaf,
+                            String &directory, String &leaf)
+{
+    if (given.length() == 0 || given.charAt(given.length() - 1) == '/')
+    {
+        directory = given;
+        leaf = sourceLeaf;
+        return;
+    }
+
+    xcopySplitLeaf(given, directory, leaf);
+    if (directory.length() > 0)
+        directory += "/";
+}
+
+bool XCopyCommandLine::writableVolume(XCopyAdfMount::Slot &slot)
+{
+    if (slot.dev->readOnly || slot.vol->readOnly)
+    {
+        Log << XCopyConsole::error(String(slot.name) + ": is mounted read only") << F("\r\n");
+        if (slot.drive)
+            Log << F("the drive is read only; use readadf to take an image of it\r\n");
+        else
+            Log << F("remount it with -rw\r\n");
+        return false;
+    }
+    return true;
+}
+
+void XCopyCommandLine::cmdCp(const XCopyArgs &args)
+{
+    if (!args.has("to"))
+    {
+        Log << F("cp needs a destination: cp <file> -to <where>\r\n");
+        return;
+    }
+
+    XCopyAdfMount::Slot *fromSlot = nullptr;
+    String fromPath;
+    if (!XCopyAdfMount::resolve(args.subject(), fromSlot, fromPath))
+        return;
+
+    XCopyAdfMount::Slot *toSlot = nullptr;
+    String toPath;
+    if (!XCopyAdfMount::resolve(args.text("to"), toSlot, toPath))
+        return;
+
+    String fromDirectory, fromLeaf;
+    xcopySplitLeaf(fromPath, fromDirectory, fromLeaf);
+    if (fromLeaf.length() == 0)
+    {
+        Log << XCopyConsole::error("cp needs a file, not a directory") << F("\r\n");
+        return;
+    }
+
+    String toDirectory, toLeaf;
+    copyDestination(toPath, fromLeaf, toDirectory, toLeaf);
+
+    const uint8_t adfSides = (fromSlot != nullptr ? 1 : 0) + (toSlot != nullptr ? 1 : 0);
+    if (adfSides > 0 && !heapAllows(adfSides))
+        return;
+
+    if (toSlot != nullptr && !writableVolume(*toSlot))
+        return;
+
+    /*
+       4KB rather than 512.
+
+       Every round of the loop is a read and a write, and on a floppy each of those
+       may be a whole track. Eight blocks at a time is eight times fewer of them,
+       and the buffer is borrowed from the track buffer so the size costs nothing
+       that was not already allocated.
+    */
+    const size_t bufferSize = 4096;
+    XCopyScratch::Guard scratch("command.cp", bufferSize);
+    if (!scratch.valid())
+    {
+        Log << F("track buffer busy\r\n");
+        return;
+    }
+    uint8_t *buffer = scratch.get();
+
+    setBusy(true);
+    unsigned long copied = 0;
+    bool ok = false;
+
+    if (fromSlot != nullptr && toSlot != nullptr)
+    {
+        /*
+           Both sides walked before either file is opened.
+
+           walkTo() moves a volume's own current directory, and when the source and
+           the destination are the same volume the second walk would move the first
+           one out from under it. Doing both first and reading the sector numbers
+           back is what makes "cp ADF0:c/list -to ADF0:s/" work.
+        */
+        String unusedLeaf;
+        if (XCopyAdfMount::walkTo(*fromSlot, fromPath, unusedLeaf))
+        {
+            const ADF_SECTNUM fromDir = fromSlot->vol->curDirPtr;
+
+            if (XCopyAdfMount::walkTo(*toSlot, toDirectory + toLeaf, unusedLeaf))
+            {
+                const ADF_SECTNUM toDir = toSlot->vol->curDirPtr;
+                fromSlot->vol->curDirPtr = fromDir;
+                toSlot->vol->curDirPtr = toDir;
+
+                const AdfCopyResult result =
+                    adfCopyFile(fromSlot->vol, fromLeaf.c_str(),
+                                toSlot->vol, toLeaf.c_str(),
+                                buffer, bufferSize, &copied);
+                ok = (result == ADF_COPY_OK);
+                if (!ok)
+                    Log << XCopyConsole::error(adfCopyResultText(result)) << F("\r\n");
+            }
+        }
+    }
+    else if (fromSlot == nullptr && toSlot != nullptr)
+    {
+        ok = copyCardToVolume(fromPath, *toSlot, toDirectory, toLeaf,
+                              buffer, bufferSize, copied);
+    }
+    else if (fromSlot != nullptr && toSlot == nullptr)
+    {
+        ok = copyVolumeToCard(*fromSlot, fromPath, fromLeaf, toDirectory + toLeaf,
+                              buffer, bufferSize, copied);
+    }
+    else
+    {
+        ok = copyCardToCard(fromPath, toDirectory + toLeaf, buffer, bufferSize, copied);
+    }
+
+    setBusy(false);
+
+    if (ok)
+        Log << XCopyConsole::success(String(copied) + " bytes copied to " + toLeaf)
+            << F("\r\n");
+    else if (copied > 0)
+        Log << XCopyConsole::error(String(copied) + " bytes were written before it stopped")
+            << F("\r\n");
+}
+
+bool XCopyCommandLine::copyCardToVolume(const String &fromPath,
+                                        XCopyAdfMount::Slot &toSlot,
+                                        const String &toDirectory,
+                                        const String &toLeaf,
+                                        uint8_t *buffer, size_t bufferSize,
+                                        unsigned long &copied)
+{
+    FatFile in;
+    if (!in.open(fromPath.c_str(), O_RDONLY))
+    {
+        Log << XCopyConsole::error("unable to open '" + fromPath + "'") << F("\r\n");
+        return false;
+    }
+
+    String unusedLeaf;
+    if (!XCopyAdfMount::walkTo(toSlot, toDirectory + toLeaf, unusedLeaf))
+    {
+        in.close();
+        return false;
+    }
+
+    if (adfGetEntryBlockNum(toSlot.vol, toSlot.vol->curDirPtr, toLeaf.c_str()) != -1)
+    {
+        Log << XCopyConsole::error("'" + toLeaf + "' is already in " +
+                                   String(toSlot.name) + ":")
+            << F("\r\n");
+        in.close();
+        return false;
+    }
+
+    struct AdfFile *out = adfFileOpen(toSlot.vol, toLeaf.c_str(), ADF_FILE_MODE_WRITE);
+    if (out == NULL)
+    {
+        Log << XCopyConsole::error("unable to create '" + toLeaf + "'") << F("\r\n");
+        in.close();
+        return false;
+    }
+
+    bool ok = true;
+    int got = 0;
+    while ((got = in.read(buffer, bufferSize)) > 0)
+    {
+        if (adfFileWrite(out, (uint32_t)got, buffer) != (uint32_t)got)
+        {
+            Log << XCopyConsole::error(String(toSlot.name) + ": ran out of room") << F("\r\n");
+            ok = false;
+            break;
+        }
+        copied += (unsigned long)got;
+    }
+
+    if (got < 0)
+    {
+        Log << XCopyConsole::error("the card stopped reading part way through") << F("\r\n");
+        ok = false;
+    }
+
+    if (ok && adfFileFlush(out) != ADF_RC_OK)
+    {
+        Log << XCopyConsole::error("the last block could not be written") << F("\r\n");
+        ok = false;
+    }
+
+    adfFileClose(out);
+    in.close();
+    return ok;
+}
+
+bool XCopyCommandLine::copyVolumeToCard(XCopyAdfMount::Slot &fromSlot,
+                                        const String &fromPath,
+                                        const String &fromLeaf,
+                                        const String &toPath,
+                                        uint8_t *buffer, size_t bufferSize,
+                                        unsigned long &copied)
+{
+    String unusedLeaf;
+    if (!XCopyAdfMount::walkTo(fromSlot, fromPath, unusedLeaf))
+        return false;
+
+    struct AdfFile *in = adfFileOpen(fromSlot.vol, fromLeaf.c_str(), ADF_FILE_MODE_READ);
+    if (in == NULL)
+    {
+        Log << XCopyConsole::error("unable to open '" + fromLeaf + "' in " +
+                                   String(fromSlot.name) + ":")
+            << F("\r\n");
+        return false;
+    }
+
+    if (xcopySd().exists(toPath.c_str()))
+    {
+        Log << XCopyConsole::error("'" + toPath + "' is already on the card") << F("\r\n");
+        adfFileClose(in);
+        return false;
+    }
+
+    FatFile out;
+    if (!out.open(toPath.c_str(), O_RDWR | O_CREAT | O_TRUNC))
+    {
+        Log << XCopyConsole::error("unable to create '" + toPath + "'") << F("\r\n");
+        adfFileClose(in);
+        return false;
+    }
+
+    bool ok = true;
+    while (!adfFileAtEOF(in))
+    {
+        const uint32_t got = adfFileRead(in, (uint32_t)bufferSize, buffer);
+        if (got == 0)
+        {
+            Log << XCopyConsole::error("the image stopped reading part way through") << F("\r\n");
+            ok = false;
+            break;
+        }
+
+        if (out.write(buffer, got) != (int)got)
+        {
+            Log << XCopyConsole::error("the card ran out of room") << F("\r\n");
+            ok = false;
+            break;
+        }
+        copied += got;
+    }
+
+    if (!out.sync())
+    {
+        Log << XCopyConsole::error("the card would not flush") << F("\r\n");
+        ok = false;
+    }
+
+    out.close();
+    adfFileClose(in);
+    return ok;
+}
+
+bool XCopyCommandLine::copyCardToCard(const String &fromPath, const String &toPath,
+                                      uint8_t *buffer, size_t bufferSize,
+                                      unsigned long &copied)
+{
+    if (xcopySd().exists(toPath.c_str()))
+    {
+        Log << XCopyConsole::error("'" + toPath + "' is already on the card") << F("\r\n");
+        return false;
+    }
+
+    FatFile in;
+    if (!in.open(fromPath.c_str(), O_RDONLY))
+    {
+        Log << XCopyConsole::error("unable to open '" + fromPath + "'") << F("\r\n");
+        return false;
+    }
+
+    FatFile out;
+    if (!out.open(toPath.c_str(), O_RDWR | O_CREAT | O_TRUNC))
+    {
+        Log << XCopyConsole::error("unable to create '" + toPath + "'") << F("\r\n");
+        in.close();
+        return false;
+    }
+
+    bool ok = true;
+    int got = 0;
+    while ((got = in.read(buffer, bufferSize)) > 0)
+    {
+        if (out.write(buffer, got) != got)
+        {
+            Log << XCopyConsole::error("the card ran out of room") << F("\r\n");
+            ok = false;
+            break;
+        }
+        copied += (unsigned long)got;
+    }
+
+    if (got < 0)
+    {
+        Log << XCopyConsole::error("the card stopped reading part way through") << F("\r\n");
+        ok = false;
+    }
+
+    if (!out.sync())
+        ok = false;
+
+    out.close();
+    in.close();
+    return ok;
+}
+
+void XCopyCommandLine::cmdMkdir(const XCopyArgs &args)
+{
+    XCopyAdfMount::Slot *slot = nullptr;
+    String path;
+    if (!XCopyAdfMount::resolve(args.subject(), slot, path))
+        return;
+
+    if (slot == nullptr)
+    {
+        // SdFat makes the whole path, which is the useful behaviour for a card
+        // where directories are cheap and nesting is how anyone organises ADFs.
+        if (xcopySd().mkdir(path.c_str(), true))
+            Log << "'" + path + F("' created\r\n");
+        else
+            Log << XCopyConsole::error("unable to create '" + path + "'") << F("\r\n");
+        return;
+    }
+
+    if (!writableVolume(*slot))
+        return;
+
+    String leaf;
+    if (!XCopyAdfMount::walkTo(*slot, path, leaf))
+        return;
+
+    if (leaf.length() == 0)
+    {
+        Log << XCopyConsole::error("mkdir needs a name") << F("\r\n");
+        return;
+    }
+
+    XCopyAdf::clearErrors();
+    if (adfCreateDir(slot->vol, slot->vol->curDirPtr, leaf.c_str()) != ADF_RC_OK)
+    {
+        Log << XCopyConsole::error("unable to create '" + leaf + "' in " +
+                                   String(slot->name) + ":")
+            << F("\r\n");
+        return;
+    }
+
+    Log << slot->name << F(":") << path << F(" created\r\n");
 }
 
 // MOUNTED IMAGES
