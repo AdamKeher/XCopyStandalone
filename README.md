@@ -88,10 +88,10 @@ This project is under heavy development and is in a state of flux with new hardw
 * Xcopy.h contains PCBVERSION define to target firmware builds to different PCB versions
 
 ## ESP8266 Build Notes:
-1. Switch PlatformIO Project Environment to "XCopyStandalone/esp8266"
+1. Select the `d1_mini` environment (both boards are environments of this one project)
 2. Plugin XCopyStandalone device and select "Debugging >> ESP >> ESP Programming Mode"
 3. Set serial port to the Teensy port, the device will passthrough serial data to the ESP8266 program
-4. Upload code
+4. Upload code, then upload the web assets with the `d1_mini` "Build Filesystem Image" and "Upload Filesystem Image" tasks
 5. Select "Debugging >> ESP >> Reset ESP"
 6. Open a serial terminal
 7. Connect to your wireless access point using the connect command
@@ -119,10 +119,27 @@ SSIDName
 >>
 ```
 
+## Project layout
+
+Both firmwares are environments of a single PlatformIO project, so the IDE lists
+them in one Project Tasks tree and `pio run` with no arguments builds the pair.
+
+| | |
+|---|---|
+| `src/` | Teensy 3.2 firmware, built by the `teensy31` environment |
+| `src/esp8266/` | ESP8266 firmware, built by the `d1_mini` environment |
+| `esp8266/data/` | web interface, uploaded to the ESP as a LittleFS image |
+| `shared/` | the Teensy to ESP link contract, compiled into both |
+| `lib/` | libraries for both; `esp8266/lib/` holds the ESP only ones |
+
+Neither firmware is a `.ino` sketch: PlatformIO only converts a sketch sitting at
+the top of the source directory, and with two source trees neither one can be.
+
 ## How to build PlatformIO based project
 
 1. [Install PlatformIO Core](http://docs.platformio.org/page/core.html)
 2. Download [development platform with examples](https://github.com/platformio/platform-teensy/archive/develop.zip)
 3. Open the project
-4. Select 'PlatformIO:Build'
-5. Select 'PlatformIO:Upload'
+4. Pick the environment you want - `teensy31` or `d1_mini` - or build both at once
+5. Select 'PlatformIO:Build'
+6. Select 'PlatformIO:Upload'
