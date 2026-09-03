@@ -40,7 +40,6 @@ enum XCopyState {
   debuggingSerialPassThrough = 26,
   debuggingFaultFind = 31,
   debuggingEraseFlash = 32,
-  testDrive = 34,
   scanBlocks = 39,
   diskSearch = 40,
   modSearch = 41,
@@ -48,7 +47,10 @@ enum XCopyState {
   // Serial console only: the USB port in binary mode, streaming to a host that is
   // doing the decoding. The web UI has no button for it and websocket.js does not
   // switch on it, so the number is free but is still never reused.
-  liveStream = 43
+  liveStream = 43,
+  // The continuous head calibration test. 34 was the drive signal monitor this
+  // replaced and is retired rather than reused, like every other gap above.
+  headCalibration = 44
 };
 
 #endif // XCOPYSTATE_H

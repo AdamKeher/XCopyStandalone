@@ -72,6 +72,8 @@ void XCopyCommandLine::doCommand(String command)
         Log << F("| bootf                          | print boot block from flash                         |\r\n");
         Log << F("| hist                           | prints histogram of track in ascii                  |\r\n");
         Log << F("| rpm <ms>                       | drive speed from index pulses, every <ms>           |\r\n");
+        Log << F("| headcal | hc [<cyl>]           | continuous head calibration test, ATK style         |\r\n");
+        Log << F("|                                | r:reseek +/-:1 []:10 {}:40 h:head a:auto q:quit     |\r\n");
         Log << F("| name                           | reads track 80 an returns disklabel in ascii        |\r\n");
         Log << F("| print                          | prints amiga track with header                      |\r\n");
         Log << F("| read <n>                       | read logical track #n from disk                     |\r\n");
@@ -811,6 +813,15 @@ void XCopyCommandLine::doCommand(String command)
         return;        
     }
 
+    if (cmd == F("headcal") || cmd == F("hc")) {
+        // Starts the state and returns, like testdisk. Deliberately not the rpm
+        // pattern of owning the console in a loop: that would starve the ESP link
+        // and the TFT for as long as somebody was adjusting the drive.
+        _callback(_caller, "headCalibration," + param);
+
+        return;
+    }
+
     if (cmd == F("live")) {
         /*
            Hands this USB session to XCopyLive, which switches it to the binary protocol
@@ -1009,7 +1020,20 @@ void XCopyCommandLine::setCallBack(void* caller, OnWebCommand function)
     _callback = function;
 }
 
+void XCopyCommandLine::setRawKeys(void* caller, OnRawKey function)
+{
+    _rawCaller = caller;
+    _rawKeys = function;
+}
+
 void XCopyCommandLine::processKey(char key) {
+    // A key screen has the console for the duration. Nothing below this runs, so
+    // the line buffer is left exactly as the operator had it before they started.
+    if (_rawKeys != nullptr) {
+        _rawKeys(_rawCaller, key);
+        return;
+    }
+
     // backspace
     if (key == 0x08)  {
         if (_command.length() == 0)

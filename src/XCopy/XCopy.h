@@ -1,7 +1,7 @@
 #ifndef XCOPY_H
 #define XCOPY_H
 
-#define XCOPYVERSION "v721.26"
+#define XCOPYVERSION "v722.26"
 // #define XCOPY_DEBUG = 1
 
 // #define PCBVERSION 1 // expensive adafruit screen and joystick
@@ -42,7 +42,7 @@
 #include "XCopyADFLib.h"
 #include "XCopyESP8266.h"
 #include "XCopyFloppy.h"
-#include "XCopyDriveTest.h"
+#include "XCopyHeadCalibration.h"
 #include "XCopyConsole.h"
 #include "XCopyBrainFile.h"
 #include "XCopyTransfer.h"
@@ -77,6 +77,12 @@ public:
   void sendFile(String path);
   void getFile(String path, size_t size, bool overwrite = false);
   void processKeys(String keys);
+  // The single way out of a head calibration session, so no path can leave it
+  // with the drive still spinning. See processState().
+  void exitHeadCalibration();
+  //! Raw keystroke sink while the calibration screen is up, registered with
+  //! XCopyCommandLine so the USB console and the browser terminal both drive it.
+  static void onHeadCalKey(void *obj, char key);
   void sendBlock(int block);
   void cardChange();
   XCopyDisk* getDisk() { return &_disk; }
@@ -100,6 +106,12 @@ private:
   XCopyConfig *_config;
   XCopyESP8266 *_esp = nullptr;
   XCopyTransfer _transfer;
+  /*
+     A value member rather than something new'd per session. It holds live drive
+     state, and the feature it replaces was deleted while its interrupts were
+     still armed - a lifetime this object simply does not have.
+  */
+  XCopyHeadCalibration _headCal;
 
 #ifdef XCOPY_DEBUG
   RamMonitor _ram;
@@ -128,6 +140,10 @@ private:
   // Separate from the values because "0-0" - capture cylinder 0 alone - is a
   // legitimate range that a zero end cylinder cannot be told apart from.
   bool _scpRangeGiven = false;
+
+  // Cylinder the next calibration session opens on, carried from the console or
+  // the web command the same way _adfFilePath is.
+  uint8_t _headCalCylinder = XCopyHeadCalibration::kDefaultCylinder;
 
   bool _drawnOnce = false;
   // True while the passthrough loop is servicing ESP *programming* mode, where

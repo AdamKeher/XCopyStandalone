@@ -20,6 +20,10 @@ public:
   // By reference: taking this by value copied the whole string on every
   // call, and drawFlux() sends ~620 bytes per track through here.
   void print(const String &text) { Serial1.print(text); };
+  // For callers that already hold a fixed buffer. The String overload would
+  // construct and destroy a temporary around every one of them, and the head
+  // calibration panel sends several a second for as long as it is open.
+  void print(const char *text) { Serial1.print(text); };
 
   void setMode(const String &text) { sendWebSocket("setMode," + text); }
   void setStatus(const String &text) { sendWebSocket("setStatus," + text); }

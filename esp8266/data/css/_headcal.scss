@@ -1,0 +1,70 @@
+/* Head calibration
+   -------------------------------------------------------------------------
+   The per sector glyphs are the same vocabulary as the TFT and the serial
+   console, so the three surfaces can be compared side by side. Colour carries
+   the meaning and the glyph repeats it, because a colour blind reader and a
+   photocopy both need one of the two to survive. */
+
+.headcalHelp {
+  color: #9a9a9a;
+}
+
+.headcalRows {
+  font-family: monospace;
+  margin-bottom: 16px;
+}
+
+.headcalRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 4px 0;
+}
+
+.headcalLabel {
+  display: inline-block;
+  width: 130px;
+  color: $textColor;
+}
+
+.headcalGlyphs {
+  display: inline-flex;
+  gap: 2px;
+  /* Holds the row height steady before the first pass lands, so the panel does
+     not jump when results arrive. */
+  min-height: 22px;
+}
+
+.headcalCount {
+  color: #e0b040;
+}
+
+.headcalCount.allok {
+  color: #4caf50;
+}
+
+.headcalLegend {
+  color: #9a9a9a;
+  font-size: 0.9em;
+}
+
+.headcalStatus {
+  color: $textColor;
+}
+
+.hcSector {
+  display: inline-block;
+  width: 18px;
+  text-align: center;
+  font-family: monospace;
+  font-weight: bold;
+  border-radius: 3px;
+  background: #2a2a2a;
+}
+
+.hcSector.ok      { color: #4caf50; }
+.hcSector.missing { color: #e04b4b; }
+.hcSector.low     { color: #e0b040; }
+.hcSector.high    { color: #e0b040; }
+.hcSector.side    { color: #c060c0; }
+.hcSector.chk     { color: #ffffff; }
