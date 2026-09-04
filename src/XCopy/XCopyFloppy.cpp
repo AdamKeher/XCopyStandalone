@@ -1003,6 +1003,23 @@ bool XCopyFloppy::calibrationRead(uint8_t cylinder, uint8_t head, bool recal, Ca
         }
     }
 
+    return censusTrack(cylinder, head, out);
+}
+
+/*
+   The census half of calibrationRead(): every verdict is reached from the bytes
+   the capture handler left in stream[] and sectorTable[], and nothing here goes
+   near the drive.
+
+   Split out so a second source can reach it. XCopyDiskInfo replays the flux in an
+   SCP file through the same thresholding ftm0_isr uses, fills the same two
+   buffers, and then asks this the same question - so a file and the disk it was
+   imaged from cannot come back analysed differently. The barrier lives here
+   rather than in the caller for the same reason: it is this function's reads that
+   need ordering, whichever of the two filled the buffers.
+*/
+bool XCopyFloppy::censusTrack(uint8_t cylinder, uint8_t head, CalibrationResult &out)
+{
     // Acquire, for the same reason readTrack() has one: everything read out below
     // comes from sectorTable[] and stream[], which the handler wrote and which
     // nothing marks as having changed.
@@ -1019,6 +1036,10 @@ bool XCopyFloppy::calibrationRead(uint8_t cylinder, uint8_t head, bool recal, Ca
     for (int i = 0; i < sectorCnt; i++)
     {
         unsigned long bytePos = sectorTable[i].bytePos;
+
+        // Nothing readable here unless the header says otherwise below.
+        if (i < (int)(sizeof(out.syncSector) / sizeof(out.syncSector[0])))
+            out.syncSector[i] = 0xff;
 
         // decodeSector() has no such check and will read past the buffer on a sync
         // mark found near the end of the capture.
@@ -1055,6 +1076,9 @@ bool XCopyFloppy::calibrationRead(uint8_t cylinder, uint8_t head, bool recal, Ca
             out.strays++;
             continue;
         }
+
+        if (i < (int)(sizeof(out.syncSector) / sizeof(out.syncSector[0])))
+            out.syncSector[i] = headerSector;
 
         if (out.status[headerSector] != sectorMissing)
             out.duplicates++;

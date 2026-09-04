@@ -107,6 +107,14 @@ struct CalibrationResult
     uint8_t truncated;    //!< sectors whose 1088 bytes ran off the end of the capture
     int8_t cylinderSeen;  //!< cylinder the first readable header named, -1 if none did
     uint8_t status[22];   //!< XCopySectorVerdict, indexed by sector number
+    /**
+     * Sector number each sync mark carried, in the order the marks were found,
+     * 0xff where the header could not be trusted. status[] is indexed by sector
+     * number and so cannot say where on the track a sector physically sat; this
+     * pairs with getSyncBytePos() to put a verdict at an angle, which is what
+     * the disk info view draws. Head calibration does not read it.
+     */
+    uint8_t syncSector[22];
 };
 
 /*
@@ -299,6 +307,19 @@ class XCopyFloppy
      *         capture timed out. "0 of 11 valid" is a successful pass.
      */
     bool calibrationRead(uint8_t cylinder, uint8_t head, bool recal, CalibrationResult &out);
+
+    /**
+     * @brief The census half of calibrationRead(), over whatever last filled the
+     *        capture buffers.
+     *
+     * Reads stream[] and sectorTable[] and touches nothing else, so a caller that
+     * has put cells there by some other route - XCopyDiskInfo replaying the flux
+     * out of an SCP file - gets the identical verdicts a disk read would. That is
+     * the whole point of it being separate: an image and the disk it came from
+     * cannot be analysed by two different pieces of code.
+     */
+    bool censusTrack(uint8_t cylinder, uint8_t head, CalibrationResult &out);
+
     int writeTrack();
 
     /**
