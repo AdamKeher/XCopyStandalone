@@ -164,19 +164,45 @@ public:
             if (String(json) != "") {
               bbcount++;
   
-              deserializeJson(root, json);
+              // json[] is handed over as a const char*, not as the char* it is.
+              //
+              // That looks like a pointless cast and is not. The two overloads are
+              // different parsers: given a char* ArduinoJson leaves the strings where
+              // they are and points the document back into this buffer, and given a
+              // const char* it copies them into the document's own pool. XCopyConfig
+              // parses from String::c_str() and so instantiates the const one, so
+              // asking for the mutable parser here was buying a second complete copy
+              // of the deserialiser - 1,336 bytes of flash for the only call site in
+              // the firmware that wanted it.
+              //
+              // The bill is paid in pool instead. Measured over every entry of the
+              // shipped brain file, on this part's 16 byte slots, the fattest one
+              // goes from 128 bytes of the document to 343 of the 512 - "Partners in
+              // Crime", eight keys and a long Notes field. That still fits with a
+              // third to spare, but a denser entry in someone else's brain file will
+              // now run out sooner than it used to.
+              //
+              // Which is why the result is finally looked at. It never has been: an
+              // entry too big for the document was simply never identified, and the
+              // scan went quietly past it.
+              DeserializationError jsonError = deserializeJson(root, (const char *)json);
 
-              String crc32 = root["CRC"].as<const char*>();
-              String recog = root["Recog"].as<const char*>();
-
-              if (crc32 == bootcrc32) {
-                Log << "\r\nBoot Block Identified:\r\nIdentification Method: CRC32\r\n";
-                displayBootBlock(root);
+              if (jsonError) {
+                Log << "Brainfile entry " + String(bbcount) + " skipped: " + String(jsonError.c_str()) + "\r\n";
               }
-              else if (recog != "" && checkBootBlock(recog, sector0, sector1)) {
-                Log << "\r\nBoot Block Identified:\r\nIdentification Method: Recognition pattern\r\n";
-                displayBootBlock(root);
-              };
+              else {
+                String crc32 = root["CRC"].as<const char*>();
+                String recog = root["Recog"].as<const char*>();
+
+                if (crc32 == bootcrc32) {
+                  Log << "\r\nBoot Block Identified:\r\nIdentification Method: CRC32\r\n";
+                  displayBootBlock(root);
+                }
+                else if (recog != "" && checkBootBlock(recog, sector0, sector1)) {
+                  Log << "\r\nBoot Block Identified:\r\nIdentification Method: Recognition pattern\r\n";
+                  displayBootBlock(root);
+                };
+              }
             }
 
             // reset json block
