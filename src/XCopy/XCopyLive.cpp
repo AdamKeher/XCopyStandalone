@@ -267,8 +267,15 @@ void XCopyLive::emitHello()
         caps |= XCL_CAP_DMA;
     if (_floppy->getMode() == HD)
         caps |= XCL_CAP_HD;
-    // XCL_CAP_WRITE stays clear: XCL_CMD_WRITE_TRACK is defined and answered, and it
-    // is answered with UNSUPPORTED.
+    /*
+       XCL_CMD_WRITE_TRACK works, and the host bounds its transfers by ringBytes below
+       - the same block, because the write buffer is the capture ring's front. An HD
+       track (25,418 bytes of cells) does not fit in what is left once the transmit
+       ring has its tail, so the host writes DD only; nothing here has to enforce
+       that beyond the bound itself.
+    */
+    if (_blockFront != NULL)
+        caps |= XCL_CAP_WRITE;
 
     startRecord(XCL_REC_HELLO, 0, 0, 0, _tickIndex);
     addByte(XCL_PROTOCOL_VERSION);
@@ -278,7 +285,7 @@ void XCopyLive::emitHello()
     addU32(_tickHz);
     addU32(liveRingSamples * 2);
     addU16(XCL_MAX_PAYLOAD);
-    addU16(0x0718); // XCOPYVERSION "v718.26" - READ_TRACK, NOCLICK, READ_DONE
+    addU16(0x0733); // XCOPYVERSION "v733.26" - + WRITE_TRACK, WRITE_DONE, bulk
     static const char ident[16] = {'X', 'C', 'o', 'p', 'y', 'S', 't', 'a',
                                    'n', 'd', 'a', 'l', 'o', 'n', 'e', 0};
     for (uint8_t i = 0; i < 16; i++)
@@ -536,10 +543,7 @@ void XCopyLive::handleCommand()
         break;
 
     case XCL_CMD_WRITE_TRACK:
-        // Reserved in protocol version 1. The frame is parsed and answered so a host
-        // can tell "not implemented" apart from "not understood"; XCL_CAP_WRITE is
-        // clear in the HELLO, which is where a host should be looking first.
-        emitAck(_rxCmd, XCL_RESULT_UNSUPPORTED);
+        handleWriteTrack();
         break;
 
     case XCL_CMD_BYE:
@@ -552,6 +556,217 @@ void XCopyLive::handleCommand()
         emitAck(_rxCmd, XCL_RESULT_UNSUPPORTED);
         break;
     }
+}
+
+/* --- write -------------------------------------------------------------------- */
+
+/*
+   XCL_CMD_WRITE_TRACK.
+
+   Everything that can refuse the write is checked BEFORE the ACK, because the ACK is
+   what tells the host to send 13 KB - a refusal afterwards would mean receiving and
+   discarding the lot. What cannot be checked before is the transfer's own integrity,
+   and that is what XCL_EV_WRITE_DONE carries.
+*/
+void XCopyLive::handleWriteTrack()
+{
+    if (_rxLen < 5)
+    {
+        emitAck(_rxCmd, XCL_RESULT_BAD_PARAM);
+        return;
+    }
+
+    const uint32_t numBytes = (uint32_t)_rxPayload[0] | ((uint32_t)_rxPayload[1] << 8);
+    const uint8_t flags = _rxPayload[2];
+    const uint16_t crc = (uint16_t)((uint16_t)_rxPayload[3] | ((uint16_t)_rxPayload[4] << 8));
+
+    for (uint8_t i = 5; i < _rxLen; i++)
+    {
+        if (_rxPayload[i] != 0)
+        {
+            emitAck(_rxCmd, XCL_RESULT_BAD_PARAM);
+            return;
+        }
+    }
+
+    if (_blockFront == NULL)
+    {
+        emitAck(_rxCmd, XCL_RESULT_UNSUPPORTED);
+        return;
+    }
+    if (_streaming || _boundActive || _selftest || _seekState != seekIdle || _trackChangePending)
+    {
+        emitAck(_rxCmd, XCL_RESULT_BUSY);
+        return;
+    }
+    /*
+       One byte of headroom past the cells: XCopyFloppy::writeTrack() clocks eight
+       cells past the last byte the host sent and reads the byte they fall in.
+    */
+    if (numBytes == 0 || numBytes + 1 > _blockBytes)
+    {
+        emitAck(_rxCmd, XCL_RESULT_BAD_PARAM);
+        return;
+    }
+    if (!_lastDiskPresent)
+    {
+        emitAck(_rxCmd, XCL_RESULT_NO_MEDIA);
+        return;
+    }
+    if (_floppy->getWriteProtect())
+    {
+        emitAck(_rxCmd, XCL_RESULT_WRITE_PROTECTED);
+        return;
+    }
+
+    /*
+       Accepted. The ACK has to be on the wire before the host will start sending, and
+       pollCommands() only flushes AFTER handleCommand() returns - which is 200 ms from
+       now.
+    */
+    emitAck(_rxCmd, XCL_RESULT_OK);
+    pumpUsb();
+    flushNow();
+
+    /*
+       The capture's ring and the write buffer are the same memory, so the DMA has to
+       stop before a byte of it is overwritten.
+    */
+    _capture.end();
+
+    const uint32_t startMs = millis();
+    uint8_t result = receiveBulk(_blockFront, numBytes, crc);
+
+    if (result == XCL_RESULT_OK)
+    {
+        const int rc = _floppy->writeTrack((int)numBytes, (flags & XCL_WF_FROM_INDEX) != 0);
+        switch (rc)
+        {
+        case 0:
+            break;
+        case -1:
+            result = XCL_RESULT_WRITE_PROTECTED;
+            break;
+        case -2:
+            result = XCL_RESULT_SEEK_FAILED;
+            break;
+        default:
+            result = XCL_RESULT_BAD_PARAM;
+            break;
+        }
+    }
+
+    /*
+       Back exactly as run() armed it. The cell and tick counters do not survive this,
+       which the protocol header says out loud: XCL_CAP_SEEK_PHASE is a promise about a
+       seek, not about a write, and the host's next read zeroes them anyway.
+    */
+    _capture.begin((uint16_t *)_blockFront, _ringSamples, _floppy->indexPin(), true);
+
+    /*
+       The host has been silent for a revolution and the watchdog counts silence, not
+       traffic. The bulk transfer was not a command, so stamp it here or a slow write
+       ends the session it just finished.
+    */
+    _lastCmdMs = millis();
+
+    emitEvent(XCL_EV_WRITE_DONE, result, _lastCmdMs - startMs);
+    pumpUsb();
+    flushNow();
+}
+
+uint8_t XCopyLive::receiveBulk(uint8_t *dest, uint32_t bytes, uint16_t expectCrc)
+{
+    /*
+       Long enough that a host stalled behind its own USB scheduling recovers, short
+       enough that a host which died mid-transfer does not hold the drive. A 13 KB
+       transfer over full-speed CDC is tens of milliseconds.
+    */
+    static const uint32_t bulkTimeoutMs = 2000;
+
+    uint32_t deadline = millis() + bulkTimeoutMs;
+    uint8_t preamble[XCL_BULK_PREAMBLE_BYTES];
+    uint32_t got = 0;
+
+    /*
+       The preamble is read before a single data byte is consumed, so a host and device
+       that disagree about where the bulk begins cost four bytes rather than a track.
+    */
+    while (got < XCL_BULK_PREAMBLE_BYTES)
+    {
+        pumpUsb();
+        if (!Serial.available())
+        {
+            if ((int32_t)(millis() - deadline) > 0)
+                return XCL_RESULT_OVERRUN;
+            continue;
+        }
+        preamble[got++] = (uint8_t)Serial.read();
+        deadline = millis() + bulkTimeoutMs;
+    }
+
+    const uint32_t echo = (uint32_t)preamble[2] | ((uint32_t)preamble[3] << 8);
+    if (preamble[0] != XCL_BULK_SYNC0 || preamble[1] != XCL_BULK_SYNC1 || echo != bytes)
+    {
+        emitAck(XCL_CMD_WRITE_TRACK, XCL_RESULT_BAD_PARAM);
+        /*
+           Refusing is not enough: the host is most of the way through sending 13 KB of
+           cells, and returning now leaves them to arrive at the command parser, where
+           one byte pair in 65,536 is a sync and one CRC8 in 256 passes. So take the
+           transfer that was refused and throw it away, and the wire is clean.
+        */
+        got = 0;
+        while (got < bytes)
+        {
+            pumpUsb();
+            int avail = Serial.available();
+            if (avail <= 0)
+            {
+                if ((int32_t)(millis() - deadline) > 0)
+                    break;
+                continue;
+            }
+            for (int i = 0; i < avail && got < bytes; i++, got++)
+                Serial.read();
+            deadline = millis() + bulkTimeoutMs;
+        }
+        return XCL_RESULT_BAD_PARAM;
+    }
+
+    uint16_t crc = XCL_CRC16_INIT;
+    got = 0;
+    while (got < bytes)
+    {
+        pumpUsb();
+        int avail = Serial.available();
+        if (avail <= 0)
+        {
+            if ((int32_t)(millis() - deadline) > 0)
+                return XCL_RESULT_OVERRUN;
+            continue;
+        }
+        uint32_t want = bytes - got;
+        if ((uint32_t)avail < want)
+            want = (uint32_t)avail;
+        /*
+           readBytes() rather than a byte at a time: at 13 KB the per-call overhead is
+           the difference between a transfer that keeps up with the host and one that
+           makes the host wait on flow control.
+        */
+        int n = Serial.readBytes((char *)(dest + got), want);
+        if (n <= 0)
+        {
+            if ((int32_t)(millis() - deadline) > 0)
+                return XCL_RESULT_OVERRUN;
+            continue;
+        }
+        for (int i = 0; i < n; i++)
+            crc = xclCrc16Update(crc, dest[got + i]);
+        got += (uint32_t)n;
+        deadline = millis() + bulkTimeoutMs;
+    }
+
+    return (crc == expectCrc) ? XCL_RESULT_OK : XCL_RESULT_BAD_CRC;
 }
 
 uint8_t XCopyLive::applyConfig(uint8_t key, uint32_t value)
@@ -1754,6 +1969,16 @@ void XCopyLive::run(volatile bool *cancel)
     uint32_t ringSamples = (uint32_t)((blockSize - XCL_TX_RING) / sizeof(uint16_t));
 
     /*
+       Kept for XCL_CMD_WRITE_TRACK, which borrows this same front for its cells and
+       has to put the capture back exactly as it was. XCopyLiveCapture::end() clears
+       the globals it was handed, so the write path cannot read them back out of it.
+       This is also what sets XCL_CAP_WRITE in the HELLO.
+    */
+    _blockFront = block;
+    _blockBytes = (uint32_t)(blockSize - XCL_TX_RING);
+    _ringSamples = ringSamples;
+
+    /*
        The capture starts with the session rather than with the stream, so STATUS can
        answer with a live rotational phase the moment the host attaches instead of
        making it wait up to a revolution for an index. Until STREAM_START the drain
@@ -1814,5 +2039,8 @@ void XCopyLive::run(volatile bool *cancel)
     _txHead = _txTail = 0;
     _rxState = 0;
     liveTx = NULL;
+    _blockFront = NULL;
+    _blockBytes = 0;
+    _ringSamples = 0;
     XCopyScratch::release(block);
 }

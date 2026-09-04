@@ -669,6 +669,18 @@ void XCopyFloppy::initDrive()
 }
 
 /*
+   One whole index pulse, leading edge to trailing, with the verdict kept.
+
+   waitForIndex() below throws it away, which is right for a read that can cope with
+   finding nothing and wrong for a write: a caller that opened the write gate anyway
+   would scribble a track it was told not to touch.
+*/
+static bool waitIndexPulse(int pin)
+{
+    return waitIndexLevel(pin, 1) && waitIndexLevel(pin, 0);
+}
+
+/*
    wait for index hole
 */
 void XCopyFloppy::waitForIndex()
@@ -711,6 +723,19 @@ unsigned char reverse(unsigned char b)
 */
 int XCopyFloppy::writeTrack()
 {
+    return writeTrack(writeSize, true);
+}
+
+int XCopyFloppy::writeTrack(int bytes, bool fromIndex)
+{
+    /*
+       diskWrite() ends the write at (writeSize * 8) + 8 cells, so it reads the byte
+       one past the last one the caller filled. That byte has to exist and has to be
+       quiet, which is what the +1 and the zero below are for.
+    */
+    if (bytes <= 0 || bytes + 1 > streamSizeHD)
+        return -3;
+
     motorOn();
     _motorTimer.end();
     if (digitalRead(_wprot) == 0)
@@ -719,32 +744,61 @@ int XCopyFloppy::writeTrack()
         _extError = "Disk is write-protected\n";
         return -1;
     }
-    for (int i = 0; i < writeSize; i++)
+    for (int i = 0; i < bytes; i++)
     {
         stream[i] = reverse(stream[i]);
     }
+    stream[bytes] = 0;
+
+    /*
+       writeSize is the ISR's bound as well as the mode's track size, and setMode() is
+       the only other thing that writes it. Borrowed for this write and put back on
+       every way out, so a live write cannot change what the ADF path does next.
+    */
+    const int savedWriteSize = writeSize;
+    writeSize = bytes;
+
+    int result = 0;
     writePtr = 0;
     writeBitCnt = 0;
     dataByte = stream[writePtr];
     writeActive = true;
     _writeTimer.priority(0);
     delayMicroseconds(100);
-    waitForIndex();
-    //  int zeit = millis();
-    _writeTimer.begin(diskWrite, transitionTime);
-    digitalWriteFast(_writeen, LOW); // enable writegate after starting timer because first interrupt
-    // occurs in about 2µs
-    while (writeActive == true)
+
+    /*
+       An unbounded index wait would wedge the board on a drive whose platter has
+       stopped - a host that parked the motor, or media pulled between the check and
+       here - so the failure is reported instead of hung. waitForIndex() gives up
+       silently after 500 ms, which is fine for a read that finds nothing and not fine
+       for a write, because the caller has to know the track was left alone.
+    */
+    if (fromIndex && !waitIndexPulse(_index))
     {
+        writeActive = false;
+        _extError = "No index pulse\n";
+        result = -2;
     }
-    _writeTimer.end();
-    //  zeit = millis() - zeit;
-    //  Serial << "Time taken: " << zeit << "ms\n";
-    delayMicroseconds(2);
-    digitalWriteFast(_writeen, HIGH);
-    delay(5);
+    else
+    {
+        //  int zeit = millis();
+        _writeTimer.begin(diskWrite, transitionTime);
+        digitalWriteFast(_writeen, LOW); // enable writegate after starting timer because first interrupt
+        // occurs in about 2µs
+        while (writeActive == true)
+        {
+        }
+        _writeTimer.end();
+        //  zeit = millis() - zeit;
+        //  Serial << "Time taken: " << zeit << "ms\n";
+        delayMicroseconds(2);
+        digitalWriteFast(_writeen, HIGH);
+        delay(5);
+    }
+
+    writeSize = savedWriteSize;
     _motorTimer.begin(motorTimeout, 1000000);
-    return 0;
+    return result;
 }
 
 /*

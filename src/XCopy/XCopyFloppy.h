@@ -256,6 +256,29 @@ class XCopyFloppy
      */
     bool calibrationRead(uint8_t cylinder, uint8_t head, bool recal, CalibrationResult &out);
     int writeTrack();
+
+    /**
+     * @brief Write `bytes` of MFM cells from the stream buffer, not the fixed track size.
+     *
+     * For a live session (XCL_CMD_WRITE_TRACK), where the host supplies the cells and
+     * their length is whatever the guest's DMA produced - about 12,900 bytes for an
+     * AmigaDOS DD track, but nothing guarantees it. The no-argument writeTrack() above
+     * is the ADF-to-disk path and is unchanged; it delegates here with the mode's own
+     * writeSize and an index wait.
+     *
+     * The caller has already put the cells at the front of the stream buffer, MSB
+     * first, exactly as floppyTrackMfmEncode() would leave them. One byte past `bytes`
+     * is written too: diskWrite() runs eight cells past the last byte the caller sent.
+     *
+     * @param bytes     cell bytes to clock out. Must leave room for that extra byte.
+     * @param fromIndex wait for the index pulse before opening the write gate. False
+     *                  starts wherever the head is, which is what a guest that did
+     *                  not start its own write at the index asked for.
+     * @result 0 written; -1 write-protected; -2 no index pulse inside the bound;
+     *         -3 `bytes` out of range.
+     */
+    int writeTrack(int bytes, bool fromIndex);
+
     void floppyTrackMfmEncode(unsigned long track, byte *src, byte *dst);
 
     /*

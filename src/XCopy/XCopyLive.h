@@ -180,6 +180,35 @@ private:
     void handleCommand();
     uint8_t applyConfig(uint8_t key, uint32_t value);
 
+    // --- write --------------------------------------------------------------------
+    /*
+       XCL_CMD_WRITE_TRACK, host cells to the platter.
+
+       The buffer this writes from IS the front of the scratch block, which is where
+       the capture ring lives - so the capture stops for the duration. That is not a
+       compromise: no surface can be read while the write gate is open, and the host's
+       next read is an XCL_CMD_READ_TRACK, which restarts the counters anyway.
+
+       _blockFront and _ringSamples are what the capture has to be re-armed with
+       afterwards. They are members rather than locals in run() because
+       XCopyLiveCapture::end() clears the globals it was given.
+    */
+    uint8_t *_blockFront = NULL;
+    uint32_t _blockBytes = 0;   //!< usable front, transmit ring excluded
+    uint32_t _ringSamples = 0;
+
+    void handleWriteTrack();
+    /*
+       Reads exactly @p bytes of bulk payload into @p dest, checking the preamble
+       first and the CRC as it goes. Blocks, pumping USB, until the transfer is in or
+       the deadline passes - which is safe here and nowhere else in this file: the
+       capture is stopped, so there is nothing to drain and nothing to overrun.
+
+       @result XCL_RESULT_OK, _BAD_PARAM (preamble mismatch, nothing consumed),
+               _BAD_CRC, or _OVERRUN for a transfer that stalled.
+    */
+    uint8_t receiveBulk(uint8_t *dest, uint32_t bytes, uint16_t expectCrc);
+
     // --- stream -------------------------------------------------------------------
     bool _streaming = false;
     bool _selftest = false;

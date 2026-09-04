@@ -88,7 +88,36 @@ enum XclCommand {
                                     At saturation every packet is full, so
                                     delivery batching is only visible paced.     */
     XCL_CMD_PING = 0x0A,         /* -> XCL_REC_ACK. Also the host keepalive.     */
-    XCL_CMD_WRITE_TRACK = 0x0B,  /* RESERVED - replies XCL_REC_NAK/UNSUPPORTED   */
+    /* Write one track from cells the host supplies. The device is the encoder: it
+       clocks the cells out at a fixed interval, so what the host sends is exactly
+       what FloppyBridge already holds - MFM bit cells, MSB first - and there is no
+       flux conversion anywhere in the path.
+
+         p0..p1   numBytes   - uint16. Cell bytes to follow. At most
+                               XclHello::ringBytes, which is the same block.
+         p2       flags      - XCL_WF_*
+         p3..p4   crc16      - CRC-16/CCITT-FALSE over the numBytes of cell data
+         p5..p7   reserved. Must be 0.
+
+       XCL_REC_ACK with XCL_RESULT_OK means "the device is in bulk-receive state,
+       send it", and the host then sends the bulk transfer described below. A refusal
+       comes BEFORE any bulk data is sent: XCL_REC_NAK with UNSUPPORTED (firmware
+       without XCL_CAP_WRITE), BAD_PARAM (numBytes zero, over capacity, or a reserved
+       field set), NO_MEDIA, WRITE_PROTECTED, or BUSY (a stream, a seek or another
+       write is running).
+
+       XCL_EV_WRITE_DONE follows when the write is over - about a revolution later,
+       which is why the ACK cannot carry the result.
+
+       The capture STOPS for the duration. The write buffer is the front of the
+       device's scratch block, which is where the capture ring lives, and no surface
+       can be read while the write gate is open. So the cell and tick counters do not
+       stay continuous across a write and XCL_CAP_SEEK_PHASE does not apply to one -
+       harmless in practice, because the host's next read is an XCL_CMD_READ_TRACK,
+       which zeroes those counters anyway.
+
+       Firmware 0x0733 and later; older firmware answers UNSUPPORTED.             */
+    XCL_CMD_WRITE_TRACK = 0x0B,
 
     /* A BOUNDED capture, for a host that works the way the buffered FloppyBridge
        drivers do: ask for a track, receive it, hand it to a rotation extractor,
@@ -121,6 +150,42 @@ enum XclCommand {
 
     XCL_CMD_BYE = 0x7F           /* leave binary mode, return to the console     */
 };
+
+/* XCL_CMD_WRITE_TRACK::flags */
+#define XCL_WF_FROM_INDEX 0x01 /* wait for the index pulse before the write gate   */
+#define XCL_WF_PRECOMP 0x02    /* Hint only. The device clocks cells at a fixed
+                                  interval and cannot shift one transition, so it
+                                  accepts this and ignores it - which is what the
+                                  device's own ADF-to-disk path has always done.   */
+
+/* ------------------------------------------------------------------------ */
+/* Host -> device: the bulk transfer                                         */
+/* ------------------------------------------------------------------------ */
+
+/*   0xB4 0x4B | numBytes (uint16 LE, echoing the command) | data[numBytes]
+ *
+ * The one host -> device message that is not a 13-byte frame, because a DD track is
+ * 13,450 bytes of cells and 8-byte payloads would be 1,682 frames. Sent ONLY after
+ * XCL_CMD_WRITE_TRACK has been answered XCL_REC_ACK/OK, and read by the device with
+ * the command-frame parser bypassed for exactly numBytes.
+ *
+ * No CRC here: the command carried it, so the payload is pure data with no framing
+ * inside it to lose sync on. The device accumulates the CRC as the bytes arrive and
+ * compares at the end; a mismatch is XCL_EV_WRITE_DONE with XCL_RESULT_BAD_CRC and
+ * NOTHING is written.
+ *
+ * The preamble is what stops a host and device that disagree about where the bulk
+ * begins from turning 13 KB of commands into a track. It is checked before any data
+ * byte is consumed, and a mismatch is XCL_REC_NAK/BAD_PARAM and an immediate return
+ * to frame parsing, at most four bytes eaten. The sync bytes are deliberately NOT
+ * the command frame's 0xA5 0x5A.
+ *
+ * The wire is full duplex, so the outbound stream is undisturbed - but the device
+ * must keep pumping it while it receives, or its transmit ring backs up.
+ */
+#define XCL_BULK_SYNC0 0xB4
+#define XCL_BULK_SYNC1 0x4B
+#define XCL_BULK_PREAMBLE_BYTES 4
 
 /* XCL_EV_READ_DONE::arg */
 enum XclReadDoneReason {
@@ -233,9 +298,18 @@ enum XclEvent {
     XCL_EV_STREAM_STOP = 0x0A,
     XCL_EV_MOTOR = 0x0B,        /* arg = 1 running                               */
     XCL_EV_ERROR = 0x0C,        /* arg = XCL_RESULT_*                            */
-    XCL_EV_READ_DONE = 0x0D     /* XCL_CMD_READ_TRACK finished. arg = XCL_RD_*,
+    XCL_EV_READ_DONE = 0x0D,    /* XCL_CMD_READ_TRACK finished. arg = XCL_RD_*,
                                    arg2 = index pulses seen, cellIndex = cells
                                    delivered. Always after the last data record. */
+    XCL_EV_WRITE_DONE = 0x0E    /* XCL_CMD_WRITE_TRACK finished. arg = XCL_RESULT_*
+                                   - OK; BAD_CRC, and nothing was written;
+                                   WRITE_PROTECTED; NO_MEDIA; BAD_PARAM, which for a
+                                   bulk preamble mismatch arrives behind a NAK too;
+                                   OVERRUN for a transfer that stalled; or
+                                   SEEK_FAILED for an index that never came.
+                                   arg2 = elapsed ms, index wait included.
+                                   cellIndex is the cell counter, which a write does
+                                   NOT advance - the host knows what it sent.     */
 };
 
 typedef struct {
@@ -267,7 +341,12 @@ typedef struct {
     uint8_t maxCylinder;      /* highest cylinder the device will step to         */
     uint8_t driveCount;
     uint32_t tickHz;          /* device timer ticks per second - NEVER assume this */
-    uint32_t ringBytes;       /* capture ring size, so the host can size its reads */
+    /* Capture ring size, so the host can size its reads - and, because the write
+       buffer is the same block (XCL_CMD_WRITE_TRACK), the largest write transfer
+       the device will accept. Not a constant the host may assume: it is what is
+       left of the scratch block once the transmit ring has its tail, so it moves
+       with the firmware. */
+    uint32_t ringBytes;
     uint16_t maxRecordBytes;  /* largest payload the device will emit             */
     uint16_t firmwareVersion; /* (major << 8) | minor                             */
     char ident[16];           /* NUL-padded, "XCopyStandalone"                    */
@@ -278,7 +357,9 @@ typedef struct {
 #define XCL_CAP_FLUX 0x02
 #define XCL_CAP_DMA 0x04         /* capture is DMA driven, not per-transition ISR */
 #define XCL_CAP_INBAND_SEEK 0x08 /* SEEK works mid-stream. The host REQUIRES this */
-#define XCL_CAP_WRITE 0x10       /* not implemented in protocol version 1         */
+#define XCL_CAP_WRITE 0x10       /* XCL_CMD_WRITE_TRACK works. DD only - the write
+                                    buffer shares the scratch block with the
+                                    transmit ring and an HD track does not fit   */
 #define XCL_CAP_SELFTEST 0x20
 #define XCL_CAP_HD 0x40
 
@@ -380,14 +461,25 @@ static inline uint8_t xclCrc8(const uint8_t* data, uint32_t len)
 /* CRC-16/CCITT-FALSE, poly 0x1021, init 0xFFFF - records. Bitwise on purpose:
    the device may not have room for a 512-byte table, and at ~500 records a
    second over 140-byte records this is a rounding error on an M4. */
+#define XCL_CRC16_INIT 0xFFFFu
+
+/* One byte into a running CRC. The bulk transfer (XCL_CMD_WRITE_TRACK) is 13 KB
+   the device never holds all of at once in a form it can re-walk, so it has to
+   accumulate as the bytes land; xclCrc16() below is this, in a loop, so there is
+   still only one implementation to be wrong. */
+static inline uint16_t xclCrc16Update(uint16_t crc, uint8_t byte)
+{
+    crc ^= (uint16_t)((uint16_t)byte << 8);
+    for (int b = 0; b < 8; b++)
+        crc = (uint16_t)((crc & 0x8000u) ? ((crc << 1) ^ 0x1021u) : (crc << 1));
+    return crc;
+}
+
 static inline uint16_t xclCrc16(const uint8_t* data, uint32_t len)
 {
-    uint16_t crc = 0xFFFFu;
-    for (uint32_t i = 0; i < len; i++) {
-        crc ^= (uint16_t)((uint16_t)data[i] << 8);
-        for (int b = 0; b < 8; b++)
-            crc = (uint16_t)((crc & 0x8000u) ? ((crc << 1) ^ 0x1021u) : (crc << 1));
-    }
+    uint16_t crc = XCL_CRC16_INIT;
+    for (uint32_t i = 0; i < len; i++)
+        crc = xclCrc16Update(crc, data[i]);
     return crc;
 }
 
