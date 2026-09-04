@@ -2,16 +2,28 @@
 #include "XCopyFixed.h"
 
 // --- state the interrupt handlers touch --------------------------------------
-// NOTE: deliberately NOT static. ftm0_isr and diskWrite() write most of this
-// behind the compiler's back and much of it is not volatile, so internal
-// linkage would let GCC reason about it across the whole file as though the
-// interrupts never fired. External linkage keeps the codegen this driver has
-// always been built with.
 // ftm0_isr fires on every flux transition (roughly every 4us on a DD disk) and
 // diskWrite() on every write transition, so the state they reach stays at file
-// scope with internal linkage. Routing it through an instance pointer would add
-// a load per access inside those handlers. Everything the handlers do not touch
-// is member state on XCopyFloppy.
+// scope. Routing it through an instance pointer would add a load per access
+// inside those handlers. Everything the handlers do not touch is member state
+// on XCopyFloppy.
+//
+// These used to be non-static on the theory that external linkage stopped GCC
+// reasoning about them across the whole file as though the interrupts never
+// fired. That was always a weak guarantee and under -flto it is no guarantee at
+// all: the whole program is one unit at link time, so extern hides a symbol from
+// the optimiser exactly as well as static does, which is to say not at all.
+//
+// What actually holds is below. Everything the handlers and the main loop share
+// is volatile, which no amount of whole program analysis may reorder or cache -
+// except stream[], sectorTable[] and hist[], which are written a few million
+// times per track and cannot afford it. Those three are handed over explicitly
+// instead, with a compiler barrier at each end of the window the handler owns:
+// one in startFTM0() before the timer is armed, and one after each wait on
+// recordOn. See those three places for what each barrier is holding down.
+//
+// The linkage is left alone regardless, because changing it now would be a large
+// diff asserting something that was never true.
 
 // pins, assigned by registerSetup()
 int _dens, _index, _drivesel, _motor, _dir, _step, _writedata, _writeen, _track0, _wprot, _readdata, _side, _diskChange;
@@ -845,6 +857,19 @@ int XCopyFloppy::readTrack(boolean silent)
                 _extError = "Timeout in read operation\r\n";
             }
         }
+
+        /*
+           Acquire. recordOn is volatile so the wait above is honest, but what the
+           handler actually produced - stream[], sectorTable[] and hist[] - is not,
+           and at link time the compiler can see every writer in the program and
+           satisfy itself that nothing between here and decodeTrack() touches them.
+           That is true and beside the point: ftm0_isr is not called from anywhere,
+           it is reached through the vector table. Without this, a load of any of
+           the three is free to be hoisted above the wait and decode the previous
+           track's bytes.
+        */
+        __asm__ __volatile__("" ::: "memory");
+
         tZeit = micros();
         decodeTrack(silent);
         tZeit = micros() - tZeit;
@@ -977,6 +1002,11 @@ bool XCopyFloppy::calibrationRead(uint8_t cylinder, uint8_t head, bool recal, Ca
             return false;
         }
     }
+
+    // Acquire, for the same reason readTrack() has one: everything read out below
+    // comes from sectorTable[] and stream[], which the handler wrote and which
+    // nothing marks as having changed.
+    __asm__ __volatile__("" ::: "memory");
 
     memset(&out, 0, sizeof(out));
     out.cylinder = cylinder;
@@ -1523,6 +1553,18 @@ void XCopyFloppy::initRead()
 */
 void XCopyFloppy::startFTM0()
 {
+    /*
+       Publish. Everything the caller wrote before arming the timer has to be in
+       memory before the first transition can arrive, and two of those writes are
+       not volatile: initRead() zeroing the whole of stream[], and the callers
+       zeroing hist[]. Nothing orders a plain store against a volatile one, so
+       without this the compiler is free to leave either sitting in registers and
+       flush it after the handler has already started filling them in - producing
+       a track with holes punched in it, or an empty histogram, on a build where
+       nothing else changed.
+    */
+    __asm__ __volatile__("" ::: "memory");
+
     recordOn = true;
     FTM0_CNT = 0x0000; // Reset the count to zero
     FTM0_SC = timerMode;
