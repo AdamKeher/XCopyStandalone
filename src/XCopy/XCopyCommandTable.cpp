@@ -133,6 +133,7 @@ const XCopyCommandDef XCOPY_COMMANDS[] = {
     {XCopyCmd::ip, "ip", nullptr, XCopyCat::network, NOOPTS, XCopyArgKind::none, nullptr, 0, "show the wifi ip address"},
     {XCopyCmd::mac, "mac", nullptr, XCopyCat::network, NOOPTS, XCopyArgKind::none, nullptr, 0, "show the wifi mac address"},
     {XCopyCmd::ssid, "ssid", nullptr, XCopyCat::network, NOOPTS, XCopyArgKind::none, nullptr, 0, "show the wifi ssid"},
+    {XCopyCmd::rssi, "rssi", "signal", XCopyCat::network, NOOPTS, XCopyArgKind::none, nullptr, 0, "signal strength of the wifi network joined"},
     {XCopyCmd::websocket, "websocket", nullptr, XCopyCat::network, NOOPTS, XCopyArgKind::text, "message", XCOPY_RAW_TAIL | XCOPY_SUBJECT_REQUIRED, "broadcast a message to web clients"},
     {XCopyCmd::scan, "scan", nullptr, XCopyCat::network, NOOPTS, XCopyArgKind::none, nullptr, 0, "scan for wireless networks"},
     {XCopyCmd::ping, "ping", nullptr, XCopyCat::network, NOOPTS, XCopyArgKind::none, nullptr, 0, "ping the ESP"},

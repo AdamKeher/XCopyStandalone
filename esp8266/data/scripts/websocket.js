@@ -260,6 +260,46 @@ function setHardwareStatus(status) {
   }
 }
 
+/*
+   Signal strength of the network the device is on.
+
+   Sent by the ESP rather than by the Teensy, which never sees it: the radio is
+   the only thing that knows its own RSSI, and the wording and the thresholds
+   come with the message so the pill and the console never disagree.
+
+   wifi,<rssi>,<bars>,<quality>,<ssid>, with bars 1..4 and 0 for no network.
+*/
+function setWifiStatus(rssi, bars, quality, ssid) {
+  var pill = $('#wifiStatus').removeClass('alert-success alert-warning alert-danger alert-secondary');
+  bars = parseInt(bars, 10);
+
+  if (!bars) {
+    pill.addClass('alert-secondary').attr('title', 'The device has not joined a wireless network');
+    wifiPillText(pill, 'No network');
+    return;
+  }
+
+  pill.addClass(bars >= 3 ? 'alert-success' : (bars == 2 ? 'alert-warning' : 'alert-danger'));
+  pill.attr('title', 'Signal ' + quality + ' on ' + ssid);
+  wifiPillText(pill, ssid + '   ' + rssi + ' dBm');
+}
+
+// Nothing about the network is known while the link to the device is down, and a
+// stale "excellent" would be the most misleading thing the footer could say.
+function wifiUnknown() {
+  var pill = $('#wifiStatus').removeClass('alert-success alert-warning alert-danger').addClass('alert-secondary');
+  pill.attr('title', 'Not known while the link to the device is down');
+  wifiPillText(pill, '\u2014');
+}
+
+// A text node, not html(): the SSID is somebody else's string and arrives
+// unescaped.
+function wifiPillText(pill, text) {
+  pill.empty()
+      .append($('<i>').addClass('fa-solid fa-wifi'))
+      .append(document.createTextNode(' ' + text));
+}
+
 // The only writer of wsState.
 function wsSetState(next) {
   if (wsState === next) {
@@ -275,6 +315,8 @@ function wsSetState(next) {
 
 function wsUpdatePill() {
   var pill = $('#websocketStatus').removeClass('alert-success alert-warning alert-danger');
+
+  if (wsState !== 'open') wifiUnknown();
 
   if (wsState === 'open') {
     pill.addClass('alert-success').html('Connected');
@@ -504,6 +546,13 @@ function onWebSocketMessage(msg) {
     if (res[1] == "end") {
       fileTransferInProgress = false;
     }
+  }
+
+  if (res[0] == "wifi") {
+    // The SSID is the whole of the tail rather than a field, since it is the one
+    // thing in this message that can contain a comma of its own.
+    var head = 'wifi,' + res[1] + ',' + res[2] + ',' + res[3] + ',';
+    setWifiStatus(res[1], res[2], res[3], message.substring(head.length));
   }
 
   if (res[0] == "setTab") {

@@ -307,6 +307,7 @@ void XCopyCommandLine::dispatch(const XCopyCommandDef *command, const XCopyArgs 
     case XCopyCmd::ip:         espQuery("ip");      break;
     case XCopyCmd::mac:        espQuery("mac");     break;
     case XCopyCmd::ssid:       espQuery("ssid");    break;
+    case XCopyCmd::rssi:       espQuery("rssi");    break;
     case XCopyCmd::websocket:  cmdWebsocket(args);  break;
     case XCopyCmd::scan:       cmdScan();           break;
     case XCopyCmd::ping:       espQuery("ping", 5000); break;
@@ -1844,7 +1845,10 @@ void XCopyCommandLine::cmdConnect(const XCopyArgs &args)
     _config->writeConfig();
 
     if (_esp->connect(ssid, password, 20000))
+    {
         Log << F("Connected to '") << ssid << F("'\r\n");
+        Log << F("Signal strength: ") << _esp->signal() << F("\r\n");
+    }
     else
         Log << F("Error: Connection to '") << ssid << F("' failed\r\n");
 

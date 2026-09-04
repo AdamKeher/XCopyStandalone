@@ -5,6 +5,80 @@ void ESPCommandLine::begin(WebSocketsServer *webSocket)
     _webSocket = webSocket;
 }
 
+/*
+   Signal strength of the network actually joined.
+
+   WiFi.RSSI() was read for the scan listing and nowhere else, so the one network
+   that matters - the one we are on - reported nothing anywhere. Everything that
+   says so now (the console, the status block, the browser pill) takes its
+   thresholds and its wording from here, rather than each inventing its own idea
+   of what a number like -70 means.
+
+   The buckets are the usual ones for 2.4GHz: -55 and better is as good as the
+   radio gets, -67 is comfortable for anything this device does, and below -75 a
+   link starts losing frames rather than merely being slow.
+
+   Bars run 1..4 whenever there is a network, so 0 means there is none. That is
+   the only thing the browser has to tell "no network" from "bad network".
+*/
+static const int32_t RSSI_EXCELLENT = -55;
+static const int32_t RSSI_GOOD = -67;
+static const int32_t RSSI_FAIR = -75;
+
+static uint8_t signalBars(int32_t rssi)
+{
+    if (rssi >= RSSI_EXCELLENT)
+        return 4;
+    if (rssi >= RSSI_GOOD)
+        return 3;
+    if (rssi >= RSSI_FAIR)
+        return 2;
+
+    return 1;
+}
+
+static const char *signalQuality(int32_t rssi)
+{
+    switch (signalBars(rssi))
+    {
+    case 4:
+        return "excellent";
+    case 3:
+        return "good";
+    case 2:
+        return "fair";
+    default:
+        return "weak";
+    }
+}
+
+// How well, without saying what to - for the lines that have already named the
+// network they are describing.
+static String signalLevel()
+{
+    if (WiFi.status() != WL_CONNECTED)
+        return F("not connected");
+
+    int32_t rssi = WiFi.RSSI();
+    String level = String(rssi);
+    level += F(" dBm (");
+    level += signalQuality(rssi);
+    level += ')';
+
+    return level;
+}
+
+// How well, and what to: the whole answer for somebody who typed "rssi". The
+// network goes last so the line still reads after a label - "Signal strength:
+// -52 dBm (good) on Home" - which is how both consoles print it.
+static String signalText()
+{
+    if (WiFi.status() != WL_CONNECTED)
+        return F("not connected");
+
+    return signalLevel() + F(" on ") + WiFi.SSID();
+}
+
 void ESPCommandLine::doCommand(String command)
 {
     // Arduino's char/char replace substitutes bytes without changing the length, so
@@ -43,6 +117,7 @@ void ESPCommandLine::doCommand(String command)
         Serial << "| ip                   | show ip address                                      |\r\n";
         Serial << "| mac                  | show mac address                                     |\r\n";
         Serial << "| ssid                 | show ssid                                            |\r\n";
+        Serial << "| rssi | signal        | signal strength of the network joined                |\r\n";
         Serial << "| gettime              | get time from NTP server                             |\r\n";
         Serial << "| echo <on|off>        | show ssid                                            |\r\n";
         Serial << "`----------------------'------------------------------------------------------'\r\n";
@@ -113,6 +188,14 @@ void ESPCommandLine::doCommand(String command)
     if (cmd == "ssid")
     {
         Serial << WiFi.SSID() << "\r\n"
+               << OK_EOC;
+
+        return;
+    }
+
+    if (cmd == "rssi" || cmd == "signal")
+    {
+        Serial << signalText() << "\r\n"
                << OK_EOC;
 
         return;
@@ -211,6 +294,7 @@ void ESPCommandLine::doCommand(String command)
 
         Serial << "Auto Connect: " << (WiFi.getAutoConnect() ? "True" : "False") << "\r\n";
         Serial << "SSID (" << WiFi.SSID().length() << "): " << WiFi.SSID() << "\r\n";
+        Serial << "Signal: " << signalLevel() << "\r\n";
         
         struct station_config conf;
         wifi_station_get_config(&conf);
@@ -324,8 +408,15 @@ void ESPCommandLine::doCommand(String command)
         }
 
         if (WiFi.status() == WL_CONNECTED)
-            Serial << "Connected to: " << ssid << "\r\nIP address: " << WiFi.localIP() << "\r\n"
+        {
+            // The browsers already open are watching for this, and would otherwise
+            // wait out a whole sample interval to hear about a network change.
+            broadcastWifiStatus();
+
+            Serial << "Connected to: " << ssid << "\r\nSignal: " << signalLevel()
+                   << "\r\nIP address: " << WiFi.localIP() << "\r\n"
                    << OK_EOC;
+        }
         else
             Serial << "Error connecting to: " << ssid << "\r\n"
                    << ER_EOC;
@@ -376,6 +467,89 @@ void ESPCommandLine::doCommand(String command)
 
     if (cmd != "")
         Serial << "Unknown command: '" << cmd << "'\r\n";
+}
+
+/*
+   The wire form the browser reads: wifi,<rssi>,<bars>,<quality>,<ssid>.
+
+   The SSID is last because it is the one field that can legitimately contain a
+   comma, and the browser splits the message on commas - so it takes the whole of
+   the tail rather than a field, the same way a log line does. bars is 0 when
+   there is no network at all, and the rest of the fields are then empty of
+   meaning rather than absent.
+
+   This goes straight out of the ESP rather than through the Teensy: the RSSI is
+   the radio's own knowledge, and routing it through the other processor would
+   spend its flash on relaying something it never has to know.
+*/
+String ESPCommandLine::wifiStatus()
+{
+    if (WiFi.status() != WL_CONNECTED)
+        return F("wifi,0,0,none,");
+
+    int32_t rssi = WiFi.RSSI();
+
+    String payload = F("wifi,");
+    payload += rssi;
+    payload += ',';
+    // (int) rather than the uint8_t: String appends an unsigned char as a number
+    // and a char as a character, which is a difference of one cast between "3"
+    // and an unprintable byte.
+    payload += (int)signalBars(rssi);
+    payload += ',';
+    payload += signalQuality(rssi);
+    payload += ',';
+    payload += WiFi.SSID();
+
+    return payload;
+}
+
+void ESPCommandLine::broadcastWifiStatus()
+{
+    // Remembered here rather than in the caller, so every path that tells the
+    // browsers something also stops wifiUpdate() repeating it a moment later.
+    bool connected = WiFi.status() == WL_CONNECTED;
+    _wifiRssi = connected ? WiFi.RSSI() : 0;
+    _wifiBars = connected ? signalBars(_wifiRssi) : 0;
+    _wifiSsid = connected ? WiFi.SSID() : String();
+
+    String payload = wifiStatus();
+    _webSocket->broadcastTXT(payload);
+}
+
+// Greets one client, rather than telling every browser what only the new one is
+// missing. The same reason the busy pin is sent this way on connect.
+void ESPCommandLine::sendWifiStatus(uint8_t num)
+{
+    String payload = wifiStatus();
+    _webSocket->sendTXT(num, payload);
+}
+
+/*
+   Sampled, because there is nothing to hang it on: the radio drifts a decibel or
+   two continuously and announces none of it. A frame goes out when the bar count
+   moves, when the network changes, or when the number has moved far enough to be
+   worth redrawing - not for every wobble, which at one frame per browser per
+   sample would be pure noise on an idle link.
+*/
+static const uint32_t WIFI_SAMPLE_MS = 5000; // how often the radio is asked
+static const int32_t WIFI_RSSI_STEP = 3;     // dBm of drift worth a redraw
+
+void ESPCommandLine::wifiUpdate()
+{
+    if (millis() - _wifiSampledAt < WIFI_SAMPLE_MS)
+        return;
+    _wifiSampledAt = millis();
+
+    bool connected = WiFi.status() == WL_CONNECTED;
+    int32_t rssi = connected ? WiFi.RSSI() : 0;
+    uint8_t bars = connected ? signalBars(rssi) : 0;
+    String ssid = connected ? WiFi.SSID() : String();
+
+    if (bars == _wifiBars && ssid == _wifiSsid && abs(rssi - _wifiRssi) < WIFI_RSSI_STEP)
+        return;
+
+    broadcastWifiStatus();
 }
 
 void ESPCommandLine::printPrompt()

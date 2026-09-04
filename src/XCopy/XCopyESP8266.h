@@ -42,6 +42,10 @@ public:
   void clearHighlightedBlocks() { sendWebSocket("clearHighlightedBlocks"); }
 
   String Version();
+  // Signal strength of the network joined, worded by the ESP. The thresholds and
+  // the names for them are the radio's own knowledge, so this side asks rather
+  // than holding a second opinion about what a given number means.
+  String signal() { return sendCommand("rssi", true); }
   void setEcho(bool status);
   void Update();
   void reset();

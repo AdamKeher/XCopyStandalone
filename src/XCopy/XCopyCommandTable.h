@@ -118,6 +118,7 @@ enum class XCopyCmd : uint8_t
     ip,
     mac,
     ssid,
+    rssi,
     websocket,
     scan,
     ping,

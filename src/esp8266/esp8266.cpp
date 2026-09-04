@@ -379,6 +379,10 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t lenght)
       busyState = digitalRead(busyPin);
       String status = "pinStatus," + String(busyState);
       webSocket.sendTXT(num, status);
+      // And with the signal strength, which changes rarely enough that a browser
+      // arriving between broadcasts would otherwise show nothing for five
+      // seconds - or forever, on a link steady enough never to move a bar.
+      command.sendWifiStatus(num);
       break;
     }
     // if new text data is received 
@@ -599,4 +603,5 @@ void loop(void)
   server.handleClient();
   MDNS.update();
   command.Update();
+  command.wifiUpdate();
 }

@@ -682,6 +682,13 @@
                 <div id="websocketStatus" class="alert alert-warning float-end statusfooter" role="alert">
                     Connecting&hellip;
                 </div>
+                <!-- Signal strength of the network the device is on. Filled by
+                     setWifiStatus() from the ESP's own broadcast, and greyed back to
+                     a dash whenever the websocket drops, since none of it is known
+                     while the link to the device is down. -->
+                <div id="wifiStatus" class="alert alert-secondary float-end statusfooter" role="alert" title="Wi-Fi signal strength">
+                    <i class="fa-solid fa-wifi"></i> &mdash;
+                </div>
             </div>
         </footer>
     </body>

@@ -25,6 +25,10 @@ public:
   String getCommand() { return _command; }
   void printPrompt();
   void Update();
+  // Signal strength, out to the browser. sendWifiStatus() greets one client with
+  // it; wifiUpdate() watches for it moving and is called from loop().
+  void sendWifiStatus(uint8_t num);
+  void wifiUpdate();
 
 private:
   String _command;
@@ -35,6 +39,15 @@ private:
   bool _localecho = true;
   WebSocketsServer *_webSocket;
   const int cancelPin = 13;
+
+  String wifiStatus();
+  void broadcastWifiStatus();
+  // What the browser was last told, so a radio that drifts a decibel at a time
+  // does not redraw the pill for every wobble. See wifiUpdate().
+  uint32_t _wifiSampledAt = 0;
+  int32_t _wifiRssi = 0;
+  uint8_t _wifiBars = 0;
+  String _wifiSsid;
 
   char OK_EOC[5] = "OK\r\n";
   char ER_EOC[5] = "ER\r\n";

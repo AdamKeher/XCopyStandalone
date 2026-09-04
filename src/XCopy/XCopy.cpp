@@ -168,6 +168,7 @@ void XCopy::begin()
         else {
             if (_esp->connect(_config->getSSID(), _config->getPassword(), 20000)) {
                 Log << XCopyConsole::success(F("OK\r\n"));
+                Log << F("Signal strength: ") << _esp->signal() << F("\r\n");
                 // update time from NTP server
                 // -------------------------------------------------------------------------------------------
                 Log << F("Updating time from NTP server: ");

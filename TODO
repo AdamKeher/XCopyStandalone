@@ -1,52 +1,262 @@
-Project Resumption:
+XCopy Standalone:
+
+  Todo+ format: ☐ open, ✔ done, ✘ cancelled. An indented line with no marker is a
+  note on the task above it.
+
+  Reviewed 26-09-04 against the tree at v737.26. The list had not been touched
+  since v713 and around eighty commits landed under it in the meantime, so items
+  the code showed as already built were closed, and items whose premise no longer
+  holds were cancelled with the reason. Both are listed together below the rule.
+  Closures from that pass carry a date with no time, which is what tells them
+  apart from the ones stamped by hand as the work happened.
+
+  Everything above the rule is open, and was re-worded against the code so that
+  each line says what is actually wrong and where.
+
+Firmware:
+
+  Drive & Disk:
+    ☐ A retry count of 0 fails every read and write outright
+      readDiskTrack() is `while (readResult == -1 && retries < retryCount)`, so a
+      count of 0 never enters the loop, never attempts the read, and returns the
+      -1 it was initialised with. writeDiskTrack() has the same shape, and the
+      settings menu allows 0. XCopyDisk.cpp:304, XCopyDisk.cpp:355.
+    ☐ Gather the drive timings into one struct, and persist them
+      stepPulseUs, stepIntervalUs, dirSettleUs, sideSettleUs, seekSettleUs and
+      motorSpinupMs are six file scope globals with a setter each, and XCopyConfig
+      carries none of them - a drive tuned by hand is retuned on every boot.
+      XCopyFloppy.cpp:143.
+    ☐ Implement the disk delay setting
+      getDiskDelay() is read in exactly two places and both are the menu line that
+      displays it. Nothing in the copy path waits on it. XCopy.cpp:252, :1549.
+    ☐ Verify what writebin wrote
+      writeFileToBlocks() writes each track and reports the retries it took, but
+      never reads a track back to compare it against the file. XCopyDisk.cpp:1736.
+    ☐ Say head rather than side outside the logical track numbering
+      XCopyGeometry.h settled cylinder against logical track. The other half of
+      the rename did not happen: DiskLocation::side(), drawTrack() and
+      sideSettleUs all still say side for what the drive calls a head.
+
+  Console:
+    ☐ One command line implementation for both processors
+      ESPCommandLine::doCommand() and XCopyCommand are still two hand written
+      parsers for the same job. The Teensy side gained a command table, an
+      interpreter, tab completion and history at v728.26 and the ESP side did
+      not. src/esp8266/ESPCommand.cpp:8.
+    ☐ cd and pwd for mounted volumes
+      mount, dir, cat, cp, rm and mkdir all take a whole path (dir ADF0:c), so
+      there is nowhere to stand and nothing for cd to change. Only worth building
+      if the typing turns out to be annoying in use.
+
+  Web UI:
+    ☐ Delete files from the browser's file browser
+      rm landed on the console at v732.26. sdcard.js has no delete at all.
+    ☐ Show the signal strength of the network actually joined
+      RSSI is read for the scan command and thrown away everywhere else.
+      ESPCommand.cpp:242.
+    ☐ Tell the Web UI that the cancel wire is present
+      detectCancelPin() runs at startup and its result goes to the log and nowhere
+      else, so the browser cannot know whether to offer the button.
+      XCopy.cpp:151, XCopy.cpp:532.
+    ☐ Test for a disk before sending a block to the disk monitor
+      sendBlock() seeks and reads with no diskChange() check, so an empty drive
+      reads as a failed track rather than a No Disk Inserted message.
+      XCopy.cpp:874.
+    ☐ Disk monitor: view a mounted ADF, not only the drive
+      Mounting made an image readable through the same code as the drive at
+      v730.26, so there is a second source to point the viewer at now.
+    ☐ Disk monitor: edit a sector and write it back
+      One sector means reading the whole track, replacing 512 bytes of it and
+      writing all eleven back. That is why XCopyAdfFloppyDriver is read only, and
+      it is the same piece of work.
+    ☐ Keep the Sass sources out of the LittleFS image
+      data/css holds eleven .scss files that are only inputs to default.css.
+      LittleFS rounds every file up to an 8KB block and the partition is already
+      sized around a 730KB directory. platformio.ini:120.
+    ☐ Send the flux samples as binary
+      The ~10sec a disk test spends on flux notification was mostly the link, and
+      that went to 1 Mbaud. What is left is one decimal string per sample.
+    ☐ Copy files to the SPI flash from the browser
+      Upload lands on the SD card and verifies itself. The flash has no path in
+      from the web UI at all.
+    ☐ Host the Giants manual and link it from the Web UI
+
+  ESP & Wireless:
+    ☐ Update the SSID and Password menu items when connect is used
+      cmdConnect() writes the config but never touches ssidMenuItem->text or
+      passwordMenuItem->text, so the settings menu shows the old network until the
+      next boot. XCopyCommand.cpp:1842, XCopy.cpp:258.
+    ☐ Delete and recreate _config properly at startup
+      delete _config sits commented out in ten places, left that way while testing
+      because the pointer is shared with XCopyCommand. Delete it at startup and
+      recreate it in the connect command. XCopy.cpp:266, and nine more.
+
+  Memory & Flash:
+    ☐ Enclose the remaining strings in F()
+      227 are done. What is left is mostly String concatenation in the web
+      broadcast paths, which F() cannot help with on its own.
+    ☐ Decide whether .begin() is still worth removing
+      Twenty classes take this shape now against the handful that did in 19, and
+      it is the Arduino idiom. Worth settling the question before starting. The
+      other half of the original line - change local variables to pointers - is
+      the opposite of what the scratch arena does, so it is not carried over.
+
+Unverified - reported in 19, against code rewritten since:
+  Each of these needs a re-test on hardware before it is worth acting on. If one
+  no longer reproduces, cancel it; if it does, it needs a repro written down.
+
+  ☐ Audio fires more than once when scrolled past a screenful of entries
+  ☐ Crash entering a sub directory with files, backing out, entering an empty one,
+    moving up and down, and backing out again
+    The listing has been rewritten twice since this was seen (b82393d, cbb7822)
+    and again at v726.26, and the sibling crash next to it was fixed in 19.
+  ☐ SerialFlash create / createErasable, and why the config write works
+    Two lines said this twice - SdFat seems to have broken SerialFlash create /
+    createErasable, and have a look at configfile write and createerasable, why
+    does it currently work. writeConfig() still removes the file and creates it
+    again, which the 19 archive claims was replaced by an overwrite.
+    XCopyConfig.cpp:180.
+  ☐ diskname returns NDOS for a DOS disk until the drive is reset
+  ☐ The download occasionally resends the file
+    Suspected to be Content-Length at the time. The ESP now calls
+    setContentLength(filesize) before streaming and the transfer has an idle
+    timeout, so this may already be gone. esp8266.cpp:180.
+  ☐ ADFlib sometimes crashes on NDOS disks - try workbnch then mutation
+  ☐ Sound is lost after rawDraw, root cause never found
+    The temporary fix that suppressed drawing while audio played is no longer in
+    XCopyGraphics, so this either went away or is live and unguarded.
+
+Hardware:
+
+  PCB v3:
+    ☐ Swap card detect and write protect on the SD card footprint, and reroute
+    ☐ Fix the joystick footprint and reroute
+
+Someday:
+
+  Display:
+    ☐ Add demo effects of rotating xcopy logo
+  Audio:
+    ☐ Add music player source for about screen
+  Board:
+    ☐ Tests
+      ☐ Make test cable for Amiga drive as source
+      ☐ Make test board for external floppy from PC
+      ☐ Make test adapter board to connect
+        The original line ends there. Connect what to what?
+    ☐ Design
+      ☐ Design board to have teensy and ESP8266 directly mounted
+      ☐ Design board to allow selection between PC and Amiga drive as source
+      ☐ Design board to allow use as external drive
+    ☐ Stretch
+      ☐ Write a Teensy FD emulator for the Amiga
+
+---------------------------------------------------------------------------------------------------
+
+Closed by the 26-09-04 review:
+  Open items the code showed as built, or whose premise no longer holds. The
+  version in brackets is where the work landed.
+
+  Built since v713:
+    ✔ Run the xterm console over the websocket directly @done(26-09-04)
+      term.write() is driven from websocket.js, and the connection layer was
+      rebuilt around real socket state (247bc5e).
+    ✔ File upload not reliable - sometimes too short @done(26-09-04)
+      Per chunk ACK in place of open loop pacing, and a 4096 byte Serial1 RX ring
+      (2d46027).
+    ✔ Add uploaded filesize does not match saved filesize error @done(26-09-04)
+      CRC32 and byte count receipt; upload.js verifies ok/size/crc32 rather than
+      treating any 200 as success (2d46027).
+    ✔ Speed up file transfer @done(26-09-04)
+      The ESP link went from 115200 to 1 Mbaud (2d46027, XCopyProtocol.h:51).
+    ✔ Increase serial baud rate @done(26-09-04)
+      Same change. Was listed twice, under file transfer and under diskflux.
+    ✔ Migrate XCopyDisk to XCopyFloppy routines @done(26-09-04)
+      The driver became a class (4f2730a); XCopyDisk has no hardware access left
+      and every MFM routine lives in XCopyFloppy.
+    ✔ Add cursor to logging console @done(26-09-04)
+      XCopyLineEditor: cursor, CSI sequences, history and tab completion (v728.26).
+    ✔ Increase ping time out @done(26-09-04)
+      Superseded - liveness is stamped from any inbound frame and pings are
+      suppressed entirely while the device is busy (247bc5e).
+    ✔ Fix time commands @done(26-09-04)
+      time, timezone and settime came through the table driven rewrite (v728.26).
+    ✔ Implement and test manual set time and get time from PC @done(26-09-04)
+      settime --epoch <n> (XCopyCommandTable.cpp:127).
+    ✔ Fix command line so it doesn't repeat a command for CR+LF @done(26-09-04)
+      Both editors submit on 0x0d or 0x0a and an empty line returns early
+      (XCopyLineEditor.cpp:119, XCopyCommand.cpp:208, ESPCommand.cpp:406).
+    ✔ Add paging of large directories @done(26-09-04)
+      The listing is a window onto the list and scrolls under the cursor
+      (XCopyDirectory.h:82); MAXSCREENITEMS no longer exists.
+    ✔ Add support for floppy drive in myinit, myread etc @done(26-09-04)
+      XCopyAdfFloppyDriver - the disk in the drive as an ADFlib device (v731.26).
+    ✔ Implement myFunctions @done(26-09-04)
+      ADFlib 0.10.7 with real drivers instead of edits to the library (v729.26).
+    ✔ Add support for mount, dir, cd @done(26-09-04)
+      mount, unmount, dir, cat, cp, rm and mkdir over images and DF0: (v730.26,
+      v731.26, v732.26). cd was the one piece not built and is re-raised above.
+    ✔ Copy files to the SD card from the PC @done(26-09-04)
+      Browser upload, verified end to end. The flash half is re-raised above.
+    ✔ Add ESP reset (pin 25) and program (gpio0, pin 26) @done(26-09-04)
+      PIN_ESPRESETPIN and PIN_ESPPROGPIN are driven for programming mode, and OTA
+      arrived on top of it (XCopyPins.h:14).
+    ✔ Move the modified SDFat library into local library @done(26-09-04)
+      lib/SdFat.
+    ✔ Report weak tracks in diskcopy, test and flux @done(26-09-04)
+      readDiskTrack() marks a weak track yellow on the TFT, the console map and
+      the web grid, and the ADF log records a per track count (XCopyDisk.cpp:314).
+    ✔ Add remaining serial commands @done(26-09-04)
+      49 commands in a table with help and completion (v728.26).
+    ✔ Hookup SD card detect @done(26-09-04)
+      PIN_CARDDETECT is wired and read, and drives the insert and eject audio.
+      The v3 footprint fix is a separate item and is still open.
+
+  Premise no longer holds:
+    ✘ Reduce the stream object from streamSizeHD to streamSizeDD (13k) @cancelled(26-09-04)
+      Written while HD support is removed. It is not: densityDetect() and
+      hdDisk() are live and readTrack() uses the HD sized stream.
+    ✘ Delete _disk when not being used to free up memory @cancelled(26-09-04)
+      _disk is a member object, not a heap pointer, and the scratch arena is how
+      big transient buffers are found now (XCopyScratch).
+    ✘ Only create ADFx when needed @cancelled(26-09-04)
+      The ADFx classes were renamed XCopyX in 19. Mount slots replaced the idea.
+    ✘ Rewrite track read, track write and MFM encode / decode @cancelled(26-09-04)
+      Rewrite to what end was never stated, so nothing could ever finish it. The
+      routines were moved into a class and hardened since - bounds checked decode,
+      bounded index waits, a corrected decode clock. Raise something specific if
+      there is still a problem with them.
+    ✘ Move graphics calls into classes and have all items called update @cancelled(26-09-04)
+      Too vague to act on and no longer describes the code.
+    ✘ Investigate bugs with multiple << and printf @cancelled(26-09-04)
+      No repro was recorded and the console has been rebuilt since.
+    ✘ Test different S7735 libraries to see if faster @cancelled(26-09-04)
+      The redraw cost this was chasing was fixed differently: two changed rows are
+      repainted instead of the whole screen (v726.26).
+
+---------------------------------------------------------------------------------------------------
+
+Done:
+
 v713.2023:
   ✔ Build option for multipe board versions @done(23-04-17 14:26)
     ✔ LCD tab option
     ✔ LCD orientation
     ✔ Joystick buttons
   ✔ Add interrupt driven audio sample for SD card insert and eject while in menus @done(23-04-17 15:48)
-  ☐ File browser
-    ☐ Implement file delete
-  ☐ Add wifi strength output
 
-v712.2022:
-  ☐ xterm.js web log
-    ☐ Investigate direct web sockets functionality
-    ☐ Investigate bugs with multiple << and printf
-  ☐ File transfer
-    ☐ Figure out why the download function occasionly resends the file. Probably something to do with contentlength, as thats when it was noticed
-    ☐ Try to spead it up, it's sloooooooooooow
-    ☐ File upload not reliable - sometimes too short.
-    ☐ Add uploaded filesize does not match saved filesize error
-  ☐ DiskView feature
-    ☐ Add adf support
-    ☐ Add sector edit / save support
-  ☐ Implement disk delay. Currently in setup but not in code
-  ☐ Add manual from Giants
-    ☐ Convert to HTML and host on aksevenfour
-    ☐ Link manual into WebUI
 v711.2022:
-  ☐ Rewrite floppy routines
+  Rewrite floppy routines:
     ✔ Rewrite drive seek routines @done(22-03-26 16:03)
-    ☐ Configurable Delays
-      ☐ Move timing options to a common struct
+    Configurable Delays:
       ✔ Create settings options for most common item @started(20-03-26 21:39) @done(22-03-28 13:33) @lasted(2y1d15h54m53s)
-    ☐ Rewrite track write routines
-    ☐ Rewrite track read routines
-    ☐ Rewrite MFM decode / encode routines
-    ☐ Migrate XCopyDisk to XCopyFloppy routines
-  ☐ Writebin / write binary file
-    ☐ Add write verification
-v711.2022:
-  ☐ Add auto copy feature for Giants
-v709.2022:   
+v709.2022:
   ✔ Boot Block @done(22-05-20 17:19)
     ✔ Add CRC32 to boot block output for 'boot' command @done(22-05-20 13:05)
     ✔ Add XCopyBrainFile class to identify bootblocks in brainfile.json on SD Card @done(22-05-20 14:48)
     ✔ Add bootblock identification to 'boot' command @done(22-05-20 14:48)
     ✘ Compact brainfile @cancelled(22-05-20 17:18)
     ✔ Move brainfile to Flash memory @done(22-05-20 17:18)
-  ☐ Add cursor to logging console 
   ✔ Add new device pin out image from Giants @done(22-05-03 01:19)
   ✔ Add writebin / write binary file to disk command @done(22-05-09 14:25)
   ✔ Compiler warnings @done(22-05-16 15:49)
@@ -67,7 +277,6 @@ v709.2022:
   ✔ Crashes when directory too large in ADF write - WebUI OK @done(22-04-24 12:59)
     ✔ Memory footprint decreased but this is still an issue @done(22-04-24 12:59)
   WebUI
-    ☐ Increase ping time out
     ✔ Fix cancel button @done(22-05-16 15:49)
     ✔ Fix source and destination icons, mode status text @done(22-05-04 14:24)
       ✔ Test Disk @done(22-05-04 13:42)
@@ -94,16 +303,15 @@ v709.2022:
       ✔ Format Disk @done(22-05-04 13:43)
         ✔ Web UI @done(22-05-04 13:43)
         ✔ TFT @done(22-05-04 13:43)
-    ☐ Add cancel button to WebUI
+    Add cancel button to WebUI:
       ✔ Wire Teensy IO32 / JOY_LEFT to Esp8266 GPIO13 @done(22-04-27 14:51)
       ✔ Set pullup @done(22-04-27 15:04)
       ✔ Add cancel web co?mmand @done(22-04-27 15:04)
       ✔ Detect presence of cancel wire @done(22-04-27 15:48)
-      ☐ Notify WebUI that cancel wire is present
       ✔ Updated PCB layout to reflect hardware change @done(23-04-17 14:27)
     ✔ Update mode, status and diskname for all disk activities @done(22-05-04 14:24)
     ✔ Change javascript states from lowercase 'to' to capitalised 'To' i.e copyFlashtoDisk -> copyFlashToDisk to match teensy states @done(22-05-04 13:39)
-    ☐ Add DiskView feature
+    Add DiskView feature:
       ✔ Add ASCII search feature @done(22-05-09 14:24)
       ✔ Add write to copy blocks to SD card feature @done(22-05-09 14:24)
       ✔ sendBlock command from WebUI @done(22-05-01 16:39)
@@ -116,7 +324,6 @@ v709.2022:
       ✔ Show histogram @done(22-05-03 00:41)
       ✔ Add labels to vertical tick lines @done(22-05-03 00:52)
       ✔ Add dummy data to hex dump and ascii dump to make screen static / not bounce on update @done(22-05-03 13:13)
-      ☐ Test for disk present
     ✔ Don't send ping command while device is busy @done(22-04-25 12:55)
     ✔ Update UI @done(22-04-15 14:53)
       ✔ Update mode / status table th's to 30/70% width in css @done(22-04-20 13:34)
@@ -125,7 +332,6 @@ v709.2022:
         ✔ Increase websocket ping / pong health check timeout from 1000ms to 3000ms @done(22-04-15 23:09)
         ✔ write flux commands directly to serial with not wait for repsonse @done(22-04-15 23:09)
     ✔ Move CSS to Saas @done(22-04-14 17:44)
-      ☐ Exclude Saas files from LitteFS
     ✔ Switch web ui to correct tab when starting function from teensy menu @done(22-04-14 16:30)
     ✔ Improve websocket server / client disconnection code @done(22-04-14 13:35)
     ✔ Flux disk does not clear the WebUI @done(22-04-13 23:36)
@@ -169,7 +375,6 @@ v709.2022:
     ✔ Flash esp led when web request being processed @done(22-04-11 14:57)
     ✔ Refactor ESP8266 SPIFFS code to LittleFS @done(22-04-14 15:39)
   Command Line
-    ☐ Fix time commands
     ✔ Add 'pass' command to enter passthrough mode @done(22-05-01 16:31)
     ✔ Fix esp command output @done(22-04-27 14:00)
     ✔ Added busy state to ls command @done(22-04-27 14:03)
@@ -225,14 +430,11 @@ v709.2022:
     ✔ Move XCopyStandalone to PlatformIO and include libraries @done(21-03-26 16:00)
     Projects:
       ✔ Move ESP8266 webserver to PlatformIO and include libraries @done(21-03-26 16:00)
-      ✔ Fix flash writing error due to early exit of serialflash write routing. Added hacky delay between writes @done(22-03-26 15:59) 
+      ✔ Fix flash writing error due to early exit of serialflash write routing. Added hacky delay between writes @done(22-03-26 15:59)
 
 ---------------------------------------------------------------------------------------------------
 
   PCB:
-    V3 PCB:
-      ☐ Fix footprint SD card footprint to swap card detect and write protect pins and reroute
-      ☐ Fix footprint and reroute joystick
     Todo:
       ✔ Move schematic and PCB layout to Kicad @done(23-04-17 14:28)
       ✔ Modify SPI flash ram footprint to expand legs for easier soldering @done(23-04-17 14:27)
@@ -244,7 +446,6 @@ v709.2022:
     SD Card:
       ✔ Reroute SDCS away from LDO @done(22-03-30 23:50)
       ✔ Change SD card to micro sd reader to make room for ESP module @done(22-03-28 00:09)
-      ☐ Hookup SD card detect
       ✔ Fix schematic @done(23-04-17 14:28)
       ✔ Reroute to make neater @done(23-04-17 14:28)
     ESP:
@@ -274,14 +475,7 @@ v709.2022:
 ---------------------------------------------------------------------------------------------------
 
 Legacy:
-  Directory:
-    ☐ Add paging of large directories > MAXSCREENITEMS
-    ☐ Audio fires more than once when scrolled past MAXSCREENITEMS
-    ☐ Seems to crash if you enter a sub dir containing files, go back up, enter empty sub dir, move up and down, go back and crashes
   Disk:
-    ☐ Fails if retry count is 0
-    ☐ Have a look at configfile write and createerasable. Why does it currently work?
-    ☐ Report weak tracks in diskcopy, test and flux
     ✔ Add ADFlib for volume validation @done(19-03-12 23:54)
     ✔ Write a log or bmp to record read history with ADF files @done(19-03-12 13:21)
       ✔ Add CRC32 hash of disk and CRC16 hash of tracks to log file @done(19-03-12 13:21)
@@ -290,10 +484,6 @@ Legacy:
     ✔ Added weak tracks to track reading @done(19-03-11 10:50)
     ✔ Increased the number of retries in FloppyDrive / MAXRETRIES @done(19-03-11 10:50)
   ADFLib:
-    ☐ Add support for floppy drive in myinit, myread etc
-    ☐ Implement myFunctions
-    ☐ Add support for mount, dir, cd
-    ☐ Sometimes crashes with NDOS disks. Try workbnch then mutation
     ✔ track down memory leak when file open fails @done(19-03-16 10:59)
     ✔ mem leak when adf file doesn't contain a volume / NDOS  disk (72bytes) @done(19-03-16 10:59)
     ✔ mem leak when file is missing (~16bytes) - ADFlib didn't free volume when mounting disk failed @done(19-03-16 09:42)
@@ -301,20 +491,10 @@ Legacy:
     ✔ remove hardcoding of workbnch.adf and pass in param @done(19-03-15 22:13)
   HTTP:
     Interface
-      ☐ Copy files to XCopy Flash and SD Card from PC
-      ☐ Rename ADF files while copying
-      ☐ Speed up diskflux notification as it adds ~10sec to disk test
-        ☐ Send binary data. Attempt
-        ☐ Increase serial baud rate
-      ☐ Fix flux lerp function
       ✔ Use bootstrap or angular for HTML @done(22-04-10 23:18)
     ESP8266EX
-      ☐ Add reset (rst low / pin 25) and program (gpio0 low / pin 26)
       ✔ Add seperate debugging menu item for Serial Passthrough Mode and ESP8266 Programming Mode @done(22-04-10 23:18)
-    Wireless
-      ☐ Fix settings menu SSID and Password menu items to udpate when 'connect <ssid> <password>' command issued
     General
-      ☐ Delete _config removed from xcopy.begin() while testing due to passing through to xcopycommand. delete it at startup and recreate in connect command
       ✔ Add flux to web interface @done(19-03-24 16:16)
       ✔ Add getPinStatus and update interface when webpage initially loads. @done(19-03-24 16:16)
       ✔ Use a pin to reflect busy to ESP8266 and communicate over existing serial port to send commands @done(19-03-23 15:32)
@@ -328,48 +508,11 @@ Legacy:
       ✔ Speed up websocket command, immediate exit, no waiting when timeout is -1 @done(19-03-23 15:31)
       ✔ Add timeout function and instant exit on completion for esp8266 functions @done(19-03-23 15:31)
       ✔ Implement websockets for two way updates @done(19-03-23 15:31)
-  Graphics:
-    ☐ Fix lost sound after rawDraw
-      ☐ Investigate actual root cause
   Refactor:
-    ☐ Reduce memory footprint
-      ☐ While HD support is removed, reduce stream object by changing streamSizeHD to streamSizeDD (13k!)
-      ☐ Get rid of .begin and migrate code to constructors and change local variables to pointers
-      ☐ Delete _disk when not being used to free up memory
-      ☐ Only create ADFx when needed, move the creation and deletion of them into the commands
-      ☐ Enclose all strings with F() to free memory
-    ☐ Make commandline parent class with virual doCommand method and call from both ESP and Teensy
-    ☐ Move the modified SDFat library into local library
-    ☐ Change references from side to head and use cylinder when not reffering to logical track
-    ☐ Refactor code to move graphics calls in to classes and have all items called update
     ✔ Move the modified FastCRC library into local library @done(19-03-12 11:54)
     General:
-      ☐ Fix command line so it doesn't repeat a command for CR+LF
-      ☐ Implement and test manual set time and get time from PC
       ✔ Add volume to settings @done(19-03-12 15:18)
-  Bugs:
-    ☐ SdFat seems to have broken SerialFlash create / createErasable
-    ☐ Sometimes system gets into state where diskname returns NDOS for DOS disks, why? Drive reset / setup required?
-  Low Priority:
-    Other:
-      ☐ Add remaining serial commands
-    Display:
-      ☐ Test different S7735 libraries to see if faster
-      ☐ Add demo effects of rotating xcopy logo
-    Audio:
-      ☐ Add music player source for about screen
-    Board:
-      ☐ Tests
-        ☐ Make test cable for Amiga drive as source
-        ☐ Make test board for external floppy from PC
-        ☐ Make test adapter board to connect 
-      ☐ Desing
-        ☐ Design board to have teensy and ESP8266 directly mounted
-        ☐ Design board to allow selection between PC and Amiga drive as source
-        ☐ Design board to allow use as external drive
-      ☐ Stretch
-        ☐ Write a Teensy FD emulator for the Amiga
-        
+
 Archive:
   ✔ Check ADF file size before using - shows filenames in red if unexpected filesize @done(19-03-10 14:27) @project(Todo.Disk Copy)
   ✔ Copy disk to ADF needs to support creating a dir and auto naming @done(19-03-10 13:28) @project(Todo.Disk Copy)
