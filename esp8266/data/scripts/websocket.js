@@ -434,6 +434,10 @@ function onWebSocketMessage(msg) {
     headCalConfig(res[1], res[2], res[3], res[4], res[5], res[6], res[7], res[8], res[9]);
   }
 
+  if (res[0] == "dtState") {
+    dtState(res[1], res[2], res[3], res[4], res[5], res[6], res[7], res[8]);
+  }
+
   if (res[0] == "setState") {
     switch (res[1]) {
       case '3':

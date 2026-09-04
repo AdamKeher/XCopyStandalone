@@ -100,6 +100,7 @@ enum class XCopyCmd : uint8_t
     hist,
     rpm,
     headcal,
+    drivetoolkit,
     name,
     print,
     read,

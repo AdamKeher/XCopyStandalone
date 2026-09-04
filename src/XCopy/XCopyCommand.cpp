@@ -288,6 +288,7 @@ void XCopyCommandLine::dispatch(const XCopyCommandDef *command, const XCopyArgs 
     case XCopyCmd::hist:       cmdHist();           break;
     case XCopyCmd::rpm:        cmdRpm(args);        break;
     case XCopyCmd::headcal:    cmdHeadCal(args);    break;
+    case XCopyCmd::drivetoolkit: cmdDriveToolkit();  break;
     case XCopyCmd::name:       cmdName();           break;
     case XCopyCmd::print:      cmdPrint();          break;
     case XCopyCmd::read:       cmdRead(args);       break;
@@ -1600,6 +1601,15 @@ void XCopyCommandLine::cmdHeadCal(const XCopyArgs &args)
     // pattern of owning the console in a loop: that would starve the ESP link
     // and the TFT for as long as somebody was adjusting the drive.
     _callback(_caller, "headCalibration," + args.subject());
+}
+
+void XCopyCommandLine::cmdDriveToolkit()
+{
+    // Same pattern as cmdHeadCal(): start the state and return. The toolkit draws
+    // its own table and takes the keyboard through the raw key hook, so owning the
+    // console in a loop here would starve the ESP link and the TFT for as long as
+    // somebody was poking at the drive.
+    _callback(_caller, "driveToolkit");
 }
 
 void XCopyCommandLine::cmdName()

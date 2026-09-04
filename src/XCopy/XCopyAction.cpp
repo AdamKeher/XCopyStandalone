@@ -17,6 +17,7 @@ XCopyState stateForAction(XCopyAction action)
     case XCopyAction::diskSearch:                    return diskSearch;
     case XCopyAction::modSearch:                     return modSearch;
     case XCopyAction::headCalibration:              return headCalibration;
+    case XCopyAction::driveToolkit:                  return driveToolkit;
     case XCopyAction::directorySelection:            return directorySelection;
     case XCopyAction::about:                         return about;
     case XCopyAction::showTime:                      return showTime;

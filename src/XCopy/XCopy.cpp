@@ -213,6 +213,7 @@ void XCopy::begin()
     _menu.addChild("Scan Free Blocks", XCopyAction::scanBlocks, parentItem);
     _menu.addChild("Compare Disk to ADF", XCopyAction::none, parentItem);
     _menu.addChild("Head Calibration", XCopyAction::headCalibration, parentItem);
+    _menu.addChild("Drive Toolkit", XCopyAction::driveToolkit, parentItem);
 
     debugParentItem = _menu.addItem("Debugging", XCopyAction::none);
 
@@ -577,6 +578,39 @@ void XCopy::onHeadCalKey(void *obj, char key)
         xcopy->exitHeadCalibration();
 }
 
+/*
+   The single way out of a drive toolkit session.
+
+   Every surface funnels through here - the joystick, the console key handler and
+   the browser - because leaving the state is not enough on its own. The toolkit
+   is holding select, motor and density wherever the operator left them, the index
+   interrupt is attached and the console is in raw key mode, and a drive left
+   selected with its motor running is how the next operation inherits a fault that
+   has nothing to do with it. end() releases the outputs; this puts back the rest.
+*/
+void XCopy::exitDriveToolkit()
+{
+    if (_xcopyState != driveToolkit)
+        return;
+
+    _command->setRawKeys(nullptr, nullptr);
+    _driveToolkit.panelEnd();
+    _driveToolkit.end();
+    _driveToolkit.sendClosed();
+    _audio.playBack(false);
+    setBusy(false);
+    _xcopyState = menus;
+    _command->printPrompt();
+}
+
+void XCopy::onDriveToolkitKey(void *obj, char key)
+{
+    XCopy *xcopy = (XCopy *)obj;
+
+    if (!xcopy->_driveToolkit.handleKey(key))
+        xcopy->exitDriveToolkit();
+}
+
 void XCopy::onWebCommand(void* obj, const String command)
 {
     // Log << "DEBUG::ESPCALLBACK::(" << command << ")\r\n";
@@ -762,6 +796,64 @@ void XCopy::onWebCommand(void* obj, const String command)
             xcopy->exitHeadCalibration();
         }
     }
+    // Drive toolkit. Only the start is accepted from any state; every control is
+    // ignored unless a session is actually running, so a browser tab left open on
+    // the panel cannot drive the interface lines during a disk copy.
+    else if (command == "driveToolkit") {
+        xcopy->startFunction(XCopyAction::driveToolkit);
+    }
+    else if (command.startsWith("dt") && xcopy->_xcopyState == driveToolkit) {
+        String param = "";
+        if (command.indexOf(",") > 0) {
+            param = command.substring(command.indexOf(",") + 1);
+        }
+
+        if (command.startsWith("dtSel")) {
+            xcopy->_driveToolkit.setSelect(param.toInt() != 0);
+        }
+        else if (command.startsWith("dtMot")) {
+            xcopy->_driveToolkit.setMotor(param.toInt() != 0);
+        }
+        else if (command.startsWith("dtDir")) {
+            xcopy->_driveToolkit.setDirection(param.toInt() != 0);
+        }
+        else if (command.startsWith("dtSide")) {
+            xcopy->_driveToolkit.setSideUpper(param.toInt() == 0);
+        }
+        else if (command.startsWith("dtDens")) {
+            xcopy->_driveToolkit.setDensity(param.toInt() != 0);
+        }
+        else if (command.startsWith("dtSticky")) {
+            xcopy->_driveToolkit.setSticky(param.toInt() != 0);
+        }
+        else if (command.startsWith("dtCyl")) {
+            xcopy->_driveToolkit.seekCylinder(param.toInt());
+        }
+        else if (command.startsWith("dtNudge")) {
+            xcopy->_driveToolkit.nudgeCylinder(param.toInt());
+        }
+        else if (command == "dtStep") {
+            xcopy->_driveToolkit.pulseStep();
+        }
+        else if (command == "dtRecal") {
+            xcopy->_driveToolkit.recalibrate();
+        }
+        else if (command == "dtClear") {
+            xcopy->_driveToolkit.clearCounters();
+        }
+        else if (command == "dtSafe") {
+            xcopy->_driveToolkit.releaseOutputs();
+        }
+        else if (command == "dtExit") {
+            xcopy->exitDriveToolkit();
+            return;
+        }
+
+        // Every control above changes something the three surfaces render, and the
+        // browser holds no state of its own - so it is told the outcome here rather
+        // than waiting up to a refresh interval to be told by update().
+        xcopy->_driveToolkit.sendState();
+    }
 }
 
 void XCopy::sendFile(String path) {
@@ -912,6 +1004,16 @@ void XCopy::startFunction(XCopyAction action, String param) {
         exitHeadCalibration();
     }
 
+    /*
+       And a toolkit session owns all of the same things, plus the state of every
+       output line. Leaving it by starting something else has to go through the
+       exit that releases them, or the next operation inherits a drive with select
+       and motor asserted behind its back.
+    */
+    if (_xcopyState == driveToolkit && action != XCopyAction::driveToolkit) {
+        exitDriveToolkit();
+    }
+
     // Consumed by processState() when the session opens. Always assigned, so a
     // cylinder given on one run cannot leak into the next.
     if (action == XCopyAction::headCalibration) {
@@ -1029,6 +1131,15 @@ void XCopy::navigateLeft()
     if (_xcopyState == headCalibration)
     {
         exitHeadCalibration();
+        return;
+    }
+
+    // The toolkit's screen is display only, so left is the one joystick control
+    // it has - and it must be this and not the generic fallback below, which
+    // would leave select and motor asserted.
+    if (_xcopyState == driveToolkit)
+    {
+        exitDriveToolkit();
         return;
     }
 
@@ -1416,6 +1527,11 @@ void XCopy::navigateSelect()
             // what the drive test used to do: that skipped _esp->setState() and so
             // the browser was never told the machine had entered the screen.
             startFunction(XCopyAction::headCalibration);
+            break;
+        }
+        case XCopyAction::driveToolkit:
+        {
+            startFunction(XCopyAction::driveToolkit);
             break;
         }
         case XCopyAction::setDiskDelay:
@@ -1853,6 +1969,34 @@ void XCopy::processState()
             }
 
             _headCal.update();
+            break;
+        }
+        case driveToolkit:
+        {
+            /*
+               Same shape as headCalibration above: one bounded sample per visit
+               and then straight back out, so update() keeps pumping
+               _command->Update() and _esp->Update() between refreshes. That is the
+               whole reason the toolkit can be driven from the console and the
+               browser at all.
+
+               Nothing here may touch _xcopyState except on the way out, or the
+               do/while around this switch will spin.
+            */
+            if (_drawnOnce == false)
+            {
+                _driveToolkit.begin(&_graphics, _esp, &_floppy);
+                _driveToolkit.drawStatic();
+                _driveToolkit.panelBegin();
+                _driveToolkit.sendState();
+                _esp->setTab("drivetoolkit");
+                // Both the USB console and the browser terminal funnel through
+                // processKey(), so one hook serves both.
+                _command->setRawKeys(this, onDriveToolkitKey);
+                _drawnOnce = true;
+            }
+
+            _driveToolkit.update();
             break;
         }
         case diskSearch:
