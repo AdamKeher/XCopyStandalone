@@ -248,6 +248,47 @@ static void test_parse_options_in_any_order(void)
                              parse("readscp -file my.scp -revs 3 -cyls 0-83").c_str());
 }
 
+/*
+   diskinfo, which is the one command with two shapes: -file analyses an image and
+   wants no disk, everything else reads the drive and wants no card. The table
+   carries neither NEEDS_DISK nor NEEDS_SD because of it, so what is checked here
+   is that the grammar still holds the two apart.
+*/
+static void test_diskinfo_options(void)
+{
+    TEST_ASSERT_NOT_NULL(xcopyFindCommand(String("diskinfo")));
+    TEST_ASSERT_NOT_NULL(xcopyFindCommand(String("di")));
+
+    TEST_ASSERT_EQUAL_STRING("(nothing)", parse("diskinfo").c_str()); // the drive, whole disk
+    TEST_ASSERT_EQUAL_STRING("-cyls=0-83", parse("diskinfo -cyls 0-83").c_str());
+    TEST_ASSERT_EQUAL_STRING("-side=1", parse("diskinfo -side 1").c_str());
+    TEST_ASSERT_EQUAL_STRING("-side=both", parse("diskinfo -side both").c_str());
+    TEST_ASSERT_EQUAL_STRING("-file=a.scp", parse("diskinfo -file a.scp").c_str());
+
+    // Table order again, not the order they were typed in.
+    TEST_ASSERT_EQUAL_STRING("-cyls=0-83 -side=0 -file=a.scp",
+                             parse("diskinfo -file a.scp -side 0 -cyls 0-83").c_str());
+
+    // -side is a choice, so the table refuses anything outside the list before any
+    // handler sees it. That is what lets cmdDiskInfo() treat "not 0 and not 1" as
+    // "both" without having to distinguish it from a typo.
+    TEST_ASSERT_EQUAL_STRING("error", parse("diskinfo -side 2").c_str());
+    TEST_ASSERT_EQUAL_STRING("error", parse("diskinfo -side upper").c_str());
+    TEST_ASSERT_EQUAL_STRING("error", parse("diskinfo -bogus 1").c_str());
+    TEST_ASSERT_EQUAL_STRING("error", parse("diskinfo extra").c_str()); // takes no subject
+}
+
+static void test_diskinfo_completion(void)
+{
+    // "di" is the alias and so completes to itself, not onward to "diskinfo";
+    // "dis" has only the one candidate.
+    TEST_ASSERT_EQUAL_STRING("diskinfo ", complete("dis").c_str());
+    TEST_ASSERT_EQUAL_STRING("diskinfo -cyls ", complete("diskinfo -c").c_str());
+    TEST_ASSERT_EQUAL_STRING("diskinfo -side ", complete("diskinfo -si").c_str());
+    TEST_ASSERT_EQUAL_STRING("diskinfo -file ", complete("diskinfo -f").c_str());
+    TEST_ASSERT_EQUAL_STRING("diskinfo -", complete("diskinfo -").c_str()); // three, nothing to add
+}
+
 static void test_parse_rejects_bad_options(void)
 {
     TEST_ASSERT_EQUAL_STRING("error", parse("readscp -bogus 1").c_str());          // no such option
@@ -678,6 +719,8 @@ int main(int, char **)
     RUN_TEST(test_parse_negative_numbers_are_not_options);
     RUN_TEST(test_parse_options_in_any_order);
     RUN_TEST(test_parse_rejects_bad_options);
+    RUN_TEST(test_diskinfo_options);
+    RUN_TEST(test_diskinfo_completion);
     RUN_TEST(test_parse_raw_tail_commands);
     RUN_TEST(test_parse_multi_option_commands);
 
