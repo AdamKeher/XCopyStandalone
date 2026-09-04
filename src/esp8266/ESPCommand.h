@@ -13,6 +13,10 @@
 #include <WiFiUdp.h>
 #include <LittleFS.h>
 
+// XCOPY_ESP_LINE_MAX -- how long a line Update() must be able to accumulate before
+// it decides it is looking at something that is not a line at all.
+#include "XCopyProtocol.h"
+
 class ESPCommandLine
 {
 public:
@@ -24,6 +28,10 @@ public:
 
 private:
   String _command;
+  // Set when a line runs past XCOPY_ESP_LINE_MAX, cleared by the newline that ends
+  // it. Without it the accumulator restarts mid line and the tail is run as a
+  // command of its own.
+  bool _overflow = false;
   bool _localecho = true;
   WebSocketsServer *_webSocket;
   const int cancelPin = 13;

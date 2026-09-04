@@ -411,8 +411,17 @@ void ESPCommandLine::Update()
             // Was "if (_command != String(0x0d))". String(int) formats the number,
             // so that compared against "13" rather than a carriage return, silently
             // swallowing the command "13". doCommand() already ignores an empty one.
-            doCommand(_command);
-            printPrompt();
+            //
+            // An overrun line is dropped whole. Clearing the accumulator mid line
+            // and carrying on left the tail of it to arrive here looking like a
+            // command of its own, so an oversized broadcast came back to the Teensy
+            // as "Unknown command: <the rest of it>" rather than simply being lost.
+            if (!_overflow)
+            {
+                doCommand(_command);
+                printPrompt();
+            }
+            _overflow = false;
             _command = "";
         }
         else
@@ -420,7 +429,13 @@ void ESPCommandLine::Update()
             // Bounded for the same reason XCopyESP8266::Update() is: file data left
             // in the buffer after an aborted transfer carries no line endings to
             // flush the accumulator, and an unbounded String exhausts the heap.
-            if (_command.length() < 512)
+            //
+            // The bound belongs to the link contract rather than being a number
+            // picked here. A flux broadcast is 527 bytes with every histogram bin
+            // reading zero and over a kilobyte off a noisy disk, so the 512 this
+            // used to stop at threw away every one of them and the web interface
+            // drew no flux at all during a disk test.
+            if (_command.length() < XCOPY_ESP_LINE_MAX)
             {
                 _command += inChar;
                 if (_localecho)
@@ -428,7 +443,7 @@ void ESPCommandLine::Update()
             }
             else
             {
-                _command = "";
+                _overflow = true;
             }
         }
     }

@@ -62,6 +62,27 @@
 // Prefix identifying a line the Teensy must act on rather than print.
 #define XCOPY_COMMAND_MARKER "xcopyCommand,"
 
+/*
+   Longest line the ESP must accept from the Teensy, excluding the terminator.
+
+   Set by the flux broadcast, which is the only variable length line either side
+   sends and much the longest:
+
+     broadcast flux,<track>,<h0>|<h1>| ... |<h254>|
+
+   255 histogram bins, so the payload is 510 bytes when every bin reads "0" and the
+   line 527 -- already over the 512 the accumulator used to stop at, which is why no
+   flux ever reached the browser. The bins hold sample counts, and a whole track is
+   at most streamSizeHD * 4 samples; spread to maximise digits that is 82 four digit
+   bins and 173 three digit ones, giving 1121 bytes for the line. 2048 covers it with
+   the histogram left free to be as noisy as a bad disk makes it.
+
+   The cap is still there to bound the accumulator: file data left in the RX buffer
+   after an aborted transfer carries no line endings to flush it, and an unbounded
+   String exhausts the ESP heap.
+*/
+#define XCOPY_ESP_LINE_MAX 2048
+
 // File transfer
 #define XFER_CHUNK 1024              // bytes per ACKed upload chunk
 #define XFER_ACK 0x06                // ASCII ACK, one byte per received chunk
