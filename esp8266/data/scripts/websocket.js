@@ -571,6 +571,39 @@ function onWebSocketMessage(msg) {
     drawSectorHist(res[1]);
   }
 
+  /*
+     Disk Info.
+
+     These re-split rather than using res[]: the shared split above stops at 12
+     fields and dinfoTrack carries fourteen, so flags and the sector list would be
+     dropped on the floor. Raising the shared limit would change how every other
+     message is parsed, which is not worth it for one family.
+  */
+  if (res[0] == "dinfoBegin") {
+    // The name is last and may itself contain commas, so it is taken as the tail
+    // of the line the way "log" and "wifi" are, not as a split field.
+    var b = message.split(",", 8);
+    var head = b.slice(0, 8).join(",") + ",";
+    dinfoBegin(b[1], b[2], b[3], b[4], b[5], b[6], b[7], message.substring(head.length));
+  }
+
+  if (res[0] == "dinfoTrack") {
+    var t = message.split(",", 14);
+    dinfoTrack(t[1], t[2], t[3], t[4], t[5], t[6], t[7], t[8], t[9], t[10], t[11], t[12], t[13]);
+  }
+
+  if (res[0] == "dinfoProfile") {
+    dinfoProfile(res[1], res[2], res[3]);
+  }
+
+  if (res[0] == "dinfoHist") {
+    dinfoHist(res[1], res[2], res[3]);
+  }
+
+  if (res[0] == "dinfoEnd") {
+    dinfoEnd(res[1], res[2], res[3]);
+  }
+
   if (res[0] == "resetEmptyBlocks") {
     resetEmptyBlocks();
   }

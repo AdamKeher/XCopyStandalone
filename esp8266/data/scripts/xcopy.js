@@ -71,6 +71,8 @@ function disableInterface(isBusy) {
     $('#diskcopy_cancel').removeClass('disabled');
     $('#diskmon_cancel').prop('disabled', false);
     $('#diskmon_cancel').removeClass('disabled');
+    $('#diskinfo_cancel').prop('disabled', false);
+    $('#diskinfo_cancel').removeClass('disabled');
     $('#uploadCancel').prop('disabled', false);
     $('#uploadCancel').removeClass('disabled');
   } else {

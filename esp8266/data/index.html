@@ -442,17 +442,108 @@
                 </div>
                 <div class="tab-pane fade" id="diskinfo" role="tabpanel" aria-labelledby="diskinfo-tab">
                     <p>
-                        <div class="btn-toolbar" role="toolbar" aria-label="Toolbar with button groups">
-                            <div class="btn-group me-1" role="group" aria-label="Disk group">
-                                <button type="button" id="copyADFToDisk" class="btn btn-primary" onclick="diskcopy('copyADFToDisk');" data-bs-toggle="modal" data-bs-target="#staticBackdrop"><i class="fa-solid fa-sd-card"></i> ADF to Disk</button>
-                                <button type="button" id="copyDiskToADF" class="btn btn-primary" onclick="diskcopy('copyDiskToADF');"><i class="fa-solid fa-sd-card"></i> Disk to ADF</button>
+                        <div class="btn-toolbar" role="toolbar" aria-label="Disk analyser controls">
+                            <div class="btn-group me-1" role="group" aria-label="Source">
+                                <button type="button" id="diskInfoRead" class="btn btn-primary" onclick="diskInfoScan();"><i class="fa-solid fa-magnifying-glass-chart"></i> Read Disk</button>
+                                <button type="button" id="diskInfoLoad" class="btn btn-primary" onclick="openFileSelect('scp');" data-bs-toggle="modal" data-bs-target="#staticBackdrop"><i class="fa-solid fa-wave-square"></i> Load SCP&hellip;</button>
                             </div>
-                         </div>
+                            <div class="input-group input-group-sm me-1 dinfoControl">
+                                <span class="input-group-text">Cylinders</span>
+                                <input type="number" class="form-control" id="dinfoFirst" value="0" min="0" max="83">
+                                <span class="input-group-text">to</span>
+                                <input type="number" class="form-control" id="dinfoLast" value="83" min="0" max="83">
+                            </div>
+                            <div class="input-group input-group-sm me-1 dinfoControl">
+                                <span class="input-group-text">Sides</span>
+                                <select class="form-select" id="dinfoSide">
+                                    <option value="-1" selected>Both</option>
+                                    <option value="0">0 &ndash; lower</option>
+                                    <option value="1">1 &ndash; upper</option>
+                                </select>
+                            </div>
+                            <div class="btn-group me-1" role="group" aria-label="Cancel">
+                                <button type="button" class="btn btn-danger cancelButton" id="diskinfo_cancel" onclick="diskcopyCancel();">Cancel</button>
+                            </div>
+                        </div>
                     </p>
                     <p><hr/></p>
-                    <p>
-                        <canvas class="diskCanvas" id="diskCanvas" width="900" height="450"></canvas>
-                    </p>
+
+                    <div class="dinfoLayout">
+                        <div class="dinfoSurfaces">
+                            <div class="dinfoSide">
+                                <div class="dinfoHeader">
+                                    <div class="dinfoHeaderLeft" id="dinfoHead0">Side 0 &mdash; nothing read</div>
+                                    <div class="dinfoHeaderRight" id="dinfoSource0">&mdash;</div>
+                                </div>
+                                <canvas class="diskCanvas" id="diskCanvas0" width="520" height="520"></canvas>
+                            </div>
+                            <div class="dinfoSide">
+                                <div class="dinfoHeader">
+                                    <div class="dinfoHeaderLeft" id="dinfoHead1">Side 1 &mdash; nothing read</div>
+                                    <div class="dinfoHeaderRight" id="dinfoSource1">&mdash;</div>
+                                </div>
+                                <canvas class="diskCanvas" id="diskCanvas1" width="520" height="520"></canvas>
+                            </div>
+                        </div>
+
+                        <div class="dinfoStatus">
+                            <h6>Status</h6>
+                            <div class="dinfoPanel">
+                                <div class="dinfoRow"><span>Track</span><span id="dinfoTrack">&mdash;</span></div>
+                                <div class="dinfoRow"><span>Side</span><span id="dinfoSideSel">&mdash;</span></div>
+                                <div class="dinfoRow"><span>Track RPM</span><span id="dinfoRpm">&mdash;</span></div>
+                                <div class="dinfoRow"><span>Bitrate</span><span id="dinfoBitrate">&mdash;</span></div>
+                                <div class="dinfoRow"><span>Track format</span><span id="dinfoFormat">&mdash;</span></div>
+                                <div class="dinfoRow"><span>Track len</span><span id="dinfoLen">&mdash;</span></div>
+                                <div class="dinfoRow"><span>Sectors</span><span id="dinfoSectors">&mdash;</span></div>
+                                <div class="dinfoRow"><span>Sync marks</span><span id="dinfoSyncs">&mdash;</span></div>
+                                <div class="dinfoRow"><span>Strays / dups</span><span id="dinfoStrays">&mdash;</span></div>
+                                <div class="dinfoRow"><span>Cylinder seen</span><span id="dinfoCylSeen">&mdash;</span></div>
+                                <div class="dinfoRow"><span>Number of sides</span><span id="dinfoSides">&mdash;</span></div>
+                                <div class="dinfoRow"><span>Interface mode</span><span id="dinfoInterface">&mdash;</span></div>
+                            </div>
+
+                            <h6>Track / Side selection</h6>
+                            <div class="dinfoPanel">
+                                <div class="dinfoSlider">
+                                    <input type="range" class="form-range" id="dinfoTrackSlider" min="0" max="83" value="0">
+                                    <label for="dinfoTrackSlider">Cylinder number</label>
+                                </div>
+                                <div class="dinfoSlider">
+                                    <input type="range" class="form-range" id="dinfoSideSlider" min="0" max="1" value="0">
+                                    <label for="dinfoSideSlider">Side number</label>
+                                </div>
+                            </div>
+
+                            <h6>Key</h6>
+                            <div class="dinfoPanel dinfoKey">
+                                <div><span class="dinfoSwatch dinfoOk"></span> Sector OK</div>
+                                <div><span class="dinfoSwatch dinfoBadCheck"></span> Checksum failed</div>
+                                <div><span class="dinfoSwatch dinfoCyl"></span> Wrong cylinder or head</div>
+                                <div><span class="dinfoSwatch dinfoStray"></span> Unreadable header</div>
+                                <div><span class="dinfoSwatch dinfoUnread"></span> Not analysed</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <p><hr/></p>
+
+                    <div class="dinfoTrackView">
+                        <div class="dinfoHeader">
+                            <div class="dinfoHeaderLeft">Track view</div>
+                            <div class="dinfoHeaderRight" id="dinfoTrackViewLabel">&mdash;</div>
+                        </div>
+                        <canvas class="diskCanvas" id="dinfoTrackCanvas" width="1040" height="110"></canvas>
+                        <div class="dinfoSlider dinfoWide">
+                            <input type="range" class="form-range" id="dinfoOffset" min="0" max="100" value="0">
+                            <label for="dinfoOffset">x offset (% of the track len)</label>
+                        </div>
+                        <div class="dinfoSlider dinfoWide">
+                            <input type="range" class="form-range" id="dinfoZoom" min="1" max="16" value="1">
+                            <label for="dinfoZoom">x scale</label>
+                        </div>
+                        <canvas class="diskCanvas" id="dinfoHistCanvas" width="500" height="180"></canvas>
+                    </div>
                 </div>
                 <div class="tab-pane fade" id="headcal" role="tabpanel" aria-labelledby="headcal-tab">
                     <p>

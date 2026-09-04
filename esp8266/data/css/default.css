@@ -307,6 +307,138 @@ body {
 .diskCanvas {
   background-color: #050505;
   border: 1px solid darkgrey;
+  max-width: 100%;
+}
+
+/* The two surfaces and the status panel. Wraps rather than scrolls: at a narrow
+   window the panel drops under the disks, which is more use than a 1200px wide
+   row with a horizontal scrollbar under it. */
+.dinfoLayout {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.dinfoSurfaces {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  flex: 1 1 auto;
+}
+
+.dinfoSide {
+  flex: 0 1 auto;
+}
+
+.dinfoStatus {
+  flex: 0 0 260px;
+}
+.dinfoStatus h6 {
+  color: white;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 0.5rem 0 0.25rem 0;
+}
+
+.dinfoHeader {
+  display: flex;
+  justify-content: space-between;
+  font-family: monospace;
+  font-size: 0.75rem;
+  color: #b0bec5;
+  padding-bottom: 0.25rem;
+}
+
+.dinfoHeaderRight {
+  color: #78909c;
+  text-align: right;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 55%;
+}
+
+.dinfoPanel {
+  background-color: #101010;
+  border: 1px solid darkgrey;
+  padding: 0.4rem 0.5rem;
+  font-family: monospace;
+  font-size: 0.75rem;
+  color: white;
+}
+
+.dinfoRow {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 1px 0;
+}
+.dinfoRow span:first-child {
+  color: #90a4ae;
+}
+.dinfoRow span:last-child {
+  text-align: right;
+}
+
+.dinfoControl {
+  width: auto;
+}
+.dinfoControl input[type=number] {
+  max-width: 4.5rem;
+}
+
+.dinfoSlider {
+  padding: 0.15rem 0;
+}
+.dinfoSlider label {
+  display: block;
+  font-size: 0.7rem;
+  color: #90a4ae;
+}
+
+.dinfoWide {
+  max-width: 1040px;
+}
+
+.dinfoKey div {
+  padding: 1px 0;
+}
+
+/* Square rather than round, so it reads as a sector mark on the surface and not
+   as a bullet point. */
+.dinfoSwatch {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin-right: 4px;
+  border: 1px solid #000000;
+  vertical-align: middle;
+}
+
+.dinfoOk {
+  background-color: #66bb6a;
+}
+
+.dinfoBadCheck {
+  background-color: #ef5350;
+}
+
+.dinfoCyl {
+  background-color: #ffa726;
+}
+
+.dinfoStray {
+  background-color: #ab47bc;
+}
+
+.dinfoUnread {
+  background-color: #757575;
+}
+
+.dinfoTrackView {
+  max-width: 1040px;
 }
 
 /* Footer
