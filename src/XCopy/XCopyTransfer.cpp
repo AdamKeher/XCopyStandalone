@@ -1,4 +1,5 @@
 #include "XCopyTransfer.h"
+#include "XCopyFixed.h"
 #include "XCopyScratch.h"
 #include "XCopySDCard.h"
 #include "../FastCRC/FastCRC.h"
@@ -79,7 +80,7 @@ bool XCopyTransfer::sendFile(const String &path)
 
     Serial << "\r\nSent file '";
     file.printName();
-    Serial << "': " << file.fileSize() << " in " << (millis() - time) / 1000.0f << "s\r\n";
+    Serial << "': " << file.fileSize() << " in " << twoDecimals((millis() - time) / 1000.0f) << "s\r\n";
 
     XCopyScratch::release((const uint8_t *)buffer);
     file.close();
@@ -176,7 +177,7 @@ bool XCopyTransfer::getFile(const String &path, size_t filesize, bool overwrite)
     else    _link->print(XFER_REPLY_ERROR "," XFER_ERR_WRITE "\n");
 
     Serial << "\r\nReceived '" << path << "': " << totalsize << "/" << filesize
-           << " bytes, crc32 " << _HEX(crc) << ", in " << (millis() - time) / 1000.0f << "s\r\n";
+           << " bytes, crc32 " << _HEX(crc) << ", in " << twoDecimals((millis() - time) / 1000.0f) << "s\r\n";
 
     return ok;
 }

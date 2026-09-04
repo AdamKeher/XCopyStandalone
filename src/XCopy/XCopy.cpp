@@ -1,4 +1,5 @@
 #include "XCopy.h"
+#include "XCopyFixed.h"
 
 XCopy::XCopy(TFT_ST7735 *tft)
 {
@@ -238,7 +239,7 @@ void XCopy::begin()
     _menu.addItem("", XCopyAction::none);
 
     parentItem = _menu.addItem("Settings", XCopyAction::none);
-    volumeMenuItem = _menu.addChild("Set Volume: " + String(_config->getVolume()), XCopyAction::setVolume, parentItem);
+    volumeMenuItem = _menu.addChild("Set Volume: " + twoDecimals(_config->getVolume()), XCopyAction::setVolume, parentItem);
 
     XCopyMenuItem *timeParentItem = _menu.addChild("Time", XCopyAction::none, parentItem);
     _menu.addChild("Set Time from NTP", XCopyAction::showTime, timeParentItem);
@@ -908,7 +909,7 @@ void XCopy::sendBlock(int block) {
         for (int i = 0; i < 256; i++) {
             if (hist[i] > 0) {
                 time = (float(i) * 0.04166667) + 0.25;
-                line += String(time) + "|" + String(hist[i]) + "&";
+                line += twoDecimals(time) + "|" + String(hist[i]) + "&";
             }
         }
         line += "\r\n";
@@ -1485,7 +1486,7 @@ void XCopy::navigateSelect()
                 volume = 0.0f;
             _config->setVolume(volume);
 
-            volumeMenuItem->text = "Set Volume: " + String(_config->getVolume());
+            volumeMenuItem->text = "Set Volume: " + twoDecimals(_config->getVolume());
             _config->writeConfig();
             // delete _config;
 

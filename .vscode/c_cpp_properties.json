@@ -243,6 +243,7 @@
                 "__MK20DX256__",
                 "ARDUINO_TEENSY31",
                 "TEENSY_OPT_SMALLEST_CODE_LTO",
+                "ARDUINOJSON_USE_DOUBLE=0",
                 "SERIAL1_RX_BUFFER_SIZE=4096",
                 "NDEBUG",
                 "HAVE_STRNLEN",

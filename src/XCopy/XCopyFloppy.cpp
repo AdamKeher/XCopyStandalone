@@ -1,4 +1,5 @@
 #include "XCopyFloppy.h"
+#include "XCopyFixed.h"
 
 // --- state the interrupt handlers touch --------------------------------------
 // NOTE: deliberately NOT static. ftm0_isr and diskWrite() write most of this
@@ -1968,7 +1969,7 @@ void XCopyFloppy::printHist() {
     for (int i = 0; i < 256; i++) {
         if (hist[i] > 0) {
             zeit = (float(i) * 0.04166667) + 0.25;
-            String line = String(zeit).append(":").append(i).append("-").append(hist[i]);
+            String line = twoDecimals(zeit).append(":").append(i).append("-").append(hist[i]);
             for (int j = 0; j < (hist[i] / 128); j++) {
                 line.append("+");
             }
