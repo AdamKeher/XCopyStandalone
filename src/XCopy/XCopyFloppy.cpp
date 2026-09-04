@@ -1003,6 +1003,23 @@ bool XCopyFloppy::calibrationRead(uint8_t cylinder, uint8_t head, bool recal, Ca
         }
     }
 
+    return censusTrack(cylinder, head, out);
+}
+
+/*
+   The census half of calibrationRead(): every verdict is reached from the bytes
+   the capture handler left in stream[] and sectorTable[], and nothing here goes
+   near the drive.
+
+   Split out so a second source can reach it. XCopyDiskInfo replays the flux in an
+   SCP file through the same thresholding ftm0_isr uses, fills the same two
+   buffers, and then asks this the same question - so a file and the disk it was
+   imaged from cannot come back analysed differently. The barrier lives here
+   rather than in the caller for the same reason: it is this function's reads that
+   need ordering, whichever of the two filled the buffers.
+*/
+bool XCopyFloppy::censusTrack(uint8_t cylinder, uint8_t head, CalibrationResult &out)
+{
     // Acquire, for the same reason readTrack() has one: everything read out below
     // comes from sectorTable[] and stream[], which the handler wrote and which
     // nothing marks as having changed.
@@ -1019,6 +1036,10 @@ bool XCopyFloppy::calibrationRead(uint8_t cylinder, uint8_t head, bool recal, Ca
     for (int i = 0; i < sectorCnt; i++)
     {
         unsigned long bytePos = sectorTable[i].bytePos;
+
+        // Nothing readable here unless the header says otherwise below.
+        if (i < (int)(sizeof(out.syncSector) / sizeof(out.syncSector[0])))
+            out.syncSector[i] = 0xff;
 
         // decodeSector() has no such check and will read past the buffer on a sync
         // mark found near the end of the capture.
@@ -1055,6 +1076,9 @@ bool XCopyFloppy::calibrationRead(uint8_t cylinder, uint8_t head, bool recal, Ca
             out.strays++;
             continue;
         }
+
+        if (i < (int)(sizeof(out.syncSector) / sizeof(out.syncSector[0])))
+            out.syncSector[i] = headerSector;
 
         if (out.status[headerSector] != sectorMissing)
             out.duplicates++;
@@ -1094,6 +1118,130 @@ bool XCopyFloppy::calibrationRead(uint8_t cylinder, uint8_t head, bool recal, Ca
 
     return true;
 }
+
+/*
+   One analysis pass over a track, aligned to the index pulse.
+
+   calibrationRead() arms the timer wherever the head happens to be, which is
+   right for a test that only counts sectors and wrong for one that draws them.
+   Stream position 0 would land at a different angle on every track, so the sector
+   marks would sit at a random rotation per ring and a surface that actually has
+   its sectors marching neatly round the disk would be drawn as noise.
+
+   Waiting for the index first means a byte position in stream[] is an angle, and
+   the same is true of an SCP revolution, which is index to index by definition.
+   That is what lets a file and a disk be drawn the same way.
+
+   A drive that never raises an index still gets its pass. The capture just starts
+   unaligned and says so, which is more use than refusing to look at the disk.
+
+   @param cylinder physical cylinder, 0 to MAX_CYLINDERS-1
+   @param head 0 (lower) or 1 (upper)
+   @param aligned set true when the capture did start on an index pulse
+   @result false only when no capture happened at all - no disk, or a timeout
+*/
+bool XCopyFloppy::surveyCapture(uint8_t cylinder, uint8_t head, bool &aligned)
+{
+    motorOn();
+    gotoLogicTrack((cylinder * 2) + head);
+
+    for (int i = 0; i < 256; i++)
+        hist[i] = 0;
+
+    initRead();
+
+    /*
+       The wait sits between initRead() and startFTM0() rather than before both.
+       initRead() zeroes 14KB of stream[] and calls setupFTM0(); doing that after
+       the index pulse would spend most of the gap it just waited for.
+    */
+    aligned = waitIndexPulse(_index);
+
+    startFTM0();
+    unsigned long started = millis();
+    while (recordOn)
+    {
+        // Same guard calibrationRead() uses, and for the same reason: a timeout
+        // means there was no pass, not that the pass was bad.
+        if ((millis() - started) > 300)
+        {
+            stopFTM0();
+            return false;
+        }
+    }
+    return true;
+}
+
+/*
+   How dense the captured cells are over one slice of the track, 0 to 15.
+
+   This is the disk surface texture. A slice of stream[] is one angular bucket, and
+   the count of set bits in it says what is written there: track gap reads sparse,
+   sync marks and sector data read dense, and an unformatted track reads flat.
+
+   Counting cells rather than shipping the flux is not only a transfer saving. A
+   cylinder ring is about two pixels wide, so a few hundred buckets is already
+   finer than the pixels available to draw them in - the extra resolution in raw
+   flux would land on top of itself.
+
+   Scaled against half a full byte rather than eight bits: a DD cell stream runs
+   about one transition in three cells, so measuring against 8 would leave the
+   whole texture squashed into the bottom of the range.
+*/
+uint8_t XCopyFloppy::bitDensity(unsigned long fromByte, unsigned long toByte)
+{
+    if (toByte > (unsigned long)streamLen)
+        toByte = streamLen;
+    if (fromByte >= toByte)
+        return 0;
+
+    unsigned long ones = 0;
+    for (unsigned long i = fromByte; i < toByte; i++)
+        ones += __builtin_popcount(stream[i]);
+
+    const unsigned long span = (toByte - fromByte) * 4;
+    const unsigned long level = ((ones * 15) + (span / 2)) / span;
+    return level > 15 ? 15 : (uint8_t)level;
+}
+
+/*
+   Where in the captured stream the nth sync mark was found, and how much of the
+   stream was filled. Together these turn a sync mark into an angle.
+*/
+unsigned long XCopyFloppy::getSyncBytePos(byte index)
+{
+    if (index >= sectorCnt)
+        return 0;
+    return sectorTable[index].bytePos;
+}
+
+int XCopyFloppy::getStreamPos()
+{
+    return readPtr;
+}
+
+/*
+   How many sync marks the capture handler will record before it stops adding to
+   sectorTable[].
+
+   Not the same thing as setSectorCnt(), which sets the count already found. The
+   handler bounds the table with `sectorCnt < sectors`, and sectors is otherwise
+   only ever set by setMode() - so a DD survey stops looking after eleven, and a
+   track carrying more than that is silently cut short. sectorTable[] holds 25.
+
+   Raising it for a survey and putting it back afterwards widens the census for a
+   custom or protected track without touching the handler itself.
+*/
+void XCopyFloppy::setExpectedSectors(byte count)
+{
+    sectors = count;
+}
+
+byte XCopyFloppy::getExpectedSectors()
+{
+    return sectors;
+}
+
 
 /*
    read Diskname from Track 80
@@ -1191,24 +1339,37 @@ void XCopyFloppy::setupFTM0()
 }
 
 /*
-   Interrupt Service Routine for FlexTimer0 Module
-*/
-extern "C" void ftm0_isr(void)
-{
-    sample = (*(volatile uint32_t *)FTChannelValue);
-    // Reset count value
-    FTM0_CNT = 0x0000;
+   Turn the interval in `sample` into cells, and file it.
 
-    (*(volatile uint32_t *)FTStatusControlRegister) &= ~0x80; // clear channel event flag
+   The body of ftm0_isr, named so a second caller can reach it. XCopyDiskInfo
+   replays the flux out of an SCP file through this, so an image decodes into
+   stream[] and sectorTable[] by the same rules and against the same thresholds
+   the drive is read with - which is what makes an image and the disk it came from
+   analyse alike rather than nearly alike.
+
+   It reads the `sample` global rather than taking a parameter, which reads oddly
+   until you remember what this is. `sample` is volatile and read five times here;
+   a by-value parameter would collapse those to one load and so change the codegen
+   of the tightest interrupt in the project - about four microseconds, and the one
+   with the least slack - for the convenience of a caller that runs at its leisure.
+   The caller stores to `sample` and calls in, and the handler is left exactly as
+   it was. always_inline because at -Os GCC is otherwise free to make the ISR pay
+   for a call.
+
+   @result false for an interval outside the thresholds - too long, or too short.
+           Those are gap and noise: no cells, and no histogram entry either.
+*/
+static inline __attribute__((always_inline)) bool mfmFeed(void)
+{
     // skip too short / long samples, occur usually in the track gap
     bitCount++;
     if (sample > high4)
     {
-        return;
+        return false;
     }
     if (sample < low2)
     {
-        return;
+        return false;
     }
     // fills buffer according to transition length with 10, 100 or 1000 (4,6,8µs transition)
     readBuff = (readBuff << 2) | B10;
@@ -1239,12 +1400,76 @@ extern "C" void ftm0_isr(void)
             bCnt = 4; // set bit count to 4 to align to byte
         }
     }
-    hist[sample]++;          // add sample to histogram
+    hist[sample]++; // add sample to histogram
+    return true;
+}
+
+/*
+   Interrupt Service Routine for FlexTimer0 Module
+*/
+extern "C" void ftm0_isr(void)
+{
+    sample = (*(volatile uint32_t *)FTChannelValue);
+    // Reset count value
+    FTM0_CNT = 0x0000;
+
+    (*(volatile uint32_t *)FTStatusControlRegister) &= ~0x80; // clear channel event flag
+    if (!mfmFeed())
+    {
+        return;
+    }
     if (readPtr > streamLen) // stop when buffer is full
     {
         recordOn = false;
         FTM0_SC = 0x00; // Timer off
     }
+}
+
+/*
+   Feed one flux interval that did not come from the drive.
+
+   The SCP replay path: same cells, same sync marks, same histogram as a real
+   read. The only thing it does not do is stop a timer that is not running, so the
+   buffer-full test is here rather than left to the handler.
+
+   @param ticks interval in FTM0 ticks, the units the density thresholds are in.
+          Anything longer than the histogram is clamped, exactly as a gap that
+          overruns high4 is discarded by the handler.
+   @result false once the stream buffer is full and nothing further will be stored
+*/
+/*
+   Reset the decoder for a replay.
+
+   initRead() without setupFTM0(). Everything the capture handler accumulates has
+   to start from the same place a real read would, or the first sync mark of the
+   track lands wherever the previous one left bCnt - but there is no timer to
+   configure and no pin to configure it against.
+*/
+void XCopyFloppy::beginReplay()
+{
+    bCnt = 0;
+    readPtr = 0;
+    bitCount = 0;
+    sectorCnt = 0;
+    readBuff = 0;
+    _errors = 0;
+    _extError = "OK\n";
+
+    for (int i = 0; i < streamLen; i++)
+        stream[i] = 0x00;
+
+    for (int i = 0; i < 256; i++)
+        hist[i] = 0;
+}
+
+bool XCopyFloppy::feedFluxSample(uint32_t ticks)
+{
+    if (readPtr > streamLen)
+        return false;
+
+    sample = (ticks > 255) ? 256 : (int)ticks;
+    mfmFeed();
+    return readPtr <= streamLen;
 }
 
 /*

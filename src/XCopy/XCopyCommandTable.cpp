@@ -36,6 +36,12 @@ static const XCopyOption OPT_READSCP[] = {
     {"file", XCopyArgKind::path, nullptr, "destination, named after the disk if left out"},
 };
 
+static const XCopyOption OPT_DISKINFO[] = {
+    {"cyls", XCopyArgKind::text, nullptr, "cylinder range, <first>-<last>"},
+    {"side", XCopyArgKind::choice, "0|1|both", "surface to analyse, both if left out"},
+    {"file", XCopyArgKind::path, nullptr, "analyse an SCP image instead of the drive"},
+};
+
 static const XCopyOption OPT_WRITEBIN[] = {
     {"file", XCopyArgKind::path, nullptr, "binary file to write"},
     {"block", XCopyArgKind::number, nullptr, "first block to write it to"},
@@ -115,6 +121,7 @@ const XCopyCommandDef XCOPY_COMMANDS[] = {
     {XCopyCmd::hist, "hist", nullptr, XCopyCat::analysis, NOOPTS, XCopyArgKind::none, nullptr, 0, "print a histogram of the track in ascii"},
     {XCopyCmd::rpm, "rpm", nullptr, XCopyCat::analysis, OPTS(OPT_RPM), XCopyArgKind::none, nullptr, XCOPY_NEEDS_DISK, "drive speed from the index, until a key is pressed"},
     {XCopyCmd::headcal, "headcal", "hc", XCopyCat::analysis, NOOPTS, XCopyArgKind::number, "cylinder", 0, "continuous head calibration test, ATK style"},
+    {XCopyCmd::diskinfo, "diskinfo", "di", XCopyCat::analysis, OPTS(OPT_DISKINFO), XCopyArgKind::none, nullptr, 0, "analyse every track of the disk, or of an SCP image"},
     {XCopyCmd::drivetoolkit, "drive", "dt", XCopyCat::analysis, NOOPTS, XCopyArgKind::none, nullptr, 0, "drive toolkit: live signal table and manual line control"},
     {XCopyCmd::name, "name", nullptr, XCopyCat::analysis, NOOPTS, XCopyArgKind::none, nullptr, 0, "read track 80 and return the disk label in ascii"},
     {XCopyCmd::print, "print", nullptr, XCopyCat::analysis, NOOPTS, XCopyArgKind::none, nullptr, 0, "print the amiga track with its header"},

@@ -431,3 +431,166 @@ bool XCopySCPWriter::end()
     _file->flush();
     return true;
 }
+
+// --- reader ------------------------------------------------------------------------
+
+/*
+   Read len bytes from an absolute file offset.
+
+   Every read below is a seek and a read of a fixed size struct or a run of samples,
+   and all of them have to be bounds checked against the file: an image truncated
+   mid-track has an offset table that still points confidently at data that is not
+   there, and following it would hand the decoder whatever SdFat left in the buffer.
+*/
+bool XCopySCPReader::readAt(uint32_t offset, uint8_t *dst, uint16_t len)
+{
+    if (_file == NULL || offset + len > _fileSize)
+        return false;
+    if (!_file->seekSet(offset))
+        return false;
+    return _file->read(dst, len) == (int)len;
+}
+
+bool XCopySCPReader::begin(File *file)
+{
+    _file = file;
+    _fileSize = 0;
+    _fluxRemaining = 0;
+
+    if (_file == NULL)
+        return false;
+
+    _fileSize = _file->fileSize();
+    if (_fileSize < SCP_FIRST_TDH)
+        return false;
+
+    uint8_t hdr[sizeof(scp_disk_header)];
+    if (!readAt(0, hdr, sizeof(hdr)))
+        return false;
+
+    if (hdr[0] != 'S' || hdr[1] != 'C' || hdr[2] != 'P')
+        return false;
+
+    _diskType = hdr[4];
+    _revolutions = hdr[5];
+    _startTrack = hdr[6];
+    _endTrack = hdr[7];
+    _flags = hdr[8];
+    _heads = hdr[10];
+
+    /*
+       cell_width at 0x09 is bits per sample, and 0 means the default 16. Anything
+       else is a format this reader does not speak - the samples would not be 16 bit
+       big endian - so say so here rather than decode noise.
+    */
+    if (hdr[9] != 0 && hdr[9] != 16)
+        return false;
+
+    if (_revolutions < 1 || _revolutions > SCP_MAX_REVS)
+        return false;
+    if (_endTrack >= SCP_MAX_TRACKS || _startTrack > _endTrack)
+        return false;
+
+    return true;
+}
+
+bool XCopySCPReader::trackOffset(uint8_t scpTrack, uint32_t &offset)
+{
+    if (scpTrack >= SCP_MAX_TRACKS)
+        return false;
+
+    uint8_t entry[4];
+    if (!readAt(SCP_OFFSET_TABLE + (scpTrack * 4), entry, 4))
+        return false;
+
+    offset = scpGetLE32(entry);
+    // Zero is the format's "no flux for this track", not offset zero.
+    return offset != 0 && offset < _fileSize;
+}
+
+bool XCopySCPReader::trackPresent(uint8_t scpTrack)
+{
+    uint32_t offset;
+    return trackOffset(scpTrack, offset);
+}
+
+bool XCopySCPReader::beginFlux(uint8_t scpTrack, uint8_t rev)
+{
+    _fluxRemaining = 0;
+    _revTicks = 0;
+    _revSamples = 0;
+
+    if (rev >= _revolutions)
+        return false;
+
+    uint32_t base;
+    if (!trackOffset(scpTrack, base))
+        return false;
+
+    uint8_t sig[4];
+    if (!readAt(base, sig, 4))
+        return false;
+    if (sig[0] != 'T' || sig[1] != 'R' || sig[2] != 'K')
+        return false;
+
+    /*
+       The track number in the header is checked against the one the offset table
+       was indexed by. They disagree only in a corrupt or hand assembled image, and
+       trusting the table over the header would analyse one track's flux under
+       another track's name - which looks exactly like a badly aligned drive.
+    */
+    if (sig[3] != scpTrack)
+        return false;
+
+    uint8_t entry[sizeof(scp_rev_entry)];
+    if (!readAt(base + 4 + (rev * sizeof(scp_rev_entry)), entry, sizeof(entry)))
+        return false;
+
+    _revTicks = scpGetLE32(entry);
+    _revSamples = scpGetLE32(entry + 4);
+    // The sample offset is relative to the start of the track header, not the file.
+    _fluxPos = base + scpGetLE32(entry + 8);
+    _fluxRemaining = _revSamples;
+
+    /*
+       Bounded before the multiply, not after. nr_samples is a 32 bit field straight
+       out of the file, so a corrupt one times two wraps and the range check passes
+       on a track that runs off the end of the image.
+    */
+    if (_revSamples == 0 || _revSamples > (_fileSize / 2))
+    {
+        _fluxRemaining = 0;
+        return false;
+    }
+    if (_fluxPos + (_revSamples * 2) > _fileSize)
+    {
+        _fluxRemaining = 0;
+        return false;
+    }
+    return true;
+}
+
+int XCopySCPReader::readFlux(uint16_t *dst, int max)
+{
+    if (_fluxRemaining == 0 || max <= 0)
+        return 0;
+
+    int want = (uint32_t)max < _fluxRemaining ? max : (int)_fluxRemaining;
+
+    /*
+       Read into the caller's buffer as bytes and byte swap in place, so a track
+       needs no staging buffer of its own. Each entry is read and written at the
+       same two bytes, so the pass has no direction to get wrong - but it does have
+       to be a pass, because the file is big endian and only the flux samples are.
+    */
+    uint8_t *raw = (uint8_t *)dst;
+    if (!readAt(_fluxPos, raw, (uint16_t)(want * 2)))
+        return 0;
+
+    for (int i = 0; i < want; i++)
+        dst[i] = scpGetBE16(raw + (i * 2));
+
+    _fluxPos += want * 2;
+    _fluxRemaining -= want;
+    return want;
+}

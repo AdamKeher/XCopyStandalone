@@ -54,7 +54,10 @@ enum XCopyState {
   // The drive toolkit: every interface line sampled, the safe outputs drivable
   // from the console and the browser. A far more capable descendant of what used
   // to sit at 34, which stays retired - this is a new number, not that one reused.
-  driveToolkit = 45
+  driveToolkit = 45,
+  // The Amiga track analyser behind the Disk Info tab. A new number for the
+  // same reason as the two above: 46 has never been anything else.
+  analyseDisk = 46
 };
 
 #endif // XCOPYSTATE_H

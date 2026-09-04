@@ -18,6 +18,11 @@ XCopyState stateForAction(XCopyAction action)
     case XCopyAction::modSearch:                     return modSearch;
     case XCopyAction::headCalibration:              return headCalibration;
     case XCopyAction::driveToolkit:                  return driveToolkit;
+    // Both analyser sources land in the same state: the drive is busy either way
+    // as far as the rest of the machine is concerned, and the browser switches on
+    // the state number, not on where the flux came from.
+    case XCopyAction::analyseDisk:                   return analyseDisk;
+    case XCopyAction::analyseScp:                    return analyseDisk;
     case XCopyAction::directorySelection:            return directorySelection;
     case XCopyAction::about:                         return about;
     case XCopyAction::showTime:                      return showTime;

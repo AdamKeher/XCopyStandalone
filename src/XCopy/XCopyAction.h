@@ -39,6 +39,8 @@ enum class XCopyAction : uint8_t {
   modSearch,
   headCalibration,
   driveToolkit,
+  analyseDisk,
+  analyseScp,
   directorySelection,
   about,
   showTime,

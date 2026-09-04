@@ -1,7 +1,7 @@
 #ifndef XCOPY_H
 #define XCOPY_H
 
-#define XCOPYVERSION "v738.26"
+#define XCOPYVERSION "v739.26"
 // #define XCOPY_DEBUG = 1
 
 // #define PCBVERSION 1 // expensive adafruit screen and joystick
@@ -41,6 +41,7 @@
 #include "XCopyTime.h"
 #include "XCopyESP8266.h"
 #include "XCopyFloppy.h"
+#include "XCopyDiskInfo.h"
 #include "XCopyHeadCalibration.h"
 #include "XCopyDriveToolkit.h"
 #include "XCopyConsole.h"
@@ -134,6 +135,22 @@ private:
      still armed - a lifetime this object simply does not have.
   */
   XCopyHeadCalibration _headCal;
+
+  /*
+     The Amiga track analyser behind the Disk Info tab. A member rather than a
+     local for the same reason _headCal is: it holds the survey in progress and
+     the cancel flag the interrupt sets, and neither may live on a frame that
+     processState() is about to leave.
+  */
+  XCopyDiskInfo _diskInfo;
+
+  //! Cylinder range and surface for the next analyser run, from the console or
+  //! the browser. Held here because startFunction() carries one String and the
+  //! survey needs three numbers and sometimes a path.
+  uint8_t _diskInfoFirst = 0;
+  uint8_t _diskInfoLast = MAX_CYLINDERS - 1;
+  int8_t _diskInfoSide = -1;
+  String _diskInfoPath = "";
 
   /*
      The drive toolkit session. A member for the same reason _headCal is: it owns

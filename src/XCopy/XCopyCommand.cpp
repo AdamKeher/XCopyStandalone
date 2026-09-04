@@ -289,6 +289,7 @@ void XCopyCommandLine::dispatch(const XCopyCommandDef *command, const XCopyArgs 
     case XCopyCmd::hist:       cmdHist();           break;
     case XCopyCmd::rpm:        cmdRpm(args);        break;
     case XCopyCmd::headcal:    cmdHeadCal(args);    break;
+    case XCopyCmd::diskinfo:   cmdDiskInfo(args);   break;
     case XCopyCmd::drivetoolkit: cmdDriveToolkit();  break;
     case XCopyCmd::name:       cmdName();           break;
     case XCopyCmd::print:      cmdPrint();          break;
@@ -1322,6 +1323,48 @@ void XCopyCommandLine::cmdWriteAdf(const XCopyArgs &args)
     _callback(_caller, "writeADFFile," + path);
 }
 
+/*
+   Parse a "<first>-<last>" cylinder range.
+
+   The range is the one value still parsed by shape rather than named, because
+   "0-83" is one token and not two. Shared by readscp and diskinfo so the two
+   cannot come to different conclusions about what a valid range is, and so an
+   operator gets the same complaint about a bad one either way.
+
+   An empty range is not an error: it leaves first and last alone, so whatever
+   defaults the caller set stand.
+
+   @result false when a range was given and was malformed, having already said so.
+*/
+static bool parseCylinderRange(const String &range, uint8_t &first, uint8_t &last)
+{
+    if (range == "")
+        return true;
+
+    const int dash = range.indexOf('-');
+    bool valid = dash > 0 && dash < (int)range.length() - 1;
+    for (unsigned int i = 0; valid && i < range.length(); i++)
+        if ((int)i != dash && !isDigit(range.charAt(i)))
+            valid = false;
+
+    if (!valid)
+    {
+        Log << F("-cyls must be a range, <first>-<last>\r\n");
+        return false;
+    }
+
+    first = (uint8_t)range.substring(0, dash).toInt();
+    last = (uint8_t)range.substring(dash + 1).toInt();
+
+    if (last >= MAX_CYLINDERS || first > last)
+    {
+        Log << F("Cylinder range must be within 0-") << (MAX_CYLINDERS - 1)
+            << F(", lowest first\r\n");
+        return false;
+    }
+    return true;
+}
+
 void XCopyCommandLine::cmdReadScp(const XCopyArgs &args)
 {
     uint8_t firstCylinder = 0;
@@ -1334,31 +1377,8 @@ void XCopyCommandLine::cmdReadScp(const XCopyArgs &args)
        this token a revolution count, or the first word of a filename with spaces
        in it - is now named, so the sniffing cannot reach the filename any more.
     */
-    const String range = args.text("cyls");
-    if (range != "")
-    {
-        const int dash = range.indexOf('-');
-        bool valid = dash > 0 && dash < (int)range.length() - 1;
-        for (unsigned int i = 0; valid && i < range.length(); i++)
-            if ((int)i != dash && !isDigit(range.charAt(i)))
-                valid = false;
-
-        if (!valid)
-        {
-            Log << F("-cyls must be a range, <first>-<last>\r\n");
-            return;
-        }
-
-        firstCylinder = (uint8_t)range.substring(0, dash).toInt();
-        lastCylinder = (uint8_t)range.substring(dash + 1).toInt();
-
-        if (lastCylinder >= MAX_CYLINDERS || firstCylinder > lastCylinder)
-        {
-            Log << F("Cylinder range must be within 0-") << (MAX_CYLINDERS - 1)
-                << F(", lowest first\r\n");
-            return;
-        }
-    }
+    if (!parseCylinderRange(args.text("cyls"), firstCylinder, lastCylinder))
+        return;
 
     if (args.has("revs"))
     {
@@ -1603,6 +1623,65 @@ void XCopyCommandLine::cmdHeadCal(const XCopyArgs &args)
     // pattern of owning the console in a loop: that would starve the ESP link
     // and the TFT for as long as somebody was adjusting the drive.
     _callback(_caller, "headCalibration," + args.subject());
+}
+
+/*
+   Analyse every track, from the drive or from an SCP image on the card.
+
+   The table row carries neither XCOPY_NEEDS_DISK nor XCOPY_NEEDS_SD, which is the
+   one place this command departs from the pattern the flags exist to enforce. It
+   has to: -file analyses an image and wants no disk in the drive, while the drive
+   form wants no card. A flag would demand both for both. The two checks are
+   therefore here, worded exactly as doCommand() words them so an operator cannot
+   tell which of the two paths produced the complaint.
+*/
+void XCopyCommandLine::cmdDiskInfo(const XCopyArgs &args)
+{
+    uint8_t firstCylinder = 0;
+    uint8_t lastCylinder = MAX_CYLINDERS - 1;
+
+    if (!parseCylinderRange(args.text("cyls"), firstCylinder, lastCylinder))
+        return;
+
+    // "both" and an absent option are the same thing. The table's choice list has
+    // already refused anything that is not 0, 1 or both.
+    int8_t side = -1;
+    const String surface = args.text("side");
+    if (surface == "0")
+        side = 0;
+    else if (surface == "1")
+        side = 1;
+
+    // "<first>-<last>,<side>[,<path>]", path last because a filename may contain a
+    // comma and the numeric fields never can.
+    const String range = String(firstCylinder) + "-" + String(lastCylinder) + "," + String(side);
+
+    String filename = args.text("file");
+    if (filename != "")
+    {
+        // On a copy: toLowerCase() mutates in place, and filename is the path to
+        // open, which has to keep the case the user typed.
+        String extension = filename;
+        if (!extension.toLowerCase().endsWith(".scp"))
+        {
+            Log << F("The file must be an SCP file\r\n");
+            return;
+        }
+
+        if (!mountSdCard())
+            return;
+
+        _callback(_caller, "diskInfoFile," + range + "," + filename);
+        return;
+    }
+
+    if (!_floppy->diskChange())
+    {
+        Log << F("Disk not inserted into floppy\r\n");
+        return;
+    }
+
+    _callback(_caller, "diskInfoScan," + range);
 }
 
 void XCopyCommandLine::cmdDriveToolkit()
