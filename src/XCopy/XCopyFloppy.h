@@ -320,6 +320,49 @@ class XCopyFloppy
      */
     bool censusTrack(uint8_t cylinder, uint8_t head, CalibrationResult &out);
 
+    /**
+     * @brief One capture for analysis, started on the index pulse.
+     *
+     * calibrationRead()'s capture starts at an arbitrary rotation, which is fine
+     * when the answer is a count and useless when it is a picture. Aligning to the
+     * index makes a byte position in stream[] mean an angle on the disk.
+     *
+     * @param aligned set true when an index pulse was actually found. A drive that
+     *        gives none is still surveyed, just without a meaningful rotation.
+     * @result false only when no capture happened at all - no disk, or a timeout.
+     */
+    bool surveyCapture(uint8_t cylinder, uint8_t head, bool &aligned);
+
+    /**
+     * @brief Density of the captured cells over one slice of stream[], 0 to 15.
+     *
+     * The disk surface texture, one angular bucket at a time. Gap reads sparse,
+     * sync marks and data read dense. Returned a bucket at a time rather than into
+     * a caller's array because there is no room on this part for a 512 byte
+     * buffer that only exists to be turned straight into a string.
+     */
+    uint8_t bitDensity(unsigned long fromByte, unsigned long toByte);
+
+    //! Byte position of the nth sync mark in the last capture, 0 if there is no nth.
+    unsigned long getSyncBytePos(byte index);
+
+    //! Bytes the last capture actually filled. With the revolution length, an angle.
+    int getStreamPos();
+
+    /**
+     * @brief Sync marks the capture handler will record before it stops counting.
+     *
+     * NOT setSectorCnt(), which sets the number already found. This is the bound
+     * the handler tests against, otherwise only ever set by setMode(), and it is
+     * why a DD capture stops looking after eleven sync marks. Raise it for a
+     * survey of a track that may carry more, and put it back afterwards.
+     */
+    void setExpectedSectors(byte count);
+
+    //! The bound setExpectedSectors() sets. Read it before widening a survey, so
+    //! whatever setMode() chose for the density in the drive can be put back.
+    byte getExpectedSectors();
+
     int writeTrack();
 
     /**

@@ -1120,6 +1120,130 @@ bool XCopyFloppy::censusTrack(uint8_t cylinder, uint8_t head, CalibrationResult 
 }
 
 /*
+   One analysis pass over a track, aligned to the index pulse.
+
+   calibrationRead() arms the timer wherever the head happens to be, which is
+   right for a test that only counts sectors and wrong for one that draws them.
+   Stream position 0 would land at a different angle on every track, so the sector
+   marks would sit at a random rotation per ring and a surface that actually has
+   its sectors marching neatly round the disk would be drawn as noise.
+
+   Waiting for the index first means a byte position in stream[] is an angle, and
+   the same is true of an SCP revolution, which is index to index by definition.
+   That is what lets a file and a disk be drawn the same way.
+
+   A drive that never raises an index still gets its pass. The capture just starts
+   unaligned and says so, which is more use than refusing to look at the disk.
+
+   @param cylinder physical cylinder, 0 to MAX_CYLINDERS-1
+   @param head 0 (lower) or 1 (upper)
+   @param aligned set true when the capture did start on an index pulse
+   @result false only when no capture happened at all - no disk, or a timeout
+*/
+bool XCopyFloppy::surveyCapture(uint8_t cylinder, uint8_t head, bool &aligned)
+{
+    motorOn();
+    gotoLogicTrack((cylinder * 2) + head);
+
+    for (int i = 0; i < 256; i++)
+        hist[i] = 0;
+
+    initRead();
+
+    /*
+       The wait sits between initRead() and startFTM0() rather than before both.
+       initRead() zeroes 14KB of stream[] and calls setupFTM0(); doing that after
+       the index pulse would spend most of the gap it just waited for.
+    */
+    aligned = waitIndexPulse(_index);
+
+    startFTM0();
+    unsigned long started = millis();
+    while (recordOn)
+    {
+        // Same guard calibrationRead() uses, and for the same reason: a timeout
+        // means there was no pass, not that the pass was bad.
+        if ((millis() - started) > 300)
+        {
+            stopFTM0();
+            return false;
+        }
+    }
+    return true;
+}
+
+/*
+   How dense the captured cells are over one slice of the track, 0 to 15.
+
+   This is the disk surface texture. A slice of stream[] is one angular bucket, and
+   the count of set bits in it says what is written there: track gap reads sparse,
+   sync marks and sector data read dense, and an unformatted track reads flat.
+
+   Counting cells rather than shipping the flux is not only a transfer saving. A
+   cylinder ring is about two pixels wide, so a few hundred buckets is already
+   finer than the pixels available to draw them in - the extra resolution in raw
+   flux would land on top of itself.
+
+   Scaled against half a full byte rather than eight bits: a DD cell stream runs
+   about one transition in three cells, so measuring against 8 would leave the
+   whole texture squashed into the bottom of the range.
+*/
+uint8_t XCopyFloppy::bitDensity(unsigned long fromByte, unsigned long toByte)
+{
+    if (toByte > (unsigned long)streamLen)
+        toByte = streamLen;
+    if (fromByte >= toByte)
+        return 0;
+
+    unsigned long ones = 0;
+    for (unsigned long i = fromByte; i < toByte; i++)
+        ones += __builtin_popcount(stream[i]);
+
+    const unsigned long span = (toByte - fromByte) * 4;
+    const unsigned long level = ((ones * 15) + (span / 2)) / span;
+    return level > 15 ? 15 : (uint8_t)level;
+}
+
+/*
+   Where in the captured stream the nth sync mark was found, and how much of the
+   stream was filled. Together these turn a sync mark into an angle.
+*/
+unsigned long XCopyFloppy::getSyncBytePos(byte index)
+{
+    if (index >= sectorCnt)
+        return 0;
+    return sectorTable[index].bytePos;
+}
+
+int XCopyFloppy::getStreamPos()
+{
+    return readPtr;
+}
+
+/*
+   How many sync marks the capture handler will record before it stops adding to
+   sectorTable[].
+
+   Not the same thing as setSectorCnt(), which sets the count already found. The
+   handler bounds the table with `sectorCnt < sectors`, and sectors is otherwise
+   only ever set by setMode() - so a DD survey stops looking after eleven, and a
+   track carrying more than that is silently cut short. sectorTable[] holds 25.
+
+   Raising it for a survey and putting it back afterwards widens the census for a
+   custom or protected track without touching the handler itself.
+*/
+void XCopyFloppy::setExpectedSectors(byte count)
+{
+    sectors = count;
+}
+
+byte XCopyFloppy::getExpectedSectors()
+{
+    return sectors;
+}
+
+
+/*
    read Diskname from Track 80
 */
 String XCopyFloppy::getName()
