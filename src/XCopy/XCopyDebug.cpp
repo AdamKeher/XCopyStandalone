@@ -1,4 +1,5 @@
 #include "XCopyDebug.h"
+#include "XCopyFixed.h"
 
 XCopyDebug::XCopyDebug(XCopyGraphics *graphics, XCopyAudio *audio, uint8_t flashCSPin, uint8_t cardDetectPin)
 {
@@ -541,11 +542,11 @@ void XCopyDebug::printDirectory(File dir, uint8_t numTabs)
                 Serial << ", read in ";
                 Serial << usend - usbegin;
                 Serial << " us, speed = ";
-                Serial << (float)entry.size() * 1000.0 / (float)(usend - usbegin);
+                Serial << twoDecimals((float)entry.size() * 1000.0f / (float)(usend - usbegin));
                 Serial << " kbytes/sec";
 
                 text = buffer;
-                text = text + ", " + String((float)entry.size() * 1000.0 / (float)(usend - usbegin)) + " kbytes/sec";
+                text = text + ", " + twoDecimals((float)entry.size() * 1000.0f / (float)(usend - usbegin)) + " kbytes/sec";
                 _graphics->drawText(0, 90, ST7735_RED, "SD Card:", true);
                 _graphics->drawText(0, 100, ST7735_GREEN, text, true);
 
@@ -667,10 +668,10 @@ void XCopyDebug::flashTest()
                     Serial << ", read in ";
                     Serial << usend - usbegin;
                     Serial << " us, speed = ";
-                    Serial << (float)filesize * 1000.0 / (float)(usend - usbegin);
+                    Serial << twoDecimals((float)filesize * 1000.0f / (float)(usend - usbegin));
                     Serial << " kbytes/sec";
 
-                    text = text + ", " + String((float)filesize * 1000.0 / (float)(usend - usbegin)) + " kbytes/sec";
+                    text = text + ", " + twoDecimals((float)filesize * 1000.0f / (float)(usend - usbegin)) + " kbytes/sec";
 
                     _graphics->drawText(0, 90, ST7735_RED, "Flash", true);
                     _graphics->drawText(0, 100, ST7735_GREEN, text, true);

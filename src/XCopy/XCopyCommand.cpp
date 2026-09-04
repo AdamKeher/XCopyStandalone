@@ -1,4 +1,5 @@
 #include "XCopyCommand.h"
+#include "XCopyFixed.h"
 #include "XCopyScratch.h"
 #include <Streaming.h>
 #include <SerialFlash.h>
@@ -1586,7 +1587,7 @@ void XCopyCommandLine::cmdRpm(const XCopyArgs &args)
         if (rpm == 0.0f)
             Log << XCopyConsole::error(F("No index signal detected\r\n"));
         else
-            Log << F("Drive speed: ") << String(rpm, 2) << F(" RPM\r\n");
+            Log << F("Drive speed: ") << twoDecimals(rpm) << F(" RPM\r\n");
     }
     while (Serial.available()) Serial.read();
 
