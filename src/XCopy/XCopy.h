@@ -1,7 +1,7 @@
 #ifndef XCOPY_H
 #define XCOPY_H
 
-#define XCOPYVERSION "v733.26"
+#define XCOPYVERSION "v734.26"
 // #define XCOPY_DEBUG = 1
 
 // #define PCBVERSION 1 // expensive adafruit screen and joystick
@@ -42,6 +42,7 @@
 #include "XCopyESP8266.h"
 #include "XCopyFloppy.h"
 #include "XCopyHeadCalibration.h"
+#include "XCopyDriveToolkit.h"
 #include "XCopyConsole.h"
 #include "XCopyBrainFile.h"
 #include "XCopyTransfer.h"
@@ -97,6 +98,13 @@ public:
   //! Raw keystroke sink while the calibration screen is up, registered with
   //! XCopyCommandLine so the USB console and the browser terminal both drive it.
   static void onHeadCalKey(void *obj, char key);
+  // The single way out of a drive toolkit session. Same contract as
+  // exitHeadCalibration(): the outputs are driven and the console is in raw key
+  // mode, and both have to be put back however the session ends.
+  void exitDriveToolkit();
+  //! Raw keystroke sink while the toolkit is up, registered with XCopyCommandLine
+  //! so the USB console and the browser terminal both drive it.
+  static void onDriveToolkitKey(void *obj, char key);
   void sendBlock(int block);
   void cardChange();
   XCopyDisk* getDisk() { return &_disk; }
@@ -126,6 +134,14 @@ private:
      still armed - a lifetime this object simply does not have.
   */
   XCopyHeadCalibration _headCal;
+
+  /*
+     The drive toolkit session. A member for the same reason _headCal is: it owns
+     the index interrupt and the state of every output line while it is up, and an
+     object that could be destroyed out from under those would leave the drive
+     driven and the interrupt armed.
+  */
+  XCopyDriveToolkit _driveToolkit;
 
 #ifdef XCOPY_DEBUG
   RamMonitor _ram;

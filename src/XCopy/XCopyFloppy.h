@@ -218,6 +218,50 @@ class XCopyFloppy
     //! Reads the drive lines without moving anything. diskChange() steps the head.
     bool readTrack0Line();
     bool readDiskChangeLine();
+
+    /*
+       Raw interface line control and read back, for the drive toolkit.
+
+       motorOn() asserts select, asserts motor and then blocks for motorSpinupMs,
+       because every disk operation wants all three together. A diagnostic has to
+       be able to take them apart: "does this drive respond to MOTOR ON at all"
+       cannot be asked by a call that asserts select first, and "does select alone
+       start the spindle" cannot be asked at all. These drive one line and return.
+
+       motor is still tracked by setMotorLine(), so getMotorStatus(), motorTimeout()
+       and diskChangeIRQ() keep agreeing with the hardware.
+    */
+    void setSelectLine(bool asserted);
+    void setMotorLine(bool asserted);
+    void setDensityLine(bool high);
+
+    //! Commanded state of the output lines, read back at the pin.
+    bool readSelectLine();
+    bool readMotorLine();
+    bool readDensityLine();
+    //! True when DIR is asserted inward, matching setDir()'s dir != 0.
+    bool readDirInward();
+    //! True when SIDE selects head 1, matching setSide()'s side != 0.
+    bool readSideLower();
+    bool readWriteProtectLine();
+
+    /**
+     * @brief Is anything at all coming off the read head?
+     *
+     * Polls READ DATA for @p microseconds and says whether it moved. A level
+     * sample of a line that toggles at a quarter of a megahertz while reading is
+     * meaningless on its own, and attaching an interrupt to count edges properly
+     * costs one ISR entry per flux transition - far too much to leave armed
+     * behind a display that refreshes several times a second. This is bounded,
+     * cheap, and answers the only question a bring up actually asks of the line.
+     */
+    bool readDataActive(uint16_t microseconds = 1000);
+
+    //! Index edges since the last clearIndexEdges(). Counted by the RPM ISR, so
+    //! it costs no interrupt of its own and is only live between beginRPM() and
+    //! endRPM().
+    uint32_t getIndexEdges();
+    void clearIndexEdges();
     // Lets a caller keep the motor across a disk change - see diskChangeIRQ().
     void setDiskChangeStopsMotor(bool enabled);
     // Holds drive select, so the status lines stay valid with the motor stopped.

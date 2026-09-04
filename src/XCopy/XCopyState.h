@@ -50,7 +50,11 @@ enum XCopyState {
   liveStream = 43,
   // The continuous head calibration test. 34 was the drive signal monitor this
   // replaced and is retired rather than reused, like every other gap above.
-  headCalibration = 44
+  headCalibration = 44,
+  // The drive toolkit: every interface line sampled, the safe outputs drivable
+  // from the console and the browser. A far more capable descendant of what used
+  // to sit at 34, which stays retired - this is a new number, not that one reused.
+  driveToolkit = 45
 };
 
 #endif // XCOPYSTATE_H

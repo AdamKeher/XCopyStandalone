@@ -580,12 +580,24 @@ static volatile uint8_t indexSamples = 0;
 static bool rpmRunning = false;
 static const uint32_t rpmStallUs = 3000000;
 
+/*
+   Free running index edge count, for the drive toolkit.
+
+   readRPM() reports a rate and answers "how fast", which is not the same question
+   as "did anything arrive at all". A rate needs two edges inside the stall window
+   to say anything, so a drive producing one pulse every few seconds reads as
+   stopped; a count says exactly what turned up. Kept here rather than behind an
+   interrupt of its own because this ISR is already attached whenever anyone cares.
+*/
+static volatile uint32_t indexEdgeCount = 0;
+
 void readIndexISR()
 {
     indexTimes[indexHead] = micros();
     indexHead = (indexHead + 1) % RPM_WINDOW;
     if (indexSamples < RPM_WINDOW)
         indexSamples++;
+    indexEdgeCount++;
 }
 
 /*
@@ -1790,6 +1802,67 @@ void XCopyFloppy::setKeepDriveSelected(bool enabled)
     keepDriveSelected = enabled;
     if (enabled)
         driveSelect();
+}
+
+// --- raw line control, for the drive toolkit ---------------------------------
+// See the note in the header. One line each, no coupling, no settling.
+
+void XCopyFloppy::setSelectLine(bool asserted)
+{
+    digitalWriteFast(_drivesel, asserted ? LOW : HIGH);
+    delayMicroseconds(100);
+}
+
+void XCopyFloppy::setMotorLine(bool asserted)
+{
+    // Kept in step with motorOn()/motorOffRaw() so the idle timeout and the disk
+    // change interrupt do not act on a stale idea of whether the spindle is up.
+    motorTick = 0;
+    motor = asserted;
+    digitalWriteFast(_motor, asserted ? LOW : HIGH);
+}
+
+void XCopyFloppy::setDensityLine(bool high)
+{
+    digitalWriteFast(_dens, high ? HIGH : LOW);
+}
+
+// Read back at the pin rather than from a shadow variable, so what is reported is
+// what the drive is actually being shown.
+bool XCopyFloppy::readSelectLine() { return digitalRead(_drivesel) == LOW; }
+bool XCopyFloppy::readMotorLine() { return digitalRead(_motor) == LOW; }
+bool XCopyFloppy::readDensityLine() { return digitalRead(_dens) == HIGH; }
+//! setDir() drives LOW for dir != 0, which steps the head inward.
+bool XCopyFloppy::readDirInward() { return digitalRead(_dir) == LOW; }
+//! setSide() drives LOW for side != 0.
+bool XCopyFloppy::readSideLower() { return digitalRead(_side) == LOW; }
+bool XCopyFloppy::readWriteProtectLine() { return digitalRead(_wprot) == 0; }
+
+bool XCopyFloppy::readDataActive(uint16_t microseconds)
+{
+    const int first = digitalRead(_readdata);
+    const uint32_t start = micros();
+    while (micros() - start < microseconds)
+    {
+        if (digitalRead(_readdata) != first)
+            return true;
+    }
+    return false;
+}
+
+uint32_t XCopyFloppy::getIndexEdges()
+{
+    noInterrupts();
+    const uint32_t count = indexEdgeCount;
+    interrupts();
+    return count;
+}
+
+void XCopyFloppy::clearIndexEdges()
+{
+    noInterrupts();
+    indexEdgeCount = 0;
+    interrupts();
 }
 
 void XCopyFloppy::setTrackPosition(int cylinder)

@@ -38,6 +38,7 @@ function onLoad() {
   onLoad_DiskMon();
   onLoad_DiskInfo();
   onLoad_HeadCal();
+  onLoad_DriveToolkit();
 
   // Last: the message dispatch writes to term and to the tab DOM, so the socket
   // must not be able to deliver anything before both exist.

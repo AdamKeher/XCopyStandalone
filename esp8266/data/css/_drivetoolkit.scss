@@ -1,0 +1,64 @@
+/* Drive toolkit
+   -------------------------------------------------------------------------
+   Four states rather than two, matching XCopyDriveToolkit::Level and the colours
+   the TFT and the serial console paint from it: a line at rest, a line we are
+   deliberately driving, an input answering correctly, and an input that should be
+   doing something and is not. "Asserted" and "good" are both true and mean
+   different things, so they are never the same colour - painting them alike is
+   how the retired Test Drive ended up with indicators that told you nothing. The
+   three surfaces can be photographed side by side and read the same way. */
+
+.dtHelp {
+  color: #9a9a9a;
+}
+
+.dtReadouts {
+  font-family: monospace;
+  color: #9a9a9a;
+}
+
+.dtReadouts span {
+  margin-right: 28px;
+}
+
+.dtTable {
+  font-family: monospace;
+  width: auto;
+}
+
+.dtTable td,
+.dtTable th {
+  padding: 3px 20px 3px 6px;
+  white-space: nowrap;
+}
+
+.dtName {
+  font-weight: bold;
+}
+
+.dtPin,
+.dtDir,
+.dtValue {
+  color: #9a9a9a;
+}
+
+/* The rule between the outputs and the inputs: "what am I driving" and "what is
+   the drive saying" are the two halves of every question asked here. */
+tr.dtInputsStart td {
+  border-top: 2px solid #555;
+}
+
+.dtState.rest     { color: #9a9a9a; }
+.dtState.asserted { color: #e0b040; }
+.dtState.good     { color: #4caf50; }
+.dtState.fault    { color: #e04b4b; font-weight: bold; }
+
+.dtStatus {
+  font-family: monospace;
+  font-size: 1.05em;
+}
+
+.dtStatus.rest  { color: #9a9a9a; }
+.dtStatus.good  { color: #4caf50; }
+.dtStatus.warn  { color: #e0b040; }
+.dtStatus.fault { color: #e04b4b; font-weight: bold; }
