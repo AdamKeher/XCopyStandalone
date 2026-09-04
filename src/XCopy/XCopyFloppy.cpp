@@ -1339,24 +1339,37 @@ void XCopyFloppy::setupFTM0()
 }
 
 /*
-   Interrupt Service Routine for FlexTimer0 Module
-*/
-extern "C" void ftm0_isr(void)
-{
-    sample = (*(volatile uint32_t *)FTChannelValue);
-    // Reset count value
-    FTM0_CNT = 0x0000;
+   Turn the interval in `sample` into cells, and file it.
 
-    (*(volatile uint32_t *)FTStatusControlRegister) &= ~0x80; // clear channel event flag
+   The body of ftm0_isr, named so a second caller can reach it. XCopyDiskInfo
+   replays the flux out of an SCP file through this, so an image decodes into
+   stream[] and sectorTable[] by the same rules and against the same thresholds
+   the drive is read with - which is what makes an image and the disk it came from
+   analyse alike rather than nearly alike.
+
+   It reads the `sample` global rather than taking a parameter, which reads oddly
+   until you remember what this is. `sample` is volatile and read five times here;
+   a by-value parameter would collapse those to one load and so change the codegen
+   of the tightest interrupt in the project - about four microseconds, and the one
+   with the least slack - for the convenience of a caller that runs at its leisure.
+   The caller stores to `sample` and calls in, and the handler is left exactly as
+   it was. always_inline because at -Os GCC is otherwise free to make the ISR pay
+   for a call.
+
+   @result false for an interval outside the thresholds - too long, or too short.
+           Those are gap and noise: no cells, and no histogram entry either.
+*/
+static inline __attribute__((always_inline)) bool mfmFeed(void)
+{
     // skip too short / long samples, occur usually in the track gap
     bitCount++;
     if (sample > high4)
     {
-        return;
+        return false;
     }
     if (sample < low2)
     {
-        return;
+        return false;
     }
     // fills buffer according to transition length with 10, 100 or 1000 (4,6,8µs transition)
     readBuff = (readBuff << 2) | B10;
@@ -1387,12 +1400,76 @@ extern "C" void ftm0_isr(void)
             bCnt = 4; // set bit count to 4 to align to byte
         }
     }
-    hist[sample]++;          // add sample to histogram
+    hist[sample]++; // add sample to histogram
+    return true;
+}
+
+/*
+   Interrupt Service Routine for FlexTimer0 Module
+*/
+extern "C" void ftm0_isr(void)
+{
+    sample = (*(volatile uint32_t *)FTChannelValue);
+    // Reset count value
+    FTM0_CNT = 0x0000;
+
+    (*(volatile uint32_t *)FTStatusControlRegister) &= ~0x80; // clear channel event flag
+    if (!mfmFeed())
+    {
+        return;
+    }
     if (readPtr > streamLen) // stop when buffer is full
     {
         recordOn = false;
         FTM0_SC = 0x00; // Timer off
     }
+}
+
+/*
+   Feed one flux interval that did not come from the drive.
+
+   The SCP replay path: same cells, same sync marks, same histogram as a real
+   read. The only thing it does not do is stop a timer that is not running, so the
+   buffer-full test is here rather than left to the handler.
+
+   @param ticks interval in FTM0 ticks, the units the density thresholds are in.
+          Anything longer than the histogram is clamped, exactly as a gap that
+          overruns high4 is discarded by the handler.
+   @result false once the stream buffer is full and nothing further will be stored
+*/
+/*
+   Reset the decoder for a replay.
+
+   initRead() without setupFTM0(). Everything the capture handler accumulates has
+   to start from the same place a real read would, or the first sync mark of the
+   track lands wherever the previous one left bCnt - but there is no timer to
+   configure and no pin to configure it against.
+*/
+void XCopyFloppy::beginReplay()
+{
+    bCnt = 0;
+    readPtr = 0;
+    bitCount = 0;
+    sectorCnt = 0;
+    readBuff = 0;
+    _errors = 0;
+    _extError = "OK\n";
+
+    for (int i = 0; i < streamLen; i++)
+        stream[i] = 0x00;
+
+    for (int i = 0; i < 256; i++)
+        hist[i] = 0;
+}
+
+bool XCopyFloppy::feedFluxSample(uint32_t ticks)
+{
+    if (readPtr > streamLen)
+        return false;
+
+    sample = (ticks > 255) ? 256 : (int)ticks;
+    mfmFeed();
+    return readPtr <= streamLen;
 }
 
 /*

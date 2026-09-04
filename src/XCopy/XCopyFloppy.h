@@ -363,6 +363,33 @@ class XCopyFloppy
     //! whatever setMode() chose for the density in the drive can be put back.
     byte getExpectedSectors();
 
+    /**
+     * @brief Feed one flux interval into the MFM decoder from somewhere other than
+     *        the drive.
+     *
+     * Replaying an SCP file: the samples go through the same thresholding, sync
+     * detection and histogram the capture interrupt uses, and land in the same
+     * stream[] and sectorTable[], so censusTrack() cannot tell the two apart.
+     * Call initRead() first, as a real capture does.
+     *
+     * @param ticks interval in FTM0 ticks - the units the thresholds are in, not
+     *        the 25ns units an SCP file stores.
+     * @result false once the stream buffer is full; stop feeding.
+     */
+    bool feedFluxSample(uint32_t ticks);
+
+    /**
+     * @brief Reset the MFM decoder ready to be fed from somewhere other than the drive.
+     *
+     * What initRead() does for a capture, minus the part that arms the timer: a
+     * replay has no timer, and setting one up would leave the input capture
+     * configured against a pin nothing is going to drive.
+     *
+     * Call once before the first feedFluxSample() of each track, then censusTrack()
+     * when the flux runs out.
+     */
+    void beginReplay();
+
     int writeTrack();
 
     /**
