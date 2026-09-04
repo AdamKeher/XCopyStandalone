@@ -114,6 +114,7 @@ void XCopy::begin()
     // -------------------------------------------------------------------------------------------
     Log << F("Initialising drive: ");
     _disk.begin(&_graphics, &_audio, _esp, &_floppy);
+    _diskInfo.begin(&_graphics, &_audio, _esp, &_floppy);
     Log << XCopyConsole::success("OK\r\n");
 
     // Test Disk Orientation
@@ -525,6 +526,14 @@ void XCopy::cancelOperation()
     case modSearch:
         _disk.cancelOperation();
         break;
+    /*
+       The analyser owns its own cancel flag rather than borrowing _disk's: it is
+       not an XCopyDisk operation, and a survey has to put the sync census bound
+       back before it returns, which only its own loop can do.
+    */
+    case analyseDisk:
+        _diskInfo.cancelOperation();
+        break;
     default:
         break;
     }
@@ -753,6 +762,45 @@ void XCopy::onWebCommand(void* obj, const String command)
     }
     else if (command == "debuggingSerialPassThrough") {
             xcopy->startFunction(XCopyAction::debuggingSerialPassThrough);
+    }
+    /*
+       Disk info. Two sources, one state.
+
+       "<first>-<last>,<side>" for the drive, and the same with a path appended for
+       an image. Parsed here rather than carried through startFunction()'s single
+       String because the survey wants three numbers and sometimes a path, and
+       stuffing those back into one string only to take them apart again in
+       processState() would put the wire format in two places.
+    */
+    else if (command.startsWith("diskInfoScan") || command.startsWith("diskInfoFile")) {
+        const bool fromFile = command.startsWith("diskInfoFile");
+        String param = "";
+        if (command.indexOf(",") > 0) param = command.substring(command.indexOf(",") + 1);
+
+        xcopy->_diskInfoFirst = 0;
+        xcopy->_diskInfoLast = MAX_CYLINDERS - 1;
+        xcopy->_diskInfoSide = -1;
+        xcopy->_diskInfoPath = "";
+
+        const int dash = param.indexOf('-');
+        const int comma = param.indexOf(',');
+        if (dash > 0 && comma > dash) {
+            xcopy->_diskInfoFirst = (uint8_t)param.substring(0, dash).toInt();
+            xcopy->_diskInfoLast = (uint8_t)param.substring(dash + 1, comma).toInt();
+
+            // The path may itself contain a comma, so the side is read up to the
+            // next one and everything after it is the path, untouched.
+            const int comma2 = param.indexOf(',', comma + 1);
+            if (comma2 > 0) {
+                xcopy->_diskInfoSide = (int8_t)param.substring(comma + 1, comma2).toInt();
+                xcopy->_diskInfoPath = param.substring(comma2 + 1);
+            }
+            else {
+                xcopy->_diskInfoSide = (int8_t)param.substring(comma + 1).toInt();
+            }
+        }
+
+        xcopy->startFunction(fromFile ? XCopyAction::analyseScp : XCopyAction::analyseDisk);
     }
     // Head calibration. Only the start is accepted from any state; everything
     // else is ignored unless a session is actually running, so a browser tab left
@@ -1916,6 +1964,27 @@ void XCopy::processState()
             if (_drawnOnce == false)
             {
                 _disk.diskFlux();
+
+                setBusy(false);
+                _drawnOnce = true;
+            }
+            break;
+        }
+        case analyseDisk:
+        {
+            /*
+               One shot, like fluxDisk above: the survey runs to completion inside
+               this visit and reports as it goes, rather than being pumped a track
+               at a time. It cannot service web commands mid-survey - nothing in
+               here may call _esp->update() while the capture buffer is in use -
+               so cancelling goes through the interrupt, not through a command.
+            */
+            if (_drawnOnce == false)
+            {
+                if (_diskInfoPath == "")
+                    _diskInfo.surveyDisk(_diskInfoFirst, _diskInfoLast, _diskInfoSide);
+                else
+                    _diskInfo.surveyScp(_diskInfoPath, _diskInfoFirst, _diskInfoLast, _diskInfoSide);
 
                 setBusy(false);
                 _drawnOnce = true;
