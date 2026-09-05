@@ -159,6 +159,26 @@ public:
     //! unaligned drive capture would be.
     bool indexCued() const { return (_flags & (1 << SCP_FLAG_INDEX_CUED)) != 0; }
 
+    //! True when the image declares itself read/write. Clear is the format's way of
+    //! saying the image is to be treated as write protected, and is what a viewer
+    //! shows as WrProt - so it is read from the file rather than assumed, even
+    //! though nothing here can write to a disk through an image either way.
+    bool writable() const { return (_flags & (1 << SCP_FLAG_WRITABLE)) != 0; }
+
+    /**
+     * @brief Multiplier on the 25ns base unit that readFlux() samples are in.
+     *
+     * 1 for an ordinary image. The header's resolution byte lets a capture trade
+     * timing precision for file size, and a reader that ignores it decodes a
+     * half-resolution image as a disk spinning at twice the speed - every interval
+     * lands in the wrong threshold bucket and the whole track reads as noise.
+     *
+     * Applied to flux samples only. The revolution's index time is 25ns units in
+     * the format whatever the flux resolution is, so revolutionTicks() needs no
+     * scaling and deliberately does not get any.
+     */
+    uint8_t sampleScale() const { return (uint8_t)(_resolution + 1); }
+
     //! Whether the offset table has any flux for this track at all.
     bool trackPresent(uint8_t scpTrack);
 
@@ -199,6 +219,7 @@ private:
     uint8_t _flags = 0;
     uint8_t _diskType = 0;
     uint8_t _heads = SCP_HEADS_BOTH;
+    uint8_t _resolution = SCP_RESOLUTION_25NS;
 
     // revolution currently open for reading
     uint32_t _revTicks = 0;

@@ -575,7 +575,7 @@ function onWebSocketMessage(msg) {
      Disk Info.
 
      These re-split rather than using res[]: the shared split above stops at 12
-     fields and dinfoTrack carries fourteen, so flags and the sector list would be
+     fields and dinfoTrack carries eighteen, so flags and the sector list would be
      dropped on the floor. Raising the shared limit would change how every other
      message is parsed, which is not worth it for one family.
   */
@@ -588,8 +588,9 @@ function onWebSocketMessage(msg) {
   }
 
   if (res[0] == "dinfoTrack") {
-    var t = message.split(",", 14);
-    dinfoTrack(t[1], t[2], t[3], t[4], t[5], t[6], t[7], t[8], t[9], t[10], t[11], t[12], t[13]);
+    var t = message.split(",", 18);
+    dinfoTrack(t[1], t[2], t[3], t[4], t[5], t[6], t[7], t[8], t[9], t[10], t[11], t[12],
+               t[13], t[14], t[15], t[16], t[17]);
   }
 
   if (res[0] == "dinfoProfile") {
@@ -600,8 +601,16 @@ function onWebSocketMessage(msg) {
     dinfoHist(res[1], res[2], res[3]);
   }
 
+  if (res[0] == "dinfoSector") {
+    // Fifteen fields and the last is 1024 characters of hex, so it re-splits for
+    // the same reason dinfoTrack does.
+    var d = message.split(",", 16);
+    dinfoSector(d[1], d[2], d[3], d[4], d[5], d[6], d[7], d[8], d[9], d[10],
+                d[11], d[12], d[13], d[14], d[15]);
+  }
+
   if (res[0] == "dinfoEnd") {
-    dinfoEnd(res[1], res[2], res[3]);
+    dinfoEnd(res[1], res[2], res[3], res[4]);
   }
 
   if (res[0] == "resetEmptyBlocks") {

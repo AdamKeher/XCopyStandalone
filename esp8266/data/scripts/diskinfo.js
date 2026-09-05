@@ -30,6 +30,9 @@ const DINFO_HD = 0x02;
 const DINFO_FROMFILE = 0x04;
 
 const DINFO_MAX_CYLINDERS = 84;
+// FLOPPY_MAX_SYNCS in XCopyFloppy.h: sync marks one capture can hold, and so the
+// point past which a track's census is known to be incomplete.
+const DINFO_MAX_SYNCS = 64;
 const DINFO_BUCKETS = 512;
 const DINFO_HIST_BINS = 64;
 
@@ -53,6 +56,17 @@ var dinfoProfiles = {};
 var dinfoHists = {};
 var dinfoMeta = null;
 var dinfoSelected = { cylinder: 0, side: 0 };
+
+/*
+   Decoded sectors, keyed "cylinder:side:sector".
+
+   The firmware keeps no sector data once a survey has moved on - 168 tracks of it
+   is far past what the part has - so each one is fetched on demand and kept here.
+   A value of "pending" is a request already in flight, which is what stops a
+   pointer sliding along a track from asking for the same sector fifty times.
+*/
+var dinfoSectorCache = {};
+var dinfoHoverKey = null;
 
 // The painted surface is cached per side. Repainting it is a quarter of a million
 // pixels of trigonometry; selecting a track must not pay that, so the speckle goes
@@ -96,6 +110,9 @@ function dinfoBegin(source, firstCyl, lastCyl, side, hd, wrprot, rotMs, name) {
   dinfoTracks = {};
   dinfoProfiles = {};
   dinfoHists = {};
+  // The disk in the drive may not be the one these came from.
+  dinfoSectorCache = {};
+  dinfoHoverKey = null;
   dinfoSurfaceDirty = [true, true];
 
   dinfoMeta = {
@@ -109,6 +126,7 @@ function dinfoBegin(source, firstCyl, lastCyl, side, hd, wrprot, rotMs, name) {
     rotMs: parseInt(rotMs, 10),
     sectors: 0,
     bad: 0,
+    missing: 0,
     complete: false
   };
 
@@ -124,7 +142,7 @@ function dinfoBegin(source, firstCyl, lastCyl, side, hd, wrprot, rotMs, name) {
    0..4095 of a revolution, so it is an angle, and it is what puts a sector mark
    where it physically sits rather than where a formatter would have put it.
 */
-function dinfoTrack(cyl, side, syncs, valid, strays, dups, trunc, cylSeen, cells, revBytes, sectorCount, flags, sectors) {
+function dinfoTrack(cyl, side, syncs, valid, bad, strays, dups, trunc, over, cylSeen, cells, revBytes, revUs, cellPs, sectorCount, flags, sectors) {
   cyl = parseInt(cyl, 10);
   side = parseInt(side, 10);
 
@@ -143,12 +161,16 @@ function dinfoTrack(cyl, side, syncs, valid, strays, dups, trunc, cylSeen, cells
     side: side,
     syncs: parseInt(syncs, 10),
     valid: parseInt(valid, 10),
+    bad: parseInt(bad, 10),
     strays: parseInt(strays, 10),
     dups: parseInt(dups, 10),
     trunc: parseInt(trunc, 10),
+    over: parseInt(over, 10),
     cylSeen: parseInt(cylSeen, 10),
     cells: parseInt(cells, 10),
     revBytes: parseInt(revBytes, 10),
+    revUs: parseInt(revUs, 10),
+    cellPs: parseInt(cellPs, 10),
     sectorCount: parseInt(sectorCount, 10),
     flags: parseInt(flags, 10),
     sectors: list
@@ -194,10 +216,44 @@ function dinfoHist(cyl, side, hex) {
   if (cyl == dinfoSelected.cylinder && side == dinfoSelected.side) { dinfoDrawDetail(); }
 }
 
-function dinfoEnd(tracks, good, bad) {
+/*
+   One decoded sector, in reply to a hover.
+
+   Held whether or not it decoded: a sector the firmware could not find is still an
+   answer, and caching it stops the same miss being asked for again every time the
+   pointer crosses it.
+*/
+function dinfoSector(cyl, side, sector, found, format, trackId, toGap,
+                     hdrSum, hdrCalc, dataSum, dataCalc, startCell, dataCell, endCell, hex) {
+  var key = parseInt(cyl, 10) + ":" + parseInt(side, 10) + ":" + parseInt(sector, 10);
+
+  dinfoSectorCache[key] = {
+    cylinder: parseInt(cyl, 10),
+    side: parseInt(side, 10),
+    sector: parseInt(sector, 10),
+    found: found == "1",
+    format: parseInt(format, 10),
+    trackId: parseInt(trackId, 10),
+    toGap: parseInt(toGap, 10),
+    hdrSum: parseInt(hdrSum, 10),
+    hdrCalc: parseInt(hdrCalc, 10),
+    dataSum: parseInt(dataSum, 10),
+    dataCalc: parseInt(dataCalc, 10),
+    startCell: parseInt(startCell, 10),
+    dataCell: parseInt(dataCell, 10),
+    endCell: parseInt(endCell, 10),
+    hex: hex === undefined ? "" : hex
+  };
+
+  // Only paint it if the pointer is still on the sector that asked.
+  if (dinfoHoverKey === key) { dinfoDrawDump(dinfoSectorCache[key]); }
+}
+
+function dinfoEnd(tracks, good, bad, missing) {
   if (dinfoMeta == null) { return; }
   dinfoMeta.sectors = parseInt(good, 10);
   dinfoMeta.bad = parseInt(bad, 10);
+  dinfoMeta.missing = parseInt(missing, 10);
   dinfoMeta.tracks = parseInt(tracks, 10);
   dinfoMeta.complete = true;
   dinfoDrawAll();
@@ -231,6 +287,20 @@ function dinfoVerdictColour(verdict, sector) {
 function dinfoTint(track) {
   if (track === undefined) { return [34, 34, 34]; }
   if (track.syncs == 0) { return [46, 48, 78]; }
+
+  /*
+     Sync marks alone do not make a track formatted.
+
+     0x4489 is chosen to be illegal in encoded data, which says nothing about a
+     surface where nothing is encoded: an unwritten track throws the pattern by
+     accident, and keying the colour off track.syncs painted a wiped disk as one
+     in trouble from edge to edge. cylSeen is the first header that checksummed
+     and named a cylinder in range, so it is the cheapest thing here that noise
+     cannot fake - without it there are marks but no format, which is a different
+     finding from a format that will not read.
+  */
+  if (track.cylSeen < 0) { return [64, 56, 96]; }
+
   if (track.valid >= track.sectorCount && track.sectorCount > 0) { return [42, 92, 58]; }
   if (track.valid == 0) { return [104, 40, 40]; }
   return [116, 88, 34];
@@ -243,15 +313,30 @@ function dinfoTint(track) {
 /*
    Angle of a position on the track, 0 at twelve o'clock.
 
-   Side 0 runs anticlockwise and side 1 clockwise because the two are drawn as the
-   disk is actually seen: side 0 from underneath and side 1 from above, which is
-   what "bottom view" and "top view" mean on the HxC panel this follows. Draw both
-   the same way round and the sector pattern on one of them is a mirror image of
-   where it really is.
+   The two sides run opposite ways because they are drawn as the disk is actually
+   seen: side 0 from underneath and side 1 from above, which is what "bottom view"
+   and "top view" mean on the HxC panel this follows. Draw both the same way round
+   and the pattern on one of them is a mirror image of where it really is.
+
+   Which way round each one goes is NOT the direction the hub arrows show. Those
+   are the rotation - which way the surface travels under the head - and the track
+   is laid down against it: the head is fixed while the disk turns beneath it, so
+   the material arriving under it a moment later is the material that was sitting a
+   little way BACK along the rotation. Time therefore advances round the drawing
+   opposite to the arrow, and running it with the arrow instead - which is what
+   this did, on both sides - mirrors every track about twelve o'clock and reverses
+   the direction the sector pattern appears to spiral in.
+
+   Checked against HxC rather than argued from the physics alone. Measuring the
+   angular drift of the sector marks per ring, on the same image in both tools:
+   HxC runs side 0 clockwise and side 1 anticlockwise going outward, and this file
+   ran side 0 anticlockwise - the mirror of it, on the side with enough marks to
+   measure. These signs are what put the two the same way round, so a change here
+   is a change away from HxC.
 */
 function dinfoAngle(pos, side) {
   var t = pos / 4096;
-  return side === 0 ? (-Math.PI / 2 - t * TAU) : (-Math.PI / 2 + t * TAU);
+  return side === 0 ? (-Math.PI / 2 + t * TAU) : (-Math.PI / 2 - t * TAU);
 }
 
 function dinfoRadius(cylinder) {
@@ -307,7 +392,7 @@ function dinfoPaintSurface(side) {
       if (profile !== undefined) {
         // Inverse of dinfoAngle(): screen angle back to a position on the track.
         var a = Math.atan2(dy, dx);
-        var t = side === 0 ? (-Math.PI / 2 - a) : (a + Math.PI / 2);
+        var t = side === 0 ? (a + Math.PI / 2) : (-Math.PI / 2 - a);
         t /= TAU;
         t -= Math.floor(t);
         level = profile[Math.floor(t * DINFO_BUCKETS) % DINFO_BUCKETS];
@@ -422,17 +507,31 @@ function dinfoDrawAll() {
 // headers and status
 // ---------------------------------------------------------------------------
 
+/*
+   One side's totals.
+
+   "bad" is sectors that were found and did not read, which is the firmware's
+   CalibrationResult::bad and the same thing HxC's panel counts. It is deliberately
+   not sectorCount - valid: that counts a track which was never formatted as eleven
+   failures, so a wiped disk whose every readable sector was perfect came back as
+   836 bad, and the number said more about the assumption than the disk.
+
+   What a standard format would have added on top of what was found is counted
+   separately as missing, because it is worth knowing and is not damage.
+*/
 function dinfoSideSummary(side) {
-  var tracks = 0, sectors = 0, bad = 0, bytes = 0;
+  var tracks = 0, sectors = 0, bad = 0, missing = 0, bytes = 0, over = 0;
   for (var c = 0; c < DINFO_MAX_CYLINDERS; c++) {
     var t = dinfoTracks[c * 2 + side];
     if (t === undefined) { continue; }
     tracks++;
     sectors += t.valid;
-    bad += Math.max(0, t.sectorCount - t.valid);
+    bad += t.bad;
+    missing += Math.max(0, t.sectorCount - t.valid - t.bad);
     bytes += t.valid * 512;
+    if (t.over > 0) { over++; }
   }
-  return { tracks: tracks, sectors: sectors, bad: bad, bytes: bytes };
+  return { tracks: tracks, sectors: sectors, bad: bad, missing: missing, bytes: bytes, over: over };
 }
 
 function dinfoDrawHeaders() {
@@ -441,11 +540,15 @@ function dinfoDrawHeaders() {
     var text = "Side " + side + ", " + s.tracks + " Tracks";
     if (s.tracks > 0) {
       text += "<br/>" + s.sectors + " Sectors, " + s.bad + " bad";
+      if (s.missing > 0) { text += "<br/>" + s.missing + " missing"; }
       text += "<br/>" + s.bytes + " Bytes";
       text += "<br/>Amiga MFM";
       if (dinfoMeta != null) {
         text += "<br/>WrProt " + (dinfoMeta.wrprot ? "ON" : "OFF");
       }
+      // Only when it happened. A census that ran out of table has described part
+      // of those tracks as though it were all of them, and that has to be said.
+      if (s.over > 0) { text += "<br/>" + s.over + " tracks over " + DINFO_MAX_SYNCS + " marks"; }
     } else {
       text += "<br/>nothing read";
     }
@@ -470,24 +573,34 @@ function dinfoTrackCells(track) {
 }
 
 /*
+   One revolution of this track, in microseconds.
+
+   Per track, from the firmware. For an image that is the file's own index to index
+   time; for a drive it is the rotation measured once at the start of the survey,
+   sent on every track so there is one place this is read from.
+*/
+function dinfoTrackUs(track) {
+  if (track !== undefined && track.revUs) { return track.revUs; }
+  if (dinfoMeta != null && dinfoMeta.rotMs) { return dinfoMeta.rotMs * 1000; }
+  return 0;
+}
+
+/*
    Cells per second, which is what "bitrate" means here.
 
-   Derived rather than sent: the firmware has the two numbers it comes from and
-   computing it there would have meant a float on a part whose soft double runtime
-   was deliberately removed.
+   From the measured cell period and nothing else. This used to be derived as
+   cells / milliseconds, and both of those came from the same revolution length
+   under the same assumed 2us cell - so the revolution cancelled and the answer was
+   exactly 500 for every DD track ever surveyed, whatever was on it. A number that
+   cannot come out any other way is not a measurement, and a drive running slow or
+   a track written long is precisely what it was being read to find.
+
+   XCopyFloppy::measureCellPeriod() takes it from the flux interval histogram
+   instead, so it moves with the disk.
 */
 function dinfoBitrate(track) {
-  var cells = dinfoTrackCells(track);
-  if (cells == null) { return null; }
-
-  var ms = (dinfoMeta != null) ? dinfoMeta.rotMs : 0;
-  if (!ms) {
-    // An SCP image reports no drive rotation, so it comes back from the track: a
-    // DD cell is 2us, so eight cells to the byte is 16us of revolution per byte.
-    ms = Math.round((track.revBytes * 16) / 1000);
-  }
-  if (!ms) { return null; }
-  return Math.round(cells / ms);
+  if (track === undefined || !track.cellPs) { return null; }
+  return Math.round(1000000000 / track.cellPs);
 }
 
 function dinfoDrawDetail() {
@@ -506,19 +619,26 @@ function dinfoDrawDetail() {
     return;
   }
 
-  var rpm = (dinfoMeta != null && dinfoMeta.rotMs) ? Math.round(60000 / dinfoMeta.rotMs) : 0;
-  $('#dinfoRpm').html(rpm ? (rpm + " RPM") : "&mdash;");
+  var us = dinfoTrackUs(track);
+  $('#dinfoRpm').html(us ? (Math.round(60000000 / us) + " RPM") : "&mdash;");
 
   var rate = dinfoBitrate(track);
   $('#dinfoBitrate').html(rate ? (rate + " kbit/s") : "&mdash;");
 
-  $('#dinfoFormat').html(track.syncs > 0 ? "AMIGA_MFM_ENCODING" : "UNFORMATTED");
+  // A header that checksummed, not a sync mark. See dinfoTint() for why the two
+  // are not the same claim on a surface that has never been written.
+  $('#dinfoFormat').html(track.cylSeen >= 0 ? "AMIGA_MFM_ENCODING"
+                         : (track.syncs > 0 ? "UNFORMATTED<br/>" + track.syncs + " stray marks"
+                                            : "UNFORMATTED"));
   var cells = dinfoTrackCells(track);
   $('#dinfoLen').html((cells == null ? "&mdash;" : (cells + " cells")) +
                       "<br/>" + track.cells + " transitions");
-  $('#dinfoSectors').html(track.valid + " of " + track.sectorCount);
-  $('#dinfoSyncs').html(track.syncs);
-  $('#dinfoStrays').html(track.strays + " / " + track.dups);
+  $('#dinfoSectors').html(track.valid + " of " + track.sectorCount +
+                          (track.bad > 0 ? "<br/>" + track.bad + " bad" : ""));
+  // Overflow means the table filled and the rest of the track's marks were never
+  // looked at, so the counts below it are a floor and not a total.
+  $('#dinfoSyncs').html(track.syncs + (track.over > 0 ? " (+" + track.over + " unseen)" : ""));
+  $('#dinfoStrays').html(track.strays + " / " + track.dups + " / " + track.trunc);
   $('#dinfoCylSeen').html(track.cylSeen < 0 ? "none" : track.cylSeen);
   $('#dinfoSides').html(dinfoMeta != null && dinfoMeta.side < 0 ? 2 : 1);
 
@@ -546,30 +666,39 @@ function dinfoDrawDetail() {
 function dinfoDrawTrackView(track) {
   var canvas = document.getElementById("dinfoTrackCanvas");
   if (canvas == null) { return; }
-  var ctx = canvas.getContext("2d");
-  var w = canvas.width, h = canvas.height;
 
+  /*
+     The canvas is sized to the whole zoomed track and the wrapper scrolls it,
+     rather than the canvas staying one screen wide and a slider choosing which
+     slice to draw. Same picture, but the panning is the browser's: it drags,
+     wheels, and takes the keyboard, and it shows how much of the track is off
+     screen - which is what the old "x offset (% of the track len)" slider was
+     trying to say in words.
+  */
+  var zoom = parseInt($('#dinfoZoom').val(), 10) || 1;
+  var wrap = canvas.parentNode;
+  var base = wrap ? wrap.clientWidth : canvas.width;
+  if (base < 320) { base = 320; }
+
+  var w = Math.round(base * zoom);
+  // Assigning width clears the canvas, so only do it when it actually changed -
+  // otherwise every redraw throws away the drawing it is about to repeat.
+  if (canvas.width !== w) { canvas.width = w; }
+  var h = canvas.height;
+
+  var ctx = canvas.getContext("2d");
   ctx.fillStyle = "#050505";
   ctx.fillRect(0, 0, w, h);
 
   if (track === undefined) { return; }
 
-  var zoom = parseInt($('#dinfoZoom').val(), 10) || 1;
-  var offset = (parseInt($('#dinfoOffset').val(), 10) || 0) / 100;
-
-  // What fraction of the revolution is on screen, and where it starts.
-  var span = 1 / zoom;
-  var start = offset * (1 - span);
-  if (start < 0) { start = 0; }
-
-  var xOf = function (pos) { return ((pos / 4096) - start) / span * w; };
+  var xOf = function (pos) { return (pos / 4096) * w; };
 
   // surface density
   var profile = dinfoProfiles[track.cylinder * 2 + track.side];
   if (profile !== undefined) {
     for (var x = 0; x < w; x++) {
-      var t = start + (x / w) * span;
-      var level = profile[Math.floor(t * DINFO_BUCKETS) % DINFO_BUCKETS];
+      var level = profile[Math.floor((x / w) * DINFO_BUCKETS) % DINFO_BUCKETS];
       var v = Math.round(40 + (level * 12));
       ctx.fillStyle = "rgb(" + Math.round(v * 0.55) + "," + Math.round(v * 0.6) + "," + v + ")";
       ctx.fillRect(x, 20, 1, 42);
@@ -581,7 +710,6 @@ function dinfoDrawTrackView(track) {
   track.sectors.forEach(function (s) {
     var x0 = xOf(s.pos);
     var x1 = xOf(s.pos + sectorSpan);
-    if (x1 < 0 || x0 > w) { return; }
 
     ctx.fillStyle = dinfoVerdictColour(s.verdict, s.sector);
     ctx.fillRect(x0, 66, Math.max(2, x1 - x0), 22);
@@ -600,16 +728,20 @@ function dinfoDrawTrackView(track) {
     }
   });
 
-  // scale
-  ctx.fillStyle = "#8a8a8a";
+  /*
+     A tick every 10% of the revolution at 1x, and more of them as it is zoomed
+     in: at 16x, ten ticks across sixteen screens is one every screen and a half,
+     which is no scale at all. Kept to whole percents so the labels stay short.
+  */
+  var ticks = 10 * zoom;
+  if (ticks > 100) { ticks = 100; }
   ctx.font = "10px monospace";
-  for (var i = 0; i <= 10; i++) {
-    var frac = start + (i / 10) * span;
-    var px = (i / 10) * w;
-    ctx.fillText(Math.round(frac * 100) + "%", px + 2, 12);
+  for (var i = 0; i <= ticks; i++) {
+    var px = (i / ticks) * w;
     ctx.fillStyle = "#1e1e1e";
     ctx.fillRect(px, 16, 1, 76);
     ctx.fillStyle = "#8a8a8a";
+    ctx.fillText(Math.round((i / ticks) * 100) + "%", px + 2, 12);
   }
 
   ctx.fillStyle = "#8a8a8a";
@@ -674,12 +806,169 @@ function dinfoSelect(cylinder, side) {
   if (cylinder > DINFO_MAX_CYLINDERS - 1) { cylinder = DINFO_MAX_CYLINDERS - 1; }
 
   dinfoSelected = { cylinder: cylinder, side: side };
-  $('#dinfoTrackSlider').val(cylinder);
-  $('#dinfoSideSlider').val(side);
+  // Not while it is being typed into, the way headcal.js leaves its cylinder box
+  // alone on focus - otherwise a redraw rewrites the number mid keystroke.
+  if (!$('#dinfoCylPick').is(':focus')) { $('#dinfoCylPick').val(cylinder); }
+  $('#dinfoSideBtn').html("Side: " + side);
 
   dinfoDrawSide(0);
   dinfoDrawSide(1);
   dinfoDrawDetail();
+}
+
+/*
+   Step the selected cylinder, and cycle the side.
+
+   Named and shaped like headCalNudge() so the two selectors read the same, but
+   local: Head Cal's moves a physical head and goes out over the websocket, this
+   one only moves a cursor over a survey already in hand.
+*/
+function dinfoNudge(delta) {
+  dinfoSelect(dinfoSelected.cylinder + delta, dinfoSelected.side);
+}
+
+function dinfoCycleSide() {
+  dinfoSelect(dinfoSelected.cylinder, dinfoSelected.side === 0 ? 1 : 0);
+}
+
+/*
+   A checksum pair as a viewer states it: the value that was stored, and whether the
+   bytes actually captured still add up to it.
+*/
+function dinfoCrcText(stored, calc) {
+  return "0x" + ("00000000" + (stored >>> 0).toString(16).toUpperCase()).slice(-8) +
+         " (" + (stored === calc ? "Ok" : "BAD") + ")";
+}
+
+function dinfoPad(value, width) {
+  return ("0000000000" + value).slice(-width);
+}
+
+/*
+   The sector dump: a header saying what the sector claims to be, then its 512
+   bytes as hex and ASCII.
+
+   Sixteen bytes to the line rather than the eight a Visual Floppy panel uses -
+   there is room for it here, and it halves a 64 line block to 32.
+*/
+function dinfoDrawDump(rec) {
+  var out = document.getElementById("dinfoDumpText");
+  if (out == null) { return; }
+
+  if (rec === "pending") { out.textContent = "Decoding\u2026"; return; }
+  if (rec == null) { out.textContent = "Hover a sector in the track view."; return; }
+
+  if (!rec.found) {
+    out.textContent = "Amiga MFM Sector\n\n" +
+      "Sector ID:" + dinfoPad(rec.sector, 3) + "\n\n" +
+      "No header in the capture names this sector, so there is nothing to\n" +
+      "decode. The mark is on the disk; what follows it did not check out.";
+    return;
+  }
+
+  var lines = [];
+  lines.push("Amiga MFM Sector");
+  lines.push("Sector ID:" + dinfoPad(rec.sector, 3));
+  // The header carries the LOGICAL track, so the side is its low bit.
+  lines.push("Track ID:" + dinfoPad(rec.trackId >> 1, 3) +
+             " - Side ID:" + dinfoPad(rec.trackId & 1, 3));
+  // Not HxC's "Size:00512 (ID:0x00)". Its ID is a size code; the byte an Amiga
+  // header actually carries here is the format, and it is 0xFF. Reusing their
+  // wording for a different quantity would read as a decode that disagreed.
+  lines.push("Size:00512  Format:0x" + dinfoPad(rec.format.toString(16).toUpperCase(), 2));
+  lines.push("Sectors to gap:" + rec.toGap);
+  lines.push("Head CRC:" + dinfoCrcText(rec.hdrSum, rec.hdrCalc));
+  lines.push("Data CRC:" + dinfoCrcText(rec.dataSum, rec.dataCalc));
+  lines.push("Start Sector cell:" + rec.startCell);
+  lines.push("Start Sector Data cell:" + rec.dataCell);
+  lines.push("End Sector cell:" + rec.endCell);
+  lines.push("Number of cells:" + (rec.endCell - rec.startCell));
+  lines.push("");
+
+  var perLine = 16;
+  for (var off = 0; off < 512; off += perLine) {
+    var hex = "", txt = "";
+    for (var i = 0; i < perLine; i++) {
+      var at = (off + i) * 2;
+      var byte = parseInt(rec.hex.substr(at, 2), 16);
+      if (isNaN(byte)) { byte = 0; }
+      hex += ("0" + byte.toString(16).toUpperCase()).slice(-2) + " ";
+      txt += (byte >= 32 && byte < 127) ? String.fromCharCode(byte) : ".";
+    }
+    lines.push(("000" + off.toString(16).toUpperCase()).slice(-4) + "| " + hex + "| " + txt);
+  }
+
+  out.textContent = lines.join("\n");
+}
+
+/*
+   Which sector of the selected track the pointer is over, or null.
+
+   Same geometry dinfoDrawTrackView() draws with, so what is hit is what is seen.
+   Horizontal only: the bands are thin and demanding the pointer be inside the
+   22px sector strip makes them fiddly to hit for no gain.
+*/
+function dinfoTrackHit(canvas, event) {
+  var track = dinfoTracks[dinfoSelected.cylinder * 2 + dinfoSelected.side];
+  if (track === undefined) { return null; }
+
+  var rect = canvas.getBoundingClientRect();
+  if (rect.width === 0) { return null; }
+
+  var x = (event.clientX - rect.left) * (canvas.width / rect.width);
+  var w = canvas.width;
+  var span = track.revBytes > 0 ? (1088 / track.revBytes) * 4096 : 0;
+
+  for (var i = 0; i < track.sectors.length; i++) {
+    var s = track.sectors[i];
+    var x0 = (s.pos / 4096) * w;
+    var x1 = ((s.pos + span) / 4096) * w;
+    if (x >= x0 && x <= Math.max(x0 + 2, x1)) { return s; }
+  }
+  return null;
+}
+
+/*
+   Hovering a sector asks the device to decode it.
+
+   Only when the sector under the pointer changes, and only once per sector: on a
+   real disk this costs a seek and a revolution, so a pointer crossing a track must
+   not turn into a burst of them. dinfoSectorCache holds both the answers and the
+   requests in flight.
+*/
+function dinfoTrackHover(canvas, event) {
+  var hit = dinfoTrackHit(canvas, event);
+  canvas.style.cursor = hit === null ? "default" : "pointer";
+
+  if (hit === null) { dinfoHoverKey = null; return; }
+
+  var cyl = dinfoSelected.cylinder, side = dinfoSelected.side;
+  var label = document.getElementById("dinfoDumpLabel");
+
+  // A stray mark carries no sector number, so there is nothing to ask for.
+  if (hit.sector === DINFO_STRAY) {
+    dinfoHoverKey = null;
+    if (label != null) { label.innerHTML = "Cylinder " + cyl + ", side " + side; }
+    dinfoDrawDump({ found: false, sector: 255 });
+    return;
+  }
+
+  var key = cyl + ":" + side + ":" + hit.sector;
+  if (dinfoHoverKey === key) { return; }
+  dinfoHoverKey = key;
+
+  if (label != null) {
+    label.innerHTML = "Cylinder " + cyl + ", side " + side + ", sector " + hit.sector;
+  }
+
+  var cached = dinfoSectorCache[key];
+  if (cached === undefined) {
+    dinfoSectorCache[key] = "pending";
+    wsSend("diskInfoSector," + cyl + "," + side + "," + hit.sector);
+    dinfoDrawDump("pending");
+  } else {
+    dinfoDrawDump(cached);
+  }
 }
 
 // Which cylinder the pointer is over, or -1 outside the annulus.
@@ -730,13 +1019,45 @@ function onLoad_DiskInfo() {
     })(side);
   }
 
-  $('#dinfoTrackSlider').on('input', function () {
-    dinfoSelect(parseInt($(this).val(), 10), dinfoSelected.side);
+  (function () {
+    var tc = document.getElementById("dinfoTrackCanvas");
+    if (tc == null) { return; }
+    tc.addEventListener("mousemove", function (e) { dinfoTrackHover(tc, e); });
+    tc.addEventListener("mouseleave", function () { dinfoHoverKey = null; });
+  })();
+
+  // Enter on the cylinder box jumps straight there, as it does on Head Cal.
+  $('#dinfoCylPick').on('keydown', function (e) {
+    if (e.key !== 'Enter') { return; }
+    e.preventDefault();
+    var value = parseInt($('#dinfoCylPick').val(), 10);
+    if (!isNaN(value)) { dinfoSelect(value, dinfoSelected.side); }
   });
-  $('#dinfoSideSlider').on('input', function () {
-    dinfoSelect(dinfoSelected.cylinder, parseInt($(this).val(), 10));
+  $('#dinfoCylPick').on('blur', function () {
+    // Put back whatever the selection actually is, so an abandoned edit does not
+    // leave a number in the box that nothing on the page agrees with.
+    $('#dinfoCylPick').val(dinfoSelected.cylinder);
   });
-  $('#dinfoOffset, #dinfoZoom').on('input', function () {
+
+  $('#dinfoZoom').on('input', function () {
+    $('#dinfoZoomValue').html($(this).val() + "x");
+    dinfoDrawTrackView(dinfoTracks[dinfoSelected.cylinder * 2 + dinfoSelected.side]);
+  });
+
+  // The track canvas is sized from its wrapper, so a window resize changes how
+  // much of the track is on screen and it has to be drawn again.
+  $(window).on('resize', function () {
+    dinfoDrawTrackView(dinfoTracks[dinfoSelected.cylinder * 2 + dinfoSelected.side]);
+  });
+
+  /*
+     And once more when the tab is first shown. A pane in a tab that is not
+     showing has no layout - the same thing dinfoHitTest() guards against - so at
+     page load the wrapper measures zero and the canvas falls back to its minimum.
+     Everything drawn before the tab is opened would otherwise stay that width
+     until something else happened to redraw it.
+  */
+  $('#diskinfo-tab').on('shown.bs.tab', function () {
     dinfoDrawTrackView(dinfoTracks[dinfoSelected.cylinder * 2 + dinfoSelected.side]);
   });
 

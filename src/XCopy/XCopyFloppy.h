@@ -28,6 +28,24 @@
 #define writeSizeDD 11 * 1088 + FLOPPY_GAP_BYTES  //11 sectors + xx bytes gap
 #define writeSizeHD 22 * 1088 + FLOPPY_GAP_BYTES  //22 sectors + xx bytes gap
 
+/*
+   Sync marks one capture will record, and so the most censusTrack() can describe.
+
+   Not the sector count. A sync mark is 0x4489 4489 seen in the cell stream, and an
+   unformatted surface produces those by accident - the pattern is chosen to be
+   illegal in encoded data, which says nothing about noise, where nothing is
+   encoded. A survey of a wiped disk therefore finds marks on tracks that carry no
+   format at all, and with the table bounded by the sector count those accidents
+   were spent before the head reached any real sector: the sectors were on the
+   disk, in the capture, and absent from the census.
+
+   64 is well clear of the 22 an HD track holds and of any protection scheme that
+   packs its own sectors, without being a number this part can promise to be
+   enough. Nothing can, which is why overflow is counted rather than ignored - see
+   CalibrationResult::overflow.
+*/
+#define FLOPPY_MAX_SYNCS 64
+
 #define MFM_MASK 0x55555555
 
 #define RPM_WINDOW 11 //index timestamps kept -> 10 intervals
@@ -86,6 +104,33 @@ enum XCopySectorVerdict : uint8_t
     sectorBadCheck     //!< right cylinder and head, but a checksum failed
 };
 
+/**
+ * @brief One sector, as the bytes on the disk actually describe it.
+ *
+ * What censusTrack() reduces to a single verdict, kept whole: the header the
+ * sector claims, both checksums as stored and as recomputed from the capture, and
+ * where the whole thing sits in stream[]. The analyser hands this to the browser
+ * so a sector can be read rather than only counted - including the ones that did
+ * not verify, which are the interesting ones and the ones a copier throws away.
+ *
+ * The data itself is deliberately not in here. 512 bytes is a tenth of the free
+ * RAM on this part, and the caller only ever turns them straight into hex, so
+ * sectorDataPair() decodes them two at a time on the way out instead.
+ */
+struct SectorDump
+{
+    bool found;               //!< a sync mark carrying this sector number was located
+    unsigned long bytePos;    //!< the sync mark's position in stream[]
+    uint8_t formatByte;       //!< 0xff for Amiga
+    uint8_t trackId;          //!< LOGICAL track the header names, cylinder * 2 + side
+    uint8_t sectorId;
+    uint8_t toGap;            //!< sectors from here to the end of the track
+    unsigned long headerSum;  //!< header checksum as stored
+    unsigned long headerCalc; //!< header checksum over the bytes captured
+    unsigned long dataSum;    //!< data checksum as stored
+    unsigned long dataCalc;   //!< data checksum over the bytes captured
+};
+
 /*
    One pass over one cylinder and one head.
 
@@ -100,7 +145,27 @@ struct CalibrationResult
     uint8_t head;         //!< side that was asked for
     uint8_t sectorCount;  //!< 11 (DD) or 22 (HD): meaningful extent of status[]
     uint8_t valid;        //!< entries of status[] that are sectorOK
+    /**
+     * Sectors that were found and are not good: a readable header named this
+     * sector and then the cylinder, the head or the data checksum was wrong.
+     *
+     * Deliberately not "sectors a format would have had, minus the ones that
+     * read". A track with no format on it is missing every sector and has failed
+     * none of them, and calling that eleven failures describes a blank disk as a
+     * ruined one. valid + bad is what was actually there; sectorCount - valid -
+     * bad is what a standard format would have added, and the two are reported
+     * apart because only the first is a fault.
+     */
+    uint8_t bad;
     uint8_t syncs;        //!< sync marks the capture ISR saw, before any decoding
+    /**
+     * Sync marks past the FLOPPY_MAX_SYNCS the capture can hold.
+     *
+     * Non zero means the census is incomplete and the track may carry sectors
+     * nothing here has looked at, so it is reported rather than left to be read
+     * as an absence. See FLOPPY_MAX_SYNCS for why no bound can rule this out.
+     */
+    uint8_t overflow;
     uint8_t strays;       //!< sync marks whose header could not be trusted:
                           //!< a failed header checksum or a sector number out of range
     uint8_t duplicates;   //!< sector numbers that appeared more than once
@@ -114,7 +179,7 @@ struct CalibrationResult
      * pairs with getSyncBytePos() to put a verdict at an angle, which is what
      * the disk info view draws. Head calibration does not read it.
      */
-    uint8_t syncSector[22];
+    uint8_t syncSector[FLOPPY_MAX_SYNCS];
 };
 
 /*
@@ -343,6 +408,33 @@ class XCopyFloppy
      */
     uint8_t bitDensity(unsigned long fromByte, unsigned long toByte);
 
+    /**
+     * @brief Find one sector in the last capture and describe it.
+     *
+     * Reads the same sectorTable[] and stream[] censusTrack() does, and reaches the
+     * same verdict by the same arithmetic - it just keeps the workings. A sector
+     * whose header checksum fails is not findable by number, because the number
+     * would be coming out of bytes nothing has vouched for.
+     *
+     * @param sector sector number as the header spells it
+     * @result false when no trustworthy header in the capture names it
+     */
+    bool dumpSector(uint8_t sector, SectorDump &out);
+
+    /**
+     * @brief Two bytes of a sector's data, decoded from MFM on demand.
+     *
+     * Amiga MFM splits a data block into odd bits then even bits, 512 bytes of
+     * each, so a byte cannot be decoded without reaching half a kilobyte further
+     * down the capture - which is why this hands back the pair the arithmetic
+     * produces rather than one byte at a time.
+     *
+     * @param bytePos SectorDump::bytePos for the sector
+     * @param index 0..255
+     * @result the two bytes, first in the high half
+     */
+    uint16_t sectorDataPair(unsigned long bytePos, int index);
+
     //! Byte position of the nth sync mark in the last capture, 0 if there is no nth.
     unsigned long getSyncBytePos(byte index);
 
@@ -350,18 +442,54 @@ class XCopyFloppy
     int getStreamPos();
 
     /**
-     * @brief Sync marks the capture handler will record before it stops counting.
+     * @brief Highest sector number a header may name, and so the extent of
+     *        CalibrationResult::status[].
      *
-     * NOT setSectorCnt(), which sets the number already found. This is the bound
-     * the handler tests against, otherwise only ever set by setMode(), and it is
-     * why a DD capture stops looking after eleven sync marks. Raise it for a
-     * survey of a track that may carry more, and put it back afterwards.
+     * NOT setSectorCnt(), which sets the number already found. setMode() puts this
+     * at 11 or 22 for the density in the drive; a survey raises it so a track
+     * numbering its sectors past the end of its own density is described rather
+     * than dismissed. Bounded by status[], so never above 22. Also lowers the sync
+     * limit to match, which is the coupling every caller before the survey wanted.
      */
     void setExpectedSectors(byte count);
 
     //! The bound setExpectedSectors() sets. Read it before widening a survey, so
     //! whatever setMode() chose for the density in the drive can be put back.
     byte getExpectedSectors();
+
+    /**
+     * @brief Sync marks the capture handler will record before it stops counting.
+     *
+     * Separate from setExpectedSectors() because the two bound different things
+     * and want different numbers. A sector number has to fit status[], so it stops
+     * at 22; a sync mark only has to fit sectorTable[], and on a surface that
+     * produces marks by accident the census needs far more room than the format
+     * has sectors - FLOPPY_MAX_SYNCS says why. Coupling them, which is what this
+     * code did until the two were split, spent the table on noise and then
+     * reported the real sectors behind it as missing.
+     *
+     * Clamped to FLOPPY_MAX_SYNCS. Put it back after a survey.
+     */
+    void setSyncLimit(byte count);
+
+    //! The bound setSyncLimit() sets, to be saved and restored around a survey.
+    byte getSyncLimit();
+
+    /**
+     * @brief Measured length of one bit cell in the last capture, in picoseconds.
+     *
+     * The one number in the analysis that is measured rather than assumed. Every
+     * other timing here comes from the nominal 2us DD cell the thresholds are cut
+     * for, so a "bitrate" computed from those can only ever hand back the 500
+     * kbit/s that went into them. This comes from hist[]: the shortest of the
+     * three MFM intervals is two cells, so the centroid of that peak, halved, is
+     * what the cells on this track actually measure - and it moves with a drive
+     * running slow, a disk written on another one, or a track deliberately
+     * written long.
+     *
+     * @result 0 when the capture holds no peak to measure, i.e. an empty track.
+     */
+    unsigned long measureCellPeriod();
 
     /**
      * @brief Feed one flux interval into the MFM decoder from somewhere other than

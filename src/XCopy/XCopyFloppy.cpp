@@ -63,7 +63,7 @@ uint32_t FTChannelValue, FTStatusControlRegister, FTPinMuxPort;
 // flux capture
 byte *stream;
 int *streamBitband;
-struct SectorTable sectorTable[25];
+struct SectorTable sectorTable[FLOPPY_MAX_SYNCS];
 int hist[256];
 volatile int sample = 0;
 volatile unsigned long readBuff;
@@ -72,6 +72,16 @@ volatile int readPtr;
 volatile boolean recordOn = false;
 volatile unsigned int bitCount;
 volatile byte sectorCnt;
+/*
+   The capture handler's bound on sectorCnt, and what it drops on the floor.
+
+   Split from `sectors` because a sync mark and a sector number are not the same
+   quantity: see XCopyFloppy::setSyncLimit(). Both are written by setMode() and by
+   the survey, and read by mfmFeed, so both are volatile for the reason the rest of
+   this block is.
+*/
+volatile byte syncMax = 11;
+volatile byte syncOverflow;
 int streamLen = streamSizeDD;
 
 // --- raw flux capture, for SCP imaging ---------------------------------------
@@ -1030,6 +1040,7 @@ bool XCopyFloppy::censusTrack(uint8_t cylinder, uint8_t head, CalibrationResult 
     out.head = head;
     out.sectorCount = sectors;
     out.syncs = sectorCnt;
+    out.overflow = syncOverflow;
     out.cylinderSeen = -1;
     // sectorMissing is zero, so the memset above has already set every slot.
 
@@ -1112,9 +1123,23 @@ bool XCopyFloppy::censusTrack(uint8_t cylinder, uint8_t head, CalibrationResult 
             out.status[headerSector] = verdict;
     }
 
+    /*
+       Two counts, not one taken from the other.
+
+       valid is what read; bad is what was found and did not. A sector number no
+       header claimed is neither - it is absent, and the difference between absent
+       and failed is the difference between an unformatted track and a damaged one.
+       The verdicts above are ordered so that everything past sectorOK is a sector
+       that was there and is wrong, which is what makes this a comparison and not a
+       list of cases to keep in step with the enum.
+    */
     for (int i = 0; i < out.sectorCount; i++)
+    {
         if (out.status[i] == sectorOK)
             out.valid++;
+        else if (out.status[i] != sectorMissing)
+            out.bad++;
+    }
 
     return true;
 }
@@ -1205,6 +1230,81 @@ uint8_t XCopyFloppy::bitDensity(unsigned long fromByte, unsigned long toByte)
 }
 
 /*
+   One sector out of the last capture, header and checksums kept rather than
+   reduced to a verdict.
+
+   The offsets are censusTrack()'s, and deliberately so: base is the sync mark plus
+   eight, the header is the first longword, its checksum sits at +40 and covers the
+   40 bytes before it, and the data checksum at +48 covers the 1024 bytes of MFM
+   from +56. Two readers of the same layout is already one too many, so if these
+   ever move they move in both places.
+*/
+bool XCopyFloppy::dumpSector(uint8_t sector, SectorDump &out)
+{
+    memset(&out, 0, sizeof(out));
+
+    __asm__ __volatile__("" ::: "memory"); // same acquire censusTrack() takes
+
+    for (int i = 0; i < sectorCnt; i++)
+    {
+        const unsigned long bytePos = sectorTable[i].bytePos;
+        if (bytePos + 1088 > (unsigned long)streamLen)
+            continue;
+
+        const long base = (long)bytePos + 8;
+        const unsigned long info = decodeLongword(base);
+
+        // The header checksum first, exactly as the census does it: the sector
+        // number below is only a sector number if something vouched for the bytes
+        // it came out of.
+        if (calcChkSum(base, 0, 40) != decodeLongword(base + 40) || (info >> 24) != 0xff)
+            continue;
+        if (((info >> 8) & 0xff) != sector)
+            continue;
+
+        out.found = true;
+        out.bytePos = bytePos;
+        out.formatByte = (uint8_t)(info >> 24);
+        out.trackId = (uint8_t)((info >> 16) & 0xff);
+        out.sectorId = (uint8_t)((info >> 8) & 0xff);
+        out.toGap = (uint8_t)(info & 0xff);
+        out.headerSum = decodeLongword(base + 40);
+        out.headerCalc = calcChkSum(base, 0, 40);
+        out.dataSum = decodeLongword(base + 48);
+        out.dataCalc = calcChkSum(base, 56, 1024);
+        return true;
+    }
+
+    return false;
+}
+
+/*
+   Two data bytes, decoded where they lie.
+
+   Lifted from decodeSector()'s two passes and folded into one: it writes the even
+   bits of every byte across 512 bytes of stream and then comes back for the odd
+   bits 512 bytes further on. Same shifts, same masks, no 540 byte buffer in
+   between - which is the whole reason this exists rather than a call to
+   decodeSector(), whose output is _track[] and which a survey has no business
+   writing to.
+*/
+uint16_t XCopyFloppy::sectorDataPair(unsigned long bytePos, int index)
+{
+    if (index < 0 || index > 255)
+        return 0;
+
+    const long base = (long)bytePos + 8;
+    const long p = base + (index * 2) + 56;
+
+    const unsigned int even = (((unsigned int)stream[p] << 8) + stream[p + 1]) & 0x5555;
+    const unsigned int odd = (((unsigned int)stream[p + 512] << 8) + stream[p + 513]) & 0x5555;
+
+    const uint8_t a = (uint8_t)((even >> 7) | (odd >> 8));
+    const uint8_t b = (uint8_t)((even << 1) | odd);
+    return ((uint16_t)a << 8) | b;
+}
+
+/*
    Where in the captured stream the nth sync mark was found, and how much of the
    stream was filled. Together these turn a sync mark into an angle.
 */
@@ -1221,25 +1321,169 @@ int XCopyFloppy::getStreamPos()
 }
 
 /*
-   How many sync marks the capture handler will record before it stops adding to
-   sectorTable[].
+   The highest sector number a header may name.
 
-   Not the same thing as setSectorCnt(), which sets the count already found. The
-   handler bounds the table with `sectorCnt < sectors`, and sectors is otherwise
-   only ever set by setMode() - so a DD survey stops looking after eleven, and a
-   track carrying more than that is silently cut short. sectorTable[] holds 25.
+   Not the same thing as setSectorCnt(), which sets the count already found.
+   censusTrack() takes this as the extent of CalibrationResult::status[], so it is
+   bounded by that array and not by the caller: a survey widens it to describe a
+   track that numbers its sectors past its own density, and a header naming
+   anything above it is a stray.
 
-   Raising it for a survey and putting it back afterwards widens the census for a
-   custom or protected track without touching the handler itself.
+   The sync limit follows it down, which is what every caller other than the survey
+   means by "expect this many sectors" - a read of an eleven sector track has no
+   use for a table that keeps looking after the eleventh.
 */
 void XCopyFloppy::setExpectedSectors(byte count)
 {
-    sectors = count;
+    const uint8_t cap = sizeof(((CalibrationResult *)0)->status);
+    sectors = count > cap ? cap : count;
+    syncMax = sectors;
 }
 
 byte XCopyFloppy::getExpectedSectors()
 {
     return sectors;
+}
+
+/*
+   How many sync marks the capture handler will record before it stops adding to
+   sectorTable[].
+
+   Set after setExpectedSectors(), which lowers it: raising the two in the other
+   order would leave the survey with the narrow bound it was widening away from.
+*/
+void XCopyFloppy::setSyncLimit(byte count)
+{
+    syncMax = count > FLOPPY_MAX_SYNCS ? FLOPPY_MAX_SYNCS : count;
+}
+
+byte XCopyFloppy::getSyncLimit()
+{
+    return syncMax;
+}
+
+/*
+   The centroid of the tallest peak in one interval bucket, in sixteenths of a tick.
+
+   Taken as a centroid rather than as the tallest bin because a bin is one timer
+   tick - 41.67ns at DD - and drive speed and flux spread the peak over several of
+   them, so the weighted middle carries the fraction of a tick the tallest bin
+   alone throws away.
+
+   The window is symmetric and so deliberately not clipped to the bucket. A bucket
+   edge sits between two peaks, not on one, so clipping there would keep the whole
+   of a peak's lower tail and throw away its upper one and bias every answer the
+   same way. Nothing is lost by reaching past it: hist[] holds only intervals
+   mfmFeed accepted, and the peaks are 48 ticks apart at DD against a window of 6.
+
+   @result 0 when the bucket holds no peak worth the name.
+*/
+static unsigned long peakCentroid(const int *hist, int lo, int hi, long floorCount)
+{
+    if (lo < 0) lo = 0;
+    if (hi > 255) hi = 255;
+
+    int best = -1;
+    long bestCount = 0;
+    for (int i = lo; i <= hi; i++)
+    {
+        if (hist[i] > bestCount)
+        {
+            bestCount = hist[i];
+            best = i;
+        }
+    }
+
+    // A bucket carrying only stragglers has no peak, it has noise. Without this an
+    // empty 4 cell bucket would still hand back a centroid and be differenced
+    // against a real one.
+    if (best < 0 || bestCount < floorCount)
+        return 0;
+
+    unsigned long weighted = 0, total = 0;
+    for (int i = best - 6; i <= best + 6; i++)
+    {
+        if (i < 0 || i > 255)
+            continue;
+        weighted += (unsigned long)hist[i] * (unsigned long)i;
+        total += (unsigned long)hist[i];
+    }
+    if (total == 0)
+        return 0;
+
+    return (weighted * 16UL) / total;
+}
+
+/*
+   What one bit cell on the track just captured actually measures, in picoseconds.
+
+   Amiga MFM puts a transition 2, 3 or 4 cells apart and never closer, so hist[]
+   holds three peaks and consecutive ones are one cell apart. This measures the
+   SPACING between them and not where any of them sits, which is what makes the
+   answer true rather than merely repeatable.
+
+   The reason is in ftm0_isr: it reads the capture register and only then writes
+   FTM0_CNT = 0, so the interval it records is short by however long the CPU took
+   to get into the handler. That is a constant - around eleven ticks, near half a
+   microsecond - and it lands on every interval equally. Measured from a peak's
+   position it is a 14% error, and reported a nominal DD track as 569 kbit/s.
+   Differencing two peaks subtracts it out exactly.
+
+   The thresholds in setMode() are evidence it is real and not a guess: high3 is
+   155, which is the midpoint of the 3 and 4 cell peaks where they actually land,
+   not the 168 the nominal 6us and 8us intervals would put it at. They were tuned
+   against the offset all along.
+
+   Integer only, and in picoseconds because nanoseconds cannot express a DD tick -
+   41.67ns rounds to 42 and puts the answer 0.8% out, which is most of the drift
+   this is here to show.
+
+   @result 0 when the capture holds too few peaks to measure between.
+*/
+unsigned long XCopyFloppy::measureCellPeriod()
+{
+    long peak = 0;
+    for (int i = low2; i <= 255; i++)
+        if (hist[i] > peak)
+            peak = hist[i];
+    if (peak == 0)
+        return 0;
+
+    // A sixteenth of the tallest peak: high enough that an empty bucket is not
+    // mistaken for a populated one, low enough to keep the 4 cell peak, which on
+    // ordinary data is much the smallest of the three.
+    const long floorCount = peak / 16;
+
+    const unsigned long two = peakCentroid(hist, low2, high2, floorCount);
+    const unsigned long three = peakCentroid(hist, (int)high2 + 1, high3, floorCount);
+    const unsigned long four = peakCentroid(hist, (int)high3 + 1, high4, floorCount);
+
+    // Widest span available, so the cell is divided out of the longest baseline
+    // the track offers and the centroid error on each end matters least.
+    unsigned long span = 0, cells = 0;
+    if (two && four)
+    {
+        span = four - two;
+        cells = 2;
+    }
+    else if (two && three)
+    {
+        span = three - two;
+        cells = 1;
+    }
+    else if (three && four)
+    {
+        span = four - three;
+        cells = 1;
+    }
+    else
+        return 0;
+
+    // One FTM0 tick: the bus clock is 48MHz and the prescaler is 2 at DD, 1 at HD.
+    const unsigned long tickPs = (_mode == HD) ? 20833UL : 41667UL;
+
+    // /16 undoes the fixed point the centroids are carried in.
+    return ((span / cells) * tickPs) / 16UL;
 }
 
 
@@ -1393,11 +1637,19 @@ static inline __attribute__((always_inline)) bool mfmFeed(void)
     if (readBuff == 0xA4489448)
     { // look for magic word. usually 44894489, but detecting this way its
         // easier to byte align the received bitstream from floppy
-        if (sectorCnt < sectors)
+        if (sectorCnt < syncMax)
         { // as long we dont have x sectors store the sector start in a table
             sectorTable[sectorCnt].bytePos = readPtr - 7;
             sectorCnt = sectorCnt + 1;
             bCnt = 4; // set bit count to 4 to align to byte
+        }
+        else
+        {
+            // Counted rather than dropped silently. A full table means the census
+            // that follows is describing part of a track as if it were all of it,
+            // and the caller is the only one that can say whether that matters.
+            if (syncOverflow < 255)
+                syncOverflow++;
         }
     }
     hist[sample]++; // add sample to histogram
@@ -1451,6 +1703,7 @@ void XCopyFloppy::beginReplay()
     readPtr = 0;
     bitCount = 0;
     sectorCnt = 0;
+    syncOverflow = 0;
     readBuff = 0;
     _errors = 0;
     _extError = "OK\n";
@@ -1763,6 +2016,7 @@ void XCopyFloppy::initRead()
     readPtr = 0;
     bitCount = 0;
     sectorCnt = 0;
+    syncOverflow = 0;
     _errors = 0;
     _extError = "OK\n";
 
@@ -2824,6 +3078,7 @@ void XCopyFloppy::setMode(int density)
         high3 = 125;
         high4 = 200;
         sectors = 22;
+        syncMax = 22;
         timerMode = timerModeHD;
         streamLen = streamSizeHD;
         filterSetting = filterSettingHD;
@@ -2840,6 +3095,7 @@ void XCopyFloppy::setMode(int density)
         high3 = 155;
         high4 = 255;
         sectors = 11;
+        syncMax = 11;
         timerMode = timerModeDD;
         streamLen = streamSizeDD;
         filterSetting = filterSettingDD;
