@@ -32,6 +32,12 @@ Firmware:
     ☐ Verify what writebin wrote
       writeFileToBlocks() writes each track and reports the retries it took, but
       never reads a track back to compare it against the file. XCopyDisk.cpp:1736.
+    ☐ readSideLower() returns true for head ONE
+      setSideFast() drives the line LOW for side 1, so the read back is named for
+      the level it expected rather than the head it reports. Everything that uses
+      it prints the right thing, so this is a name that lies rather than a bug -
+      but it is why the drive toolkit's flag had to be renamed _sideOne, and the
+      next reader gets the same trap. XCopyFloppy.cpp:2360.
     ☐ Say head rather than side outside the logical track numbering
       XCopyGeometry.h settled cylinder against logical track. The other half of
       the rename did not happen: DiskLocation::side(), drawTrack() and
