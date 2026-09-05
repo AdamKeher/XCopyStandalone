@@ -858,11 +858,33 @@ th.sectionHeader {
   margin-right: 28px;
 }
 
-.dtTable {
+/* This table's width is the signal pane's width, and the read pane fits beside
+   it with about sixteen pixels to spare at the container's widest - so it is
+   sized here for its widest possible contents rather than left to grow into
+   them. It used to be measured at rest, with a dash in every state cell, and
+   opening a session put the words in and pushed the read under the lines. */
+/* Qualified with .dataTable so the padding outranks .table.dataTable's own. */
+.dataTable.dtTable {
   width: auto;
 }
-.dtTable td, .dtTable th {
+.dataTable.dtTable td, .dataTable.dtTable th {
   white-space: nowrap;
+  /* Tighter than .dataTable's 0.5rem: five columns at that padding do not
+     leave room for the tally beside them. */
+  padding-left: 0.35rem;
+  padding-right: 0.35rem;
+}
+.dataTable.dtTable {
+  /* The two columns whose words change while the session runs, held at their
+     widest reading ("OFF CYL 0", "12345 pulses") so no sample moves them.
+     Min-width: a plain width on a cell is only a suggestion to the auto table
+     layout and Chrome let the column shrink under it. */
+}
+.dataTable.dtTable .dtState {
+  min-width: calc(9ch + 0.7rem);
+}
+.dataTable.dtTable .dtValue {
+  min-width: calc(12ch + 0.7rem);
 }
 
 .dtName {
@@ -903,6 +925,10 @@ tr.dtInputsStart td {
   font-family: var(--xc-mono);
   font-size: var(--xc-data-size);
   margin: 0 0 0.75rem 0;
+  /* Wraps under the table when a sentence is longer than it - "MOTOR ON, no
+     index..." is the one that is. It runs to two lines rather than pushing the
+     pane wider, see .dtSignalPane. */
+  min-height: 1.5em;
 }
 
 .dtStatus.rest {
@@ -946,17 +972,27 @@ tr.dtInputsStart td {
   table-layout: fixed;
 }
 
+/* Body size rather than the data size the other tables use. These two rows are
+   the instrument - the thing watched while the screw is turned - so they are set
+   larger than the tally and the signal table around them, not smaller. */
+.dtReadTable td {
+  font-size: 1rem;
+}
+
 .dtReadTable .dtHeadLabel {
-  width: 150px;
+  width: 140px;
   white-space: nowrap;
+  font-weight: bold;
   color: var(--xc-text);
 }
 
 /* Left as a table cell, with the sectors laid out inline inside it. The height
    holds the row steady before the first pass, so the panel does not jump when
-   results arrive. */
+   results arrive. Never wraps: twenty two HD glyphs fit the column at the pane's
+   floor, and a second line would move every row under it. */
 .dtGlyphs {
-  height: 22px;
+  height: 36px;
+  white-space: nowrap;
 }
 
 .dtGlyphs .dtSector {
@@ -964,7 +1000,7 @@ tr.dtInputsStart td {
 }
 
 .dtReadTable .dtCount {
-  width: 130px;
+  width: 140px;
   white-space: nowrap;
   text-align: right;
   color: var(--xc-text-warn);
@@ -984,9 +1020,13 @@ tr.dtInputsStart td {
    the swatch: the glyph is the thing being explained. */
 .dtSector {
   display: inline-block;
-  width: 18px;
+  width: 27px;
+  height: 27px;
+  line-height: 27px;
   text-align: center;
+  vertical-align: middle;
   font-family: var(--xc-mono);
+  font-size: 1rem;
   font-weight: bold;
   border-radius: 3px;
   background: var(--xc-chip);
@@ -1041,12 +1081,24 @@ tr.dtInputsStart td {
 .dtPanes {
   display: flex;
   flex-wrap: wrap;
-  gap: 0 2rem;
+  /* 1.5rem, not 2: the two panes at their widest fill the container to within
+     a few pixels, and the gap is the one width here that is not spoken for. */
+  gap: 0 1.5rem;
   align-items: flex-start;
 }
 
+/* Sized to its table and nothing else.
+
+   With auto the pane measures its widest line, and the widest line is not the
+   table: it is whichever status sentence is showing. Starting a read turns the
+   motor on, and until the first index edge lands the sentence is the long "MOTOR
+   ON, no index" one - so the pane grew, the read pane no longer fit beside it,
+   and both the read and the tally dropped under the signals for a sample or two
+   and then came back. Min-content is the table's own width (its cells do not
+   wrap), and the sentences wrap beneath it instead. */
 .dtSignalPane {
   flex: 0 0 auto;
+  width: min-content;
 }
 
 /* Basis zero, not auto.
