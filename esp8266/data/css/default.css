@@ -26,6 +26,68 @@ body {
   padding: 0 15px;
 }
 
+/* Section headers
+--------------------------------------------------
+   One header for every section on every tab.
+
+   There were four idioms doing this job: a table's <th> on Disk Copy and Disk
+   Monitor, a bare <h6> on the Disk Info rail, an <h6> with an icon on the Drive
+   Toolkit, and a small monospace caption on the Disk Info panels. Four weights,
+   three colours and icons on about half of them, so moving between tabs meant
+   re-learning what a heading looked like.
+
+   This is the one. It goes on the <h6> where a section is a block, and on the <th>
+   where the section is a column of a layout table and the heading is genuinely that
+   column's - those keep their element and take the same look, rather than being
+   restructured into blocks they are not.
+
+   The panel captions on Disk Info stay a tier below it deliberately: a caption on a
+   canvas inside a section is not the same thing as the section's name. They share
+   this one's colour so the two read as related. */
+.sectionHeader {
+  color: white;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 1rem 0 0.5rem 0;
+}
+.sectionHeader i {
+  margin-right: 0.4rem;
+  color: #78909c;
+}
+
+/* On a layout table the header is a cell, so it carries the table's own spacing
+   rather than the block margins above. */
+th.sectionHeader {
+  margin: 0;
+  padding-bottom: 0.4rem;
+}
+
+/* Sections are a header and their content, with nothing drawn around them.
+
+   Borders were on two tabs and off the other two, which made a section look like a
+   different kind of thing depending on where it was. They are kept for the places
+   that box a readout rather than a section - the hex dump panel, the canvases and
+   the track cells - where the line is the edge of the thing being read, not
+   decoration around a heading. */
+.sectionTable {
+  margin-bottom: 0;
+}
+.sectionTable > :not(caption) > * > * {
+  border-bottom-width: 0;
+  background-color: transparent;
+  padding-left: 0;
+}
+
+/* Bootstrap rules the body off from the head with a two pixel border on the tbody
+   itself, which is not a cell and so survives the line above. It is the last of the
+   section borders and it was only ever on the two tabs that use a table to lay a
+   section out. */
+.sectionTable > :not(:first-child) {
+  border-top-width: 0;
+}
+
 /* Header
 -------------------------------------------------- */
 .nav-link {
@@ -38,8 +100,10 @@ body {
 
 /* Headings
 -------------------------------------------------- */
+/* No fill of its own. It was the only section on any tab with one, and a block of
+   darkblue among otherwise dark grey panels read as a different kind of thing rather
+   than as the same kind on a different tab. */
 .diskcopyInfo {
-  background-color: darkblue;
   color: white;
 }
 .diskcopyInfo .mode {
@@ -379,13 +443,6 @@ body {
 .dinfoStatus {
   flex: 0 0 250px;
 }
-.dinfoStatus h6 {
-  color: white;
-  font-size: 0.8rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin: 0.5rem 0 0.25rem 0;
-}
 
 .dinfoHeader {
   display: flex;
@@ -722,15 +779,6 @@ body {
   color: #9a9a9a;
 }
 
-/* Section headings, the same shape Disk Info's rail uses - this pane has two
-   halves and they need naming without a nav strip nobody else has. */
-#drivetoolkit h6 {
-  color: white;
-  font-size: 0.8rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin: 1rem 0 0.5rem 0;
-}
 
 .dtReadouts {
   font-family: monospace;
@@ -992,7 +1040,7 @@ tr.dtInputsStart td {
 /* The Clear button rides on the heading it belongs to, so the grid does not need
    a sentence of its own above it. */
 
-#drivetoolkit h6 .btn {
+.sectionHeader .btn {
   margin-left: 10px;
   padding: 0 6px;
   font-size: 0.75rem;

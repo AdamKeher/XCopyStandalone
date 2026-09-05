@@ -110,11 +110,11 @@
                     </p>
                     <p><hr/></p>
                     <p>
-                        <table class="table table-dark diskcopyInfo">
+                        <table class="table table-dark sectionTable diskcopyInfo">
                             <thead>
                                 <tr>
-                                    <th class="mode"><i class="fa-solid fa-clone"></i> Mode</th>
-                                    <th><i class="fa-solid fa-circle-info"></i> Status</th>
+                                    <th class="mode sectionHeader"><i class="fa-solid fa-clone"></i> Mode</th>
+                                    <th class="sectionHeader"><i class="fa-solid fa-circle-info"></i> Status</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -134,11 +134,11 @@
                         </table>
                     </p>
                     <p>
-                        <table class="table table-dark">
+                        <table class="table table-dark sectionTable">
                             <thead>
                                 <tr>
-                                    <th style="width: 0px;"><i class="fa-solid fa-compact-disc"></i> Flux</th>
-                                    <th><i class="fa-solid fa-key"></i> Disk Read / Write Key</th>
+                                    <th style="width: 0px;" class="sectionHeader"><i class="fa-solid fa-compact-disc"></i> Flux</th>
+                                    <th class="sectionHeader"><i class="fa-solid fa-key"></i> Disk Read / Write Key</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -309,11 +309,11 @@
 
                     <br>
 
-                    <table class="table table-dark">
+                    <table class="table table-dark sectionTable">
                         <thead>
                             <tr>
-                                <th style="width: 0px;"><i class="fa-solid fa-table-cells"></i> ASCII Dump</th>
-                                <th><i class="fa-solid fa-chart-column"></i> Histogram</th>
+                                <th style="width: 0px;" class="sectionHeader"><i class="fa-solid fa-table-cells"></i> ASCII Dump</th>
+                                <th class="sectionHeader"><i class="fa-solid fa-chart-column"></i> Histogram</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -337,10 +337,10 @@
                         </tbody>
                     </table>
 
-                    <table class="table table-dark">
+                    <table class="table table-dark sectionTable">
                         <thead>
                             <tr>
-                                <th style="width: 0px;"><i class="fa-solid fa-table-cells"></i> Disk Usage</th>
+                                <th style="width: 0px;" class="sectionHeader"><i class="fa-solid fa-table-cells"></i> Disk Usage</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -503,7 +503,7 @@
                         </div>
 
                         <div class="dinfoStatus">
-                            <h6>Status</h6>
+                            <h6 class="sectionHeader"><i class="fa-solid fa-circle-info"></i> Status</h6>
                             <div class="dinfoPanel">
                                 <div class="dinfoRow"><span>Track</span><span id="dinfoTrack">&mdash;</span></div>
                                 <div class="dinfoRow"><span>Side</span><span id="dinfoSideSel">&mdash;</span></div>
@@ -519,7 +519,7 @@
                                 <div class="dinfoRow"><span>Interface mode</span><span id="dinfoInterface">&mdash;</span></div>
                             </div>
 
-                            <h6>Track / Side selection</h6>
+                            <h6 class="sectionHeader"><i class="fa-solid fa-location-crosshairs"></i> Track / Side selection</h6>
                             <div class="dinfoPanel dinfoSelect">
                                 <!-- Same paradigm as Head Cal's cylinder control: step buttons
                                      either side of a box you can type into. Nothing here talks to
@@ -535,7 +535,7 @@
                                 <button type="button" id="dinfoSideBtn" class="btn btn-sm btn-secondary" onclick="dinfoCycleSide();">Side: 0</button>
                             </div>
 
-                            <h6>Key</h6>
+                            <h6 class="sectionHeader"><i class="fa-solid fa-key"></i> Key</h6>
                             <div class="dinfoPanel dinfoKey">
                                 <div><span class="dinfoSwatch dinfoOk"></span> Sector OK</div>
                                 <div><span class="dinfoSwatch dinfoBadCheck"></span> Checksum failed</div>
@@ -676,7 +676,7 @@
                     </div>
                     <div class="dtPanes">
                         <div class="dtSignalPane">
-                            <h6><i class="fa-solid fa-wave-square"></i> Signals</h6>
+                            <h6 class="sectionHeader"><i class="fa-solid fa-wave-square"></i> Signals</h6>
                             <p class="dtReadouts">
                                 <span id="dtCylReadout">Cylinder: &mdash;</span>
                                 <span id="dtEdges"></span>
@@ -696,7 +696,7 @@
                              while the index is fine is head alignment. Stacked, one of the two is
                              always off the bottom of the screen. -->
                         <div class="dtReadPane">
-                            <h6><i class="fa-solid fa-ruler-combined"></i> Calibration read</h6>
+                            <h6 class="sectionHeader"><i class="fa-solid fa-ruler-combined"></i> Calibration read</h6>
                             <!-- No table-sm: in this tree that class is the disk grid's 40px track cell,
                                  which would fight the column widths below. -->
                             <table class="table table-dark dtReadTable">
@@ -722,7 +722,7 @@
                                 <span class="dtSector chk">c</span> bad checksum
                             </p>
                             <p class="dtPass"><span id="dtPassLine"></span></p>
-                            <h6>
+                            <h6 class="sectionHeader">
                                 <i class="fa-solid fa-table-cells"></i> Session tally
                                 <button type="button" class="btn btn-sm btn-secondary dt-action live-action" onclick="dtClearTally();" title="Forget every pass this session has recorded, on the device as well as here"><i class="fa-solid fa-eraser"></i> Clear</button>
                             </h6>

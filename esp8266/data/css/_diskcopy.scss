@@ -1,8 +1,10 @@
 /* Headings
 -------------------------------------------------- */
 
+/* No fill of its own. It was the only section on any tab with one, and a block
+   of darkblue among otherwise dark grey panels read as a different kind of thing
+   rather than as the same kind on a different tab. */
 .diskcopyInfo {
-    background-color:darkblue;
     color: $textColor;
 
     .mode {

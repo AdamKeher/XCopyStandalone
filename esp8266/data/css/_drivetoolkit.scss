@@ -20,15 +20,6 @@
   color: #9a9a9a;
 }
 
-/* Section headings, the same shape Disk Info's rail uses - this pane has two
-   halves and they need naming without a nav strip nobody else has. */
-#drivetoolkit h6 {
-  color: $textColor;
-  font-size: 0.8rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin: 1rem 0 0.5rem 0;
-}
 
 .dtReadouts {
   font-family: monospace;
@@ -290,7 +281,7 @@ tr.dtInputsStart td {
 /* The Clear button rides on the heading it belongs to, so the grid does not need
    a sentence of its own above it. */
 
-#drivetoolkit h6 .btn {
+.sectionHeader .btn {
   margin-left: 10px;
   padding: 0 6px;
   font-size: 0.75rem;
