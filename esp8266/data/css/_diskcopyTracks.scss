@@ -1,63 +1,47 @@
-/* Tracks
--------------------------------------------------- */
-.table-sm {
-    width: 100%;
+/* Cylinder grid
+--------------------------------------------------
+   The map of the disk. Drawn by buildCylinderGrid() in diskcopy.js for the Disk
+   Copy tab and for the Drive Toolkit's session tally, and styled here once so
+   the two are the same grid of the same disk. */
+.table-sm.cylinderGrid {
+    width: auto;
     background-color: black;
     color: $textColor;
+    font-family: var(--xc-mono);
+    font-size: var(--xc-data-size);
 
-    td
-    {
-        height:40px;
-        // Back to 40 with the grid back to ten cylinders a row: that is 28 table
-        // columns again (4 icon and spacer, then a label, ten cells and a spacer per
-        // side), and 28 x 40 is the 1120px this was drawn for. It was briefly 35 to
-        // keep that total while a twelve column grid made it 32 columns wide.
-        width:40px;
+    td {
+        height: 40px;
+        // 40 with the grid at ten cylinders a row: that is 28 table columns on
+        // the Disk Copy tab (4 icon and spacer, then a label, ten cells and a
+        // spacer per side), and 28 x 40 is the 1120px it was drawn for.
+        width: 40px;
         text-align: center;
-        // debug borders
-        // border: 1px solid red;
+        padding: 0;
     }
-}
 
-@mixin diskTrack($background, $text) {
-    background-color: $background;
-    color: $text;
+    /* The side titles and the row and column numbers. Labels, so the label
+       colour; the cells are what carry the colour. */
+    .gridLabel {
+        color: var(--xc-label);
+    }
+
+    .gridSide {
+        color: var(--xc-text);
+        font-family: var(--bs-body-font-family);
+        font-size: var(--xc-data-size);
+    }
+
+    /* The Disk Copy grid has the tab to itself and takes its width; the
+       tally shares a row and keeps to its own. */
+    &.wide {
+        width: 100%;
+    }
 }
 
 .track {
-    font-size: smaller;
+    font-size: 0.75rem;
     background-color: #151515;
     color: $textColor;
     border: 1px solid white;
-
-    &.white { @include diskTrack(whitesmoke, $textColorDark); }
-    &.green { @include diskTrack(green, $textColor); }
-    &.yellow { @include diskTrack(yellow, $textColorDark); }
-    &.orange { @include diskTrack(orange, $textColorDark); }
-    &.red { @include diskTrack(red, $textColor); }
-    &.magenta { @include diskTrack(magenta, $textColor); }
-}
-
-/* Disk Read / Write Key
--------------------------------------------------- */
-.key {
-    border: 1px solid white;
-    width: 450px;
-    padding: 20px;
-
-    .size {
-        width: 30px;
-        height: 30px;
-        margin-bottom: 20px;
-    }
-
-    .size:last-child {
-        margin-bottom: 0px;
-    }
-
-    .text {
-        @extend .size;
-        margin-left: 10px;
-        width: auto;
-    }
 }

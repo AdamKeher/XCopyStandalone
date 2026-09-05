@@ -1,14 +1,6 @@
 /* Disk Info
 -------------------------------------------------- */
 
-.diskCanvas
-{
-    background-color: #050505;
-    border:1px solid darkgrey;
-    max-width: 100%;
-    height: auto;
-}
-
 /* width, not max-width. A canvas is a replaced element with an intrinsic size, so
    max-width alone lets it shrink below its 520px and never above - which is why
    the surfaces sat at about 330px with clear space beside them however wide the
@@ -32,7 +24,7 @@
 {
     display: flex;
     flex-wrap: wrap;
-    gap: 1rem;
+    gap: 1rem 1.5rem;
     align-items: flex-start;
 }
 
@@ -40,7 +32,7 @@
 {
     display: flex;
     flex-wrap: wrap;
-    gap: 1rem;
+    gap: 1rem 1.5rem;
     flex: 1 1 360px;
     min-width: 0;
 }
@@ -53,55 +45,25 @@
 {
     flex: 1 1 0;
     min-width: 0;
+
+    /* The first section of the tab, so no space above its heading; the rail
+       beside it starts level with it for the same reason. */
+    > .sectionHeader { margin-top: 0; }
 }
 
 .dinfoStatus
 {
-    flex: 0 0 250px;
+    flex: 0 0 260px;
 
+    > .sectionHeader:first-child { margin-top: 0; }
 }
 
-.dinfoHeader
+/* The census of a side, under its heading and over its surface. */
+.dinfoSummary
 {
-    display: flex;
-    justify-content: space-between;
-    font-family: monospace;
-    font-size: 0.75rem;
-    color: #b0bec5;
-    padding-bottom: 0.25rem;
+    min-height: 1.5em;
+    margin: 0 0 0.5rem 0;
 }
-
-.dinfoHeaderRight
-{
-    color: #78909c;
-    text-align: right;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    max-width: 55%;
-}
-
-.dinfoPanel
-{
-    background-color: #101010;
-    border: 1px solid darkgrey;
-    padding: 0.4rem 0.5rem;
-    font-family: monospace;
-    font-size: 0.75rem;
-    color: $textColor;
-}
-
-.dinfoRow
-{
-    display: flex;
-    justify-content: space-between;
-    gap: 0.5rem;
-    padding: 1px 0;
-
-    span:first-child { color: #90a4ae; }
-    span:last-child { text-align: right; }
-}
-
 
 /* The toolbar takes its height from its tallest item, and .cancelButton carries a
    20px bottom margin meant for where it usually lives - the foot of a tab, as on
@@ -116,6 +78,7 @@
 
     .cancelButton { margin-bottom: 0; }
 }
+
 /* nowrap because .input-group wraps its own children by default, and this one is
    inside a toolbar that offers it no particular width - so "Cylinders 0 to 83"
    would break onto a second line and take the whole toolbar to twice the height
@@ -137,14 +100,13 @@
     align-items: center;
     gap: 0.5rem;
     padding: 0.15rem 0;
+    margin-bottom: 0.5rem;
 
     label
     {
+        @include xcLabel;
         flex: 0 0 auto;
         order: -1;
-        min-width: 6.5rem;
-        font-size: 0.7rem;
-        color: #90a4ae;
     }
 
     input[type="range"]
@@ -154,28 +116,15 @@
     }
 }
 
-.dinfoKey
+.dinfoSliderValue
 {
-    div { padding: 1px 0; }
+    flex: 0 0 auto;
+    min-width: 2.5rem;
+    font-family: var(--xc-mono);
+    font-size: var(--xc-data-size);
+    color: var(--xc-text);
+    text-align: right;
 }
-
-/* Square rather than round, so it reads as a sector mark on the surface and not
-   as a bullet point. */
-.dinfoSwatch
-{
-    display: inline-block;
-    width: 10px;
-    height: 10px;
-    margin-right: 4px;
-    border: 1px solid #000000;
-    vertical-align: middle;
-}
-
-.dinfoOk { background-color: #66bb6a; }
-.dinfoBadCheck { background-color: #ef5350; }
-.dinfoCyl { background-color: #ffa726; }
-.dinfoStray { background-color: #ab47bc; }
-.dinfoUnread { background-color: #757575; }
 
 /* The histogram and the sector dump share the row under the track view. The dump
    takes what is left, because it is the one that benefits from width: sixteen
@@ -185,8 +134,7 @@
     display: flex;
     flex-wrap: wrap;
     align-items: flex-start;
-    gap: 1rem;
-    margin-top: 0.5rem;
+    gap: 1rem 1.5rem;
 }
 
 .dinfoDump
@@ -194,18 +142,11 @@
     flex: 1 1 480px;
     min-width: 0;
 
-    pre
+    /* 23 lines, expressed as lines. A height that is not a whole number of
+       rows leaves one sliced in half at an end of the scroll. */
+    .dump
     {
-        margin: 0;
-        font-size: 0.7rem;
-        line-height: 1.25;
-        color: $textColor;
-        /* 23 lines, expressed as lines. A height that is not a whole number of
-           1.25em rows leaves one sliced in half at an end of the scroll, and
-           320px is 22.86 of them - so there was always half a row of hex. */
-        max-height: 28.75em;
-        overflow: auto;
-        white-space: pre;
+        max-height: calc(23 * 1.35em + 0.8rem);
     }
 }
 
@@ -228,10 +169,10 @@
 .dinfoTrackScroll .dinfoTrackCanvas
 {
     max-width: none;
-    display: block;
 }
 
-/* Step buttons and the side toggle, laid out like Head Cal's cylinder group. */
+/* Step buttons and the side toggle, laid out like the Drive Toolkit's cylinder
+   group. */
 .dinfoSelect
 {
     display: flex;
@@ -250,18 +191,6 @@
     max-width: 320px;
 }
 
-.dinfoSliderValue
-{
-    flex: 0 0 auto;
-    min-width: 2.5rem;
-    font-family: monospace;
-    font-size: 0.75rem;
-    color: $textColor;
-    text-align: right;
-}
-
-/* The histogram, headed the way the sector dump beside it is - it was the one panel
-   on the page with no name on it. */
 .dinfoHist
 {
     flex: 0 0 auto;

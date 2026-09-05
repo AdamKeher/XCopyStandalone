@@ -18,7 +18,7 @@ body {
        Info sector dump, last on the page and against its right edge, had its
        bottom rows painted over. 115px of obstruction, plus a gap to read by. */
     margin-bottom: 130px;
-    overflow-y: scroll; /* Show vertical scrollbar */    
+    overflow-y: scroll; /* Show vertical scrollbar */
 }
 
 .container {
@@ -26,39 +26,405 @@ body {
     max-width: 680px;
     padding: 0 15px;
 }
+
+/* Design tokens
+--------------------------------------------------
+   Every tab draws from this list and nothing else. A colour or a size that is
+   not here is a one-off, and one-offs are what made six tabs look like six
+   devices.
+
+   Two colour vocabularies, on purpose. Fills - a grid cell, a key swatch, a
+   sector arc on the Disk Info surface - use the saturated X-Copy palette the
+   .track cells have always had, because a filled block carries pure colour
+   well. Text - a state word, a sector glyph, a count - uses the softened set,
+   because pure red and green type on a dark ground is hard to read. A green
+   fill and a green word mean the same thing; they are simply the fill and the
+   text weight of one colour.
+
+   Type: the body font for words, the monospace for data, and three sizes of
+   each - the body's own for headings and prose, a data size for tables, dumps
+   and readouts, and a label size for the small uppercase captions that name
+   a column or a reading. */
+:root {
+    --xc-bg: #{$background};
+    --xc-panel: #101010;
+    --xc-chip: #2a2a2a;
+    --xc-border: #555555;
+    --xc-text: #{$textColor};
+    --xc-label: #90a4ae;
+    --xc-dim: #78909c;
+    --xc-accent: deepskyblue;
+
+    --xc-text-ok: #4caf50;
+    --xc-text-warn: #e0b040;
+    --xc-text-bad: #e04b4b;
+    --xc-text-hold: #40c0d0;
+    --xc-text-other: #c060c0;
+
+    --xc-mono: var(--bs-font-monospace);
+    --xc-data-size: 0.85rem;
+    --xc-label-size: 0.7rem;
+}
+
 /* Section headers
 --------------------------------------------------
-   Disk Copy's, everywhere.
+   Disk Copy's, everywhere: the body's own size at bold weight, over the two
+   pixel rule Bootstrap draws between a table's head and its body. It goes on
+   the <h6> where a section is a block and on the <th> where the section is a
+   column of a layout table, so both read the same.
 
-   It was already the right one and the page had three others beside it: a bare
-   <h6> on the Disk Info rail, an <h6> with an icon on the Drive Toolkit, and a
-   small monospace caption on the Disk Info panels. This is Disk Copy's, measured
-   off it - the body's own size at bold weight, over the two pixel rule Bootstrap
-   draws between a table's head and its body. The rule is what says "section": a
-   heading set smaller than the text under it is not a heading, it is a caption.
+   The icon takes the muted blue-grey the labels use, which separates the glyph
+   from the words without another weight.
 
-   It goes on the <h6> where a section is a block and on the <th> where the section
-   is a column of a layout table, so both read the same.
-
-   Only the icon is new. It takes the muted blue-grey the Disk Info rail uses for
-   its labels, which separates the glyph from the words without another weight. */
+   The gap under the rule is the one thing this has to get right on both forms:
+   half a rem, which is what Bootstrap pads a table cell by, so the <h6> form
+   leaves the same space above its content that the <th> form does. */
 .sectionHeader {
-    color: $textColor;
+    color: var(--xc-text);
     font-size: 1rem;
     font-weight: 700;
-    margin: 1.25rem 0 0 0;
+    line-height: 1.5;
+    margin: 1.25rem 0 0.5rem 0;
     padding-bottom: 0.5rem;
-    border-bottom: 2px solid $textColor;
+    border-bottom: 2px solid var(--xc-text);
 
     i {
-        color: #78909c;
+        color: var(--xc-dim);
         margin-right: 0.4rem;
+    }
+
+    /* A live caption on the heading - the file a surface was read from, the
+       cylinder a view is showing. Normal weight and the label colour, in the
+       data font, so it reads as a reading beside the title and not as more
+       title. Right aligned, where a reading is looked for. */
+    .sub {
+        float: right;
+        font-family: var(--xc-mono);
+        font-size: var(--xc-data-size);
+        font-weight: 400;
+        color: var(--xc-label);
+        max-width: 60%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    /* A control on the heading - the tally's Clear, the dump's font switch.
+       Normal weight against the heading's bold, so it reads as a control on
+       the heading rather than as part of it. */
+    .btn {
+        margin-left: 1.25rem;
+        padding: 0 8px;
+        font-size: 0.8rem;
+        font-weight: 400;
+        vertical-align: 2px;
+    }
+
+    .form-switch {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        margin-left: 1.25rem;
+        padding-left: 0;
+        font-size: 0.8rem;
+        font-weight: 400;
+        color: var(--xc-label);
+        white-space: nowrap;
+        vertical-align: middle;
+
+        .form-check-input { margin: 0; float: none; }
+        .form-check-label { margin: 0; }
     }
 }
 
-/* In a layout table the rule under the head is Bootstrap's own, drawn on the tbody
-   rather than on the cells, so the cell must not draw a second one under it. */
+/* In a layout table the rule under the head is Bootstrap's own, drawn on the
+   tbody rather than on the cells, so the cell must not draw a second one. */
 th.sectionHeader {
     margin: 0;
     border-bottom: 0;
+}
+
+/* Layout tables
+--------------------------------------------------
+   A section that is a column of a table takes Bootstrap's .table for the
+   cell padding and the rule under its head, and nothing else: no fill, so the
+   section sits on the page like the <h6> sections do, and no rules between
+   rows it does not have. */
+.table.layoutTable {
+    --bs-table-bg: transparent;
+    --bs-table-color: var(--xc-text);
+    color: var(--xc-text);
+    margin-bottom: 0;
+
+    > :not(:first-child) {
+        border-top-color: var(--xc-text);
+    }
+
+    > :not(caption) > * > * {
+        border-bottom: 0;
+        box-shadow: none;
+    }
+}
+
+/* Labels
+--------------------------------------------------
+   The small uppercase caption that names a column or a reading. One size, one
+   colour, one tracking, whether it is over a number on the Disk Monitor or at
+   the head of a column on the SD card. */
+@mixin xcLabel {
+    font-family: var(--xc-mono);
+    font-size: var(--xc-label-size);
+    font-weight: 400;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--xc-label);
+}
+
+/* A line of prose that is not the point of the section - a file count, a
+   pass counter, a hint. The label colour at the data size. */
+.note {
+    font-family: var(--xc-mono);
+    font-size: var(--xc-data-size);
+    color: var(--xc-label);
+    margin: 0.5rem 0 0 0;
+}
+
+/* Panels
+--------------------------------------------------
+   Any box of data: a status readout, a hex dump, a key. Dark ground, one rule
+   around it, the data font at the data size. Canvases are panels too, with
+   nothing but the picture inside. */
+.panel {
+    background-color: var(--xc-panel);
+    border: 1px solid var(--xc-border);
+    padding: 0.4rem 0.6rem;
+    font-family: var(--xc-mono);
+    font-size: var(--xc-data-size);
+    line-height: 1.5;
+    color: var(--xc-text);
+}
+
+.fluxCanvas,
+.histCanvas,
+.diskCanvas {
+    background-color: #050505;
+    border: 1px solid var(--xc-border);
+    display: block;
+}
+
+/* The surfaces scale with their column; the flux plot and the histograms are
+   drawn at the size they are shown. */
+.diskCanvas {
+    max-width: 100%;
+    height: auto;
+}
+
+/* Label beside value, the value pushed to the right. */
+.panelRow {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.5rem;
+
+    span:first-child { color: var(--xc-label); }
+    span:last-child { text-align: right; }
+}
+
+/* Data tables
+--------------------------------------------------
+   A table of readings rather than a layout: the SD card listing, the Drive
+   Toolkit's signal lines. Column headings in the label style, cells in the
+   data font, one rule under the head and none between rows. */
+.table.dataTable {
+    --bs-table-bg: transparent;
+    --bs-table-striped-bg: #ffffff0d;
+    --bs-table-color: var(--xc-text);
+    /* Bootstrap's stripe and hover colours default to its dark body text,
+       which on this ground is text you cannot see. */
+    --bs-table-striped-color: var(--xc-text);
+    --bs-table-hover-color: var(--xc-text);
+    --bs-table-active-color: var(--xc-text);
+    color: var(--xc-text);
+    font-family: var(--xc-mono);
+    font-size: var(--xc-data-size);
+    margin-bottom: 0;
+
+    > :not(:first-child) {
+        border-top: 1px solid var(--xc-border);
+    }
+
+    th {
+        @include xcLabel;
+        border-bottom: 0;
+        padding: 0.25rem 0.5rem;
+    }
+
+    td {
+        border-bottom: 0;
+        padding: 0.25rem 0.5rem;
+        vertical-align: middle;
+    }
+
+    a {
+        color: var(--xc-text);
+        text-decoration: none;
+
+        &:hover { text-decoration: underline; }
+    }
+}
+
+/* Keys
+--------------------------------------------------
+   One key for every grid, surface and glyph row on the page. A row of swatches
+   with a word or two beside each, in the label colour at the data size; the
+   swatch is the thing being explained drawn small, so a grid cell's key is a
+   small grid cell, and a glyph's key is the glyph.
+
+   Wraps by default. .stack lays it one item to a line for the narrow rail on
+   the Disk Info tab; .cols2 sets two columns beside the flux plot. */
+.keyList {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem 1.5rem;
+    margin: 0.5rem 0 0 0;
+    padding: 0;
+    font-size: var(--xc-data-size);
+    color: var(--xc-label);
+
+    &.stack {
+        flex-direction: column;
+        gap: 0.35rem;
+    }
+
+    &.cols2 {
+        display: grid;
+        grid-template-columns: repeat(2, max-content);
+        gap: 0.5rem 2.5rem;
+    }
+}
+
+.keyItem {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    white-space: nowrap;
+}
+
+.keySwatch {
+    flex: 0 0 auto;
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    background-color: #151515;
+    border: 1px solid var(--xc-text);
+}
+
+/* Fill colours
+--------------------------------------------------
+   The X-Copy palette. Shared by the grid cells and their key swatches, so a
+   swatch is exactly the cell it stands for. */
+@mixin xcFill($background, $text) {
+    background-color: $background;
+    color: $text;
+}
+
+.track,
+.keySwatch {
+    &.white { @include xcFill(whitesmoke, $textColorDark); }
+    &.green { @include xcFill(green, $textColor); }
+    &.yellow { @include xcFill(yellow, $textColorDark); }
+    &.orange { @include xcFill(orange, $textColorDark); }
+    &.red { @include xcFill(red, $textColor); }
+    &.magenta { @include xcFill(magenta, $textColor); }
+    &.gray { @include xcFill(#757575, $textColor); }
+}
+
+/* Where the head is. An inset outline rather than another fill, so it says
+   where the head is without hiding what that cylinder has been doing. Blue
+   rather than white, because the cell already has a white border. */
+.track.current {
+    outline: 3px solid var(--xc-accent);
+    outline-offset: -3px;
+}
+
+.keySwatch.current {
+    outline: 2px solid var(--xc-accent);
+    outline-offset: -2px;
+}
+
+/* Dumps
+--------------------------------------------------
+   Hex and ASCII, on the Disk Monitor and the Disk Info tab. One panel, one
+   font, one size, and one way of telling an address from a byte: the address
+   in the label colour, the bytes in the text colour, the ASCII behind a rule.
+   A byte lights up under the pointer, and a byte a search found stays lit. */
+.dump {
+    @extend .panel;
+    overflow: auto;
+
+    pre {
+        margin: 0;
+        padding: 0;
+        font-family: inherit;
+        font-size: inherit;
+        line-height: 1.35;
+        color: var(--xc-text);
+        white-space: pre;
+        overflow: visible;
+    }
+
+    .addr,
+    .range {
+        color: var(--xc-label);
+        margin-right: 0.75em;
+    }
+
+    .hex {
+        padding: 0 0.15em;
+        margin-right: 0.35em;
+
+        &:hover {
+            background-color: var(--xc-text);
+            color: $textColorDark;
+            cursor: text;
+        }
+    }
+
+    .asciiBlock {
+        border-left: 2px solid var(--xc-border);
+        margin-left: 0.5em;
+        padding-left: 0.75em;
+    }
+
+    .asciiHighlight {
+        color: $textColorDark;
+        background-color: var(--xc-text);
+    }
+}
+
+/* Editable numbers in a toolbar
+--------------------------------------------------
+   The cylinder, sector and side boxes. Same box on every tab that has one. */
+.dvEdit {
+    background-color: var(--xc-panel);
+    color: var(--xc-text);
+    font-family: var(--xc-mono);
+    width: 50px;
+    text-align: center;
+    border: 1px solid var(--xc-border);
+
+    &:focus {
+        outline: none !important;
+        border-color: var(--xc-accent);
+    }
+
+    &.wide {
+        width: 150px;
+        text-align: start;
+    }
+}
+
+/* Modal
+-------------------------------------------------- */
+.modal {
+    color: $textColorDark;
 }

@@ -269,14 +269,17 @@ function dinfoEnd(tracks, good, bad, missing) {
 // colour
 // ---------------------------------------------------------------------------
 
+// The fill palette the grids use - the same green, red, orange and magenta as
+// the Disk Copy key's cells - so a sector on the surface and a cylinder in the
+// tally that mean the same thing are the same colour.
 function dinfoVerdictColour(verdict, sector) {
-  if (sector == DINFO_STRAY) { return "#ab47bc"; }
+  if (sector == DINFO_STRAY) { return "magenta"; }
   switch (verdict) {
-    case DINFO_OK: return "#66bb6a";
-    case DINFO_BAD_CHECK: return "#ef5350";
+    case DINFO_OK: return "green";
+    case DINFO_BAD_CHECK: return "red";
     case DINFO_CYL_LOW:
     case DINFO_CYL_HIGH:
-    case DINFO_HEAD_WRONG: return "#ffa726";
+    case DINFO_HEAD_WRONG: return "orange";
     default: return "#757575";
   }
 }
@@ -543,22 +546,25 @@ function dinfoSideSummary(side) {
 function dinfoDrawHeaders() {
   for (var side = 0; side < 2; side++) {
     var s = dinfoSideSummary(side);
-    var text = "Side " + side + ", " + s.tracks + " Tracks";
+    var parts = [];
     if (s.tracks > 0) {
-      text += "<br/>" + s.sectors + " Sectors, " + s.bad + " bad";
-      if (s.missing > 0) { text += "<br/>" + s.missing + " missing"; }
-      text += "<br/>" + s.bytes + " Bytes";
-      text += "<br/>Amiga MFM";
+      parts.push(s.tracks + " tracks");
+      parts.push(s.sectors + " sectors, " + s.bad + " bad");
+      if (s.missing > 0) { parts.push(s.missing + " missing"); }
+      parts.push(s.bytes + " bytes");
+      parts.push("Amiga MFM");
       if (dinfoMeta != null) {
-        text += "<br/>WrProt " + (dinfoMeta.wrprot ? "ON" : "OFF");
+        parts.push("WrProt " + (dinfoMeta.wrprot ? "on" : "off"));
       }
       // Only when it happened. A census that ran out of table has described part
       // of those tracks as though it were all of them, and that has to be said.
-      if (s.over > 0) { text += "<br/>" + s.over + " tracks over " + DINFO_MAX_SYNCS + " marks"; }
+      if (s.over > 0) { parts.push(s.over + " tracks over " + DINFO_MAX_SYNCS + " marks"); }
     } else {
-      text += "<br/>nothing read";
+      parts.push("Nothing read");
     }
-    $('#dinfoHead' + side).html(text);
+    // One line under the heading, the readings separated by a dot, rather than a
+    // stack of them: the surface is what this section is for.
+    $('#dinfoHead' + side).html(parts.join(" &middot; "));
     $('#dinfoSource' + side).html(dinfoMeta == null ? "&mdash;" : dinfoMeta.name);
   }
 }
@@ -942,6 +948,7 @@ function dinfoDrawDump(rec) {
   lines.push("End Sector cell:" + rec.endCell);
   lines.push("Number of cells:" + (rec.endCell - rec.startCell));
   lines.push("");
+  var headerLines = lines.length;
 
   var perLine = 16;
   for (var off = 0; off < 512; off += perLine) {
@@ -953,10 +960,19 @@ function dinfoDrawDump(rec) {
       hex += ("0" + byte.toString(16).toUpperCase()).slice(-2) + " ";
       txt += (byte >= 32 && byte < 127) ? String.fromCharCode(byte) : ".";
     }
-    lines.push(("000" + off.toString(16).toUpperCase()).slice(-4) + "| " + hex + "| " + txt);
+    lines.push('<span class="addr">' + ("000" + off.toString(16).toUpperCase()).slice(-4) + '</span>' +
+               dinfoEscape(hex) + '<span class="asciiBlock">' + dinfoEscape(txt) + '</span>');
   }
 
-  out.textContent = lines.join("\n");
+  out.innerHTML = lines.map(function (line, i) {
+    // The header lines are plain text; only the hex rows carry markup.
+    return i < headerLines ? dinfoEscape(line) : line;
+  }).join("\n");
+}
+
+// The ASCII column is whatever the sector holds, and a sector can hold "<".
+function dinfoEscape(text) {
+  return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
 /*

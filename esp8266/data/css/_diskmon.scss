@@ -1,211 +1,18 @@
-/* SD Table
+/* Disk Monitor
 -------------------------------------------------- */
 @font-face {
     font-family: 'TopazPlus a500a1000a2000';
     src: url('../fonts/topaz.ttf');
 }
 
-.dvEdit {
-    background-color: lightblue;
-    width: 50px;
-    text-align:center;
-    border:2px solid white;
-    &:focus {
-        outline: none !important;
-        background-color: white;
-        border:2px solid green;
-    }
-
-    &.wide {
-        width: 150px;
-        text-align: start;
-    }
-}
-
-@mixin commonTable {
-    margin: 0px;
-    padding: 0px;
-    
-    .range {
-        margin: 0px;
-        margin-right: 10px;
-        background-color: white;
-        color: black;
-        padding: 3px;
-    }
-
-    .asciiHighlight {
-        color: black;
-        background-color: white;
-    }
-}
-
-.sectorTable {
-    pre {
-        overflow: hidden;
-
-        .asciiChar {
-            background-color: #303030;
-            margin-right: 2px;
-            padding: 1.25px;
-        }
-   
-        .hex {
-            background-color: gray;
-            color: black;
-            padding: 3px;
-            margin: 0px;
-            margin-right: 2px;
-            &:hover {
-                background-color: white;
-                color: black;
-                cursor: text;
-            }
-        }
-    
-        .asciiBlock {
-            // background-color: #303030;
-            border-left: 4px solid gray;
-            color: white;
-            margin-left: 10px;
-            padding-left: 10px;
-            padding-right: 10px;
-            padding: 3px;
-        }
-    
-        @include commonTable;
-        margin-top: 1px;
-    }
-}
-
-.asciiTable {
-    overflow: hidden;
-    
-    /* Topaz draws taller than its line box, so the rows were pulled together to
-       close the gap that left. At the default monospace there is no gap to close
-       and the same pull clips the address off every row but the last, so it goes
-       with the font that needed it. */
-    &.amigaFont pre:not(:first-of-type) {
-        margin-top: -9px;
-    }
-
-    pre {
-        .asciiBlock {
-            margin-right: 20px;
-            font-style: normal;
-        }  
-
-        @include commonTable;
-        overflow: hidden;
-    }
-}
-
-.emptyTable {
-    font-family: monospace;
-    font-size: smaller;
-
-    .emptyTrack {
-        background-color: white;
-        color: black;
-        
-        padding-left: 3px;
-        padding-right: 3px;
-    }
-
-    .side {
-        background-color: gray;
-        color: black;
-        
-        margin-left: 10px;
-        margin-right: 10px;
-
-        padding-left: 3px;
-        padding-right: 3px;
-    }
-
-    // .blocks {
-    // }
-
-    .block {
-        border:2px solid #212529;
-        padding-left: 15px;
-        padding-right: 15px;
-        background-color: #303030;
-
-        &:hover {
-            background-color: white;
-            color: black;
-            cursor: zoom-in;
-        }
-    }
-
-    .empty {
-        background-color: green;
-    }
-
-    .full {
-        background-color: red;
-    }
-
-    .copy {
-        background-color: purple;
-    }
-
-    .current {
-        border:2px solid white;
-    }
-}
-
-/* Histogram
--------------------------------------------------- */
-
-.histCanvas
-{
-    background-color: black;
-    border:1px solid darkgrey;
-}
-/* The Amiga font, worn only when the switch on the toolbar asks for it. The dump is
-   read beside a hex column, where Topaz's glyph shapes are the reason a byte can be
-   hard to place, so the default is the monospace the rest of the page uses. */
-.asciiTable.amigaFont pre .asciiBlock {
-    font-family: 'TopazPlus a500a1000a2000';
-    font-size: large;
-}
-
-/* Rides the ASCII Dump header, the way the Drive Toolkit's Clear rides Session
-   tally. Normal weight, so it reads as a control on the heading rather than as
-   part of the heading. */
-.dmonFontCheck {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.4rem;
-    margin-left: 1.25rem;
-    font-weight: normal;
-    font-size: 0.85rem;
-    color: #b0bec5;
-    white-space: nowrap;
-    vertical-align: middle;
-    padding-left: 0;
-
-    .form-check-input {
-        margin: 0;
-        float: none;
-    }
-
-    .form-check-label {
-        margin: 0;
-    }
-}
-
-/* The head information. A label over its value rather than beside it, so the nine
-   read as a row of readings and a number that moves is seen moving. Same colours the
-   Disk Info status rail uses for the same job. */
+/* The nine facts about the sector on screen. A label over its value, so they
+   read as a row of readings and a number that moves is seen moving. */
 .dmonStats {
     display: flex;
     flex-wrap: wrap;
     gap: 0.5rem 2rem;
-    font-family: monospace;
-    margin: 0.75rem 0 1rem 0;
+    font-family: var(--xc-mono);
+    margin: 0 0 0.75rem 0;
 }
 
 .dmonStat {
@@ -215,19 +22,88 @@
 }
 
 .dmonStatLabel {
-    color: #78909c;
-    font-size: 0.7rem;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
+    @include xcLabel;
 }
 
 .dmonStatValue {
-    color: $textColor;
-    font-size: 0.95rem;
+    color: var(--xc-text);
+    font-size: var(--xc-data-size);
 }
 
 /* The one number on the strip that is a verdict rather than a fact. */
 .dmonStatValue.bad {
-    color: #e04b4b;
+    color: var(--xc-text-bad);
     font-weight: bold;
+}
+
+/* The hex dump: sixteen rows of 32 bytes. A .dump, with the ASCII column the
+   markup carries alongside each row. */
+.sectorTable {
+    .asciiChar {
+        margin-right: 1px;
+    }
+}
+
+/* The ASCII dump beside the histogram: eight rows of 64 characters. */
+.asciiTable {
+    /* Topaz draws taller than its line box, so the rows are pulled together to
+       close the gap that leaves. At the page's monospace there is no gap to
+       close and the same pull clips the address off every row but the last, so
+       it goes with the font that needs it. */
+    &.amigaFont pre:not(:first-of-type) {
+        margin-top: -9px;
+    }
+
+    /* The Amiga font, worn only when the switch on the heading asks for it. The
+       dump is read beside a hex column, where Topaz's glyph shapes are the reason
+       a byte can be hard to place, so the default is the monospace the rest of
+       the page uses. */
+    &.amigaFont pre .asciiBlock {
+        font-family: 'TopazPlus a500a1000a2000';
+        font-size: large;
+    }
+}
+
+/* The disk map: every sector of every track, coloured by what the scan found
+   in it. Track and side are labels; the sectors are chips that light up under
+   the pointer, because clicking one opens it in the dump above. */
+.emptyTable {
+    @extend .panel;
+    line-height: 1.6;
+    white-space: nowrap;
+    overflow-x: auto;
+
+    .emptyTrack {
+        color: var(--xc-label);
+        margin-right: 0.75em;
+    }
+
+    .side {
+        color: var(--xc-label);
+        margin-left: 1em;
+        margin-right: 0.5em;
+    }
+
+    .block {
+        display: inline-block;
+        min-width: 2.2em;
+        text-align: center;
+        margin-right: 2px;
+        border: 1px solid transparent;
+        background-color: var(--xc-chip);
+
+        &:hover {
+            background-color: var(--xc-text);
+            color: $textColorDark;
+            cursor: zoom-in;
+        }
+    }
+
+    .empty { background-color: green; }
+    .full { background-color: red; }
+    .copy { background-color: purple; }
+
+    .current {
+        border-color: var(--xc-accent);
+    }
 }

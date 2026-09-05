@@ -1,15 +1,16 @@
-/* Headings
+/* Disk Copy
 -------------------------------------------------- */
 
+/* The mode and status strip. The one filled section on the page: it is the
+   line the eye goes to during a copy, and the fill is what makes it that. */
 .diskcopyInfo {
-    background-color:darkblue;
+    background-color: darkblue;
     color: $textColor;
 
     .mode {
         width: 25%;
     }
 }
-
 
 /* Icons
 -------------------------------------------------- */
@@ -18,24 +19,8 @@
     filter: grayscale(100%);
 }
 
-/* Flux
--------------------------------------------------- */
-
-.fluxCanvas
-{
-    background-color: black;
-    border:1px solid darkgrey;
-}
-
 /* Buttons
 -------------------------------------------------- */
-.cancelButton
-{
+.cancelButton {
     margin-bottom: 20px;
-}
-
-/* Modal
--------------------------------------------------- */
-.modal {
-    color: black;
 }

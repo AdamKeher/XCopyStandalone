@@ -181,7 +181,7 @@ function dtBuildGrid() {
     // No icon column: nothing is being copied from anywhere, so the grid starts at
     // the row labels.
     leadWidth: 0,
-    sideLabel: function (side) { return 'Side ' + side + (side == 0 ? ' (Lower)' : ' (Upper)'); },
+    sideLabel: cylinderSideLabel,
     cellId: function (cylinder, side) { return 'dtTrack' + ((cylinder * 2) + side); },
     cellTitle: function (cylinder, side) { return 'Cylinder ' + cylinder + ', side ' + side + ' - click to seek here'; }
   });
@@ -363,13 +363,13 @@ function dtPaintRunButtons() {
 
   var label, style;
   if (dtRun === 2) {
-    label = '<i class="fa-solid fa-pause"></i> Pause read';
+    label = '<i class="fa-solid fa-pause"></i> Pause Read';
     style = 'btn-warning';
   } else if (dtRun === 3) {
-    label = '<i class="fa-solid fa-play"></i> Resume read';
+    label = '<i class="fa-solid fa-play"></i> Resume Read';
     style = 'btn-success';
   } else {
-    label = '<i class="fa-solid fa-play"></i> Start read';
+    label = '<i class="fa-solid fa-play"></i> Start Read';
     style = 'btn-success';
   }
   $('#dtReadBtn').removeClass('btn-success btn-warning').addClass(style).html(label);
@@ -467,11 +467,11 @@ function dtState(run, cyl, rpmTenths, edges, steps, flags, levels, raws) {
   $('#dtMotBtn').html('Motor: ' + (raw[DT_MOT] ? 'On' : 'Off'))
                 .toggleClass('btn-warning', raw[DT_MOT]).toggleClass('btn-secondary', !raw[DT_MOT]);
   $('#dtDirBtn').html('Dir: ' + (raw[DT_DIR] ? 'In' : 'Out'));
-  $('#dtSideBtn').html('SIDE line: ' + (raw[DT_SIDE] ? '1' : '0'));
+  $('#dtSideBtn').html('SIDE Line: ' + (raw[DT_SIDE] ? '1' : '0'));
   $('#dtDensBtn').html('Density: ' + (raw[DT_DENS] ? 'High' : 'Low'));
   $('#dtStickyBtn').html('Sticky: ' + (dtSticky ? 'On' : 'Off'))
                    .toggleClass('btn-warning', dtSticky).toggleClass('btn-secondary', !dtSticky);
-  $('#dtAutoBtn').html('Auto re-seek: ' + (dtAuto ? 'On' : 'Off'));
+  $('#dtAutoBtn').html('Auto Re-seek: ' + (dtAuto ? 'On' : 'Off'));
   $('#dtSoundBtn').html('<i class="fa-solid fa-volume-' + (dtSound ? 'high' : 'xmark') +
                         '"></i> Sound: ' + (dtSound ? 'On' : 'Off'));
 
@@ -513,7 +513,7 @@ function dtCal(cyl, step, head, passes, tainted) {
   tainted = parseInt(tainted, 10) || 0;
 
   var headName = dtHead === 0 ? 'Lower' : (dtHead === 1 ? 'Upper' : 'Both');
-  $('#dtHeadBtn').html('Read heads: ' + headName);
+  $('#dtHeadBtn').html('Read Heads: ' + headName);
   $('#dtStepBtn').html('Step: ' + step);
   $('#dtPassLine').html(dtRun >= 2
     ? ('Pass ' + passes + (tainted > 0 ? ' — ' + tainted + ' not counted, lines were driven' : ''))
