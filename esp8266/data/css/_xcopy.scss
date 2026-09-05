@@ -28,64 +28,37 @@ body {
 }
 /* Section headers
 --------------------------------------------------
-   One header for every section on every tab.
+   Disk Copy's, everywhere.
 
-   There were four idioms doing this job: a table's <th> on Disk Copy and Disk
-   Monitor, a bare <h6> on the Disk Info rail, an <h6> with an icon on the Drive
-   Toolkit, and a small monospace caption on the Disk Info panels. Four weights,
-   three colours and icons on about half of them, so moving between tabs meant
-   re-learning what a heading looked like.
+   It was already the right one and the page had three others beside it: a bare
+   <h6> on the Disk Info rail, an <h6> with an icon on the Drive Toolkit, and a
+   small monospace caption on the Disk Info panels. This is Disk Copy's, measured
+   off it - the body's own size at bold weight, over the two pixel rule Bootstrap
+   draws between a table's head and its body. The rule is what says "section": a
+   heading set smaller than the text under it is not a heading, it is a caption.
 
-   This is the one. It goes on the <h6> where a section is a block, and on the <th>
-   where the section is a column of a layout table and the heading is genuinely that
-   column's - those keep their element and take the same look, rather than being
-   restructured into blocks they are not.
+   It goes on the <h6> where a section is a block and on the <th> where the section
+   is a column of a layout table, so both read the same.
 
-   The panel captions on Disk Info stay a tier below it deliberately: a caption on a
-   canvas inside a section is not the same thing as the section's name. They share
-   this one's colour so the two read as related. */
+   Only the icon is new. It takes the muted blue-grey the Disk Info rail uses for
+   its labels, which separates the glyph from the words without another weight. */
 .sectionHeader {
     color: $textColor;
-    font-size: 0.8rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    margin: 1rem 0 0.5rem 0;
+    font-size: 1rem;
+    font-weight: 700;
+    margin: 1.25rem 0 0 0;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid $textColor;
 
     i {
-        margin-right: 0.4rem;
         color: #78909c;
+        margin-right: 0.4rem;
     }
 }
 
-/* On a layout table the header is a cell, so it carries the table's own spacing
-   rather than the block margins above. */
+/* In a layout table the rule under the head is Bootstrap's own, drawn on the tbody
+   rather than on the cells, so the cell must not draw a second one under it. */
 th.sectionHeader {
     margin: 0;
-    padding-bottom: 0.4rem;
-}
-
-/* Sections are a header and their content, with nothing drawn around them.
-
-   Borders were on two tabs and off the other two, which made a section look like a
-   different kind of thing depending on where it was. They are kept for the places
-   that box a readout rather than a section - the hex dump panel, the canvases and
-   the track cells - where the line is the edge of the thing being read, not
-   decoration around a heading. */
-.sectionTable {
-    margin-bottom: 0;
-
-    > :not(caption) > * > * {
-        border-bottom-width: 0;
-        background-color: transparent;
-        padding-left: 0;
-    }
-
-    /* Bootstrap rules the body off from the head with a two pixel border on the
-       tbody itself, which is not a cell and so survives the line above. It is the
-       last of the section borders and it was only ever on the two tabs that use a
-       table to lay a section out. */
-    > :not(:first-child) {
-        border-top-width: 0;
-    }
+    border-bottom: 0;
 }

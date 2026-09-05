@@ -110,7 +110,7 @@
                     </p>
                     <p><hr/></p>
                     <p>
-                        <table class="table table-dark sectionTable diskcopyInfo">
+                        <table class="table table-dark diskcopyInfo">
                             <thead>
                                 <tr>
                                     <th class="mode sectionHeader"><i class="fa-solid fa-clone"></i> Mode</th>
@@ -134,7 +134,7 @@
                         </table>
                     </p>
                     <p>
-                        <table class="table table-dark sectionTable">
+                        <table class="table table-dark">
                             <thead>
                                 <tr>
                                     <th style="width: 0px;" class="sectionHeader"><i class="fa-solid fa-compact-disc"></i> Flux</th>
@@ -260,14 +260,6 @@
                                 <button type="button" class="btn btn-primary" onclick="toggleSide();"><i id="dvSideIcon" class="fa-solid fa-toggle-off"></i> Side</button>
                                 <input id="dvEditSide" type="text" class="dvEdit numbers" value="0"/>
                             </div>
-                            <!-- Off by default: the dump is read beside a hex column, and the
-                                 monospace the rest of the page uses is the easier of the two to
-                                 place a byte in. The period look is here for whoever wants the
-                                 disk to read the way it did on the machine. -->
-                            <div class="form-check form-switch dmonFontCheck ms-2">
-                                <input class="form-check-input" type="checkbox" role="switch" id="dmonAmigaFont" onchange="dmonToggleAmigaFont();">
-                                <label class="form-check-label" for="dmonAmigaFont">Amiga font</label>
-                            </div>
                         </div>
                     </p>
                     <hr/>
@@ -309,10 +301,21 @@
 
                     <br>
 
-                    <table class="table table-dark sectionTable">
+                    <table class="table table-dark">
                         <thead>
                             <tr>
-                                <th style="width: 0px;" class="sectionHeader"><i class="fa-solid fa-table-cells"></i> ASCII Dump</th>
+                                <th style="width: 0px;" class="sectionHeader"><i class="fa-solid fa-table-cells"></i> ASCII Dump<!--
+                                     Beside the thing it changes rather than up in the page
+                                     toolbar, which is for the drive and the sector on screen.
+                                     Off by default: the dump is read against the hex column
+                                     above it, and the monospace the rest of the page uses is
+                                     the easier of the two to place a byte in. The period look
+                                     is a click away for whoever wants the disk to read the way
+                                     it did on the machine. -->
+                                    <span class="form-check form-switch dmonFontCheck">
+                                        <input class="form-check-input" type="checkbox" role="switch" id="dmonAmigaFont" onchange="dmonToggleAmigaFont();">
+                                        <label class="form-check-label" for="dmonAmigaFont">Amiga font</label>
+                                    </span></th>
                                 <th class="sectionHeader"><i class="fa-solid fa-chart-column"></i> Histogram</th>
                             </tr>
                         </thead>
@@ -337,7 +340,7 @@
                         </tbody>
                     </table>
 
-                    <table class="table table-dark sectionTable">
+                    <table class="table table-dark">
                         <thead>
                             <tr>
                                 <th style="width: 0px;" class="sectionHeader"><i class="fa-solid fa-table-cells"></i> Disk Usage</th>

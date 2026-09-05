@@ -281,11 +281,12 @@ tr.dtInputsStart td {
 /* The Clear button rides on the heading it belongs to, so the grid does not need
    a sentence of its own above it. */
 
+/* Rides the heading it belongs to, so the grid does not need a sentence of its
+   own above it. Normal weight against the heading's bold. */
 .sectionHeader .btn {
-  margin-left: 10px;
-  padding: 0 6px;
-  font-size: 0.75rem;
-  text-transform: none;
-  letter-spacing: 0;
-  vertical-align: 1px;
+    margin-left: 1.25rem;
+    padding: 0 8px;
+    font-size: 0.8rem;
+    font-weight: normal;
+    vertical-align: 2px;
 }

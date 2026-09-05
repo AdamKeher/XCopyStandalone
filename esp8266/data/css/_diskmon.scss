@@ -172,15 +172,24 @@
     font-size: large;
 }
 
+/* Rides the ASCII Dump header, the way the Drive Toolkit's Clear rides Session
+   tally. Normal weight, so it reads as a control on the heading rather than as
+   part of the heading. */
 .dmonFontCheck {
-    color: $textColor;
-    display: flex;
+    display: inline-flex;
     align-items: center;
     gap: 0.4rem;
+    margin-left: 1.25rem;
+    font-weight: normal;
+    font-size: 0.85rem;
+    color: #b0bec5;
     white-space: nowrap;
+    vertical-align: middle;
+    padding-left: 0;
 
     .form-check-input {
         margin: 0;
+        float: none;
     }
 
     .form-check-label {
