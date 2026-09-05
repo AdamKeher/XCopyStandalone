@@ -63,12 +63,6 @@
                     <button class="nav-link active" id="diskcopy-tab" onclick="history.pushState(null, '', '#diskcopy');" data-bs-toggle="tab" data-bs-target="#diskcopy" type="button" role="tab" aria-controls="diskcopy" aria-selected="true"><i class="fa-solid fa-floppy-disk"></i> Disk Copy</button>
                 </li>
                 <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="sdcard-tab" onclick="history.pushState(null, '', '#sdcard');" data-bs-toggle="tab" data-bs-target="#sdcard" type="button" role="tab" aria-controls="sdcard" aria-selected="false"><i class="fa-solid fa-sd-card"></i> SD Card</button>
-                </li>
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="log-tab" onclick="history.pushState(null, '', '#log');" data-bs-toggle="tab" data-bs-target="#log" type="button" role="tab" aria-controls="log" aria-selected="false"><i class="fa-solid fa-terminal"></i> Log</button>
-                </li>
-                <li class="nav-item" role="presentation">
                     <button class="nav-link" id="diskmon-tab" onclick="history.pushState(null, '', '#diskmon');" data-bs-toggle="tab" data-bs-target="#diskmon" type="button" role="tab" aria-controls="diskmon" aria-selected="true"><i class="fa-solid fa-floppy-disk"></i> Disk Monitor</button>
                 </li>
                 <li class="nav-item" role="presentation">
@@ -79,6 +73,12 @@
                 </li>
                 <li class="nav-item" role="presentation">
                     <button class="nav-link" id="drivetoolkit-tab" onclick="history.pushState(null, '', '#drivetoolkit');" data-bs-toggle="tab" data-bs-target="#drivetoolkit" type="button" role="tab" aria-controls="drivetoolkit" aria-selected="true"><i class="fa-solid fa-wrench"></i> Drive Toolkit</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="sdcard-tab" onclick="history.pushState(null, '', '#sdcard');" data-bs-toggle="tab" data-bs-target="#sdcard" type="button" role="tab" aria-controls="sdcard" aria-selected="false"><i class="fa-solid fa-sd-card"></i> SD Card</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="log-tab" onclick="history.pushState(null, '', '#log');" data-bs-toggle="tab" data-bs-target="#log" type="button" role="tab" aria-controls="log" aria-selected="false"><i class="fa-solid fa-terminal"></i> Log</button>
                 </li>
             </ul>
             <div class="tab-content" id="xcopyTabContent">
@@ -447,13 +447,13 @@
                                 <button type="button" id="diskInfoRead" class="btn btn-primary" onclick="diskInfoScan();"><i class="fa-solid fa-magnifying-glass-chart"></i> Read Disk</button>
                                 <button type="button" id="diskInfoLoad" class="btn btn-primary" onclick="openFileSelect('scp');" data-bs-toggle="modal" data-bs-target="#staticBackdrop"><i class="fa-solid fa-wave-square"></i> Load SCP&hellip;</button>
                             </div>
-                            <div class="input-group input-group-sm me-1 dinfoControl">
+                            <div class="input-group me-1 dinfoControl">
                                 <span class="input-group-text">Cylinders</span>
                                 <input type="number" class="form-control" id="dinfoFirst" value="0" min="0" max="83">
                                 <span class="input-group-text">to</span>
                                 <input type="number" class="form-control" id="dinfoLast" value="83" min="0" max="83">
                             </div>
-                            <div class="input-group input-group-sm me-1 dinfoControl">
+                            <div class="input-group me-1 dinfoControl">
                                 <span class="input-group-text">Sides</span>
                                 <select class="form-select" id="dinfoSide">
                                     <option value="-1" selected>Both</option>
@@ -497,22 +497,26 @@
                                 <div class="dinfoRow"><span>Track len</span><span id="dinfoLen">&mdash;</span></div>
                                 <div class="dinfoRow"><span>Sectors</span><span id="dinfoSectors">&mdash;</span></div>
                                 <div class="dinfoRow"><span>Sync marks</span><span id="dinfoSyncs">&mdash;</span></div>
-                                <div class="dinfoRow"><span>Strays / dups</span><span id="dinfoStrays">&mdash;</span></div>
+                                <div class="dinfoRow"><span>Strays / dups / trunc</span><span id="dinfoStrays">&mdash;</span></div>
                                 <div class="dinfoRow"><span>Cylinder seen</span><span id="dinfoCylSeen">&mdash;</span></div>
                                 <div class="dinfoRow"><span>Number of sides</span><span id="dinfoSides">&mdash;</span></div>
                                 <div class="dinfoRow"><span>Interface mode</span><span id="dinfoInterface">&mdash;</span></div>
                             </div>
 
                             <h6>Track / Side selection</h6>
-                            <div class="dinfoPanel">
-                                <div class="dinfoSlider">
-                                    <input type="range" class="form-range" id="dinfoTrackSlider" min="0" max="83" value="0">
-                                    <label for="dinfoTrackSlider">Cylinder number</label>
+                            <div class="dinfoPanel dinfoSelect">
+                                <!-- Same paradigm as Head Cal's cylinder control: step buttons
+                                     either side of a box you can type into. Nothing here talks to
+                                     the drive, so no .live-action and no wsSend - it moves the
+                                     selection within a survey that has already been read. -->
+                                <div class="btn-group btn-group-sm" role="group" aria-label="Cylinder">
+                                    <button type="button" class="btn btn-primary" onclick="dinfoNudge(-10);">-10</button>
+                                    <button type="button" class="btn btn-primary" onclick="dinfoNudge(-1);">-1</button>
+                                    <input id="dinfoCylPick" type="text" class="dvEdit numbers" value="0"/>
+                                    <button type="button" class="btn btn-primary" onclick="dinfoNudge(1);">+1</button>
+                                    <button type="button" class="btn btn-primary" onclick="dinfoNudge(10);">+10</button>
                                 </div>
-                                <div class="dinfoSlider">
-                                    <input type="range" class="form-range" id="dinfoSideSlider" min="0" max="1" value="0">
-                                    <label for="dinfoSideSlider">Side number</label>
-                                </div>
+                                <button type="button" id="dinfoSideBtn" class="btn btn-sm btn-secondary" onclick="dinfoCycleSide();">Side: 0</button>
                             </div>
 
                             <h6>Key</h6>
@@ -533,16 +537,30 @@
                             <div class="dinfoHeaderLeft">Track view</div>
                             <div class="dinfoHeaderRight" id="dinfoTrackViewLabel">&mdash;</div>
                         </div>
-                        <canvas class="diskCanvas" id="dinfoTrackCanvas" width="1040" height="110"></canvas>
-                        <div class="dinfoSlider dinfoWide">
-                            <input type="range" class="form-range" id="dinfoOffset" min="0" max="100" value="0">
-                            <label for="dinfoOffset">x offset (% of the track len)</label>
-                        </div>
-                        <div class="dinfoSlider dinfoWide">
-                            <input type="range" class="form-range" id="dinfoZoom" min="1" max="16" value="1">
+                        <div class="dinfoSlider dinfoZoomRow">
                             <label for="dinfoZoom">x scale</label>
+                            <input type="range" id="dinfoZoom" min="1" max="16" value="1">
+                            <span class="dinfoSliderValue" id="dinfoZoomValue">1x</span>
                         </div>
-                        <canvas class="diskCanvas" id="dinfoHistCanvas" width="500" height="180"></canvas>
+                        <!-- The canvas is drawn at the full zoomed width and this scrolls it.
+                             That is what replaced the old "x offset" slider: panning a zoomed
+                             image is what a scrollbar is, and the browser's own one drags,
+                             wheels and keys the way every other scrollbar on the machine does. -->
+                        <div class="dinfoTrackScroll">
+                            <canvas class="diskCanvas dinfoTrackCanvas" id="dinfoTrackCanvas" width="1040" height="110"></canvas>
+                        </div>
+                        <div class="dinfoBelow">
+                            <canvas class="diskCanvas" id="dinfoHistCanvas" width="500" height="180"></canvas>
+                            <div class="dinfoDump">
+                                <div class="dinfoHeader">
+                                    <div class="dinfoHeaderLeft">Sector</div>
+                                    <div class="dinfoHeaderRight" id="dinfoDumpLabel">&mdash;</div>
+                                </div>
+                                <div class="dinfoPanel">
+                                    <pre id="dinfoDumpText">Hover a sector in the track view.</pre>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <div class="tab-pane fade" id="headcal" role="tabpanel" aria-labelledby="headcal-tab">

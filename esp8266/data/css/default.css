@@ -308,11 +308,27 @@ body {
   background-color: #050505;
   border: 1px solid darkgrey;
   max-width: 100%;
+  height: auto;
 }
 
-/* The two surfaces and the status panel. Wraps rather than scrolls: at a narrow
-   window the panel drops under the disks, which is more use than a 1200px wide
-   row with a horizontal scrollbar under it. */
+/* width, not max-width. A canvas is a replaced element with an intrinsic size, so
+   max-width alone lets it shrink below its 520px and never above - which is why
+   the surfaces sat at about 330px with clear space beside them however wide the
+   window was. width: 100% makes them take the column; height: auto keeps them
+   round off the intrinsic ratio. */
+.dinfoSide .diskCanvas {
+  width: 100%;
+  max-width: none;
+}
+
+/* The two surfaces and the status panel beside them.
+
+   The panel stays on the right by making the surfaces the half that gives way:
+   they are flex 1 1 0 with min-width 0, so the row is sized by the panel's fixed
+   column and the disks take what is left. Sized any other way - the surfaces at
+   their 1040px content width - the row cannot fit and the panel wraps underneath,
+   which is what it used to do on any window narrower than about 1320px, i.e. all
+   of them. Wrapping is still there as the last resort, below dinfoSurfaces' basis. */
 .dinfoLayout {
   display: flex;
   flex-wrap: wrap;
@@ -324,15 +340,35 @@ body {
   display: flex;
   flex-wrap: wrap;
   gap: 1rem;
-  flex: 1 1 auto;
+  flex: 1 1 360px;
+  min-width: 0;
 }
 
+
+/* The toolbar takes its height from its tallest item, and .cancelButton carries a
+   20px bottom margin meant for where it usually lives - the foot of a tab, as on
+   Disk Copy - not a toolbar. Inside one that margin became the line height, and
+   align-items: stretch then inflated every sibling to match: measured off a
+   screenshot, 45px buttons and 43px number fields against the 29px they are on
+   every other tab. Zero it here and stop the stretch; the margin is left alone
+   everywhere else. */
+#diskinfo .btn-toolbar {
+  align-items: center;
+}
+#diskinfo .btn-toolbar .cancelButton {
+  margin-bottom: 0;
+}
+/* min-width 0 because a flex item will not shrink below its content by default,
+   and the content here is a 520px canvas. No maximum: the pair of them take
+   whatever the status column leaves, and the page is allowed to grow downwards
+   for it. */
 .dinfoSide {
-  flex: 0 1 auto;
+  flex: 1 1 0;
+  min-width: 0;
 }
 
 .dinfoStatus {
-  flex: 0 0 260px;
+  flex: 0 0 250px;
 }
 .dinfoStatus h6 {
   color: white;
@@ -382,24 +418,37 @@ body {
   text-align: right;
 }
 
+/* nowrap because .input-group wraps its own children by default, and this one is
+   inside a toolbar that offers it no particular width - so "Cylinders 0 to 83"
+   would break onto a second line and take the whole toolbar to twice the height
+   of every other tab's. */
 .dinfoControl {
   width: auto;
+  flex-wrap: nowrap;
 }
 .dinfoControl input[type=number] {
   max-width: 4.5rem;
 }
 
+/* Label beside the control rather than under it, and the platform's own slider
+   rather than Bootstrap's restyled one - the markup drops .form-range for that.
+   Two lines per slider is a lot of vertical space for a track number. */
 .dinfoSlider {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
   padding: 0.15rem 0;
 }
 .dinfoSlider label {
-  display: block;
+  flex: 0 0 auto;
+  order: -1;
+  min-width: 6.5rem;
   font-size: 0.7rem;
   color: #90a4ae;
 }
-
-.dinfoWide {
-  max-width: 1040px;
+.dinfoSlider input[type=range] {
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .dinfoKey div {
@@ -437,8 +486,77 @@ body {
   background-color: #757575;
 }
 
+/* The histogram and the sector dump share the row under the track view. The dump
+   takes what is left, because it is the one that benefits from width: sixteen
+   bytes of hex and their ASCII is about 640px and it should not wrap. */
+.dinfoBelow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-top: 0.5rem;
+}
+
+.dinfoDump {
+  flex: 1 1 480px;
+  min-width: 0;
+}
+.dinfoDump pre {
+  margin: 0;
+  font-size: 0.7rem;
+  line-height: 1.25;
+  color: white;
+  /* 23 lines, expressed as lines. A height that is not a whole number of
+     1.25em rows leaves one sliced in half at an end of the scroll, and
+     320px is 22.86 of them - so there was always half a row of hex. */
+  max-height: 28.75em;
+  overflow: auto;
+  white-space: pre;
+}
+
 .dinfoTrackView {
-  max-width: 1040px;
+  width: 100%;
+}
+
+/* The zoomed canvas is wider than this and this scrolls it. overflow-x auto so
+   the scrollbar appears only once there is something off screen, i.e. above 1x. */
+.dinfoTrackScroll {
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+/* Exempt from the max-width above: at 16x this is sixteen screens wide on purpose
+   and clamping it to the wrapper would defeat the scrolling. */
+.dinfoTrackScroll .dinfoTrackCanvas {
+  max-width: none;
+  display: block;
+}
+
+/* Step buttons and the side toggle, laid out like Head Cal's cylinder group. */
+.dinfoSelect {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+/* A fifth of the track view, not all of it. It picks one of sixteen values, so a
+   full width slider spends 1000px saying what 200 can. min-width keeps it usable
+   once that fifth is narrower than the label and the readout beside it. */
+.dinfoZoomRow {
+  width: 20%;
+  min-width: 200px;
+  max-width: 320px;
+}
+
+.dinfoSliderValue {
+  flex: 0 0 auto;
+  min-width: 2.5rem;
+  font-family: monospace;
+  font-size: 0.75rem;
+  color: white;
+  text-align: right;
 }
 
 /* Footer
