@@ -559,7 +559,7 @@ void XCopyDriveToolkit::publish()
                 // Carries the tally even so. Sending zeroes here told the browser
                 // the cylinder had never been tested, so selecting one head wiped
                 // from the grid the very history it exists to keep for the other.
-                snprintf(message, sizeof(message), "broadcast dtRead,%d,%d,0,0,-,%d,%d,0\r\n",
+                snprintf(message, sizeof(message), "broadcast dtRead,%d,%d,0,0,-,%d,%d,0,-1\r\n",
                          (int)_cylinder, side, t.passes, t.errors);
                 _esp->print(message);
                 continue;
@@ -572,9 +572,14 @@ void XCopyDriveToolkit::publish()
                 glyphs[i] = glyph(r.status[i]);
             glyphs[n] = 0;
 
-            snprintf(message, sizeof(message), "broadcast dtRead,%d,%d,%d,%d,%s,%d,%d,%d\r\n",
+            // cylinderSeen rides along so the browser can say the same sentence the
+            // TFT and the console say. "Cyl 12 seen as 11" is the single most useful
+            // line this test produces, and the browser used to compose a weaker one
+            // of its own because it had no way to know.
+            snprintf(message, sizeof(message), "broadcast dtRead,%d,%d,%d,%d,%s,%d,%d,%d,%d\r\n",
                      (int)_cylinder, side, r.valid, r.sectorCount, glyphs,
-                     t.passes, t.errors, _resultTainted[side] ? 1 : 0);
+                     t.passes, t.errors, _resultTainted[side] ? 1 : 0,
+                     (int)r.cylinderSeen);
             _esp->print(message);
         }
     }

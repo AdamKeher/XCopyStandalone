@@ -6,6 +6,10 @@ let termBuffer = [];
 
 function onLoad() {
   var hash = location.hash;
+  // Head Cal became a layer of the Drive Toolkit rather than a tab of its own, so
+  // a bookmark on the old name lands where the feature went. setTab() swallows a
+  // name it cannot find, which would silently leave Disk Copy showing instead.
+  if (hash == "#headcal") hash = "#drivetoolkit";
   if (hash != "") { setTab(hash); }
 
   // Before disableGlobes(), which reaches for the icons the grid builds, and well
@@ -37,7 +41,6 @@ function onLoad() {
 
   onLoad_DiskMon();
   onLoad_DiskInfo();
-  onLoad_HeadCal();
   onLoad_DriveToolkit();
 
   // Last: the message dispatch writes to term and to the tab DOM, so the socket
@@ -59,9 +62,10 @@ function setTab(tabName) {
    Buttons carrying .live-action are exempt from both arms below.
 
    The busy sweep exists so a second operation cannot be started underneath a
-   running one, and that is still what we want - but the head calibration panel
-   is interactive for as long as it is busy, and greying its own controls out
-   would leave it with nothing but the tab. headcal.js owns those instead.
+   running one, and that is still what we want - but the drive toolkit is
+   interactive for as long as it is busy, and greying its own controls out would
+   leave it with nothing but the tab. drivetoolkit.js owns those instead, scoped
+   to .dt-action so it reaches only its own pane.
 */
 function disableInterface(isBusy) {
   if (isBusy) {
