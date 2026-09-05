@@ -29,7 +29,7 @@ bool XCopyMenu::up()
 
     _currentItem = _currentItem->prev;
 
-    if (_currentItem->text == "")
+    if (_currentItem->label()[0] == '\0')
         up();
 
     return true;
@@ -42,7 +42,7 @@ bool XCopyMenu::down()
 
     _currentItem = _currentItem->next;
 
-    if (_currentItem->text == "")
+    if (_currentItem->label()[0] == '\0')
         down();
 
     return true;
@@ -67,7 +67,10 @@ XCopyMenuItem *XCopyMenu::addItem(String name, XCopyAction action, XCopyMenuItem
     if (root == NULL)
         root = getRoot();
 
-    item->text = name;
+    // An empty String assigned still allocates; only a label with something in
+    // it is worth a buffer.
+    if (name.length() > 0)
+        item->text = name;
     item->action = action;
 
     if (root != NULL)
@@ -90,7 +93,8 @@ XCopyMenuItem *XCopyMenu::addChild(String name, XCopyAction action, XCopyMenuIte
 {
     XCopyMenuItem *item = new XCopyMenuItem();
 
-    item->text = name;
+    if (name.length() > 0)
+        item->text = name;
     item->action = action;
     item->parent = parent;
 
@@ -103,6 +107,20 @@ XCopyMenuItem *XCopyMenu::addChild(String name, XCopyAction action, XCopyMenuIte
     else
         parent->firstChild = item;
 
+    return item;
+}
+
+XCopyMenuItem *XCopyMenu::addItem(const char *name, XCopyAction action, XCopyMenuItem *root)
+{
+    XCopyMenuItem *item = addItem(String(), action, root);
+    item->fixed = name;
+    return item;
+}
+
+XCopyMenuItem *XCopyMenu::addChild(const char *name, XCopyAction action, XCopyMenuItem *parent)
+{
+    XCopyMenuItem *item = addChild(String(), action, parent);
+    item->fixed = name;
     return item;
 }
 
@@ -145,7 +163,7 @@ void XCopyMenu::drawItem(XCopyMenuItem *item, uint8_t row)
 
     uint16_t color = isCurrentItem(item) ? ST7735_GREEN : ST7735_WHITE;
     _graphics->setTextWrap(false);
-    _graphics->drawText(color, item->text);
+    _graphics->drawText(color, item->label());
 }
 
 void XCopyMenu::drawMenu(XCopyMenuItem *item)

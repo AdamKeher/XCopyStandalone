@@ -13,8 +13,37 @@
    line is around 550 bytes, and building it locally meant an allocation and a
    realloc per concatenation in the few KB left between the stream buffer and the
    stack. 168 tracks of that fragmented the heap until the allocator wedged.
+
+   Sized once per survey and handed back after it, not reserved in begin() for the
+   life of the program. That was 1KB of the few the runtime heap has: the heap
+   above the track buffer is frozen by the core's stack guard, so everything after
+   boot - every String the console prints - lives on what the boot left free, and
+   this was the largest single piece of it. With it held, "help" had no room for
+   its first line.
 */
 static String dinfoData;
+
+static void dinfoClaim()
+{
+    // The profile is DINFO_BUCKETS characters and the census list is at most
+    // FLOPPY_MAX_SYNCS entries of "255:5:4095|", so the larger of the two decides.
+    // 512 data bytes as hex is the longest line this sends, past the surface
+    // profile and past the census list.
+    dinfoData.reserve(1040);
+}
+
+static void dinfoRelease()
+{
+    // Move-assigning an empty String frees the buffer; plain assignment keeps it.
+    dinfoData = String();
+}
+
+//! Holds the line buffer for one operation, whichever way it returns.
+struct DinfoScope
+{
+    DinfoScope() { dinfoClaim(); }
+    ~DinfoScope() { dinfoRelease(); }
+};
 
 //! One hex digit, for the surface profile.
 static char dinfoNibble(uint8_t value)
@@ -28,12 +57,6 @@ void XCopyDiskInfo::begin(XCopyGraphics *graphics, XCopyAudio *audio, XCopyESP82
     _audio = audio;
     _esp = esp;
     _floppy = floppy;
-
-    // The profile is DINFO_BUCKETS characters and the census list is at most
-    // FLOPPY_MAX_SYNCS entries of "255:5:4095|", so the larger of the two decides.
-    // 512 data bytes as hex is the longest line this sends, past the surface
-    // profile and past the census list.
-    dinfoData.reserve(1040);
 }
 
 /*
@@ -424,6 +447,8 @@ void XCopyDiskInfo::emitSectorLine(uint8_t cyl, uint8_t head, uint8_t sector)
 
 void XCopyDiskInfo::sectorDump(uint8_t cyl, uint8_t head, uint8_t sector)
 {
+    DinfoScope scope;
+
     if (cyl >= MAX_CYLINDERS || head > 1)
         return;
 
@@ -441,6 +466,8 @@ void XCopyDiskInfo::sectorDump(uint8_t cyl, uint8_t head, uint8_t sector)
 
 void XCopyDiskInfo::surveyDisk(uint8_t startCyl, uint8_t endCyl, int8_t side)
 {
+    DinfoScope scope;
+
     _cancelOperation = false;
 
     _esp->setMode("Disk Info");
@@ -584,6 +611,8 @@ void XCopyDiskInfo::surveyDisk(uint8_t startCyl, uint8_t endCyl, int8_t side)
 
 void XCopyDiskInfo::surveyScp(const String &path, uint8_t startCyl, uint8_t endCyl, int8_t side)
 {
+    DinfoScope scope;
+
     _cancelOperation = false;
 
     _esp->setMode("Disk Info");

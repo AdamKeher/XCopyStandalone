@@ -8,7 +8,23 @@
 class XCopyMenuItem
 {
 public:
+  /*
+     Two homes for the label. Nearly every item has a fixed one, and those point
+     at the literal in flash; only the settings rows, whose text carries a value,
+     hold a String. Forty odd Strings was most of a kilobyte of the runtime heap
+     held for the life of the program, on a board with a few kilobytes of it in
+     total.
+  */
+  const char *fixed = nullptr;
   String text;
+
+  const char *label() const
+  {
+    if (fixed != nullptr)
+      return fixed;
+    // A String that has never been given anything has no buffer at all.
+    return text.c_str() != nullptr ? text.c_str() : "";
+  }
   struct XCopyMenuItem *prev;
   struct XCopyMenuItem *next;
   struct XCopyMenuItem *parent;
@@ -32,6 +48,9 @@ public:
 
   XCopyMenuItem *addItem(String name, XCopyAction action, XCopyMenuItem *root = NULL);
   XCopyMenuItem *addChild(String name, XCopyAction action, XCopyMenuItem *parent);
+  //! A literal label, kept where it is rather than copied to the heap.
+  XCopyMenuItem *addItem(const char *name, XCopyAction action, XCopyMenuItem *root = NULL);
+  XCopyMenuItem *addChild(const char *name, XCopyAction action, XCopyMenuItem *parent);
 
   XCopyMenuItem *getFirst(XCopyMenuItem *item);
   XCopyMenuItem *getLast(XCopyMenuItem *item);

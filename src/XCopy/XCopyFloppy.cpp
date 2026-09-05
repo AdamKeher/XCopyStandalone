@@ -291,15 +291,21 @@ void XCopyFloppy::setupDrive()
     // filler block spanning the rest of SRAM_L first, take the buffer above it, then
     // hand the filler back.
     //
-    // The filler is sized from wherever the heap currently is, so this does not
-    // depend on how much anything earlier in begin() happened to allocate - but the
-    // result is still checked below, because being wrong here is silent otherwise.
-    byte *filler;
-    filler = (byte *)malloc(1);
-
-    long fillerSize = 0x20000000 - (long)filler;
-    free(filler);
-    filler = (fillerSize > 0) ? (byte *)malloc(fillerSize) : NULL;
+    // The filler is sized from the break, so this does not depend on how much
+    // anything earlier in begin() happened to allocate - but the result is still
+    // checked below, because being wrong here is silent otherwise.
+    //
+    // It used to be sized from where malloc(1) landed. A one byte request is served
+    // from any free chunk before the break is touched, and once the configuration
+    // has been read there are some, all of them below it: measured that way the
+    // filler came out 400 bytes too long and the buffer 400 bytes above the
+    // boundary, with the gap to the stack that much narrower. The break is where
+    // the next fresh chunk starts, rounded to nano malloc's 8 byte alignment, and
+    // its data sits 8 bytes in.
+    extern char *__brkval;
+    const long chunk = ((long)__brkval + 7) & ~7L;
+    const long fillerSize = 0x20000000 - (chunk + 8);
+    byte *filler = (fillerSize > 0) ? (byte *)malloc(fillerSize) : NULL;
 
     stream = (byte *)malloc(streamSizeHD + 10);
 

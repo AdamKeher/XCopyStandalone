@@ -98,6 +98,14 @@ Firmware:
       recreate it in the connect command. XCopy.cpp:266, and nine more.
 
   Memory & Flash:
+    ☐ Put the menu tree in flash
+      Fifty XCopyMenuItem objects are allocated with new in XCopy::begin(), around
+      2.4KB of the runtime heap for the life of the program. The labels moved to
+      flash at v742.26; the items themselves - four pointers, an action and a String
+      each - are the largest thing left on the heap besides the track buffer. The
+      tree is fixed, so it could be a const table with parent indices, leaving only
+      the nine settings rows with live text. Measure with "mem": 1,332 bytes free
+      after boot at v742.26, and the console needs a few hundred per line it prints.
     ☐ Enclose the remaining strings in F()
       227 are done. What is left is mostly String concatenation in the web
       broadcast paths, which F() cannot help with on its own.
