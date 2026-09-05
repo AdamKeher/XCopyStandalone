@@ -35,7 +35,6 @@
         <script src="./scripts/sdcard.js" type="text/javascript"></script>
         <script src="./scripts/diskmon.js" type="text/javascript"></script>
         <script src="./scripts/diskinfo.js" type="text/javascript"></script>
-        <script src="./scripts/headcal.js" type="text/javascript"></script>
         <script src="./scripts/drivetoolkit.js" type="text/javascript"></script>
         <script src="./scripts/upload.js" type="text/javascript"></script>
 
@@ -67,9 +66,6 @@
                 </li>
                 <li class="nav-item" role="presentation">
                     <button class="nav-link" id="diskinfo-tab" onclick="history.pushState(null, '', '#diskinfo');" data-bs-toggle="tab" data-bs-target="#diskinfo" type="button" role="tab" aria-controls="diskinfo" aria-selected="true"><i class="fa-solid fa-floppy-disk"></i> Disk Info</button>
-                </li>
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="headcal-tab" onclick="history.pushState(null, '', '#headcal');" data-bs-toggle="tab" data-bs-target="#headcal" type="button" role="tab" aria-controls="headcal" aria-selected="true"><i class="fa-solid fa-ruler-combined"></i> Head Cal</button>
                 </li>
                 <li class="nav-item" role="presentation">
                     <button class="nav-link" id="drivetoolkit-tab" onclick="history.pushState(null, '', '#drivetoolkit');" data-bs-toggle="tab" data-bs-target="#drivetoolkit" type="button" role="tab" aria-controls="drivetoolkit" aria-selected="true"><i class="fa-solid fa-wrench"></i> Drive Toolkit</button>
@@ -563,179 +559,156 @@
                         </div>
                     </div>
                 </div>
-                <div class="tab-pane fade" id="headcal" role="tabpanel" aria-labelledby="headcal-tab">
-                    <p>
-                        <div class="btn-toolbar" role="toolbar" aria-label="Head calibration controls">
-                            <div class="btn-group me-1" role="group" aria-label="Session">
-                                <!-- Start, Pause and Resume in one button - see headCalToggleRun(). It carries
-                                     .live-action so the busy state cannot grey out the only way to pause. -->
-                                <button type="button" id="headCalStart" class="btn btn-success live-action" onclick="headCalToggleRun();"><i class="fa-solid fa-play"></i> Start</button>
-                                <!-- Its own exit, not the shared Cancel button: that works by pulsing the
-                                     device cancel pin, which on this PCB is also the joystick up line, so
-                                     here it would nudge a control instead of leaving. -->
-                                <button type="button" id="headCalExit" class="btn btn-danger live-action" onclick="headCalExit();"><i class="fa-solid fa-stop"></i> Exit</button>
-                            </div>
-                            <div class="btn-group me-1" role="group" aria-label="Cylinder">
-                                <button type="button" class="btn btn-primary live-action" onclick="headCalNudge(-40);">-40</button>
-                                <button type="button" class="btn btn-primary live-action" onclick="headCalNudge(-10);">-10</button>
-                                <button type="button" class="btn btn-primary live-action" onclick="headCalNudge(-1);">-1</button>
-                                <input id="headCalCyl" type="text" class="dvEdit numbers" value="00"/>
-                                <button type="button" class="btn btn-primary live-action" onclick="headCalNudge(1);">+1</button>
-                                <button type="button" class="btn btn-primary live-action" onclick="headCalNudge(10);">+10</button>
-                                <button type="button" class="btn btn-primary live-action" onclick="headCalNudge(40);">+40</button>
-                            </div>
-                            <div class="btn-group me-1" role="group" aria-label="Seek">
-                                <button type="button" class="btn btn-secondary live-action" onclick="headCalReseek();"><i class="fa-solid fa-rotate-right"></i> Re-seek</button>
-                            </div>
-                            <div class="btn-group me-1" role="group" aria-label="Head">
-                                <button type="button" id="headCalHeadBtn" class="btn btn-secondary live-action" onclick="headCalCycleHead();">Head: Both</button>
-                                <button type="button" id="headCalAutoBtn" class="btn btn-secondary live-action" onclick="headCalToggleAuto();">Auto re-seek: Off</button>
-                                <button type="button" id="headCalSoundBtn" class="btn btn-secondary live-action" onclick="headCalToggleSound();" title="Audible feedback: a tick when every sector reads, a bong when they do not. Costs a sample length per pass."><i class="fa-solid fa-volume-xmark"></i> Sound: Off</button>
-                            </div>
-                        </div>
-                    </p>
-                    <p><hr/></p>
-                    <p class="headcalHelp">
-                        Use an AmigaDOS disk written by a well calibrated drive.
-                        Adjust the drive until every sector is found on both sides.
-                        Pause holds the session open with the drive still spinning, so the
-                        rows below stop moving while you read them or work on the drive.
-                    </p>
-                    <div class="headcalRows">
-                        <div class="headcalRow">
-                            <span class="headcalLabel">Head 0 (Lower)</span>
-                            <span id="headCalGlyphs0" class="headcalGlyphs"></span>
-                            <span id="headCalCount0" class="headcalCount">-</span>
-                        </div>
-                        <div class="headcalRow">
-                            <span class="headcalLabel">Head 1 (Upper)</span>
-                            <span id="headCalGlyphs1" class="headcalGlyphs"></span>
-                            <span id="headCalCount1" class="headcalCount">-</span>
-                        </div>
-                    </div>
-                    <p class="headcalLegend">
-                        <span class="hcSector ok">.</span> okay
-                        <span class="hcSector missing">X</span> missing
-                        <span class="hcSector low">-</span> cylinder low
-                        <span class="hcSector high">+</span> cylinder high
-                        <span class="hcSector side">h</span> wrong side
-                        <span class="hcSector chk">c</span> bad checksum
-                    </p>
-                    <p class="headcalStatus"><span id="headCalStatus">Not running.</span>
-                        <span id="headCalRpm" class="headcalRpm"></span></p>
-                    <p><hr/></p>
-                    <p>
-                        <strong>Session tally</strong> &mdash; passes and errors for every cylinder
-                        visited, as the head is moved around. The sector row above is this
-                        revolution; this is the accumulated history. Click any cell to seek
-                        the head to that cylinder.
-                        <button type="button" class="btn btn-sm btn-secondary live-action" onclick="headCalClearTally();"><i class="fa-solid fa-eraser"></i> Clear</button>
-                    </p>
-                    <p>
-                        <table class="table-sm table-dark">
-                            <tbody id="headCalGrid"><!-- built by buildHeadCalGrid() in headcal.js -->
-                            </tbody>
-                        </table>
-                    </p>
-                    <p>
-                        <table class="table table-dark">
-                            <thead>
-                                <tr>
-                                    <th><i class="fa-solid fa-key"></i> Session Tally Key</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td>
-                                        <div class="container float-start key">
-                                            <div class="row">
-                                                <div class="col-1">
-                                                    <div class="size track"></div>
-                                                    <div class="size track green"></div>
-                                                    <div class="size track yellow"></div>
-                                                </div>
-                                                <div class="col-5">
-                                                    <div class="text">Untested</div>
-                                                    <div class="text">OK on all reads</div>
-                                                    <div class="text">Intermittent</div>
-                                                </div>
-                                                <div class="col-1">
-                                                    <div class="size track red"></div>
-                                                    <div class="size track current"></div>
-                                                </div>
-                                                <div class="col-5">
-                                                    <div class="text">Failed every read</div>
-                                                    <div class="text">Head is here</div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </p>
-                </div>
                 <div class="tab-pane fade" id="drivetoolkit" role="tabpanel" aria-labelledby="drivetoolkit-tab">
                     <p>
-                        <div class="btn-toolbar" role="toolbar" aria-label="Drive toolkit controls">
+                        <div class="btn-toolbar" role="toolbar" aria-label="Session">
                             <div class="btn-group me-3" role="group" aria-label="Session">
-                                <!-- Start and Exit in one button - see dtToggleRun(). Never disabled:
-                                     there is always one of the two for it to do. -->
-                                <button type="button" id="dtStart" class="btn btn-success live-action" onclick="dtToggleRun();"><i class="fa-solid fa-play"></i> Start</button>
+                                <!-- Two buttons, two questions. Open/Close is whether the toolkit
+                                     has the drive at all and the lines are live; Start read is a
+                                     layer over that, and it wants a disk. Open is never disabled:
+                                     there is always one of the two for it to do. It is also its
+                                     own exit rather than the shared Cancel, which works by pulsing
+                                     the device cancel pin - on this PCB that is also the joystick
+                                     up line, so here it would nudge a control instead of leaving. -->
+                                <button type="button" id="dtStart" class="btn btn-success live-action" onclick="dtToggleRun();"><i class="fa-solid fa-play"></i> Open</button>
+                                <button type="button" id="dtReadBtn" class="btn btn-success live-action" onclick="dtToggleRead();" title="Read one cylinder over and over and report every sector, so the head can be adjusted until both sides come back clean"><i class="fa-solid fa-play"></i> Start read</button>
+                                <button type="button" id="dtStopBtn" class="btn btn-secondary dt-action live-action" onclick="dtStopRead();"><i class="fa-solid fa-stop"></i> Stop read</button>
                             </div>
-                            <div class="btn-group me-1" role="group" aria-label="Interface lines">
+                            <div class="btn-group me-1" role="group" aria-label="Safety">
+                                <button type="button" class="btn btn-warning dt-action live-action" onclick="dtSafe();" title="Release select, motor and density, stop the read, and forget the head position"><i class="fa-solid fa-hand"></i> Release outputs</button>
+                            </div>
+                            <!-- The explanation lives behind this rather than above the controls.
+                                 It is worth reading once and then never again, and a screen that
+                                 is watched while a screwdriver is being turned should be the
+                                 instrument, not the manual. Bootstrap's own collapse, no JS. -->
+                            <div class="btn-group ms-auto" role="group" aria-label="Help">
+                                <button type="button" class="btn btn-secondary live-action" data-bs-toggle="collapse" data-bs-target="#dtHelpText" aria-expanded="false" aria-controls="dtHelpText" title="What this screen does"><i class="fa-solid fa-circle-info"></i></button>
+                            </div>
+                        </div>
+                    </p>
+                    <p>
+                        <div class="btn-toolbar" role="toolbar" aria-label="Interface lines">
+                            <div class="btn-group me-1" role="group" aria-label="Lines">
                                 <button type="button" id="dtSelBtn" class="btn btn-secondary dt-action live-action" onclick="dtToggleSel();" title="Drive select, pin 12">Select: Off</button>
                                 <button type="button" id="dtMotBtn" class="btn btn-secondary dt-action live-action" onclick="dtToggleMot();" title="Motor on, pin 16. The head steps with the spindle stopped, so this is the one to try when the drive seeks but produces no index.">Motor: Off</button>
                                 <button type="button" id="dtDensBtn" class="btn btn-secondary dt-action live-action" onclick="dtToggleDens();" title="Density select, pin 2">Density: High</button>
+                                <button type="button" id="dtDirBtn" class="btn btn-secondary dt-action live-action" onclick="dtToggleDir();" title="Step direction, pin 18">Dir: Out</button>
+                                <!-- The SIDE pin, not the read's head selection. Two different
+                                     things, so they are labelled apart and sit in different rows. -->
+                                <button type="button" id="dtSideBtn" class="btn btn-secondary dt-action live-action" onclick="dtToggleSide();" title="Side select, pin 32. This is the line itself - which head the calibration read covers is Read heads, below.">SIDE line: 0</button>
+                                <button type="button" class="btn btn-secondary dt-action live-action" onclick="dtStep();" title="One raw step pulse in the current direction, motor or no motor">Step</button>
+                                <button type="button" class="btn btn-secondary dt-action live-action" onclick="dtRecal();" title="Step outward until TRACK 0 asserts, and adopt that as cylinder 0">Recalibrate</button>
+                            </div>
+                            <div class="btn-group me-1" role="group" aria-label="Session tools">
+                                <button type="button" id="dtStickyBtn" class="btn btn-secondary dt-action live-action" onclick="dtToggleSticky();" title="Latch any line that moves, so a single pulse between refreshes is not missed">Sticky: Off</button>
+                                <button type="button" class="btn btn-secondary dt-action live-action" onclick="dtClear();" title="Zero the index edge and step pulse counters"><i class="fa-solid fa-eraser"></i> Clear counts</button>
                             </div>
                         </div>
                     </p>
                     <p>
-                        <div class="btn-toolbar" role="toolbar" aria-label="Head controls">
+                        <div class="btn-toolbar" role="toolbar" aria-label="Head position">
                             <div class="btn-group me-1" role="group" aria-label="Cylinder">
+                                <button type="button" class="btn btn-primary dt-action live-action" onclick="dtNudge(-40);">-40</button>
                                 <button type="button" class="btn btn-primary dt-action live-action" onclick="dtNudge(-10);">-10</button>
                                 <button type="button" class="btn btn-primary dt-action live-action" onclick="dtNudge(-1);">-1</button>
                                 <input id="dtCyl" type="text" class="dvEdit numbers" value="00"/>
                                 <button type="button" class="btn btn-primary dt-action live-action" onclick="dtNudge(1);">+1</button>
                                 <button type="button" class="btn btn-primary dt-action live-action" onclick="dtNudge(10);">+10</button>
+                                <button type="button" class="btn btn-primary dt-action live-action" onclick="dtNudge(40);">+40</button>
                             </div>
-                            <div class="btn-group me-1" role="group" aria-label="Head">
-                                <button type="button" class="btn btn-secondary dt-action live-action" onclick="dtStep();" title="One raw step pulse in the current direction, motor or no motor">Step</button>
-                                <button type="button" id="dtDirBtn" class="btn btn-secondary dt-action live-action" onclick="dtToggleDir();" title="Step direction, pin 18">Dir: Out</button>
-                                <button type="button" id="dtSideBtn" class="btn btn-secondary dt-action live-action" onclick="dtToggleSide();" title="Side select, pin 32">Side: 0</button>
-                                <button type="button" class="btn btn-secondary dt-action live-action" onclick="dtRecal();" title="Step outward until TRACK 0 asserts, and adopt that as cylinder 0">Recalibrate</button>
-                            </div>
-                            <div class="btn-group me-1" role="group" aria-label="Session tools">
-                                <button type="button" id="dtStickyBtn" class="btn btn-secondary dt-action live-action" onclick="dtToggleSticky();" title="Latch any line that moves, so a single pulse between refreshes is not missed">Sticky: Off</button>
-                                <button type="button" class="btn btn-secondary dt-action live-action" onclick="dtClear();"><i class="fa-solid fa-eraser"></i> Clear counts</button>
-                                <button type="button" class="btn btn-warning dt-action live-action" onclick="dtSafe();" title="Release select, motor and density, and forget the head position">Release outputs</button>
+                            <div class="btn-group me-1" role="group" aria-label="Read settings">
+                                <button type="button" class="btn btn-secondary dt-action live-action" onclick="dtReseek();" title="Seek the cylinder again now, before the next pass"><i class="fa-solid fa-rotate-right"></i> Re-seek</button>
+                                <button type="button" id="dtHeadBtn" class="btn btn-secondary dt-action live-action" onclick="dtCycleHead();" title="Which head(s) the calibration read covers">Read heads: Both</button>
+                                <button type="button" id="dtStepBtn" class="btn btn-secondary disabled" title="How far the joystick moves the head per nudge on the device screen">Step: 1</button>
+                                <button type="button" id="dtAutoBtn" class="btn btn-secondary dt-action live-action" onclick="dtToggleAuto();" title="Re-seek the cylinder every pass. Off leaves the head where it is, which is what lets an adjustment show up rather than being hidden by a fresh seek.">Auto re-seek: Off</button>
+                                <button type="button" id="dtSoundBtn" class="btn btn-secondary dt-action live-action" onclick="dtToggleSound();" title="Audible feedback: a tick when every sector reads, a bong when they do not. Costs a sample length per pass."><i class="fa-solid fa-volume-xmark"></i> Sound: Off</button>
                             </div>
                         </div>
                     </p>
-                    <p><hr/></p>
-                    <p class="dtHelp">
-                        Every line is sampled, never assumed. The outputs above drive one line at a
-                        time so the drive can be asked one question at a time &mdash; the head steps
-                        perfectly well with the spindle stopped, so a drive that seeks but shows no
-                        index is usually one that is not taking its motor command from pin 16.
-                        WRITE DATA and WRITE ENABLE are deliberately not exposed.
-                        The device screen mirrors this and is display only; the serial console shows
-                        the same table and takes the same commands as keys.
-                    </p>
-                    <p class="dtReadouts">
-                        <span id="dtCylReadout">Cylinder: &mdash;</span>
-                        <span id="dtEdges"></span>
-                    </p>
-                    <p><span id="dtStatus" class="dtStatus rest">Not running.</span></p>
-                    <p>
-                        <table class="table table-sm table-dark dtTable">
-                            <thead>
-                                <tr><th>Signal</th><th>Pin</th><th>Dir</th><th>State</th><th>Count / rate</th></tr>
-                            </thead>
-                            <tbody id="dtRows"><!-- built by dtBuildTable() in drivetoolkit.js -->
-                            </tbody>
-                        </table>
-                    </p>
+                    <div class="collapse" id="dtHelpText">
+                        <p class="dtHelp">
+                            Every line is sampled, never assumed, from the moment the session opens
+                            &mdash; no disk needed, and nothing is asserted until you ask. The
+                            outputs drive one line at a time so the drive can be asked one question
+                            at a time: the head steps perfectly well with the spindle stopped, so a
+                            drive that seeks but shows no index is usually one that is not taking
+                            its motor command from pin 16. WRITE DATA and WRITE ENABLE are
+                            deliberately not exposed.
+                            <br/><br/>
+                            The calibration read is a layer on top. Give it an AmigaDOS disk written
+                            by a well calibrated drive and adjust the head until every sector is
+                            found on both sides; a sector that comes back from the cylinder either
+                            side is what tells you which way to turn the screw. The sector rows are
+                            this revolution, the grid is every pass the session has made, and
+                            clicking a cell seeks the head there.
+                            <br/><br/>
+                            The lines stay live while the read runs, so a pass taken while one was
+                            driven is shown but not counted &mdash; it is not a measurement of
+                            alignment. The device screen and the serial console show the same
+                            session and take the same controls.
+                        </p>
+                    </div>
+                    <div class="dtPanes">
+                        <div class="dtSignalPane">
+                            <h6><i class="fa-solid fa-wave-square"></i> Signals</h6>
+                            <p class="dtReadouts">
+                                <span id="dtCylReadout">Cylinder: &mdash;</span>
+                                <span id="dtEdges"></span>
+                            </p>
+                            <p><span id="dtStatus" class="dtStatus rest">Not running.</span></p>
+                            <table class="table table-sm table-dark dtTable">
+                                <thead>
+                                    <tr><th>Signal</th><th>Pin</th><th>Dir</th><th>State</th><th>Count / rate</th></tr>
+                                </thead>
+                                <tbody id="dtRows"><!-- built by dtBuildTable() in drivetoolkit.js -->
+                                </tbody>
+                            </table>
+                        </div>
+                        <!-- The read sits beside the lines rather than under them, because the
+                             diagnosis is the correlation between the two: sectors missing while
+                             the index count has stopped is a dead index sensor, sectors missing
+                             while the index is fine is head alignment. Stacked, one of the two is
+                             always off the bottom of the screen. -->
+                        <div class="dtReadPane">
+                            <h6><i class="fa-solid fa-ruler-combined"></i> Calibration read</h6>
+                            <div class="dtHeadRows">
+                                <div class="dtHeadRow">
+                                    <span class="dtHeadLabel">Head 0 (Lower)</span>
+                                    <span id="dtGlyphs0" class="dtGlyphs"></span>
+                                    <span id="dtCount0" class="dtCount">-</span>
+                                </div>
+                                <div class="dtHeadRow">
+                                    <span class="dtHeadLabel">Head 1 (Upper)</span>
+                                    <span id="dtGlyphs1" class="dtGlyphs"></span>
+                                    <span id="dtCount1" class="dtCount">-</span>
+                                </div>
+                            </div>
+                            <p class="dtLegend">
+                                <span class="dtSector ok">.</span> okay
+                                <span class="dtSector missing">X</span> missing
+                                <span class="dtSector low">-</span> cyl low
+                                <span class="dtSector high">+</span> cyl high
+                                <span class="dtSector side">h</span> wrong side
+                                <span class="dtSector chk">c</span> bad checksum
+                            </p>
+                            <p class="dtPass"><span id="dtPassLine"></span></p>
+                            <h6>
+                                <i class="fa-solid fa-table-cells"></i> Session tally
+                                <button type="button" class="btn btn-sm btn-secondary dt-action live-action" onclick="dtClearTally();" title="Forget every pass this session has recorded, on the device as well as here"><i class="fa-solid fa-eraser"></i> Clear</button>
+                            </h6>
+                            <table class="table-sm table-dark dtGridTable">
+                                <tbody id="dtGrid"><!-- built by dtBuildGrid() in drivetoolkit.js -->
+                                </tbody>
+                            </table>
+                            <p class="dtTallyKey">
+                                <span class="dtKey"></span> untested
+                                <span class="dtKey green"></span> ok on all reads
+                                <span class="dtKey yellow"></span> intermittent
+                                <span class="dtKey red"></span> failed every read
+                                <span class="dtKey current"></span> head is here
+                            </p>
+                        </div>
+                    </div>
                 </div>
 
             </div>

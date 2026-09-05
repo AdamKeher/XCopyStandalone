@@ -48,12 +48,14 @@ enum XCopyState {
   // doing the decoding. The web UI has no button for it and websocket.js does not
   // switch on it, so the number is free but is still never reused.
   liveStream = 43,
-  // The continuous head calibration test. 34 was the drive signal monitor this
-  // replaced and is retired rather than reused, like every other gap above.
-  headCalibration = 44,
+  // 44 was the continuous head calibration test, which the drive toolkit absorbed
+  // rather than replaced: the calibration read is a layer of 45 now, over the same
+  // sampled interface it had already grown a weaker copy of. Retired, not reused,
+  // like 34 and every other gap above.
   // The drive toolkit: every interface line sampled, the safe outputs drivable
-  // from the console and the browser. A far more capable descendant of what used
-  // to sit at 34, which stays retired - this is a new number, not that one reused.
+  // from the console and the browser, and the head calibration read on top. A far
+  // more capable descendant of what used to sit at 34, which stays retired - this
+  // is a new number, not that one reused.
   driveToolkit = 45,
   // The Amiga track analyser behind the Disk Info tab. A new number for the
   // same reason as the two above: 46 has never been anything else.

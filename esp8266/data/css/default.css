@@ -635,124 +635,36 @@ body {
   padding: 1px 8px;
 }
 
-/* Head calibration
-   -------------------------------------------------------------------------
-   The per sector glyphs are the same vocabulary as the TFT and the serial
-   console, so the three surfaces can be compared side by side. Colour carries
-   the meaning and the glyph repeats it, because a colour blind reader and a
-   photocopy both need one of the two to survive. */
-
-.headcalHelp {
-  color: #9a9a9a;
-}
-
-.headcalRows {
-  font-family: monospace;
-  margin-bottom: 16px;
-}
-
-.headcalRow {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 4px 0;
-}
-
-.headcalLabel {
-  display: inline-block;
-  width: 130px;
-  color: white;
-}
-
-.headcalGlyphs {
-  display: inline-flex;
-  gap: 2px;
-  /* Holds the row height steady before the first pass lands, so the panel does
-     not jump when results arrive. */
-  min-height: 22px;
-}
-
-.headcalCount {
-  color: #e0b040;
-}
-
-.headcalCount.allok {
-  color: #4caf50;
-}
-
-.headcalLegend {
-  color: #9a9a9a;
-  font-size: 0.9em;
-}
-
-.headcalStatus {
-  color: white;
-}
-
-/* The drive speed, beside the status sentence. Dimmer than the sentence: it is a
-   number to glance at while adjusting, not the thing being said. */
-
-.headcalRpm {
-  color: #9a9a9a;
-  font-family: monospace;
-  margin-left: 8px;
-}
-
-.hcSector {
-  display: inline-block;
-  width: 18px;
-  text-align: center;
-  font-family: monospace;
-  font-weight: bold;
-  border-radius: 3px;
-  background: #2a2a2a;
-}
-
-.hcSector.ok      { color: #4caf50; }
-.hcSector.missing { color: #e04b4b; }
-.hcSector.low     { color: #e0b040; }
-.hcSector.high    { color: #e0b040; }
-.hcSector.side    { color: #c060c0; }
-.hcSector.chk     { color: #ffffff; }
-
-/* Session tally grid. The cells are the disk copy grid's .track cells, drawn by the
-   same builder and coloured out of the same key - green, yellow and red carry the
-   verdict and the passes/errors text carries the detail behind it. Only the head
-   marker is new, so only the head marker is styled here.
-
-   Drawn as an inset outline rather than another fill, so it says where the head is
-   without hiding what that cylinder has been doing. Blue rather than white: a track
-   cell already has a white border, and a white outline over it says nothing. */
-
-.track.current {
-  outline: 3px solid deepskyblue;
-  outline-offset: -3px;
-}
-
-/* Clicking a cell seeks the head to that cylinder. The pointer and the highlight
-   are only offered while a session is running, so the grid never advertises a
-   click that would go nowhere. */
-
-#headCalGrid.seekable td.track {
-  cursor: pointer;
-}
-
-#headCalGrid.seekable td.track:hover {
-  border-color: deepskyblue;
-}
-
 /* Drive toolkit
    -------------------------------------------------------------------------
-   Four states rather than two, matching XCopyDriveToolkit::Level and the colours
-   the TFT and the serial console paint from it: a line at rest, a line we are
-   deliberately driving, an input answering correctly, and an input that should be
-   doing something and is not. "Asserted" and "good" are both true and mean
-   different things, so they are never the same colour - painting them alike is
-   how the retired Test Drive ended up with indicators that told you nothing. The
-   three surfaces can be photographed side by side and read the same way. */
+   Two layers in one pane, and both of them are read by colour first.
+
+   The signal table has four states rather than two, matching
+   XCopyDriveToolkit::Level and the colours the TFT and the serial console paint
+   from it: a line at rest, a line we are deliberately driving, an input answering
+   correctly, and an input that should be doing something and is not. "Asserted"
+   and "good" are both true and mean different things, so they are never the same
+   colour - painting them alike is how the retired Test Drive ended up with
+   indicators that told you nothing.
+
+   The calibration read's per sector glyphs are the same vocabulary as the TFT and
+   the serial console. Colour carries the meaning and the glyph repeats it, because
+   a colour blind reader and a photocopy both need one of the two to survive.
+
+   All three surfaces can be photographed side by side and read the same way. */
 
 .dtHelp {
   color: #9a9a9a;
+}
+
+/* Section headings, the same shape Disk Info's rail uses - this pane has two
+   halves and they need naming without a nav strip nobody else has. */
+#drivetoolkit h6 {
+  color: white;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 1rem 0 0.5rem 0;
 }
 
 .dtReadouts {
@@ -801,7 +713,194 @@ tr.dtInputsStart td {
   font-size: 1.05em;
 }
 
-.dtStatus.rest  { color: #9a9a9a; }
-.dtStatus.good  { color: #4caf50; }
-.dtStatus.warn  { color: #e0b040; }
-.dtStatus.fault { color: #e04b4b; font-weight: bold; }
+.dtStatus.rest   { color: #9a9a9a; }
+.dtStatus.good   { color: #4caf50; }
+.dtStatus.warn   { color: #e0b040; }
+.dtStatus.fault  { color: #e04b4b; font-weight: bold; }
+.dtStatus.hold   { color: #40c0d0; }
+/* A pass taken while a line was driven. Its own colour rather than a warning:
+   nothing went wrong, the pass simply is not a measurement of head alignment. */
+.dtStatus.driven { color: #c060c0; }
+
+/* The calibration read's realtime rows: what the head is reading this revolution,
+   as against the accumulated grid below. */
+
+.dtHeadRows {
+  font-family: monospace;
+  margin-bottom: 16px;
+}
+
+.dtHeadRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 4px 0;
+}
+
+.dtHeadLabel {
+  display: inline-block;
+  width: 130px;
+  color: white;
+}
+
+.dtGlyphs {
+  display: inline-flex;
+  gap: 2px;
+  /* Holds the row height steady before the first pass lands, so the panel does
+     not jump when results arrive. */
+  min-height: 22px;
+}
+
+.dtCount {
+  color: #e0b040;
+}
+
+.dtCount.allok {
+  color: #4caf50;
+}
+
+/* Marked on the row rather than in the glyphs: those sectors really were read,
+   it is the pass that does not count. */
+.dtCount.driven {
+  color: #c060c0;
+}
+
+.dtLegend {
+  color: #9a9a9a;
+  font-size: 0.9em;
+}
+
+/* The pass counter, under the sector rows. Dimmer than they are: it is a number
+   to glance at while adjusting, not the thing being said. */
+.dtPass {
+  color: #9a9a9a;
+  font-family: monospace;
+}
+
+.dtSector {
+  display: inline-block;
+  width: 18px;
+  text-align: center;
+  font-family: monospace;
+  font-weight: bold;
+  border-radius: 3px;
+  background: #2a2a2a;
+}
+
+.dtSector.ok      { color: #4caf50; }
+.dtSector.missing { color: #e04b4b; }
+.dtSector.low     { color: #e0b040; }
+.dtSector.high    { color: #e0b040; }
+.dtSector.side    { color: #c060c0; }
+.dtSector.chk     { color: #ffffff; }
+
+/* Session tally grid. The cells are the disk copy grid's .track cells, drawn by the
+   same builder and coloured out of the same key - green, yellow and red carry the
+   verdict and the passes/errors text carries the detail behind it. Only the head
+   marker is new, so only the head marker is styled here.
+
+   Drawn as an inset outline rather than another fill, so it says where the head is
+   without hiding what that cylinder has been doing. Blue rather than white: a track
+   cell already has a white border, and a white outline over it says nothing.
+
+   Not renamed with the rest: it lives on the shared grid cell diskcopy.js owns. */
+
+.track.current {
+  outline: 3px solid deepskyblue;
+  outline-offset: -3px;
+}
+
+/* Clicking a cell seeks the head to that cylinder. The pointer and the highlight
+   are only offered while a session is open, so the grid never advertises a click
+   that would go nowhere. */
+
+#dtGrid.seekable td.track {
+  cursor: pointer;
+}
+
+#dtGrid.seekable td.track:hover {
+  border-color: deepskyblue;
+}
+
+/* Two panes, side by side.
+
+   The read sits beside the lines rather than under them, because the diagnosis is
+   the correlation between the two: sectors missing while the index count has
+   stopped is a dead index sensor, sectors missing while the index is fine is head
+   alignment. Stacked, one of the two is always off the bottom of the screen, and
+   the whole reason these two screens became one was to be able to see both facts
+   at once.
+
+   Wraps rather than scrolls on a narrow window: the signal table has a natural
+   width and the grid has a fixed one, so there is nothing sensible to squeeze. */
+
+.dtPanes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 28px;
+  align-items: flex-start;
+}
+
+.dtSignalPane {
+  flex: 0 0 auto;
+}
+
+.dtReadPane {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* The grid's own cells, smaller than the disk copy grid's 40px. That one is
+   sized to fill the tab on its own; this one shares the row with the signal
+   table, and a cylinder here carries a passes/errors count rather than a single
+   glyph, so it only has to stay legible rather than fill anything. */
+
+.dtGridTable td {
+  width: 26px;
+  height: 26px;
+  font-size: 0.65em;
+}
+
+/* The key, as one line of swatches rather than the two column table the disk copy
+   tab uses. Five states, all of them already on screen a few pixels away, so it
+   is a reminder rather than a legend to study. */
+
+.dtTallyKey {
+  color: #9a9a9a;
+  font-size: 0.85em;
+  margin-top: 8px;
+}
+
+.dtKey {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  vertical-align: -2px;
+  margin-left: 14px;
+  background-color: #151515;
+  border: 1px solid white;
+}
+
+.dtTallyKey .dtKey:first-child {
+  margin-left: 0;
+}
+
+.dtKey.green { background-color: green; }
+.dtKey.yellow { background-color: yellow; }
+.dtKey.red { background-color: red; }
+.dtKey.current {
+  outline: 2px solid deepskyblue;
+  outline-offset: -2px;
+}
+
+/* The Clear button rides on the heading it belongs to, so the grid does not need
+   a sentence of its own above it. */
+
+#drivetoolkit h6 .btn {
+  margin-left: 10px;
+  padding: 0 6px;
+  font-size: 0.75rem;
+  text-transform: none;
+  letter-spacing: 0;
+  vertical-align: 1px;
+}

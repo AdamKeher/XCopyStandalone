@@ -806,8 +806,8 @@ function dinfoSelect(cylinder, side) {
   if (cylinder > DINFO_MAX_CYLINDERS - 1) { cylinder = DINFO_MAX_CYLINDERS - 1; }
 
   dinfoSelected = { cylinder: cylinder, side: side };
-  // Not while it is being typed into, the way headcal.js leaves its cylinder box
-  // alone on focus - otherwise a redraw rewrites the number mid keystroke.
+  // Not while it is being typed into, the way drivetoolkit.js leaves its cylinder
+  // box alone on focus - otherwise a redraw rewrites the number mid keystroke.
   if (!$('#dinfoCylPick').is(':focus')) { $('#dinfoCylPick').val(cylinder); }
   $('#dinfoSideBtn').html("Side: " + side);
 
@@ -819,8 +819,8 @@ function dinfoSelect(cylinder, side) {
 /*
    Step the selected cylinder, and cycle the side.
 
-   Named and shaped like headCalNudge() so the two selectors read the same, but
-   local: Head Cal's moves a physical head and goes out over the websocket, this
+   Named and shaped like dtNudge() so the two selectors read the same, but local:
+   the Drive Toolkit's moves a physical head and goes out over the websocket, this
    one only moves a cursor over a survey already in hand.
 */
 function dinfoNudge(delta) {

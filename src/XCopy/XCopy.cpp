@@ -215,7 +215,6 @@ void XCopy::begin()
     _menu.addChild("Disk Flux", XCopyAction::fluxDisk, parentItem);
     _menu.addChild("Scan Free Blocks", XCopyAction::scanBlocks, parentItem);
     _menu.addChild("Compare Disk to ADF", XCopyAction::none, parentItem);
-    _menu.addChild("Head Calibration", XCopyAction::headCalibration, parentItem);
     _menu.addChild("Drive Toolkit", XCopyAction::driveToolkit, parentItem);
 
     debugParentItem = _menu.addItem("Debugging", XCopyAction::none);
@@ -502,16 +501,17 @@ void XCopy::cancelOperation()
         _cancelOperation = true;
         break;
     /*
-       headCalibration is deliberately absent.
+       driveToolkit is deliberately absent.
 
        On PCB v2 ISR_CANCEL is wired to the LEFT and UP joystick pins, so a case
-       here would spend two of the five inputs the calibration screen needs. With
-       no case the interrupt is a harmless no-op and all five stay usable; leaving
-       the screen is navigateLeft(), which calls exitHeadCalibration() properly.
+       here would spend two of the five inputs the toolkit screen needs for its
+       field cycle. With no case the interrupt is a harmless no-op and all five
+       stay usable; leaving the screen is navigateLeft(), which calls
+       exitDriveToolkit() properly.
 
        The browser Cancel button pulses that same pin, so it does nothing here
-       either - which is why the web panel has its own Exit button sending
-       headCalExit rather than borrowing the shared one.
+       either - which is why the web panel has its own Exit button sending dtExit
+       rather than borrowing the shared one.
     */
     case testDisk:
     case copyDiskToADF:
@@ -556,37 +556,6 @@ bool XCopy::detectCancelPin() {
 
 void XCopy::processKeys(String keys) {
     _command->processKeys(keys);
-}
-
-/*
-   The single way out of a head calibration session.
-
-   Every surface funnels through here - the joystick, the console key handler and
-   the browser - because leaving the state is not enough on its own: the drive is
-   spinning, the index interrupt is attached and the console is in raw key mode,
-   and all three have to be put back.
-*/
-void XCopy::exitHeadCalibration()
-{
-    if (_xcopyState != headCalibration)
-        return;
-
-    _command->setRawKeys(nullptr, nullptr);
-    _headCal.panelEnd();
-    _headCal.end();
-    _headCal.sendClosed();
-    _audio.playBack(false);
-    setBusy(false);
-    _xcopyState = menus;
-    _command->printPrompt();
-}
-
-void XCopy::onHeadCalKey(void *obj, char key)
-{
-    XCopy *xcopy = (XCopy *)obj;
-
-    if (!xcopy->_headCal.handleKey(key))
-        xcopy->exitHeadCalibration();
 }
 
 /*
@@ -819,99 +788,96 @@ void XCopy::onWebCommand(void* obj, const String command)
                                         (uint8_t)param.substring(c2 + 1).toInt());
         }
     }
-    // Head calibration. Only the start is accepted from any state; everything
-    // else is ignored unless a session is actually running, so a browser tab left
-    // open on the panel cannot reach into the drive during a disk copy.
-    else if (command.startsWith("headCalibration")) {
-        String param = "";
-        if (command.indexOf(",") > 0) {
-            param = command.substring(command.indexOf(",") + 1);
-        }
-        xcopy->startFunction(XCopyAction::headCalibration, param);
-    }
-    else if (command.startsWith("headCal") && xcopy->_xcopyState == headCalibration) {
-        String param = "";
-        if (command.indexOf(",") > 0) {
-            param = command.substring(command.indexOf(",") + 1);
-        }
+    /*
+       Drive toolkit. Only the start is accepted from any state; every control is
+       ignored unless a session is actually running, so a browser tab left open on
+       the panel cannot drive the interface lines or seek the head during a copy.
 
-        if (command.startsWith("headCalCyl")) {
-            xcopy->_headCal.setCylinder(param.toInt());
-        }
-        else if (command.startsWith("headCalNudge")) {
-            xcopy->_headCal.nudgeCylinder(param.toInt());
-        }
-        else if (command.startsWith("headCalHead")) {
-            xcopy->_headCal.setHead((XCopyHeadCalibration::HeadSel)param.toInt());
-        }
-        else if (command.startsWith("headCalAuto")) {
-            xcopy->_headCal.setAutoReseek(param.toInt() != 0);
-        }
-        else if (command.startsWith("headCalSound")) {
-            xcopy->_headCal.setSound(param.toInt() != 0);
-        }
-        else if (command.startsWith("headCalPause")) {
-            xcopy->_headCal.setPaused(param.toInt() != 0);
-        }
-        else if (command.startsWith("headCalStep")) {
-            xcopy->_headCal.setStepSize((uint8_t)param.toInt());
-        }
-        else if (command == "headCalReseek") {
-            xcopy->_headCal.reseek();
-        }
-        else if (command == "headCalExit") {
-            xcopy->exitHeadCalibration();
-        }
-    }
-    // Drive toolkit. Only the start is accepted from any state; every control is
-    // ignored unless a session is actually running, so a browser tab left open on
-    // the panel cannot drive the interface lines during a disk copy.
-    else if (command == "driveToolkit") {
-        xcopy->startFunction(XCopyAction::driveToolkit);
+       The verb is split off and matched whole rather than by prefix. The chain was
+       startsWith() on both halves of this before they merged, which is smaller in
+       source and a trap in practice: with the read layer's dtStepSize alongside the
+       interface's dtStep, a prefix test answers the wrong one depending only on
+       which case happens to be written first.
+    */
+    else if (command.startsWith("driveToolkit")) {
+        xcopy->startFunction(XCopyAction::driveToolkit,
+                             command.indexOf(",") > 0 ? command.substring(command.indexOf(",") + 1) : "");
     }
     else if (command.startsWith("dt") && xcopy->_xcopyState == driveToolkit) {
-        String param = "";
-        if (command.indexOf(",") > 0) {
-            param = command.substring(command.indexOf(",") + 1);
-        }
+        const int comma = command.indexOf(",");
+        const String verb = comma > 0 ? command.substring(0, comma) : command;
+        const String param = comma > 0 ? command.substring(comma + 1) : "";
 
-        if (command.startsWith("dtSel")) {
+        // Interface lines.
+        if (verb == "dtSel") {
             xcopy->_driveToolkit.setSelect(param.toInt() != 0);
         }
-        else if (command.startsWith("dtMot")) {
+        else if (verb == "dtMot") {
             xcopy->_driveToolkit.setMotor(param.toInt() != 0);
         }
-        else if (command.startsWith("dtDir")) {
+        else if (verb == "dtDir") {
             xcopy->_driveToolkit.setDirection(param.toInt() != 0);
         }
-        else if (command.startsWith("dtSide")) {
-            xcopy->_driveToolkit.setSideUpper(param.toInt() == 0);
+        else if (verb == "dtSide") {
+            // Says which head it selects, and means it. The inversion that used to
+            // sit here existed only to cancel setSideUpper()'s, which is gone.
+            xcopy->_driveToolkit.setSideOne(param.toInt() != 0);
         }
-        else if (command.startsWith("dtDens")) {
+        else if (verb == "dtDens") {
             xcopy->_driveToolkit.setDensity(param.toInt() != 0);
         }
-        else if (command.startsWith("dtSticky")) {
-            xcopy->_driveToolkit.setSticky(param.toInt() != 0);
-        }
-        else if (command.startsWith("dtCyl")) {
-            xcopy->_driveToolkit.seekCylinder(param.toInt());
-        }
-        else if (command.startsWith("dtNudge")) {
-            xcopy->_driveToolkit.nudgeCylinder(param.toInt());
-        }
-        else if (command == "dtStep") {
+        else if (verb == "dtStep") {
             xcopy->_driveToolkit.pulseStep();
         }
-        else if (command == "dtRecal") {
+        else if (verb == "dtRecal") {
             xcopy->_driveToolkit.recalibrate();
         }
-        else if (command == "dtClear") {
-            xcopy->_driveToolkit.clearCounters();
-        }
-        else if (command == "dtSafe") {
+        else if (verb == "dtSafe") {
             xcopy->_driveToolkit.releaseOutputs();
         }
-        else if (command == "dtExit") {
+
+        // Head position, shared by both layers.
+        else if (verb == "dtCyl") {
+            xcopy->_driveToolkit.seekCylinder(param.toInt());
+        }
+        else if (verb == "dtNudge") {
+            xcopy->_driveToolkit.nudgeCylinder(param.toInt());
+        }
+        else if (verb == "dtSeek") {
+            xcopy->_driveToolkit.reseek();
+        }
+
+        // The calibration read.
+        else if (verb == "dtRead") {
+            xcopy->_driveToolkit.setReading(param.toInt() != 0);
+        }
+        else if (verb == "dtPause") {
+            xcopy->_driveToolkit.setPaused(param.toInt() != 0);
+        }
+        else if (verb == "dtHead") {
+            xcopy->_driveToolkit.setHead((XCopyDriveToolkit::HeadSel)param.toInt());
+        }
+        else if (verb == "dtAuto") {
+            xcopy->_driveToolkit.setAutoReseek(param.toInt() != 0);
+        }
+        else if (verb == "dtSound") {
+            xcopy->_driveToolkit.setSound(param.toInt() != 0);
+        }
+        else if (verb == "dtStepSize") {
+            xcopy->_driveToolkit.setStepSize((uint8_t)param.toInt());
+        }
+
+        // The session.
+        else if (verb == "dtSticky") {
+            xcopy->_driveToolkit.setSticky(param.toInt() != 0);
+        }
+        else if (verb == "dtClear") {
+            xcopy->_driveToolkit.clearCounters();
+        }
+        else if (verb == "dtTally") {
+            xcopy->_driveToolkit.clearTally();
+        }
+        else if (verb == "dtExit") {
             xcopy->exitDriveToolkit();
             return;
         }
@@ -1071,19 +1037,11 @@ void XCopy::startFunction(XCopyAction action, String param) {
     }
 
     /*
-       A calibration session owns the drive, the index interrupt and the console
-       key mode. Starting anything else - from the menu, the console or the web -
-       has to close it down rather than just overwrite the state underneath it.
-    */
-    if (_xcopyState == headCalibration && action != XCopyAction::headCalibration) {
-        exitHeadCalibration();
-    }
-
-    /*
-       And a toolkit session owns all of the same things, plus the state of every
-       output line. Leaving it by starting something else has to go through the
-       exit that releases them, or the next operation inherits a drive with select
-       and motor asserted behind its back.
+       A toolkit session owns the drive, the index interrupt, the console key mode
+       and the state of every output line. Starting anything else - from the menu,
+       the console or the web - has to go through the exit that puts all of them
+       back rather than overwrite the state underneath it, or the next operation
+       inherits a drive with select and motor asserted behind its back.
     */
     if (_xcopyState == driveToolkit && action != XCopyAction::driveToolkit) {
         exitDriveToolkit();
@@ -1091,9 +1049,15 @@ void XCopy::startFunction(XCopyAction action, String param) {
 
     // Consumed by processState() when the session opens. Always assigned, so a
     // cylinder given on one run cannot leak into the next.
-    if (action == XCopyAction::headCalibration) {
-        _headCalCylinder = param == "" ? XCopyHeadCalibration::kDefaultCylinder
-                                       : (uint8_t)param.toInt();
+    if (action == XCopyAction::driveToolkit) {
+        // "<cylinder>,<startRead>", either field possibly empty: the menu sends
+        // neither, drive sends a cylinder, headcal sends both.
+        const int comma = param.indexOf(",");
+        const String cylinder = comma >= 0 ? param.substring(0, comma) : param;
+        const String read = comma >= 0 ? param.substring(comma + 1) : "";
+        _toolkitCylinder = cylinder == "" ? XCopyDriveToolkit::kDefaultCylinder
+                                          : (uint8_t)cylinder.toInt();
+        _toolkitStartRead = read.toInt() != 0;
     }
 
     setBusy(true);
@@ -1129,14 +1093,14 @@ void XCopy::startCopyADFtoDisk(String path) {
 
 void XCopy::navigateDown(bool repeat)
 {
-    if (_xcopyState == headCalibration)
+    if (_xcopyState == driveToolkit)
     {
         // Not on a repeat. Up and down are the field adjusters here, so holding the
         // stick would cycle the head selection or toggle the sound over and over
         // rather than walk down a list.
         if (repeat)
             return;
-        _headCal.adjustField(-1);
+        _driveToolkit.adjustField(-1);
         _audio.playClick(false);
         return;
     }
@@ -1166,12 +1130,12 @@ void XCopy::navigateDown(bool repeat)
 
 void XCopy::navigateUp(bool repeat)
 {
-    if (_xcopyState == headCalibration)
+    if (_xcopyState == driveToolkit)
     {
         // See navigateDown().
         if (repeat)
             return;
-        _headCal.adjustField(+1);
+        _driveToolkit.adjustField(+1);
         _audio.playClick(false);
         return;
     }
@@ -1202,16 +1166,8 @@ void XCopy::navigateUp(bool repeat)
 void XCopy::navigateLeft()
 {
     // Before the generic "any other state goes back to the menus" fallback at the
-    // bottom, which would drop the state and leave the drive spinning.
-    if (_xcopyState == headCalibration)
-    {
-        exitHeadCalibration();
-        return;
-    }
-
-    // The toolkit's screen is display only, so left is the one joystick control
-    // it has - and it must be this and not the generic fallback below, which
-    // would leave select and motor asserted.
+    // bottom, which would drop the state and leave the drive spinning with select
+    // and motor still asserted.
     if (_xcopyState == driveToolkit)
     {
         exitDriveToolkit();
@@ -1281,11 +1237,11 @@ void XCopy::navigateLeft()
 
 void XCopy::navigateRight()
 {
-    // The one place right and push differ: on the calibration screen right is the
+    // The one place right and push differ: on the toolkit screen right is the
     // re-seek, which is ATK's F1 and the control an operator reaches for most.
-    if (_xcopyState == headCalibration)
+    if (_xcopyState == driveToolkit)
     {
-        _headCal.reseek();
+        _driveToolkit.reseek();
         _audio.playClick(false);
         return;
     }
@@ -1295,9 +1251,9 @@ void XCopy::navigateRight()
 
 void XCopy::navigateSelect()
 {
-    if (_xcopyState == headCalibration)
+    if (_xcopyState == driveToolkit)
     {
-        _headCal.nextField();
+        _driveToolkit.nextField();
         _audio.playClick(false);
         return;
     }
@@ -1596,16 +1552,11 @@ void XCopy::navigateSelect()
             _xcopyState = menus;
             break;
         }
-        case XCopyAction::headCalibration:
+        case XCopyAction::driveToolkit:
         {
             // Through startFunction() rather than setting the state here, which is
             // what the drive test used to do: that skipped _esp->setState() and so
             // the browser was never told the machine had entered the screen.
-            startFunction(XCopyAction::headCalibration);
-            break;
-        }
-        case XCopyAction::driveToolkit:
-        {
             startFunction(XCopyAction::driveToolkit);
             break;
         }
@@ -2039,52 +1990,27 @@ void XCopy::processState()
             }
             break;
         }
-        case headCalibration:
-        {
-            /*
-               Shaped like showTime rather than like the blocking loop this
-               replaces: one bounded unit of work per visit and then straight back
-               out, so update() keeps pumping _command->Update() and _esp->Update()
-               between passes. That is the whole reason the test can be driven from
-               the console and the browser at all.
-
-               Nothing here may touch _xcopyState except on the way out, or the
-               do/while around this switch will spin.
-            */
-            if (_drawnOnce == false)
-            {
-                _headCal.begin(&_graphics, &_audio, _esp, &_floppy, _headCalCylinder);
-                _headCal.drawStatic();
-                _headCal.panelBegin();
-                _headCal.sendConfig();
-                _esp->setTab("headcal");
-                // Both the USB console and the browser terminal funnel through
-                // processKey(), so one hook serves both.
-                _command->setRawKeys(this, onHeadCalKey);
-                _drawnOnce = true;
-            }
-
-            _headCal.update();
-            break;
-        }
         case driveToolkit:
         {
             /*
-               Same shape as headCalibration above: one bounded sample per visit
-               and then straight back out, so update() keeps pumping
-               _command->Update() and _esp->Update() between refreshes. That is the
-               whole reason the toolkit can be driven from the console and the
-               browser at all.
+               Shaped like showTime rather than like the blocking loop the Test
+               Drive this replaces ran: one bounded unit of work per visit and then
+               straight back out, so update() keeps pumping _command->Update() and
+               _esp->Update() between refreshes and between calibration passes.
+               That is the whole reason the toolkit can be driven from the console
+               and the browser at all.
 
                Nothing here may touch _xcopyState except on the way out, or the
                do/while around this switch will spin.
             */
             if (_drawnOnce == false)
             {
-                _driveToolkit.begin(&_graphics, _esp, &_floppy);
+                _driveToolkit.begin(&_graphics, &_audio, _esp, &_floppy,
+                                    _toolkitCylinder, _toolkitStartRead);
                 _driveToolkit.drawStatic();
                 _driveToolkit.panelBegin();
                 _driveToolkit.sendState();
+                _driveToolkit.sendCalConfig();
                 _esp->setTab("drivetoolkit");
                 // Both the USB console and the browser terminal funnel through
                 // processKey(), so one hook serves both.
