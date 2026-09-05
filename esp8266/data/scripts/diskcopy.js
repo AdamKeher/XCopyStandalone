@@ -59,7 +59,7 @@ function trackIconCells(row) {
                    '<td><img id="dst_flash_globe" src="./images/selected.png"></td>' +
                    '<td></td>';
         case 6:
-            return '<td colspan=4>Target</td>';
+            return '<td colspan=4 class="gridSide">Target</td>';
         default:
             return '<td colspan=4></td>';
     }
@@ -77,59 +77,91 @@ function trackIconCells(row) {
 //   sideLabel   function(side) -> the heading over that side
 //   cellId      function(cylinder, side) -> the id of one track cell
 //   cellTitle   function(cylinder, side) -> its tooltip, optional
+//   stacked     true to draw side 1 under side 0 rather than beside it
+//
+// Stacked is for the Drive Toolkit, where the grid shares its row with the signal
+// table and there is not the width for two sides abreast at the cell size the
+// Disk Copy tab draws them. The cells stay that size - it is the same map of the
+// same disk - and the two sides go one over the other instead.
 function buildCylinderGrid(body, options) {
     if (body.length == 0) return;
 
     var leadWidth = options.leadWidth || 0;
+    var stacked = !!options.stacked;
     // The lead block, then per side a label column, TRACK_COLS cells and a
     // trailing spacer.
-    var columns = leadWidth + ((TRACK_COLS + 2) * 2);
+    var columns = leadWidth + ((TRACK_COLS + 2) * (stacked ? 1 : 2));
     var html = '';
-    var side, row, col, cylinder, id, title;
 
     function lead(content) {
-        return leadWidth > 0 ? '<td colspan=' + leadWidth + '>' + content + '</td>' : '';
+        return leadWidth > 0 ? '<td colspan=' + leadWidth + ' class="gridSide">' + content + '</td>' : '';
     }
 
-    html += '<tr>' + lead('');
-    for (side = 0; side < 2; side++) {
-        html += '<td colspan=' + (TRACK_COLS + 1) + '>' + options.sideLabel(side) + '</td><td></td>';
+    function label(content) {
+        return '<td class="gridLabel">' + content + '</td>';
     }
-    html += '</tr>';
 
-    html += '<tr>' + lead(options.leadHeader || '');
-    for (side = 0; side < 2; side++) {
-        html += '<td></td>';
-        for (col = 0; col < TRACK_COLS; col++) html += '<td>' + trackColumnLabel(col) + '</td>';
-        html += '<td></td>';
-    }
-    html += '</tr>';
-
-    for (row = 0; row < TRACK_ROWS; row++) {
-        html += '<tr>' + (options.leadCells ? options.leadCells(row) : lead(''));
-        for (side = 0; side < 2; side++) {
-            // The row label is the first cylinder in the row - 0, 10, 20 ... 80 - not
-            // the row index. Labelling the rows 0-6 was what left the grid reading as a
-            // 12 x 7 block of nothing in particular.
-            html += '<td>' + (row * TRACK_COLS) + '</td>';
-            for (col = 0; col < TRACK_COLS; col++) {
-                cylinder = (row * TRACK_COLS) + col;
-                if (cylinder >= MAX_CYLINDERS) {
-                    html += '<td></td>';
-                    continue;
-                }
-                id = options.cellId(cylinder, side);
-                title = options.cellTitle ? ' title="' + options.cellTitle(cylinder, side) + '"' : '';
-                html += '<td class="track" id="' + id + '"' + title + '></td>';
-            }
-            html += '<td></td>';
+    // The side title and the column numbers, over the sides first to last.
+    function headerRows(first, last) {
+        var side, col;
+        var h = '<tr>' + lead('');
+        for (side = first; side <= last; side++) {
+            h += '<td colspan=' + (TRACK_COLS + 1) + ' class="gridSide">' + options.sideLabel(side) + '</td><td></td>';
         }
-        html += '</tr>';
+        h += '</tr>';
+
+        h += '<tr>' + lead(options.leadHeader || '');
+        for (side = first; side <= last; side++) {
+            h += '<td></td>';
+            for (col = 0; col < TRACK_COLS; col++) h += label(trackColumnLabel(col));
+            h += '<td></td>';
+        }
+        return h + '</tr>';
     }
 
-    html += '<tr><td colspan="' + columns + '"></td></tr>';
+    function gridRows(first, last) {
+        var side, row, col, cylinder, id, title;
+        var h = '';
+        for (row = 0; row < TRACK_ROWS; row++) {
+            h += '<tr>' + (options.leadCells ? options.leadCells(row) : lead(''));
+            for (side = first; side <= last; side++) {
+                // The row label is the first cylinder in the row - 0, 10, 20 ... 80 -
+                // not the row index. Labelling the rows 0-6 was what left the grid
+                // reading as a 12 x 7 block of nothing in particular.
+                h += label(row * TRACK_COLS);
+                for (col = 0; col < TRACK_COLS; col++) {
+                    cylinder = (row * TRACK_COLS) + col;
+                    if (cylinder >= MAX_CYLINDERS) {
+                        h += '<td></td>';
+                        continue;
+                    }
+                    id = options.cellId(cylinder, side);
+                    title = options.cellTitle ? ' title="' + options.cellTitle(cylinder, side) + '"' : '';
+                    h += '<td class="track" id="' + id + '"' + title + '></td>';
+                }
+                h += '<td></td>';
+            }
+            h += '</tr>';
+        }
+        return h;
+    }
+
+    var spacer = '<tr><td colspan="' + columns + '"></td></tr>';
+
+    if (stacked) {
+        html += headerRows(0, 0) + gridRows(0, 0) + spacer;
+        html += headerRows(1, 1) + gridRows(1, 1);
+    } else {
+        html += headerRows(0, 1) + gridRows(0, 1);
+    }
+    html += spacer;
 
     body.html(html);
+}
+
+// One name for a side, on every grid. Side 0 is the lower head.
+function cylinderSideLabel(side) {
+    return 'Side ' + side + (side == 0 ? ' (Lower)' : ' (Upper)');
 }
 
 function buildTrackGrid() {
@@ -137,7 +169,7 @@ function buildTrackGrid() {
         leadWidth: 4,
         leadHeader: 'Source',
         leadCells: trackIconCells,
-        sideLabel: function (side) { return side == 0 ? 'Upper Side' : 'Lower Side'; },
+        sideLabel: cylinderSideLabel,
         cellId: function (cylinder, side) { return 'track' + ((cylinder * 2) + side); }
     });
 }

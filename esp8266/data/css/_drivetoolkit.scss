@@ -17,186 +17,137 @@
    All three surfaces can be photographed side by side and read the same way. */
 
 .dtHelp {
-  color: #9a9a9a;
+    color: var(--xc-label);
 }
-
 
 .dtReadouts {
-  font-family: monospace;
-  color: #9a9a9a;
-}
+    font-family: var(--xc-mono);
+    font-size: var(--xc-data-size);
+    color: var(--xc-label);
+    margin: 0 0 0.25rem 0;
 
-.dtReadouts span {
-  margin-right: 28px;
+    span { margin-right: 28px; }
 }
 
 .dtTable {
-  font-family: monospace;
-  width: auto;
-}
+    width: auto;
 
-.dtTable td,
-.dtTable th {
-  padding: 3px 20px 3px 6px;
-  white-space: nowrap;
+    td, th { white-space: nowrap; }
 }
 
 .dtName {
-  font-weight: bold;
+    font-weight: bold;
 }
 
 .dtPin,
 .dtDir,
 .dtValue {
-  color: #9a9a9a;
+    color: var(--xc-label);
 }
 
 /* The rule between the outputs and the inputs: "what am I driving" and "what is
    the drive saying" are the two halves of every question asked here. */
 tr.dtInputsStart td {
-  border-top: 2px solid #555;
+    border-top: 1px solid var(--xc-border);
 }
 
-.dtState.rest     { color: #9a9a9a; }
-.dtState.asserted { color: #e0b040; }
-.dtState.good     { color: #4caf50; }
-.dtState.fault    { color: #e04b4b; font-weight: bold; }
+.dtState.rest     { color: var(--xc-label); }
+.dtState.asserted { color: var(--xc-text-warn); }
+.dtState.good     { color: var(--xc-text-ok); }
+.dtState.fault    { color: var(--xc-text-bad); font-weight: bold; }
 
 .dtStatus {
-  font-family: monospace;
-  font-size: 1.05em;
+    display: block;
+    font-family: var(--xc-mono);
+    font-size: var(--xc-data-size);
+    margin: 0 0 0.75rem 0;
 }
 
-.dtStatus.rest   { color: #9a9a9a; }
-.dtStatus.good   { color: #4caf50; }
-.dtStatus.warn   { color: #e0b040; }
-.dtStatus.fault  { color: #e04b4b; font-weight: bold; }
-.dtStatus.hold   { color: #40c0d0; }
+.dtStatus.rest   { color: var(--xc-label); }
+.dtStatus.good   { color: var(--xc-text-ok); }
+.dtStatus.warn   { color: var(--xc-text-warn); }
+.dtStatus.fault  { color: var(--xc-text-bad); font-weight: bold; }
+.dtStatus.hold   { color: var(--xc-text-hold); }
 /* A pass taken while a line was driven. Its own colour rather than a warning:
    nothing went wrong, the pass simply is not a measurement of head alignment. */
-.dtStatus.driven { color: #c060c0; }
+.dtStatus.driven { color: var(--xc-text-other); }
 
 /* The calibration read's realtime rows: what the head is reading this revolution,
-   as against the accumulated grid below. */
+   as against the accumulated grid below.
 
-/* A table rather than two flex rows, so the head name, the sectors and the count
+   A table rather than two flex rows, so the head name, the sectors and the count
    line up in columns and the run of glyphs is given the width the pane has rather
    than only the width it needs. The two fixed columns carry words and the glyph
    column takes what is left. */
-
 .dtReadTable {
-  font-family: monospace;
-  width: 100%;
-  /* Fixed, or the browser spreads the slack over all three columns and the two
-     that carry words end up wider than the one that carries the reading. */
-  table-layout: fixed;
-  margin-bottom: 16px;
-}
-
-.dtReadTable td {
-  vertical-align: middle;
-  padding: 6px 8px;
+    width: 100%;
+    /* Fixed, or the browser spreads the slack over all three columns and the two
+       that carry words end up wider than the one that carries the reading. */
+    table-layout: fixed;
 }
 
 .dtReadTable .dtHeadLabel {
-  width: 150px;
-  white-space: nowrap;
-  color: $textColor;
+    width: 150px;
+    white-space: nowrap;
+    color: var(--xc-text);
 }
 
-/*
-   Left as a table cell, with the sectors laid out inline inside it.
-
-   It was a flex container, which takes a td out of the table box model: the
-   browser wraps it in an anonymous cell, and an empty one then draws as a
-   rectangle sitting off the row rather than as part of it - which is what the
-   read looked like before its first pass had filled it. The sectors are
-   inline-block at a fixed width already, so there was nothing flex was doing for
-   them that they were not doing for themselves.
-
-   The height holds the row steady before that first pass, so the panel does not
-   jump when results arrive.
-*/
+/* Left as a table cell, with the sectors laid out inline inside it. The height
+   holds the row steady before the first pass, so the panel does not jump when
+   results arrive. */
 .dtGlyphs {
-  height: 22px;
+    height: 22px;
 }
 
 .dtGlyphs .dtSector {
-  margin-right: 2px;
+    margin-right: 2px;
 }
 
 .dtReadTable .dtCount {
-  width: 130px;
-  white-space: nowrap;
-  text-align: right;
-  color: #e0b040;
+    width: 130px;
+    white-space: nowrap;
+    text-align: right;
+    color: var(--xc-text-warn);
 }
 
 .dtCount.allok {
-  color: #4caf50;
+    color: var(--xc-text-ok);
 }
 
 /* Marked on the row rather than in the glyphs: those sectors really were read,
    it is the pass that does not count. */
 .dtCount.driven {
-  color: #c060c0;
+    color: var(--xc-text-other);
 }
 
-.dtLegend {
-  color: #9a9a9a;
-  font-size: 0.9em;
-}
-
-/* The pass counter, under the sector rows. Dimmer than they are: it is a number
-   to glance at while adjusting, not the thing being said. */
-.dtPass {
-  color: #9a9a9a;
-  font-family: monospace;
-}
-
+/* One sector of the read, as the console and the TFT draw it. In the key it is
+   the swatch: the glyph is the thing being explained. */
 .dtSector {
-  display: inline-block;
-  width: 18px;
-  text-align: center;
-  font-family: monospace;
-  font-weight: bold;
-  border-radius: 3px;
-  background: #2a2a2a;
+    display: inline-block;
+    width: 18px;
+    text-align: center;
+    font-family: var(--xc-mono);
+    font-weight: bold;
+    border-radius: 3px;
+    background: var(--xc-chip);
 }
 
-.dtSector.ok      { color: #4caf50; }
-.dtSector.missing { color: #e04b4b; }
-.dtSector.low     { color: #e0b040; }
-.dtSector.high    { color: #e0b040; }
-.dtSector.side    { color: #c060c0; }
-.dtSector.chk     { color: #ffffff; }
-
-/* Session tally grid. The cells are the disk copy grid's .track cells, drawn by the
-   same builder and coloured out of the same key - green, yellow and red carry the
-   verdict and the passes/errors text carries the detail behind it. Only the head
-   marker is new, so only the head marker is styled here.
-
-   Drawn as an inset outline rather than another fill, so it says where the head is
-   without hiding what that cylinder has been doing. Blue rather than white: a track
-   cell already has a white border, and a white outline over it says nothing.
-
-   Not renamed with the rest: it lives on the shared grid cell diskcopy.js owns. */
-
-.track.current {
-  outline: 3px solid deepskyblue;
-  outline-offset: -3px;
-}
+.dtSector.ok      { color: var(--xc-text-ok); }
+.dtSector.missing { color: var(--xc-text-bad); }
+.dtSector.low     { color: var(--xc-text-warn); }
+.dtSector.high    { color: var(--xc-text-warn); }
+.dtSector.side    { color: var(--xc-text-other); }
+.dtSector.chk     { color: var(--xc-text); }
 
 /* Clicking a cell seeks the head to that cylinder. The pointer and the highlight
    are only offered while a session is open, so the grid never advertises a click
    that would go nowhere. */
-
 #dtGrid.seekable td.track {
-  cursor: pointer;
+    cursor: pointer;
 }
 
 #dtGrid.seekable td.track:hover {
-  border-color: deepskyblue;
+    border-color: var(--xc-accent);
 }
 
 /* Two panes, side by side.
@@ -210,16 +161,15 @@ tr.dtInputsStart td {
 
    Wraps rather than scrolls on a narrow window: the signal table has a natural
    width and the grid has a fixed one, so there is nothing sensible to squeeze. */
-
 .dtPanes {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 28px;
-  align-items: flex-start;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 2rem;
+    align-items: flex-start;
 }
 
 .dtSignalPane {
-  flex: 0 0 auto;
+    flex: 0 0 auto;
 }
 
 /* Basis zero, not auto.
@@ -229,64 +179,10 @@ tr.dtInputsStart td {
    under the lines and hands it the whole page. Basis zero takes what is left after
    the signal table instead, and the floor is what decides when there is not enough
    left to be worth sharing. */
-
+/* The floor is the tally grid's own width: two sides of ten 40px cells with
+   their labels and spacers. Below that the pane goes under the signal table
+   rather than squeezing a grid that cannot squeeze. */
 .dtReadPane {
-  flex: 1 1 0;
-  min-width: 560px;
-}
-
-/* The grid's own cells, smaller than the disk copy grid's 40px. That one is
-   sized to fill the tab on its own; this one shares the row with the signal
-   table, and a cylinder here carries a passes/errors count rather than a single
-   glyph, so it only has to stay legible rather than fill anything. */
-
-.dtGridTable td {
-  width: 26px;
-  height: 26px;
-  font-size: 0.65em;
-}
-
-/* The key, as one line of swatches rather than the two column table the disk copy
-   tab uses. Five states, all of them already on screen a few pixels away, so it
-   is a reminder rather than a legend to study. */
-
-.dtTallyKey {
-  color: #9a9a9a;
-  font-size: 0.85em;
-  margin-top: 8px;
-}
-
-.dtKey {
-  display: inline-block;
-  width: 14px;
-  height: 14px;
-  vertical-align: -2px;
-  margin-left: 14px;
-  background-color: #151515;
-  border: 1px solid white;
-}
-
-.dtTallyKey .dtKey:first-child {
-  margin-left: 0;
-}
-
-.dtKey.green { background-color: green; }
-.dtKey.yellow { background-color: yellow; }
-.dtKey.red { background-color: red; }
-.dtKey.current {
-  outline: 2px solid deepskyblue;
-  outline-offset: -2px;
-}
-
-/* The Clear button rides on the heading it belongs to, so the grid does not need
-   a sentence of its own above it. */
-
-/* Rides the heading it belongs to, so the grid does not need a sentence of its
-   own above it. Normal weight against the heading's bold. */
-.sectionHeader .btn {
-    margin-left: 1.25rem;
-    padding: 0 8px;
-    font-size: 0.8rem;
-    font-weight: normal;
-    vertical-align: 2px;
+    flex: 1 1 0;
+    min-width: 960px;
 }

@@ -1,19 +1,6 @@
-/* SD Table
--------------------------------------------------- */
-
-.sdcardTable {
-    th {
-        background-color: white;
-        color: black;    
-    }
-    
-    td a {
-        color: lightblue;
-        &:hover {
-            color: white;
-        }
-    }
-}
+/* SD Card
+--------------------------------------------------
+   The listing is a .dataTable; only the file type colours are its own. */
 
 .sdcardDirectory {
     color: yellow;
@@ -24,5 +11,11 @@
 }
 
 .sdcardSCP {
-    color: deepskyblue;
+    color: var(--xc-accent);
+}
+
+/* The file select modal is Bootstrap's light one, so its listing keeps a dark
+   ground of its own under the same table style. */
+.modal .table.dataTable {
+    --bs-table-bg: #212529;
 }

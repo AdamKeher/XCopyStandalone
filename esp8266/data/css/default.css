@@ -26,40 +26,411 @@ body {
   padding: 0 15px;
 }
 
+/* Design tokens
+--------------------------------------------------
+   Every tab draws from this list and nothing else. A colour or a size that is
+   not here is a one-off, and one-offs are what made six tabs look like six
+   devices.
+
+   Two colour vocabularies, on purpose. Fills - a grid cell, a key swatch, a
+   sector arc on the Disk Info surface - use the saturated X-Copy palette the
+   .track cells have always had, because a filled block carries pure colour
+   well. Text - a state word, a sector glyph, a count - uses the softened set,
+   because pure red and green type on a dark ground is hard to read. A green
+   fill and a green word mean the same thing; they are simply the fill and the
+   text weight of one colour.
+
+   Type: the body font for words, the monospace for data, and three sizes of
+   each - the body's own for headings and prose, a data size for tables, dumps
+   and readouts, and a label size for the small uppercase captions that name
+   a column or a reading. */
+:root {
+  --xc-bg: #1e1e1e;
+  --xc-panel: #101010;
+  --xc-chip: #2a2a2a;
+  --xc-border: #555555;
+  --xc-text: white;
+  --xc-label: #90a4ae;
+  --xc-dim: #78909c;
+  --xc-accent: deepskyblue;
+  --xc-text-ok: #4caf50;
+  --xc-text-warn: #e0b040;
+  --xc-text-bad: #e04b4b;
+  --xc-text-hold: #40c0d0;
+  --xc-text-other: #c060c0;
+  --xc-mono: var(--bs-font-monospace);
+  --xc-data-size: 0.85rem;
+  --xc-label-size: 0.7rem;
+}
+
 /* Section headers
 --------------------------------------------------
-   Disk Copy's, everywhere.
+   Disk Copy's, everywhere: the body's own size at bold weight, over the two
+   pixel rule Bootstrap draws between a table's head and its body. It goes on
+   the <h6> where a section is a block and on the <th> where the section is a
+   column of a layout table, so both read the same.
 
-   It was already the right one and the page had three others beside it: a bare
-   <h6> on the Disk Info rail, an <h6> with an icon on the Drive Toolkit, and a
-   small monospace caption on the Disk Info panels. This is Disk Copy's, measured
-   off it - the body's own size at bold weight, over the two pixel rule Bootstrap
-   draws between a table's head and its body. The rule is what says "section": a
-   heading set smaller than the text under it is not a heading, it is a caption.
+   The icon takes the muted blue-grey the labels use, which separates the glyph
+   from the words without another weight.
 
-   It goes on the <h6> where a section is a block and on the <th> where the section
-   is a column of a layout table, so both read the same.
-
-   Only the icon is new. It takes the muted blue-grey the Disk Info rail uses for
-   its labels, which separates the glyph from the words without another weight. */
+   The gap under the rule is the one thing this has to get right on both forms:
+   half a rem, which is what Bootstrap pads a table cell by, so the <h6> form
+   leaves the same space above its content that the <th> form does. */
 .sectionHeader {
-  color: white;
+  color: var(--xc-text);
   font-size: 1rem;
   font-weight: 700;
-  margin: 1.25rem 0 0 0;
+  line-height: 1.5;
+  margin: 1.25rem 0 0.5rem 0;
   padding-bottom: 0.5rem;
-  border-bottom: 2px solid white;
+  border-bottom: 2px solid var(--xc-text);
 }
 .sectionHeader i {
-  color: #78909c;
+  color: var(--xc-dim);
   margin-right: 0.4rem;
 }
+.sectionHeader {
+  /* A live caption on the heading - the file a surface was read from, the
+     cylinder a view is showing. Normal weight and the label colour, in the
+     data font, so it reads as a reading beside the title and not as more
+     title. Right aligned, where a reading is looked for. */
+}
+.sectionHeader .sub {
+  float: right;
+  font-family: var(--xc-mono);
+  font-size: var(--xc-data-size);
+  font-weight: 400;
+  color: var(--xc-label);
+  max-width: 60%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sectionHeader {
+  /* A control on the heading - the tally's Clear, the dump's font switch.
+     Normal weight against the heading's bold, so it reads as a control on
+     the heading rather than as part of it. */
+}
+.sectionHeader .btn {
+  margin-left: 1.25rem;
+  padding: 0 8px;
+  font-size: 0.8rem;
+  font-weight: 400;
+  vertical-align: 2px;
+}
+.sectionHeader .form-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-left: 1.25rem;
+  padding-left: 0;
+  font-size: 0.8rem;
+  font-weight: 400;
+  color: var(--xc-label);
+  white-space: nowrap;
+  vertical-align: middle;
+}
+.sectionHeader .form-switch .form-check-input {
+  margin: 0;
+  float: none;
+}
+.sectionHeader .form-switch .form-check-label {
+  margin: 0;
+}
 
-/* In a layout table the rule under the head is Bootstrap's own, drawn on the tbody
-   rather than on the cells, so the cell must not draw a second one under it. */
+/* In a layout table the rule under the head is Bootstrap's own, drawn on the
+   tbody rather than on the cells, so the cell must not draw a second one. */
 th.sectionHeader {
   margin: 0;
   border-bottom: 0;
+}
+
+/* Layout tables
+--------------------------------------------------
+   A section that is a column of a table takes Bootstrap's .table for the
+   cell padding and the rule under its head, and nothing else: no fill, so the
+   section sits on the page like the <h6> sections do, and no rules between
+   rows it does not have. */
+.table.layoutTable {
+  --bs-table-bg: transparent;
+  --bs-table-color: var(--xc-text);
+  color: var(--xc-text);
+  margin-bottom: 0;
+}
+.table.layoutTable > :not(:first-child) {
+  border-top-color: var(--xc-text);
+}
+.table.layoutTable > :not(caption) > * > * {
+  border-bottom: 0;
+  box-shadow: none;
+}
+
+/* Labels
+--------------------------------------------------
+   The small uppercase caption that names a column or a reading. One size, one
+   colour, one tracking, whether it is over a number on the Disk Monitor or at
+   the head of a column on the SD card. */
+/* A line of prose that is not the point of the section - a file count, a
+   pass counter, a hint. The label colour at the data size. */
+.note {
+  font-family: var(--xc-mono);
+  font-size: var(--xc-data-size);
+  color: var(--xc-label);
+  margin: 0.5rem 0 0 0;
+}
+
+/* Panels
+--------------------------------------------------
+   Any box of data: a status readout, a hex dump, a key. Dark ground, one rule
+   around it, the data font at the data size. Canvases are panels too, with
+   nothing but the picture inside. */
+.panel, .emptyTable, .dump {
+  background-color: var(--xc-panel);
+  border: 1px solid var(--xc-border);
+  padding: 0.4rem 0.6rem;
+  font-family: var(--xc-mono);
+  font-size: var(--xc-data-size);
+  line-height: 1.5;
+  color: var(--xc-text);
+}
+
+.fluxCanvas,
+.histCanvas,
+.diskCanvas {
+  background-color: #050505;
+  border: 1px solid var(--xc-border);
+  display: block;
+}
+
+/* The surfaces scale with their column; the flux plot and the histograms are
+   drawn at the size they are shown. */
+.diskCanvas {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Label beside value, the value pushed to the right. */
+.panelRow {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+.panelRow span:first-child {
+  color: var(--xc-label);
+}
+.panelRow span:last-child {
+  text-align: right;
+}
+
+/* Data tables
+--------------------------------------------------
+   A table of readings rather than a layout: the SD card listing, the Drive
+   Toolkit's signal lines. Column headings in the label style, cells in the
+   data font, one rule under the head and none between rows. */
+.table.dataTable {
+  --bs-table-bg: transparent;
+  --bs-table-striped-bg: #ffffff0d;
+  --bs-table-color: var(--xc-text);
+  /* Bootstrap's stripe and hover colours default to its dark body text,
+     which on this ground is text you cannot see. */
+  --bs-table-striped-color: var(--xc-text);
+  --bs-table-hover-color: var(--xc-text);
+  --bs-table-active-color: var(--xc-text);
+  color: var(--xc-text);
+  font-family: var(--xc-mono);
+  font-size: var(--xc-data-size);
+  margin-bottom: 0;
+}
+.table.dataTable > :not(:first-child) {
+  border-top: 1px solid var(--xc-border);
+}
+.table.dataTable th {
+  font-family: var(--xc-mono);
+  font-size: var(--xc-label-size);
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--xc-label);
+  border-bottom: 0;
+  padding: 0.25rem 0.5rem;
+}
+.table.dataTable td {
+  border-bottom: 0;
+  padding: 0.25rem 0.5rem;
+  vertical-align: middle;
+}
+.table.dataTable a {
+  color: var(--xc-text);
+  text-decoration: none;
+}
+.table.dataTable a:hover {
+  text-decoration: underline;
+}
+
+/* Keys
+--------------------------------------------------
+   One key for every grid, surface and glyph row on the page. A row of swatches
+   with a word or two beside each, in the label colour at the data size; the
+   swatch is the thing being explained drawn small, so a grid cell's key is a
+   small grid cell, and a glyph's key is the glyph.
+
+   Wraps by default. .stack lays it one item to a line for the narrow rail on
+   the Disk Info tab; .cols2 sets two columns beside the flux plot. */
+.keyList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1.5rem;
+  margin: 0.5rem 0 0 0;
+  padding: 0;
+  font-size: var(--xc-data-size);
+  color: var(--xc-label);
+}
+.keyList.stack {
+  flex-direction: column;
+  gap: 0.35rem;
+}
+.keyList.cols2 {
+  display: grid;
+  grid-template-columns: repeat(2, max-content);
+  gap: 0.5rem 2.5rem;
+}
+
+.keyItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  white-space: nowrap;
+}
+
+.keySwatch {
+  flex: 0 0 auto;
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  background-color: #151515;
+  border: 1px solid var(--xc-text);
+}
+
+/* Fill colours
+--------------------------------------------------
+   The X-Copy palette. Shared by the grid cells and their key swatches, so a
+   swatch is exactly the cell it stands for. */
+.track.white,
+.keySwatch.white {
+  background-color: whitesmoke;
+  color: black;
+}
+.track.green,
+.keySwatch.green {
+  background-color: green;
+  color: white;
+}
+.track.yellow,
+.keySwatch.yellow {
+  background-color: yellow;
+  color: black;
+}
+.track.orange,
+.keySwatch.orange {
+  background-color: orange;
+  color: black;
+}
+.track.red,
+.keySwatch.red {
+  background-color: red;
+  color: white;
+}
+.track.magenta,
+.keySwatch.magenta {
+  background-color: magenta;
+  color: white;
+}
+.track.gray,
+.keySwatch.gray {
+  background-color: #757575;
+  color: white;
+}
+
+/* Where the head is. An inset outline rather than another fill, so it says
+   where the head is without hiding what that cylinder has been doing. Blue
+   rather than white, because the cell already has a white border. */
+.track.current {
+  outline: 3px solid var(--xc-accent);
+  outline-offset: -3px;
+}
+
+.keySwatch.current {
+  outline: 2px solid var(--xc-accent);
+  outline-offset: -2px;
+}
+
+/* Dumps
+--------------------------------------------------
+   Hex and ASCII, on the Disk Monitor and the Disk Info tab. One panel, one
+   font, one size, and one way of telling an address from a byte: the address
+   in the label colour, the bytes in the text colour, the ASCII behind a rule.
+   A byte lights up under the pointer, and a byte a search found stays lit. */
+.dump {
+  overflow: auto;
+}
+.dump pre {
+  margin: 0;
+  padding: 0;
+  font-family: inherit;
+  font-size: inherit;
+  line-height: 1.35;
+  color: var(--xc-text);
+  white-space: pre;
+  overflow: visible;
+}
+.dump .addr,
+.dump .range {
+  color: var(--xc-label);
+  margin-right: 0.75em;
+}
+.dump .hex {
+  padding: 0 0.15em;
+  margin-right: 0.35em;
+}
+.dump .hex:hover {
+  background-color: var(--xc-text);
+  color: black;
+  cursor: text;
+}
+.dump .asciiBlock {
+  border-left: 2px solid var(--xc-border);
+  margin-left: 0.5em;
+  padding-left: 0.75em;
+}
+.dump .asciiHighlight {
+  color: black;
+  background-color: var(--xc-text);
+}
+
+/* Editable numbers in a toolbar
+--------------------------------------------------
+   The cylinder, sector and side boxes. Same box on every tab that has one. */
+.dvEdit {
+  background-color: var(--xc-panel);
+  color: var(--xc-text);
+  font-family: var(--xc-mono);
+  width: 50px;
+  text-align: center;
+  border: 1px solid var(--xc-border);
+}
+.dvEdit:focus {
+  outline: none !important;
+  border-color: var(--xc-accent);
+}
+.dvEdit.wide {
+  width: 150px;
+  text-align: start;
+}
+
+/* Modal
+-------------------------------------------------- */
+.modal {
+  color: black;
 }
 
 /* Header
@@ -72,8 +443,10 @@ th.sectionHeader {
   color: gray;
 }
 
-/* Headings
+/* Disk Copy
 -------------------------------------------------- */
+/* The mode and status strip. The one filled section on the page: it is the
+   line the eye goes to during a copy, and the fill is what makes it that. */
 .diskcopyInfo {
   background-color: darkblue;
   color: white;
@@ -88,102 +461,60 @@ th.sectionHeader {
   filter: grayscale(100%);
 }
 
-/* Flux
--------------------------------------------------- */
-.fluxCanvas {
-  background-color: black;
-  border: 1px solid darkgrey;
-}
-
 /* Buttons
 -------------------------------------------------- */
 .cancelButton {
   margin-bottom: 20px;
 }
 
-/* Modal
--------------------------------------------------- */
-.modal {
-  color: black;
-}
-
-/* Tracks
--------------------------------------------------- */
-.table-sm {
-  width: 100%;
+/* Cylinder grid
+--------------------------------------------------
+   The map of the disk. Drawn by buildCylinderGrid() in diskcopy.js for the Disk
+   Copy tab and for the Drive Toolkit's session tally, and styled here once so
+   the two are the same grid of the same disk. */
+.table-sm.cylinderGrid {
+  width: auto;
   background-color: black;
   color: white;
+  font-family: var(--xc-mono);
+  font-size: var(--xc-data-size);
 }
-.table-sm td {
+.table-sm.cylinderGrid td {
   height: 40px;
   width: 40px;
   text-align: center;
+  padding: 0;
+}
+.table-sm.cylinderGrid {
+  /* The side titles and the row and column numbers. Labels, so the label
+     colour; the cells are what carry the colour. */
+}
+.table-sm.cylinderGrid .gridLabel {
+  color: var(--xc-label);
+}
+.table-sm.cylinderGrid .gridSide {
+  color: var(--xc-text);
+  font-family: var(--bs-body-font-family);
+  font-size: var(--xc-data-size);
+}
+.table-sm.cylinderGrid {
+  /* The Disk Copy grid has the tab to itself and takes its width; the
+     tally shares a row and keeps to its own. */
+}
+.table-sm.cylinderGrid.wide {
+  width: 100%;
 }
 
 .track {
-  font-size: smaller;
+  font-size: 0.75rem;
   background-color: #151515;
   color: white;
   border: 1px solid white;
 }
-.track.white {
-  background-color: whitesmoke;
-  color: black;
-}
-.track.green {
-  background-color: green;
-  color: white;
-}
-.track.yellow {
-  background-color: yellow;
-  color: black;
-}
-.track.orange {
-  background-color: orange;
-  color: black;
-}
-.track.red {
-  background-color: red;
-  color: white;
-}
-.track.magenta {
-  background-color: magenta;
-  color: white;
-}
 
-/* Disk Read / Write Key
--------------------------------------------------- */
-.key {
-  border: 1px solid white;
-  width: 450px;
-  padding: 20px;
-}
-.key .size, .key .text {
-  width: 30px;
-  height: 30px;
-  margin-bottom: 20px;
-}
-.key .size:last-child, .key .text:last-child {
-  margin-bottom: 0px;
-}
-.key .text {
-  margin-left: 10px;
-  width: auto;
-}
-
-/* SD Table
--------------------------------------------------- */
-.sdcardTable th {
-  background-color: white;
-  color: black;
-}
-.sdcardTable td a {
-  color: lightblue;
-}
-.sdcardTable td a:hover {
-  color: white;
-}
-
+/* SD Card
+--------------------------------------------------
+   The listing is a .dataTable; only the file type colours are its own. */
 .sdcardDirectory {
   color: yellow;
 }
@@ -193,137 +524,111 @@ th.sectionHeader {
 }
 
 .sdcardSCP {
-  color: deepskyblue;
+  color: var(--xc-accent);
 }
 
-/* SD Table
+/* The file select modal is Bootstrap's light one, so its listing keeps a dark
+   ground of its own under the same table style. */
+.modal .table.dataTable {
+  --bs-table-bg: #212529;
+}
+
+/* Disk Monitor
 -------------------------------------------------- */
 @font-face {
   font-family: "TopazPlus a500a1000a2000";
   src: url("../fonts/topaz.ttf");
 }
-.dvEdit {
-  background-color: lightblue;
-  width: 50px;
-  text-align: center;
-  border: 2px solid white;
-}
-.dvEdit:focus {
-  outline: none !important;
-  background-color: white;
-  border: 2px solid green;
-}
-.dvEdit.wide {
-  width: 150px;
-  text-align: start;
+/* The nine facts about the sector on screen. A label over its value, so they
+   read as a row of readings and a number that moves is seen moving. */
+.dmonStats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 2rem;
+  font-family: var(--xc-mono);
+  margin: 0 0 0.75rem 0;
 }
 
-.sectorTable pre {
-  overflow: hidden;
-}
-.sectorTable pre .asciiChar {
-  background-color: #303030;
-  margin-right: 2px;
-  padding: 1.25px;
-}
-.sectorTable pre .hex {
-  background-color: gray;
-  color: black;
-  padding: 3px;
-  margin: 0px;
-  margin-right: 2px;
-}
-.sectorTable pre .hex:hover {
-  background-color: white;
-  color: black;
-  cursor: text;
-}
-.sectorTable pre .asciiBlock {
-  border-left: 4px solid gray;
-  color: white;
-  margin-left: 10px;
-  padding-left: 10px;
-  padding-right: 10px;
-  padding: 3px;
-}
-.sectorTable pre {
-  margin: 0px;
-  padding: 0px;
-}
-.sectorTable pre .range {
-  margin: 0px;
-  margin-right: 10px;
-  background-color: white;
-  color: black;
-  padding: 3px;
-}
-.sectorTable pre .asciiHighlight {
-  color: black;
-  background-color: white;
-}
-.sectorTable pre {
-  margin-top: 1px;
+.dmonStat {
+  display: flex;
+  flex-direction: column;
+  white-space: nowrap;
 }
 
+.dmonStatLabel {
+  font-family: var(--xc-mono);
+  font-size: var(--xc-label-size);
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--xc-label);
+}
+
+.dmonStatValue {
+  color: var(--xc-text);
+  font-size: var(--xc-data-size);
+}
+
+/* The one number on the strip that is a verdict rather than a fact. */
+.dmonStatValue.bad {
+  color: var(--xc-text-bad);
+  font-weight: bold;
+}
+
+/* The hex dump: sixteen rows of 32 bytes. A .dump, with the ASCII column the
+   markup carries alongside each row. */
+.sectorTable .asciiChar {
+  margin-right: 1px;
+}
+
+/* The ASCII dump beside the histogram: eight rows of 64 characters. */
 .asciiTable {
-  overflow: hidden;
+  /* Topaz draws taller than its line box, so the rows are pulled together to
+     close the gap that leaves. At the page's monospace there is no gap to
+     close and the same pull clips the address off every row but the last, so
+     it goes with the font that needs it. */
 }
-/* Topaz draws taller than its line box, so the rows were pulled together to close
-   the gap that left. At the default monospace there is no gap to close and the same
-   pull clips the address off every row but the last, so it goes with the font that
-   needed it. */
 .asciiTable.amigaFont pre:not(:first-of-type) {
   margin-top: -9px;
 }
-.asciiTable pre .asciiBlock {
-  margin-right: 20px;
-  font-style: normal;
+.asciiTable {
+  /* The Amiga font, worn only when the switch on the heading asks for it. The
+     dump is read beside a hex column, where Topaz's glyph shapes are the reason
+     a byte can be hard to place, so the default is the monospace the rest of
+     the page uses. */
 }
-.asciiTable pre {
-  margin: 0px;
-  padding: 0px;
-}
-.asciiTable pre .range {
-  margin: 0px;
-  margin-right: 10px;
-  background-color: white;
-  color: black;
-  padding: 3px;
-}
-.asciiTable pre .asciiHighlight {
-  color: black;
-  background-color: white;
-}
-.asciiTable pre {
-  overflow: hidden;
+.asciiTable.amigaFont pre .asciiBlock {
+  font-family: "TopazPlus a500a1000a2000";
+  font-size: large;
 }
 
+/* The disk map: every sector of every track, coloured by what the scan found
+   in it. Track and side are labels; the sectors are chips that light up under
+   the pointer, because clicking one opens it in the dump above. */
 .emptyTable {
-  font-family: monospace;
-  font-size: smaller;
+  line-height: 1.6;
+  white-space: nowrap;
+  overflow-x: auto;
 }
 .emptyTable .emptyTrack {
-  background-color: white;
-  color: black;
-  padding-left: 3px;
-  padding-right: 3px;
+  color: var(--xc-label);
+  margin-right: 0.75em;
 }
 .emptyTable .side {
-  background-color: gray;
-  color: black;
-  margin-left: 10px;
-  margin-right: 10px;
-  padding-left: 3px;
-  padding-right: 3px;
+  color: var(--xc-label);
+  margin-left: 1em;
+  margin-right: 0.5em;
 }
 .emptyTable .block {
-  border: 2px solid #212529;
-  padding-left: 15px;
-  padding-right: 15px;
-  background-color: #303030;
+  display: inline-block;
+  min-width: 2.2em;
+  text-align: center;
+  margin-right: 2px;
+  border: 1px solid transparent;
+  background-color: var(--xc-chip);
 }
 .emptyTable .block:hover {
-  background-color: white;
+  background-color: var(--xc-text);
   color: black;
   cursor: zoom-in;
 }
@@ -337,25 +642,11 @@ th.sectionHeader {
   background-color: purple;
 }
 .emptyTable .current {
-  border: 2px solid white;
-}
-
-/* Histogram
--------------------------------------------------- */
-.histCanvas {
-  background-color: black;
-  border: 1px solid darkgrey;
+  border-color: var(--xc-accent);
 }
 
 /* Disk Info
 -------------------------------------------------- */
-.diskCanvas {
-  background-color: #050505;
-  border: 1px solid darkgrey;
-  max-width: 100%;
-  height: auto;
-}
-
 /* width, not max-width. A canvas is a replaced element with an intrinsic size, so
    max-width alone lets it shrink below its 520px and never above - which is why
    the surfaces sat at about 330px with clear space beside them however wide the
@@ -377,18 +668,44 @@ th.sectionHeader {
 .dinfoLayout {
   display: flex;
   flex-wrap: wrap;
-  gap: 1rem;
+  gap: 1rem 1.5rem;
   align-items: flex-start;
 }
 
 .dinfoSurfaces {
   display: flex;
   flex-wrap: wrap;
-  gap: 1rem;
+  gap: 1rem 1.5rem;
   flex: 1 1 360px;
   min-width: 0;
 }
 
+/* min-width 0 because a flex item will not shrink below its content by default,
+   and the content here is a 520px canvas. No maximum: the pair of them take
+   whatever the status column leaves, and the page is allowed to grow downwards
+   for it. */
+.dinfoSide {
+  flex: 1 1 0;
+  min-width: 0;
+  /* The first section of the tab, so no space above its heading; the rail
+     beside it starts level with it for the same reason. */
+}
+.dinfoSide > .sectionHeader {
+  margin-top: 0;
+}
+
+.dinfoStatus {
+  flex: 0 0 260px;
+}
+.dinfoStatus > .sectionHeader:first-child {
+  margin-top: 0;
+}
+
+/* The census of a side, under its heading and over its surface. */
+.dinfoSummary {
+  min-height: 1.5em;
+  margin: 0 0 0.5rem 0;
+}
 
 /* The toolbar takes its height from its tallest item, and .cancelButton carries a
    20px bottom margin meant for where it usually lives - the foot of a tab, as on
@@ -402,58 +719,6 @@ th.sectionHeader {
 }
 #diskinfo .btn-toolbar .cancelButton {
   margin-bottom: 0;
-}
-/* min-width 0 because a flex item will not shrink below its content by default,
-   and the content here is a 520px canvas. No maximum: the pair of them take
-   whatever the status column leaves, and the page is allowed to grow downwards
-   for it. */
-.dinfoSide {
-  flex: 1 1 0;
-  min-width: 0;
-}
-
-.dinfoStatus {
-  flex: 0 0 250px;
-}
-
-.dinfoHeader {
-  display: flex;
-  justify-content: space-between;
-  font-family: monospace;
-  font-size: 0.75rem;
-  color: #b0bec5;
-  padding-bottom: 0.25rem;
-}
-
-.dinfoHeaderRight {
-  color: #78909c;
-  text-align: right;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  max-width: 55%;
-}
-
-.dinfoPanel {
-  background-color: #101010;
-  border: 1px solid darkgrey;
-  padding: 0.4rem 0.5rem;
-  font-family: monospace;
-  font-size: 0.75rem;
-  color: white;
-}
-
-.dinfoRow {
-  display: flex;
-  justify-content: space-between;
-  gap: 0.5rem;
-  padding: 1px 0;
-}
-.dinfoRow span:first-child {
-  color: #90a4ae;
-}
-.dinfoRow span:last-child {
-  text-align: right;
 }
 
 /* nowrap because .input-group wraps its own children by default, and this one is
@@ -476,52 +741,30 @@ th.sectionHeader {
   align-items: center;
   gap: 0.5rem;
   padding: 0.15rem 0;
+  margin-bottom: 0.5rem;
 }
 .dinfoSlider label {
+  font-family: var(--xc-mono);
+  font-size: var(--xc-label-size);
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--xc-label);
   flex: 0 0 auto;
   order: -1;
-  min-width: 6.5rem;
-  font-size: 0.7rem;
-  color: #90a4ae;
 }
 .dinfoSlider input[type=range] {
   flex: 1 1 auto;
   min-width: 0;
 }
 
-.dinfoKey div {
-  padding: 1px 0;
-}
-
-/* Square rather than round, so it reads as a sector mark on the surface and not
-   as a bullet point. */
-.dinfoSwatch {
-  display: inline-block;
-  width: 10px;
-  height: 10px;
-  margin-right: 4px;
-  border: 1px solid #000000;
-  vertical-align: middle;
-}
-
-.dinfoOk {
-  background-color: #66bb6a;
-}
-
-.dinfoBadCheck {
-  background-color: #ef5350;
-}
-
-.dinfoCyl {
-  background-color: #ffa726;
-}
-
-.dinfoStray {
-  background-color: #ab47bc;
-}
-
-.dinfoUnread {
-  background-color: #757575;
+.dinfoSliderValue {
+  flex: 0 0 auto;
+  min-width: 2.5rem;
+  font-family: var(--xc-mono);
+  font-size: var(--xc-data-size);
+  color: var(--xc-text);
+  text-align: right;
 }
 
 /* The histogram and the sector dump share the row under the track view. The dump
@@ -531,25 +774,17 @@ th.sectionHeader {
   display: flex;
   flex-wrap: wrap;
   align-items: flex-start;
-  gap: 1rem;
-  margin-top: 0.5rem;
+  gap: 1rem 1.5rem;
 }
 
 .dinfoDump {
   flex: 1 1 480px;
   min-width: 0;
-}
-.dinfoDump pre {
-  margin: 0;
-  font-size: 0.7rem;
-  line-height: 1.25;
-  color: white;
   /* 23 lines, expressed as lines. A height that is not a whole number of
-     1.25em rows leaves one sliced in half at an end of the scroll, and
-     320px is 22.86 of them - so there was always half a row of hex. */
-  max-height: 28.75em;
-  overflow: auto;
-  white-space: pre;
+     rows leaves one sliced in half at an end of the scroll. */
+}
+.dinfoDump .dump {
+  max-height: calc(31.05em + 0.8rem);
 }
 
 .dinfoTrackView {
@@ -568,10 +803,10 @@ th.sectionHeader {
    and clamping it to the wrapper would defeat the scrolling. */
 .dinfoTrackScroll .dinfoTrackCanvas {
   max-width: none;
-  display: block;
 }
 
-/* Step buttons and the side toggle, laid out like Head Cal's cylinder group. */
+/* Step buttons and the side toggle, laid out like the Drive Toolkit's cylinder
+   group. */
 .dinfoSelect {
   display: flex;
   flex-wrap: wrap;
@@ -588,13 +823,245 @@ th.sectionHeader {
   max-width: 320px;
 }
 
-.dinfoSliderValue {
+.dinfoHist {
   flex: 0 0 auto;
-  min-width: 2.5rem;
-  font-family: monospace;
-  font-size: 0.75rem;
-  color: white;
+}
+
+/* Drive toolkit
+   -------------------------------------------------------------------------
+   Two layers in one pane, and both of them are read by colour first.
+
+   The signal table has four states rather than two, matching
+   XCopyDriveToolkit::Level and the colours the TFT and the serial console paint
+   from it: a line at rest, a line we are deliberately driving, an input answering
+   correctly, and an input that should be doing something and is not. "Asserted"
+   and "good" are both true and mean different things, so they are never the same
+   colour - painting them alike is how the retired Test Drive ended up with
+   indicators that told you nothing.
+
+   The calibration read's per sector glyphs are the same vocabulary as the TFT and
+   the serial console. Colour carries the meaning and the glyph repeats it, because
+   a colour blind reader and a photocopy both need one of the two to survive.
+
+   All three surfaces can be photographed side by side and read the same way. */
+.dtHelp {
+  color: var(--xc-label);
+}
+
+.dtReadouts {
+  font-family: var(--xc-mono);
+  font-size: var(--xc-data-size);
+  color: var(--xc-label);
+  margin: 0 0 0.25rem 0;
+}
+.dtReadouts span {
+  margin-right: 28px;
+}
+
+.dtTable {
+  width: auto;
+}
+.dtTable td, .dtTable th {
+  white-space: nowrap;
+}
+
+.dtName {
+  font-weight: bold;
+}
+
+.dtPin,
+.dtDir,
+.dtValue {
+  color: var(--xc-label);
+}
+
+/* The rule between the outputs and the inputs: "what am I driving" and "what is
+   the drive saying" are the two halves of every question asked here. */
+tr.dtInputsStart td {
+  border-top: 1px solid var(--xc-border);
+}
+
+.dtState.rest {
+  color: var(--xc-label);
+}
+
+.dtState.asserted {
+  color: var(--xc-text-warn);
+}
+
+.dtState.good {
+  color: var(--xc-text-ok);
+}
+
+.dtState.fault {
+  color: var(--xc-text-bad);
+  font-weight: bold;
+}
+
+.dtStatus {
+  display: block;
+  font-family: var(--xc-mono);
+  font-size: var(--xc-data-size);
+  margin: 0 0 0.75rem 0;
+}
+
+.dtStatus.rest {
+  color: var(--xc-label);
+}
+
+.dtStatus.good {
+  color: var(--xc-text-ok);
+}
+
+.dtStatus.warn {
+  color: var(--xc-text-warn);
+}
+
+.dtStatus.fault {
+  color: var(--xc-text-bad);
+  font-weight: bold;
+}
+
+.dtStatus.hold {
+  color: var(--xc-text-hold);
+}
+
+/* A pass taken while a line was driven. Its own colour rather than a warning:
+   nothing went wrong, the pass simply is not a measurement of head alignment. */
+.dtStatus.driven {
+  color: var(--xc-text-other);
+}
+
+/* The calibration read's realtime rows: what the head is reading this revolution,
+   as against the accumulated grid below.
+
+   A table rather than two flex rows, so the head name, the sectors and the count
+   line up in columns and the run of glyphs is given the width the pane has rather
+   than only the width it needs. The two fixed columns carry words and the glyph
+   column takes what is left. */
+.dtReadTable {
+  width: 100%;
+  /* Fixed, or the browser spreads the slack over all three columns and the two
+     that carry words end up wider than the one that carries the reading. */
+  table-layout: fixed;
+}
+
+.dtReadTable .dtHeadLabel {
+  width: 150px;
+  white-space: nowrap;
+  color: var(--xc-text);
+}
+
+/* Left as a table cell, with the sectors laid out inline inside it. The height
+   holds the row steady before the first pass, so the panel does not jump when
+   results arrive. */
+.dtGlyphs {
+  height: 22px;
+}
+
+.dtGlyphs .dtSector {
+  margin-right: 2px;
+}
+
+.dtReadTable .dtCount {
+  width: 130px;
+  white-space: nowrap;
   text-align: right;
+  color: var(--xc-text-warn);
+}
+
+.dtCount.allok {
+  color: var(--xc-text-ok);
+}
+
+/* Marked on the row rather than in the glyphs: those sectors really were read,
+   it is the pass that does not count. */
+.dtCount.driven {
+  color: var(--xc-text-other);
+}
+
+/* One sector of the read, as the console and the TFT draw it. In the key it is
+   the swatch: the glyph is the thing being explained. */
+.dtSector {
+  display: inline-block;
+  width: 18px;
+  text-align: center;
+  font-family: var(--xc-mono);
+  font-weight: bold;
+  border-radius: 3px;
+  background: var(--xc-chip);
+}
+
+.dtSector.ok {
+  color: var(--xc-text-ok);
+}
+
+.dtSector.missing {
+  color: var(--xc-text-bad);
+}
+
+.dtSector.low {
+  color: var(--xc-text-warn);
+}
+
+.dtSector.high {
+  color: var(--xc-text-warn);
+}
+
+.dtSector.side {
+  color: var(--xc-text-other);
+}
+
+.dtSector.chk {
+  color: var(--xc-text);
+}
+
+/* Clicking a cell seeks the head to that cylinder. The pointer and the highlight
+   are only offered while a session is open, so the grid never advertises a click
+   that would go nowhere. */
+#dtGrid.seekable td.track {
+  cursor: pointer;
+}
+
+#dtGrid.seekable td.track:hover {
+  border-color: var(--xc-accent);
+}
+
+/* Two panes, side by side.
+
+   The read sits beside the lines rather than under them, because the diagnosis is
+   the correlation between the two: sectors missing while the index count has
+   stopped is a dead index sensor, sectors missing while the index is fine is head
+   alignment. Stacked, one of the two is always off the bottom of the screen, and
+   the whole reason these two screens became one was to be able to see both facts
+   at once.
+
+   Wraps rather than scrolls on a narrow window: the signal table has a natural
+   width and the grid has a fixed one, so there is nothing sensible to squeeze. */
+.dtPanes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 2rem;
+  align-items: flex-start;
+}
+
+.dtSignalPane {
+  flex: 0 0 auto;
+}
+
+/* Basis zero, not auto.
+
+   With auto the pane sizes to its widest table, and it holds two that ask for the
+   full width - so the row measures wider than it is and wraps, which puts the read
+   under the lines and hands it the whole page. Basis zero takes what is left after
+   the signal table instead, and the floor is what decides when there is not enough
+   left to be worth sharing. */
+/* The floor is the tally grid's own width: two sides of ten 40px cells with
+   their labels and spacers. Below that the pane goes under the signal table
+   rather than squeezing a grid that cannot squeeze. */
+.dtReadPane {
+  flex: 1 1 0;
+  min-width: 960px;
 }
 
 /* Footer
@@ -664,369 +1131,4 @@ th.sectionHeader {
   /* Bootstrap's default vertical rhythm makes the bar twice as tall as it
      needs to be. */
   padding: 1px 8px;
-}
-
-/* The Amiga font, worn only when the switch on the toolbar asks for it. The dump is
-   read beside a hex column, where Topaz's glyph shapes are the reason a byte can be
-   hard to place, so the default is the monospace the rest of the page uses. */
-.asciiTable.amigaFont pre .asciiBlock {
-  font-family: "TopazPlus a500a1000a2000";
-  font-size: large;
-}
-
-/* Rides the ASCII Dump header, the way the Drive Toolkit's Clear rides Session
-   tally. Normal weight, so it reads as a control on the heading rather than as part
-   of the heading. */
-.dmonFontCheck {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  margin-left: 1.25rem;
-  font-weight: normal;
-  font-size: 0.85rem;
-  color: #b0bec5;
-  white-space: nowrap;
-  vertical-align: middle;
-  padding-left: 0;
-}
-.dmonFontCheck .form-check-input {
-  margin: 0;
-  float: none;
-}
-.dmonFontCheck .form-check-label {
-  margin: 0;
-}
-
-/* The head information. A label over its value rather than beside it, so the nine
-   read as a row of readings and a number that moves is seen moving. Same colours the
-   Disk Info status rail uses for the same job. */
-.dmonStats {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem 2rem;
-  font-family: monospace;
-  margin: 0.75rem 0 1rem 0;
-}
-
-.dmonStat {
-  display: flex;
-  flex-direction: column;
-  white-space: nowrap;
-}
-
-.dmonStatLabel {
-  color: #78909c;
-  font-size: 0.7rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.dmonStatValue {
-  color: white;
-  font-size: 0.95rem;
-}
-
-/* The one number on the strip that is a verdict rather than a fact. */
-.dmonStatValue.bad {
-  color: #e04b4b;
-  font-weight: bold;
-}
-
-/* The histogram, headed the way the sector dump beside it is - it was the one panel
-   on the page with no name on it. */
-.dinfoHist {
-  flex: 0 0 auto;
-}
-
-/* Drive toolkit
-   -------------------------------------------------------------------------
-   Two layers in one pane, and both of them are read by colour first.
-
-   The signal table has four states rather than two, matching
-   XCopyDriveToolkit::Level and the colours the TFT and the serial console paint
-   from it: a line at rest, a line we are deliberately driving, an input answering
-   correctly, and an input that should be doing something and is not. "Asserted"
-   and "good" are both true and mean different things, so they are never the same
-   colour - painting them alike is how the retired Test Drive ended up with
-   indicators that told you nothing.
-
-   The calibration read's per sector glyphs are the same vocabulary as the TFT and
-   the serial console. Colour carries the meaning and the glyph repeats it, because
-   a colour blind reader and a photocopy both need one of the two to survive.
-
-   All three surfaces can be photographed side by side and read the same way. */
-
-.dtHelp {
-  color: #9a9a9a;
-}
-
-
-.dtReadouts {
-  font-family: monospace;
-  color: #9a9a9a;
-}
-
-.dtReadouts span {
-  margin-right: 28px;
-}
-
-.dtTable {
-  font-family: monospace;
-  width: auto;
-}
-
-.dtTable td,
-.dtTable th {
-  padding: 3px 20px 3px 6px;
-  white-space: nowrap;
-}
-
-.dtName {
-  font-weight: bold;
-}
-
-.dtPin,
-.dtDir,
-.dtValue {
-  color: #9a9a9a;
-}
-
-/* The rule between the outputs and the inputs: "what am I driving" and "what is
-   the drive saying" are the two halves of every question asked here. */
-tr.dtInputsStart td {
-  border-top: 2px solid #555;
-}
-
-.dtState.rest     { color: #9a9a9a; }
-.dtState.asserted { color: #e0b040; }
-.dtState.good     { color: #4caf50; }
-.dtState.fault    { color: #e04b4b; font-weight: bold; }
-
-.dtStatus {
-  font-family: monospace;
-  font-size: 1.05em;
-}
-
-.dtStatus.rest   { color: #9a9a9a; }
-.dtStatus.good   { color: #4caf50; }
-.dtStatus.warn   { color: #e0b040; }
-.dtStatus.fault  { color: #e04b4b; font-weight: bold; }
-.dtStatus.hold   { color: #40c0d0; }
-/* A pass taken while a line was driven. Its own colour rather than a warning:
-   nothing went wrong, the pass simply is not a measurement of head alignment. */
-.dtStatus.driven { color: #c060c0; }
-
-/* The calibration read's realtime rows: what the head is reading this revolution,
-   as against the accumulated grid below. */
-
-/* A table rather than two flex rows, so the head name, the sectors and the count
-   line up in columns and the run of glyphs is given the width the pane has rather
-   than only the width it needs. The two fixed columns carry words and the glyph
-   column takes what is left. */
-
-.dtReadTable {
-  font-family: monospace;
-  width: 100%;
-  /* Fixed, or the browser spreads the slack over all three columns and the two
-     that carry words end up wider than the one that carries the reading. */
-  table-layout: fixed;
-  margin-bottom: 16px;
-}
-
-.dtReadTable td {
-  vertical-align: middle;
-  padding: 6px 8px;
-}
-
-.dtReadTable .dtHeadLabel {
-  width: 150px;
-  white-space: nowrap;
-  color: white;
-}
-
-/*
-   Left as a table cell, with the sectors laid out inline inside it.
-
-   It was a flex container, which takes a td out of the table box model: the
-   browser wraps it in an anonymous cell, and an empty one then draws as a
-   rectangle sitting off the row rather than as part of it - which is what the
-   read looked like before its first pass had filled it. The sectors are
-   inline-block at a fixed width already, so there was nothing flex was doing for
-   them that they were not doing for themselves.
-
-   The height holds the row steady before that first pass, so the panel does not
-   jump when results arrive.
-*/
-.dtGlyphs {
-  height: 22px;
-}
-
-.dtGlyphs .dtSector {
-  margin-right: 2px;
-}
-
-.dtReadTable .dtCount {
-  width: 130px;
-  white-space: nowrap;
-  text-align: right;
-  color: #e0b040;
-}
-
-.dtCount.allok {
-  color: #4caf50;
-}
-
-/* Marked on the row rather than in the glyphs: those sectors really were read,
-   it is the pass that does not count. */
-.dtCount.driven {
-  color: #c060c0;
-}
-
-.dtLegend {
-  color: #9a9a9a;
-  font-size: 0.9em;
-}
-
-/* The pass counter, under the sector rows. Dimmer than they are: it is a number
-   to glance at while adjusting, not the thing being said. */
-.dtPass {
-  color: #9a9a9a;
-  font-family: monospace;
-}
-
-.dtSector {
-  display: inline-block;
-  width: 18px;
-  text-align: center;
-  font-family: monospace;
-  font-weight: bold;
-  border-radius: 3px;
-  background: #2a2a2a;
-}
-
-.dtSector.ok      { color: #4caf50; }
-.dtSector.missing { color: #e04b4b; }
-.dtSector.low     { color: #e0b040; }
-.dtSector.high    { color: #e0b040; }
-.dtSector.side    { color: #c060c0; }
-.dtSector.chk     { color: #ffffff; }
-
-/* Session tally grid. The cells are the disk copy grid's .track cells, drawn by the
-   same builder and coloured out of the same key - green, yellow and red carry the
-   verdict and the passes/errors text carries the detail behind it. Only the head
-   marker is new, so only the head marker is styled here.
-
-   Drawn as an inset outline rather than another fill, so it says where the head is
-   without hiding what that cylinder has been doing. Blue rather than white: a track
-   cell already has a white border, and a white outline over it says nothing.
-
-   Not renamed with the rest: it lives on the shared grid cell diskcopy.js owns. */
-
-.track.current {
-  outline: 3px solid deepskyblue;
-  outline-offset: -3px;
-}
-
-/* Clicking a cell seeks the head to that cylinder. The pointer and the highlight
-   are only offered while a session is open, so the grid never advertises a click
-   that would go nowhere. */
-
-#dtGrid.seekable td.track {
-  cursor: pointer;
-}
-
-#dtGrid.seekable td.track:hover {
-  border-color: deepskyblue;
-}
-
-/* Two panes, side by side.
-
-   The read sits beside the lines rather than under them, because the diagnosis is
-   the correlation between the two: sectors missing while the index count has
-   stopped is a dead index sensor, sectors missing while the index is fine is head
-   alignment. Stacked, one of the two is always off the bottom of the screen, and
-   the whole reason these two screens became one was to be able to see both facts
-   at once.
-
-   Wraps rather than scrolls on a narrow window: the signal table has a natural
-   width and the grid has a fixed one, so there is nothing sensible to squeeze. */
-
-.dtPanes {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 28px;
-  align-items: flex-start;
-}
-
-.dtSignalPane {
-  flex: 0 0 auto;
-}
-
-/* Basis zero, not auto.
-
-   With auto the pane sizes to its widest table, and it holds two that ask for the
-   full width - so the row measures wider than it is and wraps, which puts the read
-   under the lines and hands it the whole page. Basis zero takes what is left after
-   the signal table instead, and the floor is what decides when there is not enough
-   left to be worth sharing. */
-
-.dtReadPane {
-  flex: 1 1 0;
-  min-width: 560px;
-}
-
-/* The grid's own cells, smaller than the disk copy grid's 40px. That one is
-   sized to fill the tab on its own; this one shares the row with the signal
-   table, and a cylinder here carries a passes/errors count rather than a single
-   glyph, so it only has to stay legible rather than fill anything. */
-
-.dtGridTable td {
-  width: 26px;
-  height: 26px;
-  font-size: 0.65em;
-}
-
-/* The key, as one line of swatches rather than the two column table the disk copy
-   tab uses. Five states, all of them already on screen a few pixels away, so it
-   is a reminder rather than a legend to study. */
-
-.dtTallyKey {
-  color: #9a9a9a;
-  font-size: 0.85em;
-  margin-top: 8px;
-}
-
-.dtKey {
-  display: inline-block;
-  width: 14px;
-  height: 14px;
-  vertical-align: -2px;
-  margin-left: 14px;
-  background-color: #151515;
-  border: 1px solid white;
-}
-
-.dtTallyKey .dtKey:first-child {
-  margin-left: 0;
-}
-
-.dtKey.green { background-color: green; }
-.dtKey.yellow { background-color: yellow; }
-.dtKey.red { background-color: red; }
-.dtKey.current {
-  outline: 2px solid deepskyblue;
-  outline-offset: -2px;
-}
-
-/* The Clear button rides on the heading it belongs to, so the grid does not need
-   a sentence of its own above it. */
-
-/* Rides the heading it belongs to, so the grid does not need a sentence of its own
-   above it. Normal weight against the heading's bold. */
-.sectionHeader .btn {
-  margin-left: 1.25rem;
-  padding: 0 8px;
-  font-size: 0.8rem;
-  font-weight: normal;
-  vertical-align: 2px;
 }
