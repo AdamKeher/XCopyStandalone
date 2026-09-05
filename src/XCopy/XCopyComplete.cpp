@@ -47,8 +47,16 @@ void XCopyCandidates::offer(const String &value, const String &display, bool dir
         _row += item;
         // Padded to the next column boundary rather than to a fixed width, so a
         // name longer than a column takes two and the rows still line up.
-        while (_row.length() % kColumn != 0)
-            _row += ' ';
+        //
+        // The room is reserved first and the loop counts up to a target, so a heap
+        // that cannot give it leaves a short row rather than a console that never
+        // comes back: an append into a String with no room fails silently and the
+        // length does not move, and "until the length is a multiple of the column"
+        // never became true.
+        const unsigned int target = ((_row.length() + kColumn - 1) / kColumn) * kColumn;
+        if (_row.reserve(target))
+            while (_row.length() < target)
+                _row += ' ';
 
         _count++;
         return;
