@@ -9,7 +9,14 @@ body {
   background-color: #1e1e1e;
   color: white;
   margin-top: 10px;
-  margin-bottom: 90px; /* Margin bottom by footer height */
+  /* Deliberately more than the footer's 90px. The three status alerts inside
+     it inherit the footer's 90px line-height, which makes each one 124px tall,
+     and .statusfooter then lifts them 25px to sit them in the bar - so the
+     strip they really cover begins 25px above the footer's top edge. Reserving
+     only the footer height left the foot of a tab underneath them: the Disk
+     Info sector dump, last on the page and against its right edge, had its
+     bottom rows painted over. 115px of obstruction, plus a gap to read by. */
+  margin-bottom: 130px;
   overflow-y: scroll; /* Show vertical scrollbar */
 }
 
