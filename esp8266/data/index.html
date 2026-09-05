@@ -260,14 +260,34 @@
                                 <button type="button" class="btn btn-primary" onclick="toggleSide();"><i id="dvSideIcon" class="fa-solid fa-toggle-off"></i> Side</button>
                                 <input id="dvEditSide" type="text" class="dvEdit numbers" value="0"/>
                             </div>
+                            <!-- Off by default: the dump is read beside a hex column, and the
+                                 monospace the rest of the page uses is the easier of the two to
+                                 place a byte in. The period look is here for whoever wants the
+                                 disk to read the way it did on the machine. -->
+                            <div class="form-check form-switch dmonFontCheck ms-2">
+                                <input class="form-check-input" type="checkbox" role="switch" id="dmonAmigaFont" onchange="dmonToggleAmigaFont();">
+                                <label class="form-check-label" for="dmonAmigaFont">Amiga font</label>
+                            </div>
                         </div>
                     </p>
-                   <p><hr/></p>
-                    <p>
-                        <strong>Block:</strong> <span id="dvBlock">----</span> <strong>Logical Track Found:</strong> <span id="dvTrackFound">--</span> <strong>Errors:</strong> <span id="dvErrors">---</span> <strong>Sector Count:</strong> <span id="dvSectorCount">--</span> <strong>Bit Count:</strong> <span id="dvBitCount">-----</span>
-                        <br>
-                        <strong>Format Type:</strong> <span id="dvFormatType">---</span> <strong>Gap:</strong> <span id="dvGap">--</span> <strong>Data Checksum:</strong> <span id="dvDataChk">0x--------</span> <strong>Header Checksum:</strong> <span id="dvheaderChk">0x--------</span>
-                    </p>
+                    <hr/>
+                    <!-- Nine facts about the sector on screen. They were a run of bold
+                         labels and values wrapped across two lines, which put "Errors"
+                         and "Bit Count" wherever the window width happened to leave
+                         them - so a number changing was found by reading rather than by
+                         looking. A label over its value, in the colours the Disk Info
+                         rail uses for the same job. -->
+                    <div class="dmonStats">
+                        <div class="dmonStat"><span class="dmonStatLabel">Block</span><span class="dmonStatValue" id="dvBlock">----</span></div>
+                        <div class="dmonStat"><span class="dmonStatLabel">Logical track</span><span class="dmonStatValue" id="dvTrackFound">--</span></div>
+                        <div class="dmonStat"><span class="dmonStatLabel">Errors</span><span class="dmonStatValue" id="dvErrors">---</span></div>
+                        <div class="dmonStat"><span class="dmonStatLabel">Sectors</span><span class="dmonStatValue" id="dvSectorCount">--</span></div>
+                        <div class="dmonStat"><span class="dmonStatLabel">Bits</span><span class="dmonStatValue" id="dvBitCount">-----</span></div>
+                        <div class="dmonStat"><span class="dmonStatLabel">Format</span><span class="dmonStatValue" id="dvFormatType">---</span></div>
+                        <div class="dmonStat"><span class="dmonStatLabel">Gap</span><span class="dmonStatValue" id="dvGap">--</span></div>
+                        <div class="dmonStat"><span class="dmonStatLabel">Data checksum</span><span class="dmonStatValue" id="dvDataChk">0x--------</span></div>
+                        <div class="dmonStat"><span class="dmonStatLabel">Header checksum</span><span class="dmonStatValue" id="dvheaderChk">0x--------</span></div>
+                    </div>
                     <div id="sectorTable" class="sectorTable">
                         <pre><span class="range">0x0000..0x001f</span><span class="hex" id="hex_0_0">--</span><span class="hex" id="hex_0_1">--</span><span class="hex" id="hex_0_2">--</span><span class="hex" id="hex_0_3">--</span><span class="hex" id="hex_0_4">--</span><span class="hex" id="hex_0_5">--</span><span class="hex" id="hex_0_6">--</span><span class="hex" id="hex_0_7">--</span><span class="hex" id="hex_0_8">--</span><span class="hex" id="hex_0_9">--</span><span class="hex" id="hex_0_10">--</span><span class="hex" id="hex_0_11">--</span><span class="hex" id="hex_0_12">--</span><span class="hex" id="hex_0_13">--</span><span class="hex" id="hex_0_14">--</span><span class="hex" id="hex_0_15">--</span><span class="hex" id="hex_0_16">--</span><span class="hex" id="hex_0_17">--</span><span class="hex" id="hex_0_18">--</span><span class="hex" id="hex_0_19">--</span><span class="hex" id="hex_0_20">--</span><span class="hex" id="hex_0_21">--</span><span class="hex" id="hex_0_22">--</span><span class="hex" id="hex_0_23">--</span><span class="hex" id="hex_0_24">--</span><span class="hex" id="hex_0_25">--</span><span class="hex" id="hex_0_26">--</span><span class="hex" id="hex_0_27">--</span><span class="hex" id="hex_0_28">--</span><span class="hex" id="hex_0_29">--</span><span class="hex" id="hex_0_30">--</span><span class="hex" id="hex_0_31">--</span><span class="asciiBlock"><span class="asciiChar" id="ascii_0_0">.</span><span class="asciiChar" id="ascii_0_1">.</span><span class="asciiChar" id="ascii_0_2">.</span><span class="asciiChar" id="ascii_0_3">.</span><span class="asciiChar" id="ascii_0_4">.</span><span class="asciiChar" id="ascii_0_5">.</span><span class="asciiChar" id="ascii_0_6">.</span><span class="asciiChar" id="ascii_0_7">.</span><span class="asciiChar" id="ascii_0_8">.</span><span class="asciiChar" id="ascii_0_9">.</span><span class="asciiChar" id="ascii_0_10">.</span><span class="asciiChar" id="ascii_0_11">.</span><span class="asciiChar" id="ascii_0_12">.</span><span class="asciiChar" id="ascii_0_13">.</span><span class="asciiChar" id="ascii_0_14">.</span><span class="asciiChar" id="ascii_0_15">.</span><span class="asciiChar" id="ascii_0_16">.</span><span class="asciiChar" id="ascii_0_17">.</span><span class="asciiChar" id="ascii_0_18">.</span><span class="asciiChar" id="ascii_0_19">.</span><span class="asciiChar" id="ascii_0_20">.</span><span class="asciiChar" id="ascii_0_21">.</span><span class="asciiChar" id="ascii_0_22">.</span><span class="asciiChar" id="ascii_0_23">.</span><span class="asciiChar" id="ascii_0_24">.</span><span class="asciiChar" id="ascii_0_25">.</span><span class="asciiChar" id="ascii_0_26">.</span><span class="asciiChar" id="ascii_0_27">.</span><span class="asciiChar" id="ascii_0_28">.</span><span class="asciiChar" id="ascii_0_29">.</span><span class="asciiChar" id="ascii_0_30">.</span><span class="asciiChar" id="ascii_0_31">.</span></span></pre>
                         <pre><span class="range">0x0020..0x003f</span><span class="hex" id="hex_1_0">--</span><span class="hex" id="hex_1_1">--</span><span class="hex" id="hex_1_2">--</span><span class="hex" id="hex_1_3">--</span><span class="hex" id="hex_1_4">--</span><span class="hex" id="hex_1_5">--</span><span class="hex" id="hex_1_6">--</span><span class="hex" id="hex_1_7">--</span><span class="hex" id="hex_1_8">--</span><span class="hex" id="hex_1_9">--</span><span class="hex" id="hex_1_10">--</span><span class="hex" id="hex_1_11">--</span><span class="hex" id="hex_1_12">--</span><span class="hex" id="hex_1_13">--</span><span class="hex" id="hex_1_14">--</span><span class="hex" id="hex_1_15">--</span><span class="hex" id="hex_1_16">--</span><span class="hex" id="hex_1_17">--</span><span class="hex" id="hex_1_18">--</span><span class="hex" id="hex_1_19">--</span><span class="hex" id="hex_1_20">--</span><span class="hex" id="hex_1_21">--</span><span class="hex" id="hex_1_22">--</span><span class="hex" id="hex_1_23">--</span><span class="hex" id="hex_1_24">--</span><span class="hex" id="hex_1_25">--</span><span class="hex" id="hex_1_26">--</span><span class="hex" id="hex_1_27">--</span><span class="hex" id="hex_1_28">--</span><span class="hex" id="hex_1_29">--</span><span class="hex" id="hex_1_30">--</span><span class="hex" id="hex_1_31">--</span><span class="asciiBlock"><span class="asciiChar" id="ascii_1_0">.</span><span class="asciiChar" id="ascii_1_1">.</span><span class="asciiChar" id="ascii_1_2">.</span><span class="asciiChar" id="ascii_1_3">.</span><span class="asciiChar" id="ascii_1_4">.</span><span class="asciiChar" id="ascii_1_5">.</span><span class="asciiChar" id="ascii_1_6">.</span><span class="asciiChar" id="ascii_1_7">.</span><span class="asciiChar" id="ascii_1_8">.</span><span class="asciiChar" id="ascii_1_9">.</span><span class="asciiChar" id="ascii_1_10">.</span><span class="asciiChar" id="ascii_1_11">.</span><span class="asciiChar" id="ascii_1_12">.</span><span class="asciiChar" id="ascii_1_13">.</span><span class="asciiChar" id="ascii_1_14">.</span><span class="asciiChar" id="ascii_1_15">.</span><span class="asciiChar" id="ascii_1_16">.</span><span class="asciiChar" id="ascii_1_17">.</span><span class="asciiChar" id="ascii_1_18">.</span><span class="asciiChar" id="ascii_1_19">.</span><span class="asciiChar" id="ascii_1_20">.</span><span class="asciiChar" id="ascii_1_21">.</span><span class="asciiChar" id="ascii_1_22">.</span><span class="asciiChar" id="ascii_1_23">.</span><span class="asciiChar" id="ascii_1_24">.</span><span class="asciiChar" id="ascii_1_25">.</span><span class="asciiChar" id="ascii_1_26">.</span><span class="asciiChar" id="ascii_1_27">.</span><span class="asciiChar" id="ascii_1_28">.</span><span class="asciiChar" id="ascii_1_29">.</span><span class="asciiChar" id="ascii_1_30">.</span><span class="asciiChar" id="ascii_1_31">.</span></span></pre>
@@ -311,7 +331,7 @@
                                     </div>
                                 </td>
                                 <td>
-                                    <canvas class="histCanvas" id="histCanvas" width="500" height="225"></canvas>                        
+                                    <canvas class="histCanvas" id="histCanvas" width="500" height="180"></canvas>                        
                                 </td>
                             </tr>
                         </tbody>
@@ -546,7 +566,13 @@
                             <canvas class="diskCanvas dinfoTrackCanvas" id="dinfoTrackCanvas" width="1040" height="110"></canvas>
                         </div>
                         <div class="dinfoBelow">
-                            <canvas class="diskCanvas" id="dinfoHistCanvas" width="500" height="180"></canvas>
+                            <div class="dinfoHist">
+                                <div class="dinfoHeader">
+                                    <div class="dinfoHeaderLeft">Histogram</div>
+                                    <div class="dinfoHeaderRight" id="dinfoHistLabel">&mdash;</div>
+                                </div>
+                                <canvas class="diskCanvas" id="dinfoHistCanvas" width="500" height="180"></canvas>
+                            </div>
                             <div class="dinfoDump">
                                 <div class="dinfoHeader">
                                     <div class="dinfoHeaderLeft">Sector</div>

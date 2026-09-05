@@ -113,19 +113,25 @@ tr.dtInputsStart td {
   color: $textColor;
 }
 
+/*
+   Left as a table cell, with the sectors laid out inline inside it.
+
+   It was a flex container, which takes a td out of the table box model: the
+   browser wraps it in an anonymous cell, and an empty one then draws as a
+   rectangle sitting off the row rather than as part of it - which is what the
+   read looked like before its first pass had filled it. The sectors are
+   inline-block at a fixed width already, so there was nothing flex was doing for
+   them that they were not doing for themselves.
+
+   The height holds the row steady before that first pass, so the panel does not
+   jump when results arrive.
+*/
 .dtGlyphs {
-  display: flex;
-  gap: 2px;
-  /* Holds the row height steady before the first pass lands, so the panel does
-     not jump when results arrive. */
-  min-height: 22px;
+  height: 22px;
 }
 
-/* The sectors keep their size in a column wider than they are. As flex items they
-   shrink by default, which squeezed eleven of them into a third of the room they
-   had and made the glyphs unreadable. */
 .dtGlyphs .dtSector {
-  flex: 0 0 auto;
+  margin-right: 2px;
 }
 
 .dtReadTable .dtCount {

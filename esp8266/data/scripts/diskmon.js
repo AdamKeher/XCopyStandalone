@@ -181,7 +181,8 @@ function drawSectorDetails(block) {
 
 function drawSectorStats(block, track, errors, sectors, bits, format, gap, datachk, headerchk) {
   $('#dvTrackFound').text(String(track).padStart(2, '0'));
-  $('#dvErrors').text(String(errors).padStart(3, '0'));
+  $('#dvErrors').text(String(errors).padStart(3, '0'))
+                 .toggleClass('bad', parseInt(errors, 10) > 0);
   $('#dvSectorCount').text(String(sectors).padStart(2, '0'));
   $('#dvBitCount').text(String(bits).padStart(5, '0'));
   $('#dvFormatType').text(String(format).padStart(3, '0'));
@@ -209,35 +210,45 @@ function drawSector(block, row, sector) {
 }
 
 function clearSectorHist() {
-  canvas = document.getElementById('histCanvas');
-  ctx = canvas.getContext("2d");  
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ctx.fillStyle =  "#0000FF";
-  ctx.fillRect(100, 0, 1, canvas.height);
-  ctx.fillRect(200, 0, 1, canvas.height);
-  ctx.fillRect(300, 0, 1, canvas.height);
-  ctx.fillRect(400, 0, 1, canvas.height);
-  ctx.fillStyle =  "#00FF00";
-  ctx.font = 'bold 10pt Calibri';
-  ctx.fillText('2μs', 105, 10);
-  ctx.fillText('4μs', 205, 10);
-  ctx.fillText('6μs', 305, 10);
-  ctx.fillText('8μs', 405, 10);
+  drawFluxHistogram('histCanvas', undefined, 256);
 }
 
-function drawSectorHist(line) {
-  clearSectorHist();
+/*
+   The same flux histogram the Disk Info tab draws, through the same function - see
+   drawFluxHistogram() in diskinfo.js.
 
-  element = document.getElementById('histCanvas');
-  ctx = element.getContext("2d");  
-  ctx.fillStyle =  "#FFFFFF";
-  let items = line.split('&');
-  items.forEach(item => {
-    values = item.split('|');
-    height = Math.max(values[1] / 128.0, 1);
-    ctx.fillRect(values[0] * 50, element.height - height, 1, height);
-    console.log(values[0] + " | " + values[1] + "|" + height);
+   This drew its own before: blue gridlines at fixed pixel columns, green Calibri
+   labels, white one pixel bars, and a raw count divided by 128 - which laid a quiet
+   track along the floor and ran a busy one off the top. Two pictures of one
+   measurement that could not be compared with each other, and the difference read
+   as a difference in the disk.
+
+   sendBlockHist sends the interval in microseconds already, one pair per raw bin
+   that had anything in it, so the parse is all that is left here.
+*/
+function drawSectorHist(line) {
+  var samples = [];
+  String(line).split('&').forEach(function (item) {
+    if (item === '') { return; }
+    var values = item.split('|');
+    var us = parseFloat(values[0]);
+    var count = parseInt(values[1], 10);
+    if (isNaN(us) || isNaN(count)) { return; }
+    samples.push({ us: us, count: count });
   });
+  drawFluxHistogram('histCanvas', samples, 256);
+}
+
+/*
+   The Amiga font, off unless asked for.
+
+   The dump is read beside a hex column, and Topaz's glyph shapes are the reason a
+   byte can be hard to place in it - so the default is the same monospace the rest
+   of the page uses, and the period look is there for whoever wants the disk to
+   read the way it did on the machine.
+*/
+function dmonToggleAmigaFont() {
+  $('#asciiTable').toggleClass('amigaFont', $('#dmonAmigaFont').is(':checked'));
 }
 
 function resetEmptyBlocks() {

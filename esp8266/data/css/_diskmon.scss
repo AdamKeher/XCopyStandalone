@@ -81,16 +81,18 @@
 .asciiTable {
     overflow: hidden;
     
-    pre:not(:first-of-type) {
+    /* Topaz draws taller than its line box, so the rows were pulled together to
+       close the gap that left. At the default monospace there is no gap to close
+       and the same pull clips the address off every row but the last, so it goes
+       with the font that needed it. */
+    &.amigaFont pre:not(:first-of-type) {
         margin-top: -9px;
     }
 
     pre {
         .asciiBlock {
             margin-right: 20px;
-            font-family: 'TopazPlus a500a1000a2000';
             font-style: normal;
-            font-size:large;
         }  
 
         @include commonTable;
@@ -161,4 +163,62 @@
 {
     background-color: black;
     border:1px solid darkgrey;
+}
+/* The Amiga font, worn only when the switch on the toolbar asks for it. The dump is
+   read beside a hex column, where Topaz's glyph shapes are the reason a byte can be
+   hard to place, so the default is the monospace the rest of the page uses. */
+.asciiTable.amigaFont pre .asciiBlock {
+    font-family: 'TopazPlus a500a1000a2000';
+    font-size: large;
+}
+
+.dmonFontCheck {
+    color: $textColor;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    white-space: nowrap;
+
+    .form-check-input {
+        margin: 0;
+    }
+
+    .form-check-label {
+        margin: 0;
+    }
+}
+
+/* The head information. A label over its value rather than beside it, so the nine
+   read as a row of readings and a number that moves is seen moving. Same colours the
+   Disk Info status rail uses for the same job. */
+.dmonStats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 2rem;
+    font-family: monospace;
+    margin: 0.75rem 0 1rem 0;
+}
+
+.dmonStat {
+    display: flex;
+    flex-direction: column;
+    white-space: nowrap;
+}
+
+.dmonStatLabel {
+    color: #78909c;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.dmonStatValue {
+    color: $textColor;
+    font-size: 0.95rem;
+}
+
+/* The one number on the strip that is a verdict rather than a fact. */
+.dmonStatValue.bad {
+    color: #e04b4b;
+    font-weight: bold;
 }

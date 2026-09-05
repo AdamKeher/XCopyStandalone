@@ -35,6 +35,12 @@ const DINFO_MAX_CYLINDERS = 84;
 const DINFO_MAX_SYNCS = 64;
 const DINFO_BUCKETS = 512;
 const DINFO_HIST_BINS = 64;
+// The raw histogram the firmware measures into: 256 timer ticks, a tick 0.04166667us
+// with a 0.25us floor. Both pages plot against this, so a peak sits in the same place
+// on either of them.
+const DINFO_HIST_TICK_US = 0.04166667;
+const DINFO_HIST_FLOOR_US = 0.25;
+const DINFO_HIST_SPAN_US = 255 * DINFO_HIST_TICK_US;
 
 // Canvas geometry. The annulus is 174px for 84 cylinders, so a ring is about two
 // pixels: that is the reason the firmware sends 512 angular buckets and not more.
@@ -750,14 +756,27 @@ function dinfoDrawTrackView(track) {
 }
 
 /*
-   The flux interval histogram for the selected track.
+   One flux interval histogram, drawn the same way wherever it appears.
 
    Amiga MFM writes cells 2, 3 and 4us apart, so a healthy track is three clear
    peaks. A smeared or shifted one is what a marginal read, a misaligned head or a
    deliberately odd bitrate looks like before it becomes a checksum failure.
+
+   Shared with the Disk Monitor, which drew the same measurement in its own colours,
+   on its own axis and against a fixed divisor - see drawSectorHist() in diskmon.js.
+   Two pictures of one thing that could not be compared with each other is the sort
+   of difference that gets read as a difference in the disk. It stays here rather
+   than moving to the shell for the reason buildCylinderGrid() stayed in
+   diskcopy.js: it belongs to the page that developed it.
+
+   @param canvasId the canvas to draw into
+   @param samples  [{us, count}, ...] in any order, counts unscaled; undefined for
+                   a track with no histogram
+   @param bins     how many buckets the source divides the range into, which is all
+                   the bar width needs
 */
-function dinfoDrawHistogram(bins) {
-  var canvas = document.getElementById("dinfoHistCanvas");
+function drawFluxHistogram(canvasId, samples, bins) {
+  var canvas = document.getElementById(canvasId);
   if (canvas == null) { return; }
   var ctx = canvas.getContext("2d");
   var w = canvas.width, h = canvas.height;
@@ -767,14 +786,11 @@ function dinfoDrawHistogram(bins) {
 
   var base = h - 22;
 
-  // gridlines at whole microseconds. A raw bin is one timer tick; the firmware
-  // sums four into each of the bins sent, and a tick is 0.04166667us with a
-  // 0.25us floor - the same arithmetic printHist() uses on the console.
+  // Gridlines at whole microseconds across the range a raw bin can carry - the
+  // same arithmetic printHist() uses on the console.
   ctx.font = "10px monospace";
-  for (var us = 2; us <= 8; us++) {
-    var tick = (us - 0.25) / 0.04166667;
-    var bin = tick / 4;
-    var x = (bin / DINFO_HIST_BINS) * w;
+  for (var us = 2; us <= 10; us++) {
+    var x = dinfoHistX(us, w);
     if (x < 0 || x > w) { continue; }
     ctx.fillStyle = "#16324a";
     ctx.fillRect(x, 6, 1, base - 6);
@@ -782,19 +798,61 @@ function dinfoDrawHistogram(bins) {
     ctx.fillText(us + "us", x + 2, h - 8);
   }
 
-  if (bins === undefined) {
+  if (samples === undefined || samples.length === 0) {
     ctx.fillStyle = "#616161";
     ctx.fillText("no histogram for this track", 8, 20);
     return;
   }
 
-  var bw = w / DINFO_HIST_BINS;
-  for (var i = 0; i < DINFO_HIST_BINS; i++) {
-    var barH = Math.round((bins[i] / 255) * (base - 10));
-    if (barH < 1 && bins[i] > 0) { barH = 1; }
-    ctx.fillStyle = "#ffb74d";
-    ctx.fillRect(i * bw, base - barH, Math.max(1, bw - 1), barH);
+  /*
+     Scaled to the tallest bar rather than to a fixed divisor.
+
+     The Disk Monitor divided a raw count by 128, which laid a quiet track along
+     the floor and ran a busy one off the top of the canvas - so where the peaks
+     sit, the one thing the picture is for, was the thing it could lose. The
+     analyser's bins arrive pre-scaled and dividing by their own maximum leaves
+     them where they were, so one rule serves both.
+  */
+  var peak = 0;
+  for (var p = 0; p < samples.length; p++) {
+    if (samples[p].count > peak) { peak = samples[p].count; }
   }
+  if (peak <= 0) { return; }
+
+  var bw = Math.max(1, (w / bins) - 1);
+  ctx.fillStyle = "#ffb74d";
+  for (var i = 0; i < samples.length; i++) {
+    var barH = Math.round((samples[i].count / peak) * (base - 10));
+    if (barH < 1) { barH = 1; }
+    ctx.fillRect(dinfoHistX(samples[i].us, w), base - barH, bw, barH);
+  }
+}
+
+//! Microseconds to a pixel column, so both pages put 4us in the same place.
+function dinfoHistX(us, width) {
+  return ((us - DINFO_HIST_FLOOR_US) / DINFO_HIST_SPAN_US) * width;
+}
+
+//! The selected track's histogram.
+function dinfoDrawHistogram(bins) {
+  $("#dinfoHistLabel").html(bins === undefined ? "&mdash;"
+    : ("cyl " + dinfoSelected.cylinder + " side " + dinfoSelected.side));
+
+  if (bins === undefined) {
+    drawFluxHistogram("dinfoHistCanvas", undefined, DINFO_HIST_BINS);
+    return;
+  }
+
+  // The firmware sums four raw ticks into each bin it sends, so a bin starts at
+  // the interval of the first of them.
+  var samples = [];
+  for (var i = 0; i < DINFO_HIST_BINS; i++) {
+    samples.push({
+      us: DINFO_HIST_FLOOR_US + (i * 4 * DINFO_HIST_TICK_US),
+      count: bins[i]
+    });
+  }
+  drawFluxHistogram("dinfoHistCanvas", samples, DINFO_HIST_BINS);
 }
 
 // ---------------------------------------------------------------------------

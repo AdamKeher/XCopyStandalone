@@ -267,3 +267,10 @@
     color: $textColor;
     text-align: right;
 }
+
+/* The histogram, headed the way the sector dump beside it is - it was the one panel
+   on the page with no name on it. */
+.dinfoHist
+{
+    flex: 0 0 auto;
+}
