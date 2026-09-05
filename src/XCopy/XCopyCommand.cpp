@@ -288,9 +288,9 @@ void XCopyCommandLine::dispatch(const XCopyCommandDef *command, const XCopyArgs 
     case XCopyCmd::boot:       cmdBoot(args);       break;
     case XCopyCmd::hist:       cmdHist();           break;
     case XCopyCmd::rpm:        cmdRpm(args);        break;
-    case XCopyCmd::headcal:    cmdHeadCal(args);    break;
+    case XCopyCmd::headcal:    cmdDriveToolkit(args, true);  break;
     case XCopyCmd::diskinfo:   cmdDiskInfo(args);   break;
-    case XCopyCmd::drivetoolkit: cmdDriveToolkit();  break;
+    case XCopyCmd::drivetoolkit: cmdDriveToolkit(args, false); break;
     case XCopyCmd::name:       cmdName();           break;
     case XCopyCmd::print:      cmdPrint();          break;
     case XCopyCmd::read:       cmdRead(args);       break;
@@ -1617,14 +1617,6 @@ void XCopyCommandLine::cmdRpm(const XCopyArgs &args)
     setBusy(false);
 }
 
-void XCopyCommandLine::cmdHeadCal(const XCopyArgs &args)
-{
-    // Starts the state and returns, like testdisk. Deliberately not the rpm
-    // pattern of owning the console in a loop: that would starve the ESP link
-    // and the TFT for as long as somebody was adjusting the drive.
-    _callback(_caller, "headCalibration," + args.subject());
-}
-
 /*
    Analyse every track, from the drive or from an SCP image on the card.
 
@@ -1684,13 +1676,22 @@ void XCopyCommandLine::cmdDiskInfo(const XCopyArgs &args)
     _callback(_caller, "diskInfoScan," + range);
 }
 
-void XCopyCommandLine::cmdDriveToolkit()
+/*
+   One handler behind both spellings.
+
+   drive opens the toolkit watching the interface and reading nothing; headcal
+   opens the same session with the calibration read already running, which is what
+   that name has always done and is still the fastest way to get to it. Both take
+   an optional cylinder.
+
+   Starts the state and returns, like testdisk. Deliberately not the rpm pattern of
+   owning the console in a loop: the toolkit draws its own table and takes the
+   keyboard through the raw key hook, so a loop here would starve the ESP link and
+   the TFT for as long as somebody was poking at the drive.
+*/
+void XCopyCommandLine::cmdDriveToolkit(const XCopyArgs &args, bool startRead)
 {
-    // Same pattern as cmdHeadCal(): start the state and return. The toolkit draws
-    // its own table and takes the keyboard through the raw key hook, so owning the
-    // console in a loop here would starve the ESP link and the TFT for as long as
-    // somebody was poking at the drive.
-    _callback(_caller, "driveToolkit");
+    _callback(_caller, "driveToolkit," + args.subject() + "," + String(startRead ? 1 : 0));
 }
 
 void XCopyCommandLine::cmdName()

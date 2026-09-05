@@ -151,9 +151,8 @@ private:
   void cmdBoot(const XCopyArgs &args);
   void cmdHist();
   void cmdRpm(const XCopyArgs &args);
-  void cmdHeadCal(const XCopyArgs &args);
   void cmdDiskInfo(const XCopyArgs &args);
-  void cmdDriveToolkit();
+  void cmdDriveToolkit(const XCopyArgs &args, bool startRead);
   void cmdName();
   void cmdPrint();
   void cmdRead(const XCopyArgs &args);

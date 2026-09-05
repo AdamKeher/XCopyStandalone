@@ -16,7 +16,6 @@ XCopyState stateForAction(XCopyAction action)
     case XCopyAction::scanBlocks:                    return scanBlocks;
     case XCopyAction::diskSearch:                    return diskSearch;
     case XCopyAction::modSearch:                     return modSearch;
-    case XCopyAction::headCalibration:              return headCalibration;
     case XCopyAction::driveToolkit:                  return driveToolkit;
     // Both analyser sources land in the same state: the drive is busy either way
     // as far as the rest of the machine is concerned, and the browser switches on

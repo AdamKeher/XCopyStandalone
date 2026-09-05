@@ -1,7 +1,7 @@
 #ifndef XCOPY_H
 #define XCOPY_H
 
-#define XCOPYVERSION "v740.26"
+#define XCOPYVERSION "v741.26"
 // #define XCOPY_DEBUG = 1
 
 // #define PCBVERSION 1 // expensive adafruit screen and joystick
@@ -42,7 +42,6 @@
 #include "XCopyESP8266.h"
 #include "XCopyFloppy.h"
 #include "XCopyDiskInfo.h"
-#include "XCopyHeadCalibration.h"
 #include "XCopyDriveToolkit.h"
 #include "XCopyConsole.h"
 #include "XCopyBrainFile.h"
@@ -93,15 +92,9 @@ public:
   void sendFile(String path);
   void getFile(String path, size_t size, bool overwrite = false);
   void processKeys(String keys);
-  // The single way out of a head calibration session, so no path can leave it
-  // with the drive still spinning. See processState().
-  void exitHeadCalibration();
-  //! Raw keystroke sink while the calibration screen is up, registered with
-  //! XCopyCommandLine so the USB console and the browser terminal both drive it.
-  static void onHeadCalKey(void *obj, char key);
-  // The single way out of a drive toolkit session. Same contract as
-  // exitHeadCalibration(): the outputs are driven and the console is in raw key
-  // mode, and both have to be put back however the session ends.
+  // The single way out of a drive toolkit session, so no path can leave it with
+  // the outputs driven, the drive spinning or the console still in raw key mode.
+  // See processState().
   void exitDriveToolkit();
   //! Raw keystroke sink while the toolkit is up, registered with XCopyCommandLine
   //! so the USB console and the browser terminal both drive it.
@@ -130,16 +123,9 @@ private:
   XCopyESP8266 *_esp = nullptr;
   XCopyTransfer _transfer;
   /*
-     A value member rather than something new'd per session. It holds live drive
-     state, and the feature it replaces was deleted while its interrupts were
-     still armed - a lifetime this object simply does not have.
-  */
-  XCopyHeadCalibration _headCal;
-
-  /*
      The Amiga track analyser behind the Disk Info tab. A member rather than a
-     local for the same reason _headCal is: it holds the survey in progress and
-     the cancel flag the interrupt sets, and neither may live on a frame that
+     local for the same reason _driveToolkit is: it holds the survey in progress
+     and the cancel flag the interrupt sets, and neither may live on a frame that
      processState() is about to leave.
   */
   XCopyDiskInfo _diskInfo;
@@ -153,10 +139,11 @@ private:
   String _diskInfoPath = "";
 
   /*
-     The drive toolkit session. A member for the same reason _headCal is: it owns
-     the index interrupt and the state of every output line while it is up, and an
-     object that could be destroyed out from under those would leave the drive
-     driven and the interrupt armed.
+     The drive toolkit session: the sampled interface and the calibration read on
+     top of it. A value member rather than something new'd per session, because it
+     owns the index interrupt and the state of every output line while it is up,
+     and the feature it replaces was deleted while its interrupts were still armed
+     - a lifetime this object simply does not have.
   */
   XCopyDriveToolkit _driveToolkit;
 
@@ -188,9 +175,11 @@ private:
   // legitimate range that a zero end cylinder cannot be told apart from.
   bool _scpRangeGiven = false;
 
-  // Cylinder the next calibration session opens on, carried from the console or
-  // the web command the same way _adfFilePath is.
-  uint8_t _headCalCylinder = XCopyHeadCalibration::kDefaultCylinder;
+  // Cylinder the next toolkit session opens on, and whether it opens with the
+  // calibration read already running - the headcal spelling of the command. Both
+  // carried from the console or the web command the way _adfFilePath is.
+  uint8_t _toolkitCylinder = XCopyDriveToolkit::kDefaultCylinder;
+  bool _toolkitStartRead = false;
 
   bool _drawnOnce = false;
   // True while the passthrough loop is servicing ESP *programming* mode, where

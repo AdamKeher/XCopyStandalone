@@ -21,11 +21,10 @@
    transfer rate, a stopwatch, the audio volume. None of them is ever more than a
    float, and two decimals of a float can be had exactly without leaving integers.
 
-   The rest of the firmware already knew. XCopyDriveToolkit::formatRpm() and
-   XCopyHeadCalibration::drawPassLine() both format tenths by hand, each with a
-   comment explaining that printf() here has no float support linked in. This is the
-   same idea, done once and done exactly, for the paths that were reaching for
-   String(float) instead.
+   The rest of the firmware already knew. XCopyDriveToolkit::formatRpm() formats
+   tenths by hand, with a comment explaining that printf() here has no float
+   support linked in. This is the same idea, done once and done exactly, for the
+   paths that were reaching for String(float) instead.
 
    Exactness
    ---------
