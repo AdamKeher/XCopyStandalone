@@ -21,7 +21,11 @@ class XCopyLog
             String payload = text;
             payload.replace("\r", "\033[^M");
             payload.replace("\n", "\033[^J");
-            _esp->print("broadcast log," + payload + "\r\n");
+            // Three writes rather than one concatenated String: the copy is the
+            // size of the line again, taken while the line itself is still held.
+            _esp->print("broadcast log,");
+            _esp->print(payload);
+            _esp->print("\r\n");
             delay(6);
         }
         return *this;

@@ -3,6 +3,7 @@
 #include "XCopyScratch.h"
 #include <Streaming.h>
 #include <SerialFlash.h>
+#include <malloc.h>
 
 /*
    The console.
@@ -29,6 +30,13 @@ static String pad(const String &text, uint8_t width)
     // being readable at all.
     if (out.length() > width)
         out.remove(width);
+    // Reserve the width once, and give up if that fails. Appending a character at
+    // a time, and appending until the length reached the width, was an endless
+    // loop the moment the heap could not give the String its buffer: the append
+    // fails silently, the length never moves, and the console is gone. A short
+    // row is the honest result when there is no memory for a full one.
+    if (!out.reserve(width))
+        return out;
     while (out.length() < width)
         out += ' ';
 
@@ -460,27 +468,44 @@ void XCopyCommandLine::cmdConfig()
 
 void XCopyCommandLine::cmdMem()
 {
-    uint32_t stackTop;
-    uint32_t heapTop;
+    /*
+       What is actually available, not the distance from the stack to wherever a
+       one byte request happened to land. That number was the stack pointer minus
+       a recycled chunk and read "31124 bytes free" on a heap with 232 to give.
 
-    // current position of the stack.
-    stackTop = (uint32_t) &stackTop;
+       The runtime heap here is the free list and little else: the track buffer
+       has to sit at 0x20000000 for bit-band access, everything the boot allocates
+       after it sits above, and the core's _sbrk refuses to grow the heap within
+       STACK_MARGIN (4KB on this part) of the stack pointer - which, at the depth a
+       command runs at, it already is. So "free" below is the whole budget for
+       every String a command builds, and the largest block is what one of them
+       can be.
+    */
+    uint32_t stackTop = (uint32_t)&stackTop;
+    extern char *__brkval;
+    struct mallinfo mi = mallinfo();
 
-    // current position of heap.
-    void* hTop = malloc(1);
-    heapTop = (uint32_t) hTop;
-    free(hTop);
+    size_t largest = 0;
+    for (size_t size = 4096; size >= 16; size >>= 1)
+    {
+        void *block = malloc(size);
+        if (block != NULL)
+        {
+            largest = size;
+            free(block);
+            break;
+        }
+    }
 
-    char sStackTop[12];
-    char sHeapTop[12];
-
-    sprintf(sStackTop, "0x%08" PRIx32, stackTop);
-    sprintf(sHeapTop, "0x%08" PRIx32,  heapTop);
-
-    // The difference is (approximately) the free, available ram.
-    Log << F("Stack Top: ") << sStackTop << F("\r\n");
-    Log << F("Heap Top: ") << sHeapTop << F("\r\n");
-    Log << F("Free: ") << (stackTop - heapTop) << F(" bytes free\r\n");
+    char address[12];
+    sprintf(address, "0x%08" PRIx32, stackTop);
+    Log << F("Stack: ") << address << F("\r\n");
+    sprintf(address, "0x%08" PRIx32, (uint32_t)__brkval);
+    Log << F("Heap break: ") << address << F("\r\n");
+    sprintf(address, "0x%08" PRIx32, (uint32_t)_floppy->getStream());
+    Log << F("Track buffer: ") << address << F(" + ") << _floppy->getStreamSize() << F("\r\n");
+    Log << F("Heap: ") << mi.arena << F(" bytes, ") << mi.uordblks << F(" in use, ") << mi.fordblks
+        << F(" free, largest block at least ") << largest << F("\r\n");
 }
 
 // SD CARD
