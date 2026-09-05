@@ -725,33 +725,50 @@ tr.dtInputsStart td {
 /* The calibration read's realtime rows: what the head is reading this revolution,
    as against the accumulated grid below. */
 
-.dtHeadRows {
+/* A table rather than two flex rows, so the head name, the sectors and the count
+   line up in columns and the run of glyphs is given the width the pane has rather
+   than only the width it needs. The two fixed columns carry words and the glyph
+   column takes what is left. */
+
+.dtReadTable {
   font-family: monospace;
+  width: 100%;
+  /* Fixed, or the browser spreads the slack over all three columns and the two
+     that carry words end up wider than the one that carries the reading. */
+  table-layout: fixed;
   margin-bottom: 16px;
 }
 
-.dtHeadRow {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 4px 0;
+.dtReadTable td {
+  vertical-align: middle;
+  padding: 6px 8px;
 }
 
-.dtHeadLabel {
-  display: inline-block;
-  width: 130px;
+.dtReadTable .dtHeadLabel {
+  width: 150px;
+  white-space: nowrap;
   color: white;
 }
 
 .dtGlyphs {
-  display: inline-flex;
+  display: flex;
   gap: 2px;
   /* Holds the row height steady before the first pass lands, so the panel does
      not jump when results arrive. */
   min-height: 22px;
 }
 
-.dtCount {
+/* The sectors keep their size in a column wider than they are. As flex items they
+   shrink by default, which squeezed eleven of them into a third of the room they
+   had and made the glyphs unreadable. */
+.dtGlyphs .dtSector {
+  flex: 0 0 auto;
+}
+
+.dtReadTable .dtCount {
+  width: 130px;
+  white-space: nowrap;
+  text-align: right;
   color: #e0b040;
 }
 
@@ -845,9 +862,17 @@ tr.dtInputsStart td {
   flex: 0 0 auto;
 }
 
+/* Basis zero, not auto.
+
+   With auto the pane sizes to its widest table, and it holds two that ask for the
+   full width - so the row measures wider than it is and wraps, which puts the read
+   under the lines and hands it the whole page. Basis zero takes what is left after
+   the signal table instead, and the floor is what decides when there is not enough
+   left to be worth sharing. */
+
 .dtReadPane {
-  flex: 1 1 auto;
-  min-width: 0;
+  flex: 1 1 0;
+  min-width: 560px;
 }
 
 /* The grid's own cells, smaller than the disk copy grid's 40px. That one is

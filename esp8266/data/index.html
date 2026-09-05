@@ -671,18 +671,22 @@
                              always off the bottom of the screen. -->
                         <div class="dtReadPane">
                             <h6><i class="fa-solid fa-ruler-combined"></i> Calibration read</h6>
-                            <div class="dtHeadRows">
-                                <div class="dtHeadRow">
-                                    <span class="dtHeadLabel">Head 0 (Lower)</span>
-                                    <span id="dtGlyphs0" class="dtGlyphs"></span>
-                                    <span id="dtCount0" class="dtCount">-</span>
-                                </div>
-                                <div class="dtHeadRow">
-                                    <span class="dtHeadLabel">Head 1 (Upper)</span>
-                                    <span id="dtGlyphs1" class="dtGlyphs"></span>
-                                    <span id="dtCount1" class="dtCount">-</span>
-                                </div>
-                            </div>
+                            <!-- No table-sm: in this tree that class is the disk grid's 40px track cell,
+                                 which would fight the column widths below. -->
+                            <table class="table table-dark dtReadTable">
+                                <tbody>
+                                    <tr>
+                                        <td class="dtHeadLabel">Head 0 (Lower)</td>
+                                        <td id="dtGlyphs0" class="dtGlyphs"></td>
+                                        <td id="dtCount0" class="dtCount">-</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="dtHeadLabel">Head 1 (Upper)</td>
+                                        <td id="dtGlyphs1" class="dtGlyphs"></td>
+                                        <td id="dtCount1" class="dtCount">-</td>
+                                    </tr>
+                                </tbody>
+                            </table>
                             <p class="dtLegend">
                                 <span class="dtSector ok">.</span> okay
                                 <span class="dtSector missing">X</span> missing
