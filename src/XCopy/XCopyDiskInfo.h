@@ -7,6 +7,8 @@
 #include "XCopyGraphics.h"
 #include "XCopyAudio.h"
 
+class XCopySCPReader;
+
 /**
  * @brief Angular buckets a track surface is described in.
  *
@@ -76,13 +78,38 @@ class XCopyDiskInfo
      */
     void surveyScp(const String &path, uint8_t startCyl, uint8_t endCyl, int8_t side);
 
+    /**
+     * @brief Decode one sector of one track and send it to the browser.
+     *
+     * Answers the hover in the track view. The survey keeps no sector data - 168
+     * tracks of it is far past what this part has - so the track is captured again
+     * on demand, from whichever source the last survey came from, and decoded
+     * where it lands. A second request for a sector of the SAME track costs
+     * nothing: the capture is still sitting in stream[].
+     */
+    void sectorDump(uint8_t cyl, uint8_t head, uint8_t sector);
+
+    /**
+     * @brief Forget which track stream[] holds.
+     *
+     * Called before any other operation starts. The cache is only sound while
+     * nothing else has captured, and every path that captures goes through
+     * XCopy::startFunction() - so one call there is what stops a hover after a
+     * disk copy decoding whatever that copy happened to leave behind and
+     * presenting it as the track the pointer is over.
+     */
+    void invalidateTrack() { _loadedCyl = -1; _loadedHead = -1; }
+
     void cancelOperation() { _cancelOperation = true; }
 
   private:
     void emitBegin(const char *source, const String &name, uint8_t startCyl,
                    uint8_t endCyl, int8_t side, bool hd, bool wrprot, uint16_t rotMs);
     void emitTrack(uint8_t cylinder, uint8_t head, const CalibrationResult &result,
-                   unsigned long revBytes, uint8_t flags);
+                   unsigned long revBytes, unsigned long revUs, uint8_t flags);
+    void tally(const CalibrationResult &result, uint16_t &good, uint16_t &bad,
+               uint16_t &missing) const;
+    String summary(uint16_t tracks, uint16_t good, uint16_t bad, uint16_t missing) const;
 
     /*
        Sectors the density says a track should hold, 11 or 22.
@@ -93,9 +120,38 @@ class XCopyDiskInfo
        bad, which is the opposite of what it found.
     */
     uint8_t _expected = 11;
+    /*
+       Where the last survey read from, so a sector can be fetched after it ends.
+
+       A hover happens minutes later, with the drive idle or the file closed, and
+       the request carries only a cylinder, a head and a sector number - it cannot
+       say whether those mean a disk or an image. This is the survey telling it.
+    */
+    bool _srcFromFile = false;
+    String _srcPath;
+
+    /*
+       Which track stream[] is currently holding, or -1.
+
+       One capture answers every sector of a track, so this is what stops a hover
+       along one track re-seeking the drive eleven times. Invalidated by anything
+       that captures behind this class's back, which is why it is cleared at the
+       start of every survey rather than trusted across one.
+    */
+    int _loadedCyl = -1;
+    int _loadedHead = -1;
+
+    bool loadTrack(uint8_t cyl, uint8_t head);
+    void replayScpTrack(XCopySCPReader &reader, uint32_t scale);
+    void emitSectorLine(uint8_t cyl, uint8_t head, uint8_t sector);
+
+    //! Panel feedback: the empty grid before a survey, and a colour per track.
+    void beginPanel(const String &name);
+    uint16_t trackColour(const CalibrationResult &result) const;
+
     void emitProfile(uint8_t cylinder, uint8_t head, unsigned long revBytes);
     void emitHist(uint8_t cylinder, uint8_t head);
-    void emitEnd(uint16_t tracks, uint16_t good, uint16_t bad);
+    void emitEnd(uint16_t tracks, uint16_t good, uint16_t bad, uint16_t missing);
 
     //! Cell bytes in one revolution, from the measured rotation period.
     unsigned long revolutionBytes(uint16_t rotMs, bool hd) const;

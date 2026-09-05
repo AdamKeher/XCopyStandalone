@@ -477,6 +477,7 @@ bool XCopySCPReader::begin(File *file)
     _endTrack = hdr[7];
     _flags = hdr[8];
     _heads = hdr[10];
+    _resolution = hdr[11];
 
     /*
        cell_width at 0x09 is bits per sample, and 0 means the default 16. Anything

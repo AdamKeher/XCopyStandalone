@@ -802,6 +802,23 @@ void XCopy::onWebCommand(void* obj, const String command)
 
         xcopy->startFunction(fromFile ? XCopyAction::analyseScp : XCopyAction::analyseDisk);
     }
+    /*
+       One sector of one track, decoded and sent back. Answers the track view's
+       hover, and unlike the two above it does not go through startFunction(): it
+       is one capture and a decode, not a state the device sits in, and routing it
+       through the state machine would mean a hover could not be served while the
+       machine was idle - which is the only time it ever happens.
+    */
+    else if (command.startsWith("diskInfoSector")) {
+        String param = command.indexOf(",") > 0 ? command.substring(command.indexOf(",") + 1) : "";
+        const int c1 = param.indexOf(',');
+        const int c2 = c1 > 0 ? param.indexOf(',', c1 + 1) : -1;
+        if (c2 > 0) {
+            xcopy->_diskInfo.sectorDump((uint8_t)param.substring(0, c1).toInt(),
+                                        (uint8_t)param.substring(c1 + 1, c2).toInt(),
+                                        (uint8_t)param.substring(c2 + 1).toInt());
+        }
+    }
     // Head calibration. Only the start is accepted from any state; everything
     // else is ignored unless a session is actually running, so a browser tab left
     // open on the panel cannot reach into the drive during a disk copy.
@@ -983,6 +1000,14 @@ void XCopy::cardChange()
 // }
 
 void XCopy::startFunction(XCopyAction action, String param) {
+    /*
+       Anything that runs now may capture a track, and the analyser caches which
+       track its buffer holds so a hover does not re-seek. That cache is only true
+       until something else touches the drive, and this is where everything else
+       starts.
+    */
+    _diskInfo.invalidateTrack();
+
     // Listing the card is answered on the spot; there is no state to enter.
     if (action == XCopyAction::getSdFiles) {
         setBusy(true);
