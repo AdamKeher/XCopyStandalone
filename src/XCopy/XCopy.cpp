@@ -935,17 +935,42 @@ void XCopy::sendBlock(int block) {
         }
 
         _floppy.analyseHist(true);
-        float time = .0f;
-        String line = "broadcast sendBlockHist,";
-        int *hist = _floppy.getHist();
+
+        /*
+           Written to the link a bin at a time, not gathered into one String first.
+
+           This was the largest String the firmware built: one entry of around ten
+           bytes for every bin with anything in it, so 600 bytes off a clean track
+           and past a kilobyte off a noisy one, grown by realloc on a heap that has
+           about 1.3KB free and nothing above 1KB in one piece. An append into a
+           String that cannot grow fails silently, the newline append failed with
+           it, and the ESP sat waiting for a line ending that never came - which is
+           why the dump filled in and the histogram did not.
+
+           Bounded to what the ESP will accept as one line, since an overrun line is
+           dropped whole on that side and the browser would draw nothing at all. A
+           track that fills more bins than fit loses its longest intervals, which
+           are the tail past the 4us peak and the least of what the picture is for.
+
+           The interval is i/24 us above the 0.25us floor. Done in hundredths with
+           the halves rounded up, which is what twoDecimals() printed for the same
+           float: 0.04166667 is a shade over a twenty-fourth, so every tie went up.
+        */
+        static const char histPrefix[] = "broadcast sendBlockHist,";
+        _esp->print(histPrefix);
+        size_t sent = sizeof(histPrefix) - 1;
+        const int *hist = _floppy.getHist();
         for (int i = 0; i < 256; i++) {
-            if (hist[i] > 0) {
-                time = (float(i) * 0.04166667) + 0.25;
-                line += twoDecimals(time) + "|" + String(hist[i]) + "&";
-            }
+            if (hist[i] <= 0) continue;
+            const unsigned int hundredths = 25u + ((unsigned int)i * 100u + 12u) / 24u;
+            char entry[24];
+            const int n = snprintf(entry, sizeof(entry), "%u.%02u|%d&", hundredths / 100u,
+                                   hundredths % 100u, hist[i]);
+            if (n <= 0 || sent + (size_t)n > XCOPY_ESP_LINE_MAX) break;
+            _esp->print(entry);
+            sent += (size_t)n;
         }
-        line += "\r\n";
-        _esp->print(line);
+        _esp->print("\r\n");
     }
     else {
         Log << F("bitCount: ") + String(_floppy.getBitCount()) + F(" (Read failed!)\r\n");

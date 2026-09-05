@@ -60,7 +60,8 @@ public:
 
     void remove(unsigned int index) { if (index < _s.size()) _s.erase(index); }
     void remove(unsigned int index, unsigned int count) { if (index < _s.size()) _s.erase(index, count); }
-    void reserve(unsigned int n) { _s.reserve(n); }
+    // Arduino's returns whether the room was found; on a host it always is.
+    unsigned char reserve(unsigned int n) { _s.reserve(n); return 1; }
     void trim()
     {
         while (!_s.empty() && isspace((unsigned char)_s.front())) _s.erase(_s.begin());

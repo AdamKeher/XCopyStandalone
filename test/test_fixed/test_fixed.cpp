@@ -22,6 +22,7 @@
    reintroduces either is caught rather than shipped.
 */
 
+#include <stdio.h>
 #include <unity.h>
 #include <Arduino.h>
 #include "XCopyFixed.h"
@@ -73,6 +74,22 @@ void test_histogram_buckets(void)
     assertFormats("1.29", (25 * 0.04166667f) + 0.25f);
     assertFormats("4.42", (100 * 0.04166667f) + 0.25f);
     assertFormats("10.88", (255 * 0.04166667f) + 0.25f);
+}
+
+void test_histogram_buckets_in_integers(void)
+{
+    // XCopy::sendBlock labels the same buckets without a String or a float:
+    // hundredths of a microsecond, i/24 above the 0.25 floor, halves rounded up.
+    // That has to print what twoDecimals() prints for every bucket there is, or
+    // a peak would sit in a different place on the Disk Monitor than on Disk Info.
+    for (int i = 0; i < 256; i++)
+    {
+        const unsigned int hundredths = 25u + ((unsigned int)i * 100u + 12u) / 24u;
+        char entry[16];
+        snprintf(entry, sizeof(entry), "%u.%02u", hundredths / 100u, hundredths % 100u);
+        String expected = twoDecimals((i * 0.04166667f) + 0.25f);
+        TEST_ASSERT_EQUAL_STRING_MESSAGE(expected.c_str(), entry, "bucket");
+    }
 }
 
 // --- drive speed ----------------------------------------------------------------
@@ -173,6 +190,7 @@ int main(int, char **)
     RUN_TEST(test_volume_steps);
     RUN_TEST(test_volume_accumulates_without_drifting);
     RUN_TEST(test_histogram_buckets);
+    RUN_TEST(test_histogram_buckets_in_integers);
     RUN_TEST(test_rpm);
     RUN_TEST(test_transfer_rate);
     RUN_TEST(test_elapsed_seconds);

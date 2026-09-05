@@ -2033,9 +2033,11 @@ bool XCopyCommandLine::printDirectory(String directory, bool color) {
 
         const XCopyFile &file = _sdcard->getfile();
 
-        String filesize = String(file.size);
-        while (filesize.length() < 9)
-            filesize = " " + filesize;
+        // A fixed buffer, not " " + filesize until it is nine wide. On a heap that
+        // cannot serve the temporary that produced an empty String, which is never
+        // nine wide, and the console was gone - the same shape as pad() before v742.
+        char filesize[16];
+        snprintf(filesize, sizeof(filesize), "%9lu", file.size);
 
         String filename = file.filename;
         if (file.isDirectory) {
@@ -2050,7 +2052,7 @@ bool XCopyCommandLine::printDirectory(String directory, bool color) {
         // One buffer sized up front rather than a chain of + temporaries, each of
         // which allocated and copied the whole line so far.
         String line;
-        line.reserve(file.date.length() + file.time.length() + filename.length() + 16);
+        line.reserve(file.date.length() + file.time.length() + filename.length() + 24);
         line += file.date;
         line += " ";
         line += file.time;
