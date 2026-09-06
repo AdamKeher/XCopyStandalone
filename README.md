@@ -11,10 +11,50 @@ Special thanks to Giants for all his help with this version including web interf
 
 ## Device
 
-![XCopy Board Image](https://github.com/AdamKeher/XCopyStandalone/blob/master/brd/photo.png)
+![XCopy Board Image](brd/photo.png)
 
 ## Status
-This project is under heavy development and is in a state of flux with new hardware and software being actively worked on.
+This project is under heavy development and is in a state of flux with new hardware and software being actively worked on. The firmware version lives in `src/XCopy/XCopy.h`; this README describes v743.26.
+
+## New Features - 09/2026
+
+Since the 04/2023 release the device has grown a flux layer under the copier, a
+second file system layer over the SD card, and a rebuilt web interface.
+
+* **Disk Info** - a track analyser that describes what is on a disk rather than
+  copying it. One pass per track, no retries, so a protected track with the wrong
+  cylinder in its headers, a track with no sectors at all, or a disk with 84
+  cylinders instead of 80 is the output rather than an error. Draws both surfaces
+  as disks, a flux interval histogram per track, an angular track view you can
+  point at, and the decoded sector under the pointer. Runs against the drive, or
+  replays an SCP image through the same decoder.
+* **Drive Toolkit** - a bench instrument for bringing up an unknown drive. Every
+  interface line sampled with state, counts and rates; the safe outputs drivable
+  one at a time, so a drive can be provoked into saying which fault it has; and a
+  continuous head calibration read, after Amiga Test Kit's, that reports how many
+  of the eleven sectors came back clean and whether the ones that did not came
+  from the cylinder either side. Write data and write enable are deliberately not
+  exposed.
+* **SuperCard Pro flux images** - `readscp` captures a disk to an SCP file,
+  streamed a block at a time because a single DD revolution is larger than the RAM
+  on the whole part. A matching reader replays one back through the analyser.
+* **Live USB flux streaming** - `live` hands the USB session to a host that does
+  its own decoding, with non blocking in band seeking so the capture ring is still
+  draining during a head move. Host side probe in `files/Tools/xcopylive_probe.py`.
+* **ADF images as volumes** - mount ADF files as `ADF0:` and `ADF1:`, and the disk
+  in the drive itself as `DF0:`, then use `dir`, `cat`, `cp`, `mkdir` and `rm`
+  across the card and any mounted image. Mounts are read only unless asked
+  otherwise. ADFlib upgraded to 0.10.7, with drivers rather than local edits.
+* **New serial console** - a table driven interpreter with grouped help, per
+  command options, tab completion and history, in place of the hand written parser.
+* **Rebuilt web interface** - six tabs over one set of shared tokens and
+  components, with the Disk Monitor histogram and the Disk Info analysis streamed
+  to the browser as they are produced rather than gathered first.
+* **Over the air updates** - firmware and web assets over Wi-Fi, no cable needed.
+* **A name on the network** - the device calls itself `xcopy` to DHCP, to mDNS and
+  to OTA.
+* **Host side tests** - the `native` and `native_adf` environments run the file
+  system and console tests off the board.
 
 ## New Features - 04/2023
 * v0.19 PCB released with intergrated ESP8266 for WiFi
@@ -39,22 +79,40 @@ This project is under heavy development and is in a state of flux with new hardw
 
 ## Features
 * Software
-  * ADF Support
-    * Amiga file system support for floppy disks and ADF files via ADFlib
   * Disk copy
     * Disk to SD Card
     * SD Card to Disk
     * Disk to Disk
     * Disk to Temporary Flash
     * Temporary Flash to Disk
+  * Flux
+    * Read a disk to a SuperCard Pro (SCP) flux image
+    * Analyse a disk, or an SCP image, track by track
+    * Flux interval histograms, per track and live during a copy
+    * Stream a live drive to a host over USB for off board decoding
+  * File systems
+    * Amiga file system support for floppy disks and ADF files via ADFlib 0.10.7
+    * Mount ADF images as `ADF0:` / `ADF1:`, and the disk in the drive as `DF0:`
+    * List, print, copy, make and remove across the card and mounted images
+  * Drive diagnostics
+    * Every interface line sampled, with state, counts and rates
+    * Individually drivable outputs for provoking a fault out of a drive
+    * Continuous head calibration read with a live per cylinder tally
+    * Drive speed from the index
   * Test disk
   * Format disk
-  * Disk flux measurement
-  * Serial command line
+  * Search a disk for case sensitive ascii text, or for tracker modules
+  * Amiga module ripper
+  * Bootblock library / virus checker using brainfile format
+  * Serial command line, table driven, with tab completion and history
   * Interfaces
     * TFT LCD
     * USB Serial
-    * HTML
+    * HTML over WebSockets
+  * Network
+    * Over the air firmware and web asset updates
+    * NTP time update and time zone
+    * Announces itself as `xcopy` to DHCP, mDNS and OTA
   * Serial passthrough for programming onboard ESP8266
 * Hardware
   * IDC 34 pin standard floppy drive cable interface
@@ -73,11 +131,60 @@ This project is under heavy development and is in a state of flux with new hardw
 
 # PCB
 
-![XCopy Board Image](https://github.com/AdamKeher/XCopyStandalone/blob/master/brd/pcb.png)
+![XCopy Board Image](brd/pcb.png)
 
 # Web Interface
 
-![XCopy Board Image](https://github.com/AdamKeher/XCopyStandalone/blob/master/docs/web_interface.png)
+Six tabs over one WebSocket connection to the ESP8266. The footer carries the
+signal strength, the link state and what the device is doing, on every tab.
+
+### Disk Copy
+
+Every copy path in one place - between the drive, the SD card, the onboard flash,
+and an ADF or SCP file on the card - over a live track map of both surfaces and a
+rolling flux view of the track being read.
+
+![Disk Copy tab](docs/web_diskcopy.png)
+
+### Disk Monitor
+
+A sector at a time: the decoded header, a hex dump, an ascii dump in either the
+browser font or the Amiga one, and the track's flux histogram. Below them a block
+scan of the whole disk, with ascii and tracker module searches, and blocks that
+can be selected and written out to the card.
+
+![Disk Monitor tab](docs/web_diskmon.png)
+
+### Disk Info
+
+The analyser. Both surfaces drawn as disks with every sector coloured by what was
+found there, a status panel for the selected track, an angular track view of the
+raw cell stream against the sectors decoded out of it, the flux histogram, and the
+decoded sector under the pointer.
+
+![Disk Info tab](docs/web_diskinfo.png)
+
+### Drive Toolkit
+
+The drive itself rather than the disk in it. Sampled interface lines down the
+left, the calibration read across the top, and a session tally that accumulates
+per cylinder and head - so an intermittent read shows up as intermittent rather
+than as one bad pass.
+
+![Drive Toolkit tab](docs/web_drivetoolkit.png)
+
+### SD Card
+
+The contents of the card, with upload and download.
+
+![SD Card tab](docs/web_sdcard.png)
+
+### Log
+
+The serial console in the browser - the same interpreter, the same commands and
+the same output as the USB port.
+
+![Log tab](docs/web_log.png)
 
 # Build Environment Notes:
 
@@ -162,7 +269,9 @@ them in one Project Tasks tree and `pio run` with no arguments builds the pair.
 | `lib/` | libraries for both; `esp8266/lib/` holds the ESP only ones |
 
 Both boards are environments of the one project: `teensy31`, `d1_mini`, and
-`d1_mini_ota` for updating the ESP over Wi-Fi.
+`d1_mini_ota` for updating the ESP over Wi-Fi. Two more, `native` and
+`native_adf`, build nothing for a board and exist to run the console and file
+system tests on the host.
 
 Neither firmware is a `.ino` sketch: PlatformIO only converts a sketch sitting at
 the top of the source directory, and with two source trees neither one can be.
